@@ -7,6 +7,12 @@
 - Branch at clone time: `main`
 - Clone type: partial clone with `--filter=blob:none` (promisor); blobs are fetched on demand
   from GitHub. Working tree at the pinned commit.
+- Working tree is a **sparse checkout** (`git sparse-checkout set docs ryoku/shell ryoku/hub
+  ryoku/hyprland ryoku/wm ryoku/ui ryoku/palette-bridge`): 2 578 files / 38 MB. A full tree
+  would be ~851 MB, mostly `ryoku/assets` (239 MB), `ryoku-shell-installer/` (35 MB) and
+  `ryoku/i18n` (22 MB) — none needed. Anything outside the sparse set is read read-only with
+  `git show HEAD:<path>` / `git ls-tree -r HEAD <dir>` (this fetches the blob, it does not
+  materialise the tree).
 - Local path: `~/projects/mei/upstream/` — **READ-ONLY. Never edited.** All Mei modifications
   happen in `src/` and are recorded in `CHANGES.md`.
 
