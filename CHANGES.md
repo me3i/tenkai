@@ -3,6 +3,44 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 3 — classification (read-only; no code, no installs, no builds)
+
+- Wrote `docs/03-classification.md`: every component, file group, daemon, Settings page, font
+  and asset classified essential / optional-disabled / removable / uncertain, each with the
+  necessity-test reason, a RAM/CPU estimate + whether it spawns a process, and its dependents.
+  Includes the "bloat found" and "opted out, can re-enable" lists, licensing/credits (incl.
+  the GPL-3.0 obligations and the unlicensed bundled fonts/icons redistribution flag), and the
+  proposed Mei Settings-page list (5 kept: General, Appearance, Bar, Launcher, Motion).
+- Added `docs/02b-gaps.md` because `docs/02-deps.md` was missing two items the owner required:
+  (a) a mapping of **all 32** page files (28 nav + 4 helpers) to what each writes, and (b) the
+  full list of daemons/processes the kept features need **with a process count** (3 resident:
+  `ryoku-shell` → `qs -c shell`, and `ryogami`).
+- Resolved the five open items by reading code (detail in `docs/03-classification.md` §1):
+  1. **Dual `NotificationServer`** — real; both are instantiated
+     (`services/Notifs.qml:230` and `barstyles/qsbar/panels/NotificationPanel.qml:26` via
+     `VariantRoot.qml:251`). Keep `services/Notifs.qml` (integrated: popups, DND, menus); the
+     qsbar panel's server also writes a foreign `~/.cache/qs-rise-notifications.json` → remove.
+  2. **Polkit** — the agent is gated behind `RYOKU_POLKIT_AGENT=1` (`ipc/polkit.go:35-40`);
+     test mode must simply not set it (Mei runs the daemon directly → never registers).
+  3. **matugen** — `colors.json`/`tones.json` are written by the daemon's Go code, not by any
+     template, so the kept palette needs **zero** templates. Every shipped template
+     (`config.toml` 6 + `apps.toml` 22) targets the owner's home → **REMOVE**; plan is a bare
+     Mei `config.toml` (`[config]` only, no templates, no post_hook) with `XDG_*` redirected.
+  4. **Palette bridge** — HTTP on `127.0.0.1:47616` (`-listen` flag), loopback-only by default,
+     not file-based; only browser/app theming uses it → optional-disabled.
+  5. **ryogami** — live video runs a `ryogami-live` player per output (`[REPORTED] ~40–60 MB
+     RSS`), depth adds a shader + map; both disable cleanly while keeping still images. The
+     reveal shader lives in the kept Quickshell process (idle-zero, fires only on change) → keep.
+- New confinement finding: many kept-module QML `FileView` paths are built as
+  `Quickshell.env("HOME") + "/.config"` and therefore ignore `XDG_CONFIG_HOME`; the XDG redirect
+  alone does not contain them. Flagged as **uncertain** — must be closed in Phase 6.
+- Hardened `./mei verify-untouched` for a **live-session restart**: a watched D-Bus owner-PID
+  change is now fatal only while the live Hyprland instance signature matches the baseline's;
+  after a restart (the owner's session restarted during this phase) every PID churns, so the
+  owner-PID diff is reported as INFO and a re-baseline is advised. Config-hash/symlink diffs stay
+  always-fatal (they are the authoritative "did Mei write anything" check). `--strict` still fails.
+- `./mei verify-untouched` → PASS (config hashes unchanged; D-Bus churn informational post-restart).
+
 ## Phase 2 — dependency mapping (read-only; no code, no installs, no builds)
 
 - Wrote `docs/02-deps.md` (consolidated) from six read-only traces in `docs/02-deps/`
