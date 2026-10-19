@@ -3,6 +3,74 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — rebrand (RYOKU → MEI, user-visible only)
+
+Scope: visible branding in kept surfaces; QML module URIs (`Ryoku.*`), D-Bus
+names, env prefixes, and `ryogami` stay as-is. Attribution kept/added.
+
+### Wordmark (bar left module)
+
+- `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/Theme.qml`
+  - `launcherLogoText` default `"ryoku"` → `"mei"`; `launcherLogoIcon` default
+    `"ryoku"` → `"mei"`.
+  - text options: `"ryoku"` removed, `"mei"` added first.
+  - icon options: `"mei"` added; `"ryoku"` kept as a backward-compatible id.
+  - icon glyph map: `"ryoku": 0x529B` (CJK 力) → `"mei"/"ryoku": 0xEE99`
+    (Nerd Font "mark" seal). `launcherLogoIconFont()` now always returns the
+    mono font, so **no surface needs `noto-fonts-cjk`**.
+  - font/size/weight/spacing of the wordmark unchanged: `mono` (JetBrains Mono
+    Nerd Font), 12 px, Bold, letter-spacing 2. `MEI` is simply the uppercase of
+    the id, via the existing `launcherLogoTextLabel()`.
+- `.../qsbar/modules/LauncherWidget.qml`: comment only (Mei brand mark).
+
+### The 力 seal → plain `M`
+
+- `.../overview/Singletons/Config.qml`, `.../desktop/Singletons/Config.qml`,
+  `.../services/Config.qml`: `markText` default `"力"` → `"M"`; `name`
+  `"Ryoku"` → `"Mei"`.
+- `.../overview/Singletons/Theme.qml`, `.../desktop/Singletons/Theme.qml`,
+  `.../services/Theme.qml`: mark fallback `"\u529b"` → `"M"`; brand-name
+  fallback `"Ryoku"` → `"Mei"`.
+- `.../overview/BrandMark.qml`, `.../desktop/BrandMark.qml`,
+  `.../components/BrandMark.qml`: glyph font `Theme.fontJp` → `Theme.mono`.
+- `.../launcher/variants/main/BrandMark.qml`, `.../launcher/variants/main/Preview.qml`:
+  hard-coded `"力"` → `"M"`.
+- `.../qsbar/controlcenter/CcRail.qml`: masthead `"\u529b"` → `"M"`,
+  font `Tokens.jp` → `Tokens.mono`; wordmark and barcode `"RYOKU"` → `"MEI"`.
+  (Route *glosses* in the same file still use CJK kanji; that is step-3 scope,
+  not the wordmark/seal.)
+
+### Other visible strings in kept surfaces
+
+- `shell.qml`: keybind description "Toggle the Ryoku frame bar…" → "Mei".
+- `.../framebars/menus/QsTabRail.qml`: tooltip "Ryoku Hub" → "Mei Settings".
+- `.../qsbar/modules/UpdateWidget.qml`: "Ryoku is up to date" / "Ryoku update"
+  → "Mei …" (widget is off-list but visible if enabled).
+- `.../qsbar/modules/ParticleStream.qml`: update particle "RYOKU" → "MEI".
+- `.../controlcenter/routes/IdentityRoute.qml`: wordmark preview `"RYOKU"` →
+  `"MEI"`; icon preview `"\u529b"` → `"M"`.
+- `.../controlcenter/ControlCenter.qml`: "outside Ryoku" → "outside Mei".
+- `.../controlcenter/routes/CommunityRoute.qml`: "Ryoku does not review" →
+  "Mei does not review".
+- `.../launcher/catalog.json`: description → "Mei's live palette".
+- `.../launcher/shared/providers/actions/catalog.js`: "Ryoku Settings" →
+  "Mei Settings".
+- `.../bar/panel/PanelChat.qml`: "the Ryoku source" → "the Mei source".
+
+Runtime brand file `.run/config/mei/brand.json` (git-ignored) patched to
+`{"markText":"M","name":"Mei"}` so the fake-home run agrees with the new
+defaults; it regenerates from source anyway.
+
+### Attribution (added, not removed)
+
+- Copied `upstream/LICENSE` → `LICENSE` and `upstream/NOTICE` → `NOTICE`
+  (verbatim; the clone itself is git-ignored, so these were not previously in
+  the repository).
+- Added `CREDITS.md`: Mei is a modified derivative of Ryoku under
+  GPL-3.0-or-later; QS Bar (Quickshell Rise) credit; font licences.
+- `UPSTREAM.md` retained; the QS Bar credit comment in
+  `qsbar/Scene.qml:1` retained.
+
 ## Phase 6 step 1 — bar + workspaces (code + build + nested test)
 
 Deliverable: `docs/06-step1.md`. Stop point: launcher/sidebar/notifications/Settings not started.

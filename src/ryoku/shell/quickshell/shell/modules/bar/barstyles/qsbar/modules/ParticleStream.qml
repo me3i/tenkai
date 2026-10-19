@@ -964,7 +964,7 @@ Item {
 
     // Ryoku pushed an update (UpdateWidget's 6h poll flipped to available)
     readonly property bool upd7: theme.omarchyUpdateAvail === true
-    onUpd7Changed: if (armed7 && upd7) pushText("UPDATE READY", "RYOKU", 1, "long")
+    onUpd7Changed: if (armed7 && upd7) pushText("UPDATE READY", "MEI", 1, "long")
 
     // do-not-disturb toggled
     readonly property bool dnd7: theme.notifSilenced === true

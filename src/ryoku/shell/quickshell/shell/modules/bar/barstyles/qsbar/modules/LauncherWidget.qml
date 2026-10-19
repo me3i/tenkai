@@ -89,7 +89,7 @@ Item {
         }
     }
 
-    // Ryoku brand mark by default; the chosen wordmark or icon option otherwise,
+    // Mei brand mark by default; the chosen wordmark or icon option otherwise,
     // themed with the seal. Resolvers live in Theme so the picker and bar agree.
     Text {
         id: logo

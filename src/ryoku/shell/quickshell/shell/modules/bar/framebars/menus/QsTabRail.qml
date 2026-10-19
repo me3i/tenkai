@@ -70,7 +70,7 @@ Item {
             onClicked: { Quickshell.execDetached(["ryoku-cmd-qr-scan"]); root.requestClose(); }
         }
         RailIconBtn {
-            icon: "settings"; tipText: I18n.tr("Ryoku Hub")
+            icon: "settings"; tipText: I18n.tr("Mei Settings")
             onClicked: { Quickshell.execDetached(["ryoku-shell", "hub", "open"]); root.requestClose(); }
         }
         RailIconBtn {

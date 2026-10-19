@@ -1232,7 +1232,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: Needle.ready
-                ? I18n.tr("It knows this machine, your desktop, and the Ryoku source. Drop in an image to ask about it.")
+                ? I18n.tr("It knows this machine, your desktop, and the Mei source. Drop in an image to ask about it.")
                 : I18n.tr("Rashin needs an AI to answer. Set it up once and the needle is ready.")
             wrapMode: Text.WordWrap
             color: Theme.inkOn(Theme.effectiveSurface, Theme.onSurfaceVariant, 3.0)

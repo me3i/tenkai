@@ -32,7 +32,7 @@ var CATALOG = [
     { id: "recognize-music",  name: "Recognize Music",    category: "Media",      icon: "music",       exec: ["ryoku-cmd-songrec"] },
     { id: "media-visualizer", name: "Audio Visualizer",   category: "Media",      icon: "wave",        exec: ["ryoku-shell", "visualizer-overlay"] },
 
-    { id: "open-settings",    name: "Ryoku Settings",     category: "Settings",   icon: "settings",    exec: ["sh", "-c", "flock -n -o /tmp/mei-hub.lock qs -c hub"] },
+    { id: "open-settings",    name: "Mei Settings",     category: "Settings",   icon: "settings",    exec: ["sh", "-c", "flock -n -o /tmp/mei-hub.lock qs -c hub"] },
     { id: "keybind-legend",   name: "Keybind Reference",  category: "Settings",   icon: "keyboard",    exec: ["sh", "-c", "flock -n -o /tmp/mei-keys.lock qs -c keys"] },
     { id: "reload-shell",     name: "Reload Shell",       category: "Settings",   icon: "refresh",     exec: ["ryoku-shell", "reload"] }
 ];

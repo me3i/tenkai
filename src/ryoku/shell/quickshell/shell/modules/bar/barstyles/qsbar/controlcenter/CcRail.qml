@@ -126,14 +126,14 @@ Item {
 
             UiText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "\u529b"
+                text: "M"
                 color: Tokens.sun
-                font.family: Tokens.jp
+                font.family: Tokens.mono
                 font.pixelSize: Tokens.fBody
             }
             UiText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "RYOKU"
+                text: "MEI"
                 color: Tokens.ink
                 font.family: Tokens.mono
                 font.pixelSize: Tokens.fMicro
@@ -328,7 +328,7 @@ Item {
         Barcode {
             id: plate
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            text: "RYOKU"
+            text: "MEI"
             barHeight: 12
             unit: Math.max(0.7, Math.min(1.4, margin.width / ((plate.text.length + 2) * 16)))
         }

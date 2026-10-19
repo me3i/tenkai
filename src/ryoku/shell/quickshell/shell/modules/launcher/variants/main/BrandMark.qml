@@ -5,7 +5,7 @@ Text {
     property real size: 13
     property int weight: Font.Medium
 
-    text: "力"
+    text: "M"
     color: Theme.brand
     font.family: Theme.font
     font.weight: weight

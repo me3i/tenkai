@@ -22,7 +22,7 @@
     {
       "id": "okshell",
       "name": "OkShell",
-      "description": "Fast applications-only list in Ryoku's live palette.",
+      "description": "Fast applications-only list in Mei's live palette.",
       "entrypoint": "variants/okshell/Main.qml",
       "preview": "variants/okshell/Preview.qml",
       "capabilities": []

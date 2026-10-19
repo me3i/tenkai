@@ -83,10 +83,10 @@ Singleton {
         onFileChanged: reload()
         JsonAdapter {
             id: brandAdapter
-            property string markText: "力"
+            property string markText: "M"
             property string markImage: ""
             property bool markTint: true
-            property string name: "Ryoku"
+            property string name: "Mei"
         }
     }
 }

@@ -137,7 +137,7 @@ Item {
                             id: warnText
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width - Tokens.fRow - parent.spacing
-                            text: I18n.tr("Community plugin. Ryoku does not review or maintain it: it runs inside your shell with your permissions, so inspect its code before you trust it.")
+                            text: I18n.tr("Community plugin. Mei does not review or maintain it: it runs inside your shell with your permissions, so inspect its code before you trust it.")
                             color: Tokens.inkDim
                             font.family: Tokens.ui
                             font.pixelSize: Tokens.fSmall

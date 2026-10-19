@@ -33,7 +33,7 @@ Item {
         anchors.centerIn: parent
         text: Theme.mark
         color: mark.color
-        font.family: Theme.fontJp
+        font.family: Theme.mono
         font.weight: mark.weight
         font.pixelSize: mark.size
     }

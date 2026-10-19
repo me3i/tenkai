@@ -216,7 +216,7 @@ Singleton {
 
     // brand mark, user-overridable via ~/.config/mei/brand.json (Shell ->
     // Global). BrandMark renders `mark`, or `markSource` (an image) when set.
-    readonly property string mark: Config.markText.length > 0 ? Config.markText : "\u529b"
+    readonly property string mark: Config.markText.length > 0 ? Config.markText : "M"
     readonly property string markSource: Config.markImage
     readonly property bool markTint: Config.markTint
 
