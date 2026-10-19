@@ -11,7 +11,10 @@
 # Subcommands:
 #   baseline [--force]      capture the read-only snapshot of the live session into docs/baseline/
 #   verify-untouched [--strict]
-#                           re-hash ~/.config/{quickshell,hypr} and re-check live-session state.
+#                           re-hash the watched config/cache trees and re-check live-session state.
+#                           Watched trees: ~/.config/{quickshell,hypr} (live shell/compositor) plus
+#                           ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0} and ~/.cache/ryoku (exactly
+#                           what matugen / Ryoku theming would write, so any leak is caught).
 #                           Config-hash/symlink diffs are always fatal. A change of owner PID for a
 #                           watched well-known D-Bus name (Notifications, tray watcher, ScreenSaver,
 #                           secrets, pipewire/pulse, portals) is always fatal; connection IDs
@@ -63,13 +66,39 @@ session_bus() {
   return 1
 }
 
+# Trees whose state must be identical to the baseline. quickshell+hypr are the live
+# shell/compositor config; the rest are exactly what matugen / Ryoku theming would
+# write, hashed so any leak from Mei's theming is caught even though Mei redirects
+# XDG (and will additionally run under a fake HOME). Missing dirs are fine; a tree
+# that appears later shows up as added lines and fails the diff.
+CONFIG_WATCH_DIRS=(
+  "$HOME/.config/quickshell"
+  "$HOME/.config/hypr"
+  "$HOME/.config/kitty"
+  "$HOME/.config/btop"
+  "$HOME/.config/qt6ct"
+  "$HOME/.config/gtk-3.0"
+  "$HOME/.config/gtk-4.0"
+  "$HOME/.cache/ryoku"
+)
+
 capture_hashes() {  # $1 = output file
-  find "$HOME/.config/quickshell" "$HOME/.config/hypr" -type f -print0 2>/dev/null \
+  local d dirs=()
+  for d in "${CONFIG_WATCH_DIRS[@]}"; do
+    if [ -d "$d" ]; then dirs+=("$d"); fi
+  done
+  if [ "${#dirs[@]}" -eq 0 ]; then : > "$1"; return 0; fi
+  find "${dirs[@]}" -type f -print0 2>/dev/null \
     | sort -z | xargs -0 -r sha256sum > "$1"
 }
 
 capture_symlinks() {  # $1 = output file
-  find "$HOME/.config/quickshell" "$HOME/.config/hypr" -type l -printf '%p -> %l\n' 2>/dev/null \
+  local d dirs=()
+  for d in "${CONFIG_WATCH_DIRS[@]}"; do
+    if [ -d "$d" ]; then dirs+=("$d"); fi
+  done
+  if [ "${#dirs[@]}" -eq 0 ]; then : > "$1"; return 0; fi
+  find "${dirs[@]}" -type l -printf '%p -> %l\n' 2>/dev/null \
     | sort > "$1"
 }
 
@@ -167,8 +196,9 @@ cmd_baseline() {
     echo "Captured: $ts"
     echo
     echo "Machine-readable snapshots (used by './mei verify-untouched'):"
-    echo "  docs/baseline/config-hashes.sha256   sha256 of every file under ~/.config/quickshell + ~/.config/hypr"
-    echo "  docs/baseline/config-symlinks.txt    symlinks under those trees"
+    echo "  docs/baseline/config-hashes.sha256   sha256 of every file under the watched trees"
+    echo "  docs/baseline/config-symlinks.txt    symlinks under the watched trees"
+    echo "                                       watched: ~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/ryoku"
     echo "  docs/baseline/session-processes.txt  live shell/compositor/wallpaper/clipboard/idle processes"
     echo "  docs/baseline/quickshell-instances.txt  output of 'qs list'"
     echo "  docs/baseline/dbus-names.txt         full session bus listing (record only)"
@@ -211,7 +241,8 @@ cmd_verify_untouched() {
 
   capture_hashes "$tmp/config-hashes.sha256"
   if diff -u "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256" > "$tmp/hashes.diff" 2>&1; then
-    note "OK    config hashes: ~/.config/quickshell and ~/.config/hypr are unchanged"
+    note "OK    config hashes: all watched trees unchanged"
+    note "      (~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/ryoku)"
   else
     note "FAIL  config hashes differ from baseline — investigate NOW (Mei must never write these):"
     sed 's/^/      /' "$tmp/hashes.diff"
@@ -219,7 +250,7 @@ cmd_verify_untouched() {
   fi
   capture_symlinks "$tmp/config-symlinks.txt"
   if ! diff -u "$BASE_DIR/config-symlinks.txt" "$tmp/config-symlinks.txt" > "$tmp/symlinks.diff" 2>&1; then
-    note "FAIL  symlinks under config trees differ from baseline:"
+    note "FAIL  symlinks under the watched trees differ from baseline:"
     sed 's/^/      /' "$tmp/symlinks.diff"
     rc=1
   fi
