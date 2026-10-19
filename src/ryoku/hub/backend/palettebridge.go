@@ -155,6 +155,15 @@ func paletteBridgeIntegrationID(id string) bool {
 }
 
 func runPaletteBridge(args []string) error {
+	// MEI: the palette bridge (a 127.0.0.1:47616 HTTP listener that fans the
+	// palette into browser/app themes) is off the keep list. This verb is
+	// refused outright -- not even `status` -- so the hub can never install,
+	// enable or restart its systemd user unit against the real user manager.
+	// Disabled, not deleted: remove this guard to restore it.
+	return fmt.Errorf("palette-bridge: disabled in Mei (the 127.0.0.1:47616 bridge and its systemd unit are off the keep list)")
+}
+
+func runPaletteBridgeOriginal(args []string) error {
 	if len(args) == 0 || args[0] == "status" {
 		source := ""
 		if len(args) > 1 {

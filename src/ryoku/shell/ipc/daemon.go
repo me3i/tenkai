@@ -439,6 +439,10 @@ func (d *daemon) bootstrap() {
 	d.startNightlight()
 	go d.paintWorker()
 	go d.watchMatugenKnobs()
+	// The wallpaper -> palette trigger: ryogami publishes the `wallpaper` topic,
+	// this bridge mirrors it, and a changed picture reschedules the palette pass.
+	// Without it a wallpaper change never recolours the shell (found in step 5).
+	go d.watchRyogami()
 	d.startWM()
 	go d.startComponents()
 }

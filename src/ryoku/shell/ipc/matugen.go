@@ -574,20 +574,13 @@ func (d *daemon) matugenApply(img string) error {
 		return fmt.Errorf("matugen colors.json: %w", err)
 	}
 
-	// Retint the Material pointer now, parallel with the template fan-out below,
-	// so it tracks the wallpaper as promptly as the bar instead of waiting on
-	// matugen's post_hook (which runs only after every template has rendered). It
-	// reads the colors.json just written; a no-op unless the Material cursor is
-	// selected, and its own lock makes the post_hook's later run idempotent.
-	go func() {
-		if runCommand("ryoku-cursor-material-recolor") != nil {
-			return
-		}
-		// Recolored cursor images stay cached in the running compositor's
-		// memory; re-asserting the theme is what makes a palette change reach
-		// the pointer without a re-pick or a relogin.
-		_ = d.wmc.Act(wm.ActionCursorReassert)
-	}()
+	// MEI: cursor recolouring is an app theming fan-out and is OFF -- no
+	// `ryoku-cursor-material-recolor` process, no cursor action on the
+	// compositor. Disabled, not deleted: upstream's goroutine is kept below.
+	//   go func() {
+	//       if runCommand("ryoku-cursor-material-recolor") != nil { return }
+	//       _ = d.wmc.Act(wm.ActionCursorReassert)
+	//   }()
 
 	// And the tonal ramps behind those roles, from the same run.
 	if tones != nil {
@@ -772,6 +765,7 @@ func hexLuma(hex string) (float64, bool) {
 // runMatugenCapture runs matugen and returns its stdout, folding stderr into the
 // error so a failed scheme generation is diagnosable in the daemon log.
 func runMatugenCapture(args []string) ([]byte, error) {
+	fmt.Fprintf(os.Stderr, "matugen scheme: matugen %s\n", strings.Join(args, " "))
 	cmd := exec.Command("matugen", args...)
 	var errBuf strings.Builder
 	cmd.Stderr = &errBuf
@@ -1163,23 +1157,23 @@ func matugenRenderTemplates(shell map[string]string, k matugenKnobs) {
 		}
 		return true
 	}
-	matugenRenderFiltered(filepath.Join(dir, "config.toml"), carrierPath, enabled)
-	// Two switches gate the app suite and both have to agree: the appearance
-	// page's per-group roster (themeRyokuApps) and the master "Theme apps" in
-	// theme.json. The Hub blanks the stylesheets when the master goes off, so
-	// honouring the roster alone here re-rendered them on the next repaint and
-	// silently undid it.
-	if k.ThemeRyokuApps && themeAppsEnabled() {
-		matugenRenderFiltered(filepath.Join(dir, "apps.toml"), carrierPath, enabled)
-		// matugen wrote the shared snippet target; poke each vault's symlink so
-		// Obsidian's watcher, which never sees the out-of-vault target change,
-		// reloads the new palette without a restart.
-		if enabled("obsidian") {
-			nudgeObsidian()
-		}
-	} else {
-		blankGtk(matugenConfigHome())
-	}
+	// MEI: rendered straight from Mei's own config, with no roster filtering --
+	// there is no app fan-out left to gate -- so the log line names the real
+	// path ($XDG_CONFIG_HOME/mei/matugen/config.toml), not a cache copy.
+	_ = enabled
+	matugenRender(filepath.Join(dir, "config.toml"), carrierPath)
+	// MEI: the app-suite fan-out is OFF. Upstream also rendered matugen's
+	// apps.toml (22 templates: kitty, btop, qt6ct, gtk3/4, vesktop, obsidian, …)
+	// and blanked the GTK sheets when the "Theme apps" master went off. Neither
+	// happens here: no app config outside the project is ever written and there
+	// is no post_hook. Restore the block below (and apps.toml) to opt back in.
+	//   if k.ThemeRyokuApps && themeAppsEnabled() {
+	//       matugenRenderFiltered(filepath.Join(dir, "apps.toml"), carrierPath, enabled)
+	//       if enabled("obsidian") { nudgeObsidian() }
+	//   } else {
+	//       blankGtk(matugenConfigHome())
+	//   }
+	_ = k
 }
 
 // nudgeObsidian re-links the palette snippet inside every registered Obsidian
@@ -1248,8 +1242,10 @@ func matugenRenderFiltered(config, carrier string, enabled func(group string) bo
 // output on failure. A missing config is skipped, not an error.
 func matugenRender(config, carrier string) {
 	if _, err := os.Stat(config); err != nil {
+		fmt.Fprintf(os.Stderr, "matugen render: %s missing, skipped\n", config)
 		return
 	}
+	fmt.Fprintf(os.Stderr, "matugen render: matugen -c %s json %s\n", config, carrier)
 	if out, err := exec.Command("matugen", "-c", config, "json", carrier).CombinedOutput(); err != nil {
 		fmt.Fprintf(os.Stderr, "matugen render %s: %v: %s\n", filepath.Base(config), err, strings.TrimSpace(string(out)))
 	}
@@ -1282,21 +1278,15 @@ var (
 // this point is correct, and they are what an X11 or xsettings-backed session
 // needs to follow along.
 func matugenReload(mode string) {
-	scheme := "prefer-dark"
-	if mode == "light" {
-		scheme = "prefer-light"
-	}
-	_ = runCommand("gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme)
-
-	applyGnomeAccent()
-	applyKdeColors()
-
-	// gtkTheme "system" (name == "") means the user owns gtk-theme, so Ryoku
-	// leaves it entirely alone. Otherwise land the variant for this mode.
-	if name := resolveGtkTheme(mode); name != "" {
-		matugenNudgeGtk(name)
-	}
-	_ = runCommand("pkill", "-USR1", "-x", "kitty")
+	// MEI: the toolkit fan-out is OFF -- no gsettings/libadwaita accent writes,
+	// no gtk-theme flip, no kitty SIGUSR1, no KDE colours. The only thing left is
+	// the in-shell repaint. Disabled, not deleted: upstream's body is kept below.
+	//   scheme := "prefer-dark"; if mode == "light" { scheme = "prefer-light" }
+	//   _ = runCommand("gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme)
+	//   applyGnomeAccent(); applyKdeColors()
+	//   if name := resolveGtkTheme(mode); name != "" { matugenNudgeGtk(name) }
+	//   _ = runCommand("pkill", "-USR1", "-x", "kitty")
+	_ = mode
 	nudgePalette()
 }
 
@@ -1768,7 +1758,10 @@ func matugenDataHome() string {
 	return filepath.Join(os.Getenv("HOME"), ".local", "share")
 }
 
-func matugenTemplateDir() string { return filepath.Join(matugenConfigHome(), "matugen") }
+// MEI: the minimal config.toml ships to $XDG_CONFIG_HOME/mei/matugen/config.toml
+// (seeded by ./mei run), not the user's own $XDG_CONFIG_HOME/matugen, so matugen
+// only ever reads Mei's file.
+func matugenTemplateDir() string { return filepath.Join(matugenConfigHome(), "mei", "matugen") }
 
 // matugenKnobsPath is the one knob store the Hub appearance page and the daemon
 // share.
@@ -1796,36 +1789,17 @@ func matugenEnsureDirs() {
 	cache := matugenCacheHome()
 	data := matugenDataHome()
 	home := os.Getenv("HOME")
+	// MEI: only the palette dirs are pre-created. The 22 app template output
+	// directories upstream made here are gone with the fan-out (and with them
+	// the Steam/Telegram/Vesktop paths). Disabled, not deleted: the upstream list
+	// is in git history.
 	for _, d := range []string{
 		filepath.Join(cache, "mei"),
 		filepath.Join(cache, "matugen"),
-		filepath.Join(cfg, "kitty"),
-		filepath.Join(cfg, "btop", "themes"),
-		filepath.Join(cfg, "qt6ct", "colors"),
-		filepath.Join(cfg, "gtk-3.0"),
-		filepath.Join(cfg, "gtk-4.0"),
-		filepath.Join(cfg, "vesktop", "themes"),
-		filepath.Join(cfg, "equibop", "themes"),
-		filepath.Join(cfg, "obs-studio", "themes"),
-		filepath.Join(cfg, "zed", "themes"),
-		filepath.Join(cfg, "heroic", "store", "styles"),
-		filepath.Join(cfg, "cava"),
-		filepath.Join(cfg, "fish", "conf.d"),
-		filepath.Join(cfg, "yazi"),
-		filepath.Join(cfg, "ghostty"),
-		filepath.Join(cfg, "micro", "colorschemes"),
-		filepath.Join(cfg, "matugen", "generated"),
-		filepath.Join(cfg, "zathura"),
-		filepath.Join(cfg, "alacritty"),
-		filepath.Join(cfg, "tmux"),
-		filepath.Join(cfg, "ryotunes", "skins", "matugen"),
-		filepath.Join(data, "TelegramDesktop", "tdata"),
 	} {
 		_ = os.MkdirAll(d, 0o755)
 	}
-	if steamThemeReady() {
-		_ = os.MkdirAll(filepath.Join(home, ".steam", "steam", "steamui", "skins", "Material-Theme", "css", "main", "colors"), 0o755)
-	}
+	_, _, _ = cfg, data, home
 }
 
 func steamThemeReady() bool {

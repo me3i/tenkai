@@ -418,9 +418,14 @@ set -uo pipefail
 MEI_DIR="__MEI_DIR__"
 BASELINE_SIG="__BASELINE_SIG__"
 RUN="\$MEI_DIR/.run"
+# The live Wayland socket, handed in by ./mei run. ryogami refuses to start when
+# its own socket resolves to this path, so it can never paint the owner's session.
+export MEI_HOST_WAYLAND_SOCKET="__HOST_WAYLAND__"
 export HOME="\$RUN/home"
 export XDG_CONFIG_HOME="\$RUN/config"
-export XDG_CACHE_HOME="\$RUN/cache"
+# Cache follows the fake HOME, so the palette lands exactly at
+# \$HOME/.cache/mei/{colors,tones}.json -- inside the project.
+export XDG_CACHE_HOME="\$HOME/.cache"
 export XDG_STATE_HOME="\$RUN/state"
 export XDG_DATA_HOME="\$RUN/data"
 # Read-only: the owner's real .desktop files, so the launcher lists the same
@@ -473,6 +478,15 @@ for i in \$(seq 1 100); do
 done
 note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY"
 
+# Mei's minimal matugen config: [config] only -- no templates, no post_hook, so
+# a palette pass computes colours and writes nothing outside the project.
+mkdir -p "\$XDG_CONFIG_HOME/mei/matugen"
+cp -f "\$MEI_DIR/src/ryoku/shell/matugen/config.toml" "\$XDG_CONFIG_HOME/mei/matugen/config.toml"
+
+note "starting ryogami (stills only); live display guard = \$MEI_HOST_WAYLAND_SOCKET"
+"\$RUN/bin/ryogami" daemon >> "\$log/ryogami.log" 2>&1 &
+RPID=\$!; record "\$RPID" ryogami
+
 note "starting mei-shell daemon"
 "\$RUN/bin/mei-shell" daemon >> "\$log/daemon.log" 2>&1 &
 DPID=\$!; record "\$DPID" mei-shell-daemon
@@ -481,6 +495,8 @@ wait "\$HYPPID"
 note "Hyprland exited; terminating daemon"
 kill -TERM "\$DPID" 2>/dev/null || true
 wait "\$DPID" 2>/dev/null || true
+kill -TERM "\$RPID" 2>/dev/null || true
+wait "\$RPID" 2>/dev/null || true
 note "session done"
 SESSION
   sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__HOST_WAYLAND__|$1|g; s|__BASELINE_SIG__|${2:-}|g" "$RUN_DIR/session.sh"
@@ -519,6 +535,7 @@ cmd_run() {
   : > "$RUN_DIR/logs/session.log"
   : > "$RUN_DIR/logs/hyprland.log"
   : > "$RUN_DIR/logs/daemon.log"
+  : > "$RUN_DIR/logs/ryogami.log"
 
   # The nested compositor opens as a window on the host; the session script
   # scrubs the inherited signature and refuses to start the shell unless the

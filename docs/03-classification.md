@@ -155,8 +155,8 @@ alacritty, tmux, sidra, ryotunes.
 containing `[config]` **only — no `[templates.*]`, no `post_hook`.** With no templates,
 `matugenRenderTemplates` (`matugen.go:1145`) stages an empty filtered config and
 matugen's render pass is a no-op; the `--dry-run` extraction still produces the roles
-the daemon writes into `.run/cache/ryoku/colors.json` + `tones.json`. Set
-`XDG_CONFIG_HOME=.run/config` / `XDG_CACHE_HOME=.run/cache` so the daemon resolves
+the daemon writes into `$HOME/.cache/mei/colors.json` + `tones.json`. Set
+`XDG_CONFIG_HOME=.run/config` / `XDG_CACHE_HOME=$HOME/.cache` (= `.run/home/.cache`) so the daemon resolves
 `matugenConfigHome()`/`matugenCacheHome()` inside the project. Ship **no** templates
 initially. If the owner later wants themed kitty/btop, add a single template whose
 `input_path`/`output_path` are **absolute `~/projects/mei/.run/...` paths** (never

@@ -120,7 +120,7 @@ Everything that matters is built as `Quickshell.env("XDG_*") || HOME + "/.…"` 
 .run/home/Pictures/Wallpapers -> ~/Pictures/Wallpapers   (read-only)
 .run/home/Videos              # empty; recording off
 ```
-Set: `HOME=.run/home`, `XDG_CONFIG_HOME=.run/config`, `XDG_CACHE_HOME=.run/cache`,
+Set: `HOME=.run/home`, `XDG_CONFIG_HOME=.run/config`, `XDG_CACHE_HOME=$HOME/.cache` (= `.run/home/.cache`),
 `XDG_STATE_HOME=.run/state`, `XDG_DATA_HOME=.run/data`,
 `XDG_RUNTIME_DIR=.run/rt`. (Belt-and-braces: even the XDG vars point inside the
 project, so a QML `XDG_CONFIG_HOME || HOME/.config` resolves inside either way.)

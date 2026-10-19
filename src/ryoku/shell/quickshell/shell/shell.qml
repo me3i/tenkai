@@ -178,14 +178,17 @@ ShellRoot {
                 id: wallpaper
                 screen: perScreen.modelData
             }
-            // Desktop widget layer is off in Mei step 1: the bar and wallpaper
-            // are the kept surfaces. The type stays loaded (disabled, not
-            // deleted) so the later widget step can re-enable it by flipping
-            // these two flags.
+            // Step 1 kept the bar and the wallpaper as the shell's surfaces and
+            // turned the desktop widget layer off. The wallpaper painter (and
+            // its reveal transition) lives INSIDE this surface, so the surface
+            // itself must stay visible -- step 5 found that `active: false` left
+            // the screen showing Hyprland's built-in wallpaper. Widgets stay
+            // off: `widgetsEnabled: false` gates every tile, the glass backdrop
+            // and the plugin repeater below.
             Desktop {
                 id: desktop
                 screen: perScreen.modelData
-                active: false
+                active: true
                 widgetsEnabled: false
                 wallpaperUrl: wallpaper.wallpaperUrl
                 wallpaperPath: wallpaper.wallpaperPath

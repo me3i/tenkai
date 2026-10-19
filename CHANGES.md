@@ -3,6 +3,102 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 5: wallpaper + matugen theming
+
+Scope: ryogami stills-only, the wallpaper -> palette path, Mei's minimal matugen config, and
+removal of every app-theming fan-out. Verified: `.run/tools/step5.sh` ->
+`.run/logs/step5-025738.log` (PASS) and the final run (PASS with the wallpaper/launcher
+assertions). Screenshots in `.run/shots/step5-*.png`.
+
+### Copied / not copied
+
+- `src/ryoku/shell/ryogami/daemon/` copied from `upstream/ryoku/shell/ryogami/daemon`
+  (536 KB, vendor included) and built to `.run/bin/ryogami`.
+- **`ryogami/wall-ui/` is NOT copied** (114 files). The picker shell brings Wallhaven/Steam
+  browser services (outbound) and upstream's `pkill -f "quickshell .*<qml>"` launch path; it
+  needs its own pruned step. Its `ui` verb is refused instead (below).
+
+### Stills only (video + depth off)
+
+- `config.go` `wallPrefs()`: `Enabled: false` hard-coded; `shell.wallpaper.video_enabled` is no
+  longer read. `apply.go` `applyWallpaper()` refuses any non-`static` type before doing work.
+- `verbs.go` `depthVerb()` refuses `depth set` / `depth clear`. The shell's stage/depth worker
+  only cuts for a stage effect, and Mei enables none.
+- `process.go` `launch()`: upstream's `pkill -f "quickshell .*"+qml` removed (Mei never kills by
+  name).
+
+### Display guard (refuses the live session)
+
+- `daemon.go` `guardDisplay()`, called at the top of `runDaemon()`: requires
+  `MEI_HOST_WAYLAND_SOCKET` (handed in by `./mei run` as the host's resolved socket) plus
+  `XDG_RUNTIME_DIR` and `WAYLAND_DISPLAY`; refuses when
+  `$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY` equals the live socket, and fails closed when the host
+  value is unset. Logged on success: `ryogami: display guard ok (<nested> != live <host>)`.
+
+### Renames
+
+- `~/.config/ryoku` -> `~/.config/mei` (`meiConfigDir()`, `config.go`, `transitions.go`);
+  `ryoku-shell.sock` -> `mei-shell.sock` (`daynight.go`);
+  `~/.local/state/ryoku-wallpaper[.json]` -> `mei-wallpaper[.json]` (`apply.go`).
+  The `ryogami` name and `RYOGAMI_*` variables stay (not `ryoku*`).
+
+### The wallpaper actually paints now
+
+- `shell.qml`: `Desktop.active` false -> **true** (kept `widgetsEnabled: false`). The wallpaper
+  painter and reveal shader (`WallpaperMod.Backdrop`) live *inside* the Desktop surface, so
+  step 1's `active: false` left the screen showing Hyprland's built-in wallpaper. Every tile,
+  the glass backdrop and the plugin repeater stay gated on `widgetsEnabled`, so no widget
+  layer is enabled.
+
+### The palette follows the wallpaper
+
+- `ipc/daemon.go` `bootstrap()`: added `go d.watchRyogami()`. It was never started, so a
+  wallpaper change never rescheduled the palette pass (found in this step; the daemon had been
+  generating a palette only when `matugen.json` changed).
+
+### matugen: minimal config, no app fan-out
+
+- `src/ryoku/shell/matugen/config.toml` is now `[config]` + an **empty `[templates]`**.
+  matugen 4.2.0 rejects a file containing only `[config]` (`TOML parse error ... missing field
+  templates`), verified by running it directly; the empty table renders nothing. `./mei run`
+  seeds it to `$XDG_CONFIG_HOME/mei/matugen/config.toml`.
+- `matugenTemplateDir()` -> `$XDG_CONFIG_HOME/mei/matugen`; the render pass uses that path
+  directly (no filtered cache copy). Both invocations are logged:
+  `matugen scheme: matugen image …` and
+  `matugen render: matugen -c <config> json <carrier>`.
+- Disabled: the `apps.toml` render (22 app templates), `blankGtk()`, the cursor-recolor
+  goroutine (`ryoku-cursor-material-recolor` + `ActionCursorReassert`), and every part of
+  `matugenReload()` except `nudgePalette()` (no gsettings/libadwaita accent, no gtk-theme
+  flip, no `pkill -USR1 kitty`, no KDE colours). Upstream bodies are kept commented in place.
+- `matugenEnsureDirs()` trimmed from 24 app directories to `cache/mei` + `cache/matugen`.
+- `src/ryoku/shell/matugen/{apps.toml,templates/}` remain but are unreferenced.
+
+### Palette bridge off
+
+- `hub/backend/palettebridge.go` `runPaletteBridge()` refuses every verb, including `status`,
+  so the hub can never install, enable or restart `ryoku-palette-bridge.service` against the
+  real user manager. Nothing listens on 127.0.0.1:47616, and neither binary contains the port
+  string.
+
+### Picker entry points (no dead controls)
+
+- `bar/Frame.qml`: the `"wallpaper"` surface request is dropped (it called
+  `ryogami wallpaper ui`). `launcher/.../actions/catalog.js` still names that verb, but the
+  Actions provider is disabled (step 2 decision), so it cannot fire.
+
+### Confinement
+
+- The generated `.run/session.sh` sets `XDG_CACHE_HOME=$HOME/.cache` (the fake HOME), so the
+  palette lands at `$HOME/.cache/mei/{colors,tones}.json` exactly as specified, and starts
+  ryogami with the guard environment, recording its pid; `./mei stop` terminates the session
+  process group.
+
+### Test assets
+
+- `.run/wall/{wall-1-warm.jpg,wall-2-green.png,wall-3-purple.jpg}` — 228 KB total, copied
+  read-only from `~/Pictures/Wallpapers` (never written back). `prepare_nested_home()`
+  symlinks `~/Pictures/Wallpapers` into the fake HOME read-only.
+
 ## Phase 6 — step 4 amendments (owner decisions 2026-10-20)
 
 Three follow-ups the owner asked for before approving step 5. Verified with

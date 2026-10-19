@@ -283,3 +283,65 @@ hide "CHANGE ON MAP", disable the launcher's weather widget (and say whether it 
 ### Verdict
 
 **PASS.** Loop exited at the boundary. Step 5 (wallpaper + matugen) starts next.
+
+## Step 5 — wallpaper + matugen theming (nested)
+
+Loop: 6 runs of `.run/tools/step5.sh` (three exposed real gaps, then clean passes; the final
+run adds the wallpaper/launcher assertions). Final PASS log: `.run/logs/step5-0259*.log`
+(the previous clean PASS is `.run/logs/step5-025738.log`).
+
+| Acceptance item | Result | Evidence |
+|---|---|---|
+| ryogami runs, stills only | **TESTED** | `wallPrefs()` Enabled:false; `applyWallpaper` refuses non-static; `depthVerb` refuses |
+| guard refuses the live display | **TESTED** | unset -> `MEI_HOST_WAYLAND_SOCKET is unset: refusing`; equal -> `resolves to the live session`; nested -> `display guard ok (/…/.r/wayland-1 != live /run/user/1000/wayland-1)` |
+| nested signature != baseline | **TESTED** | harness check |
+| still wallpaper sets | **TESTED** | wallpaper-area mean `0C1724` -> `BB7165` -> `8A89B0` |
+| reveal transition runs | **TESTED (frames)** | 3 distinct frames at 0.15 s / 0.60 s / settled; **feel UNVERIFIED** |
+| palette regenerates | **TESTED** | `$HOME/.cache/mei/{colors,tones}.json` written; primary `#904b40` |
+| bar recolours | **TESTED** | bar strip mean `B07165` -> `9C7EC5` |
+| launcher recolours | **TESTED** | launcher accent `E4D3CF` -> `DAD9E4` |
+| second wallpaper recolours again | **TESTED** | colors.json hash changes; bar + accent change |
+| matugen + right config path in log | **TESTED** | `matugen render: matugen -c /home/mei/projects/mei/.run/config/mei/matugen/config.toml json …` |
+| no outbound | **TESTED** | `ss -tunp`: ryogami, daemon and shell own no tcp/udp; `go list -deps` has no `net/http` |
+| no 47616 listener | **TESTED** | `ss -ltnp`; neither binary contains the port |
+| no strays after `./mei stop` | **TESTED** | comm-based check: no ryogami/matugen/mei-shell/project quickshell |
+| real configs/caches untouched | **TESTED** | sha256 of `~/.config/{kitty,qt6ct,gtk-3.0}` + absent `{btop,gtk-4.0}`, `~/.cache/{ryoku,matugen}` identical before/after |
+| ryogami resource use | **TESTED** | VmRSS/VmHWM 10.9 MB, 10-11 threads, 0.0% CPU at idle |
+| verify-untouched before/after | **PASS** | both ends |
+
+### Gaps this step exposed (all fixed)
+
+1. **The palette had no trigger**: `bootstrap()` never called `watchRyogami()`, so wallpaper
+   changes never reached matugen. Added.
+2. **The wallpaper never painted**: the reveal Backdrop lives inside the Desktop surface, which
+   step 1 had set `active: false`. The surface is now visible with widgets still off.
+3. **`[config]`-only is not a valid matugen config**: matugen 4.2.0 requires a `templates`
+   field. The shipped file is `[config]` + empty `[templates]`.
+
+### Incident (self-inflicted, reverted)
+
+While testing the guard I ran `.run/bin/ryogami daemon` with only `XDG_RUNTIME_DIR` overridden —
+i.e. with the **real** `HOME` and `XDG_CACHE_HOME`. It created `~/.cache/ryogami/` (20 files:
+thumbnails of the real wallpaper folder, `outputs.json`, `state.json`, `wall-ui.log`) and
+`~/.local/state/mei-wallpaper`. No host ryogami was running and every file in that tree carried
+the run's timestamp, so nothing the owner had was overwritten. I removed exactly those two paths
+and `./mei verify-untouched` PASSes. **Gap for the owner:** `verify-untouched` compares the
+recorded baseline files; it does not notice *new* paths outside that set, so it could not have
+caught this. All later runs set the full fake environment.
+
+### Exclusions reported (opt-in paths)
+
+- `ryogami/wall-ui` picker (114 files, Wallhaven/Steam outbound, pkill-by-name) — not copied;
+  `wallpaper ui` refuses and the bar's wallpaper surface request is dropped.
+- Live video and depth — forced off as above; restore the blocks in `config.go`/`apply.go`.
+- App theming fan-out (`apps.toml`, GTK blanking, cursor recolor, gsettings/kitty) — commented
+  in place in `matugen.go`.
+- Palette bridge — refused in `hub/backend/palettebridge.go`.
+
+### Verdict
+
+**PASS** for everything the nested session can prove. **UNVERIFIED for the owner:** reveal
+animation feel, palette colour correctness/taste, 144 Hz smoothness. Before/after screenshots:
+`.run/shots/step5-01-before.png`, `step5-02-set1-reveal-015.png`,
+`step5-03-set1-reveal-060.png`, `step5-04-set1-settled.png`, `step5-05-set2-settled.png`,
+`step5-launcher-p1.png`, `step5-launcher-p2.png`.

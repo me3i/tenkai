@@ -400,10 +400,12 @@ Scope {
                     function onSurfaceRequested(id, mon, ctx) {
                         if (mon !== "" && mon !== (root.modelData ? root.modelData.name : ""))
                             return;
-                        // The wallpaper + theme picker is the ryogami overlay now
-                        // (Super+W); route its surface request straight there.
+                        // MEI: the ryogami wall-ui picker is not part of this
+                        // build (the daemon's `ui` verb refuses), so a wallpaper
+                        // surface request is dropped instead of launching a
+                        // picker that is not there. Restore the execDetached
+                        // line together with the picker.
                         if (id === "wallpaper") {
-                            Quickshell.execDetached(["ryogami", "wallpaper", "ui"]);
                             return;
                         }
                         frameMenus.openSurface(id, null, mon, ctx);

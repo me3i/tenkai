@@ -1,1 +1,10 @@
+# Mei's minimal matugen config: no [templates.*] entries and no post_hook, so a
+# palette pass computes colours and writes nothing outside the project.
+#
+# matugen 4.2.0 rejects a config that has no `templates` key at all
+# ("missing field `templates`"), so the empty table below is required; it
+# renders nothing. Upstream's config carries the kitty/hypr/btop/qt6ct templates
+# and a post_hook (folder icons + cursor recolor) -- none of that is copied.
 [config]
+
+[templates]
