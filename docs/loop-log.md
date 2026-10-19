@@ -69,3 +69,60 @@ No code change (confirmation run). Second consecutive clean pass.
 **Two consecutive clean runs.** Loop exited. Rebrand is done; stopping for owner review before
 the launcher (step 2). The owner should run `./mei run`, press `SUPER+1/2/3`, watch the pill, and
 confirm the wordmark/spacing reads right in person.
+
+---
+
+## Phase 6 step 2 — Launcher (2 clean runs, 2026-10-19 20:24–20:25)
+
+**Change set:** `CHANGES.md` → "Phase 6 — step 2: launcher". Catalog → `main` only; providers →
+`Apps` + local `Actions`; web/radio/weather/packages/script/snippets/find/calc/media/recent/
+windows disabled; RASHIN panel disabled; real read-only `XDG_DATA_DIRS`; nested
+`SUPER+SPACE → global ryoku:launcher`.
+
+### Harness failures before the clean runs (launcher code unchanged)
+
+| Attempt | Result | Cause | Log |
+|---|---|---|---|
+| 1 | **FAIL (harness)** | the check script resolved the nested instance signature before the compositor wrote it, so `hyprctl -j layers` fed non-JSON to `jq` | `launcher-iter1-harness-fail.log` |
+| 2 | **FAIL (harness)** | it dispatched the shortcut before Quickshell registered `CustomShortcut` (the `qs` process exists earlier) | `launcher-iter1-harness-fail2.log` |
+| 3 | **PASS** | — | `launcher-iter1.log` |
+| 4 | **PASS** (confirmation) | — | `launcher-iter2.log` |
+
+No launcher source changed between attempt 2 and the passes; both failures were marked **FAIL**
+and recorded, never relabelled.
+
+### Acceptance
+
+| Item | Result | Evidence |
+|---|---|---|
+| Opens on the bound key | **TESTED** | nested `bind = SUPER, SPACE, global, ryoku:launcher`; `hyprctl dispatch global ryoku:launcher` → 1 `launcher` layer (the same `ShellState.launcherOpen` transition the shortcut drives) |
+| Lists real installed apps | **TESTED** | query `kitty` → `kitty` (Terminal emulator, `/usr/share/applications/kitty.desktop`); `.run/shots/launcher-202511-search.png` |
+| Lists owner-only apps | **TESTED** | query `sklauncher` → `SKLauncher` from `~/.local/share/applications` via the new read-only `XDG_DATA_DIRS`; `.run/shots/launcher-userdesktop.png` (searched only, not launched) |
+| Launch works, nested only | **TESTED** | Enter → kitty in nested clients; `/proc/<pid>/environ`: `HOME=.run/home`, `XDG_RUNTIME_DIR=.r`, `WAYLAND_DISPLAY=wayland-1`; `.run/shots/launcher-202516-launched.png` |
+| Frecency/state under fake HOME | **TESTED** | `.run/state/mei/launcher-usage.json` = `{"kitty":1}` after a from-scratch delete; `.run/config/mei/launcher.json` (`variant: main`, `showWeather: false`) |
+| Esc closes | **TESTED** | `launcher` layers 1 → 0 |
+| One launcher instance | **TESTED** | `pgrep -fc 'qs -p …/quickshell/shell'` = 1; one `launcher` layer |
+| Bar unaffected | **TESTED** | `.run/shots/launcher-202519-bar.png`; `./mei test` bar-layer + QML-log checks |
+| Zero network | **TESTED** | shell owns no tcp/udp sockets (`ss -tunp`); web/weather/radio providers never instantiated; no `ryoku-cmd-radio` probe in the log |
+| Step-1 regression | **TESTED** | `./mei test`: bar renders, workspaces 1/1, zero outbound, clean shutdown (`launcher-regression-step1.log`) |
+| `verify-untouched` | **TESTED** | PASS before and after both runs, and after `./mei test` |
+| Animation feel / 144 Hz / GPU | **UNVERIFIED** | owner |
+
+### Notes / scope boundaries
+
+- `Actions` is kept only because `variants/main/Launcher.qml` binds `providerSet.actions`. Its
+  catalog is local; the `ryoku-shell`/`ryoku-cmd-*` helpers it names are unbuilt, so those
+  commands fail harmlessly if invoked. It is the `/` command mode.
+- The media card reads MPRIS only; the nested private bus has no player, so remote `artUrl`
+  artwork (a potential outbound fetch) is not exercised. Marked **UNVERIFIED** for the live case.
+- Radio streaming, web search, weather and the RASHIN panel are disabled but still on disk
+  (unreachable). Physical prune is a later pass.
+- `docs/loop-log.md` review (owner request): the rebrand section has **no repeated reverts** and
+  **no FAIL quietly reworded to UNVERIFIED**; the launcher harness failures above are kept as
+  FAIL with their logs.
+
+### Verdict
+
+**Two consecutive clean runs.** Loop exited. Stopping for owner review before the control
+sidebar (step 3). The owner should `./mei run`, press `SUPER+SPACE`, type a query, launch a
+harmless app, press Esc, and judge the motion by feel.

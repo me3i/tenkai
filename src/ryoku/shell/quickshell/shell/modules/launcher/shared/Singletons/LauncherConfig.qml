@@ -31,7 +31,7 @@ Singleton {
 
         JsonAdapter {
             id: adapter
-            property string variant: "hero"
+            property string variant: "main"
             property real radius: 16
             property int bgBlur: 2
             property string weatherUnit: "auto"
@@ -39,7 +39,7 @@ Singleton {
             property real heroStrength: 0.6
             property real heroPosX: 0.5
             property real heroPosY: 0.5
-            property bool showWeather: true
+            property bool showWeather: false
             property bool showGreeting: true
             property int resultSettleMs: 360
             property string horizonMode: "auto"

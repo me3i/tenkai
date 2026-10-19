@@ -3,6 +3,46 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 2: launcher (app search only)
+
+Manifest scope (`docs/04-plan.md` A11): `modules/launcher/shared` + `variants/main`. The
+launcher opens on the compositor global shortcut `ryoku:launcher` (bound to `SUPER+SPACE` in
+the nested test config), searches real XDG `.desktop` entries and launches them. Network and
+off-list providers are **disabled, not deleted**.
+
+- `.../launcher/catalog.json`: `default`/`fallback` `hero`/`okshell` → `main`; only the `main`
+  variant entry remains. The `hero`/`kairos`/`okshell` files stay on disk but are never loaded
+  (physical prune deferred).
+- `.../launcher/shared/providers/Providers.qml`: instantiates only `Actions` + `Apps`. Removed
+  imports/instances for `Web`, `Radio`, `Packages`, `Script`, `Snippets`, `Find`, `Calc`,
+  `Mpris`, `Recent`, `Windows` and their aliases. `Actions` stays because
+  `variants/main/Launcher.qml:233` binds `providerSet.actions`; every command in its catalog is
+  local.
+- `.../launcher/shared/Singletons/LauncherConfig.qml`: default `variant` `hero` → `main`;
+  `showWeather` default `true` → `false`.
+- `.../launcher/shared/Singletons/Weather.qml`: added `readonly property bool online: false`;
+  `fetchWeather()`/`loadLoc()` return early; `Component.onCompleted` no longer replays the
+  cache or starts the IP lookup; the refresh `Timer` runs only when `online`. No Open-Meteo /
+  ip-api request is ever made; the dashboard keeps its date-only readout.
+- `.../launcher/shared/Singletons/Radio.qml`: added `readonly property bool enabled: false`;
+  `refresh()` returns early, so the `ryoku-cmd-radio status` probe is never spawned. The
+  singleton stays because `variants/main/{Launcher,NowPlaying,RadioAside}.qml` bind its state.
+- `.../launcher/variants/main/Launcher.qml`: `askMode` hard `false` (the `\` RASHIN AI panel is
+  off-list; it would open `http://127.0.0.1:3600`).
+- `mei` (control script): `session.sh` exports a read-only `XDG_DATA_DIRS` pointing at the
+  owner's real `~/.local/share` (+ flatpak export) and the system dirs, so the launcher lists
+  the same `.desktop` files as the live session; writes still go to the fake `XDG_DATA_HOME`.
+  The nested config gains `bind = SUPER, SPACE, global, ryoku:launcher`.
+- Test harness only (git-ignored, `.run/tools/`): `vkbd` (a `zwp_virtual_keyboard_v1` client)
+  and `launcher-check.sh`, so real keystrokes drive the launcher search field in the nested
+  session.
+
+Verification (nested; two consecutive clean runs, `.run/logs/launcher-iter{1,2}.log`): opens on
+the bound shortcut; lists real system **and** user `.desktop` apps; launches `kitty` inside the
+nested session (fake HOME, `.r` runtime, nested Wayland); frecency under `.run/state/mei/`; Esc
+closes; one shell instance; no tcp/udp sockets; no radio probe; no QML errors;
+`verify-untouched` PASS before and after. Details in `docs/loop-log.md`.
+
 ## Phase 6 — rebrand (RYOKU → MEI, user-visible only)
 
 Scope: visible branding in kept surfaces; QML module URIs (`Ryoku.*`), D-Bus

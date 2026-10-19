@@ -377,6 +377,7 @@ bind = SUPER, Q, exit,
 bind = SUPER, 1, workspace, 1
 bind = SUPER, 2, workspace, 2
 bind = SUPER, 3, workspace, 3
+bind = SUPER, SPACE, global, ryoku:launcher
 bind = CTRL, RETURN, exec, kitty || true
 CONF
 }
@@ -421,6 +422,9 @@ export XDG_CONFIG_HOME="\$RUN/config"
 export XDG_CACHE_HOME="\$RUN/cache"
 export XDG_STATE_HOME="\$RUN/state"
 export XDG_DATA_HOME="\$RUN/data"
+# Read-only: the owner's real .desktop files, so the launcher lists the same
+# applications as the live session. Writes still go to the fake XDG_DATA_HOME.
+export XDG_DATA_DIRS="$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
 export XDG_RUNTIME_DIR="\$MEI_DIR/.r"
 export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
 export PATH="\$RUN/bin:\$PATH"

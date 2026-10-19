@@ -83,7 +83,14 @@ Singleton {
         }
     }
 
+    // Mei: the radio provider is off-list (it streams network audio). The
+    // singleton stays because the main variant's media card binds its state,
+    // but it never probes or drives the engine.
+    readonly property bool enabled: false
+
     function refresh() {
+        if (!root.enabled)
+            return;
         statusProc.running = false;
         statusProc.running = true;
     }

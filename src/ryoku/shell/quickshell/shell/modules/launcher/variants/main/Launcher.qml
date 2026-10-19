@@ -87,7 +87,8 @@ Item {
     readonly property bool actionBrowse: actionMode && routed.query.length === 0
     // "\" prefix: a one-shot quick ask to the Rashin agent. No provider claims
     // it; the panel owns the whole body and the Enter key while active.
-    readonly property bool askMode: query.length > 0 && query[0] === "\\"
+    // Mei: the AI panel (RASHIN) is off-list; the "\\" prefix is disabled.
+    readonly property bool askMode: false
     readonly property string askQuestion: askMode ? query.slice(1).replace(/^\s+/, "") : ""
     // an async provider is resolving the current query and nothing has come back
     // yet: show a spinner, not a premature "No matches".

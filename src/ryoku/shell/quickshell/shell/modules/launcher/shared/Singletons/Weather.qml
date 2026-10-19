@@ -20,6 +20,10 @@ Singleton {
     // unit override from the launcher config: "" follows the locale (Fahrenheit
     // only for US/LR/MM), "C"/"F" force it. a change refetches in the new unit.
     property string unitOverride: ""
+    // Mei: weather is off-list and network-backed. Keep the singleton (the
+    // rest dashboard binds its unit/available state) but never fetch, locate,
+    // or replay a forecast.
+    readonly property bool online: false
     readonly property string unit: unitOverride === "C" ? "celsius"
         : unitOverride === "F" ? "fahrenheit"
         : Model.unitFor(Quickshell.env("LC_MEASUREMENT") || Quickshell.env("LANG") || "")
@@ -49,6 +53,7 @@ Singleton {
     property bool ready: false
 
     function fetchWeather() {
+        if (!root.online) return;
         if (!root.located || wxProc.running)
             return;
         // build the URL with the unit wanted right now, so a unit switch can't
@@ -93,6 +98,7 @@ Singleton {
     // to read this once at startup and never honour a later change, so it kept
     // showing the previously-located city.
     function loadLoc() {
+        if (!root.online) return;
         if (!root.ready)
             return;
         var c = Model.parseJson(locCache.text());
@@ -109,17 +115,8 @@ Singleton {
 
     Component.onCompleted: {
         root.ready = true;
-        // Replay the last cached forecast so the hero opens on weather
-        // rather than a bare date; the fresh fetch below overwrites it a moment later.
-        var w = wxCache.text();
-        if (w && w.length > 0)
-            root.applyForecast(w);
-        root.loadLoc();
-        // No cache yet (fresh profile): locate by IP for this session. The shell
-        // owns the shared cache, so the launcher never
-        // clobbers the explicit-location resolution.
-        if (!root.located)
-            ipProc.running = true;
+        // Mei: no IP lookup, no forecast fetch, no cache replay. The dashboard
+        // falls back to its date-only readout.
     }
 
     // fresh profile may not have the state dir; mkdir before the forecast cache is written.
@@ -171,7 +168,7 @@ Singleton {
 
     Timer {
         interval: 900000
-        running: true
+        running: root.online
         repeat: true
         // a failed first geolocate (offline boot, DNS hiccup) used to leave
         // weather dead until restart; retry the IP lookup on the same cadence.
