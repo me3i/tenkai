@@ -14,12 +14,9 @@
 #                           re-hash ~/.config/{quickshell,hypr} and re-check live-session state.
 #                           Config-hash/symlink diffs are always fatal. A change of owner PID for a
 #                           watched well-known D-Bus name (Notifications, tray watcher, ScreenSaver,
-#                           secrets, pipewire/pulse, portals) is fatal ONLY while the live Hyprland
-#                           instance is the same one the baseline was captured in (signature match);
-#                           after a session restart every PID churns, so the owner-PID diff becomes
-#                           informational and re-baselining is advised. connection IDs (:1.NNN) and
-#                           app-owned names (steam, protonvpn, kitty, firefox, …) are always ignored.
-#                           Other process diffs are informational unless --strict.
+#                           secrets, pipewire/pulse, portals) is always fatal; connection IDs
+#                           (:1.NNN) and app-owned names (steam, protonvpn, kitty, firefox, …) are
+#                           ignored. Other process diffs are informational unless --strict.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       Phase 6+ (run/test are stubs for now; stop is implemented)
 set -euo pipefail
@@ -133,21 +130,6 @@ capture_qs_instances() {  # $1 = output file
   fi
 }
 
-# The live Hyprland instance signature: unique per compositor start, so it changes
-# on every session restart. Read from the environment, else from the running
-# Hyprland process's environ (the verify shell may not inherit it). Empty if unknown.
-hypr_sig() {
-  if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then printf '%s' "$HYPRLAND_INSTANCE_SIGNATURE"; return 0; fi
-  local p=""; p="$(pgrep -x Hyprland 2>/dev/null | head -n1 || true)"
-  if [ -n "$p" ] && [ -r "/proc/$p/environ" ]; then
-    tr '\0' '\n' < "/proc/$p/environ" | sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' | head -n1
-  fi
-}
-
-baseline_hypr_sig() {  # $1 = env.txt
-  [ -f "$1" ] && sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$1" | head -n1 || true
-}
-
 cmd_baseline() {
   local force=0
   [ "${1:-}" = "--force" ] && force=1
@@ -257,22 +239,9 @@ cmd_verify_untouched() {
     dbus_watch_filter < "$BASE_DIR/dbus-names.txt" > "$tmp/base-watched.tsv"
   fi
   capture_dbus_watched "$tmp/dbus-watched.tsv"
-  local b_sig c_sig session_same=1
-  b_sig="$(baseline_hypr_sig "$BASE_DIR/env.txt")"
-  c_sig="$(hypr_sig)"
-  [ -n "$b_sig" ] && [ -n "$c_sig" ] && [ "$b_sig" != "$c_sig" ] && session_same=0
   note "D-Bus well-known names Mei must not steal (owner PID must not change):"
   if compare_dbus_watched "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv"; then
     note "OK    session bus: all watched names still owned by the same PID"
-  elif [ "$session_same" = 0 ]; then
-    note "INFO  the live Hyprland instance changed since the baseline"
-    note "      baseline signature: $b_sig"
-    note "      current  signature: $c_sig"
-    note "      Every session PID churned on that restart, so the owner-PID diff above proves"
-    note "      nothing about Mei. Config hashes (the authoritative check) still apply. If you"
-    note "      restarted your session intentionally, refresh the snapshot:"
-    note "        ./mei baseline --force"
-    [ "$strict" = 1 ] && rc=1
   else
     note "FAIL  a watched D-Bus name changed owner (a Mei shell must never take these):"
     rc=1
