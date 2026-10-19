@@ -1,11 +1,9 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math"
-	"net/http"
 	"net/url"
 	"os"
 	"regexp"
@@ -538,9 +536,8 @@ type wxConfig struct {
 // wxState holds the weather poller: its topic, its live config, and a wake
 // channel that configure and retry use to force a fresh fetch.
 type wxState struct {
-	topic  *stateTopic
-	client *http.Client
-	sun    *sunState // the day window published to the sun-following features
+	topic *stateTopic
+	sun   *sunState // the day window published to the sun-following features
 
 	mu  sync.Mutex
 	cfg wxConfig
@@ -562,12 +559,11 @@ func (t *stateTopic) hasSubscribers() bool {
 // initial loading frame, and starts the poll loop.
 func (d *daemon) startWeather() {
 	s := &wxState{
-		topic:  d.registerTopic("weather"),
-		client: &http.Client{Timeout: wxHTTPTimeout},
-		cfg:    wxConfig{unit: "auto", clock24: true},
-		sun:    d.sun,
-		wake:   make(chan struct{}, 1),
-		quit:   d.quit,
+		topic: d.registerTopic("weather"),
+		cfg:   wxConfig{unit: "auto", clock24: true},
+		sun:   d.sun,
+		wake:  make(chan struct{}, 1),
+		quit:  d.quit,
 	}
 	s.publishFrame(wxFrame{Status: "loading", Hourly: []wxHour{}, Daily: []wxDay{}})
 
@@ -827,31 +823,11 @@ func (s *wxState) fetchAir(lat, lon float64) (*wxAirResponse, error) {
 
 // getJSON performs a GET and decodes JSON, mapping transport and status failures
 // to the reference error kinds.
+// MEI: weather is off the keep list and the daemon is local-only. Mei compiles
+// the HTTP client out entirely (no net/http import in this file), so no weather
+// request can be built. Every caller lands on its existing network-error path.
 func (s *wxState) getJSON(rawURL string, out any) (string, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), wxHTTPTimeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return wxErrOther, err
-	}
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return wxErrNetwork, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusTooManyRequests {
-		return wxErrRateLimited, fmt.Errorf("rate limited")
-	}
-	if resp.StatusCode >= 500 {
-		return wxErrOther, fmt.Errorf("provider status %d", resp.StatusCode)
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return wxErrOther, fmt.Errorf("provider status %d", resp.StatusCode)
-	}
-	if err := json.NewDecoder(resp.Body).Decode(out); err != nil {
-		return wxErrOther, err
-	}
-	return "", nil
+	return wxErrNetwork, fmt.Errorf("mei: outbound network disabled")
 }
 
 // currentHourIndex finds the entry for the current hour: the last entry whose

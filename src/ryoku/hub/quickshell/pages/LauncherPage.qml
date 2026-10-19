@@ -401,6 +401,10 @@ Item {
                         onToggled: (v) => pg.edit("showGreeting", v)
                     }
                 }
+                /* MEI: weather is off the keep list (no daemon weather, no
+                   network). These two rows controlled a widget that can no
+                   longer appear. Disabled, not deleted -- restore by
+                   removing this comment marker.
                 SettingRow {
                     anchors.left: parent.left; anchors.right: parent.right
                     divider: true
@@ -434,6 +438,7 @@ Item {
                         onChose: (l) => pg.edit("weatherUnit", pg.unitKey(l))
                     }
                 }
+                */
                 SettingRow {
                     anchors.left: parent.left; anchors.right: parent.right
                     divider: true

@@ -3,6 +3,56 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 4 amendments (owner decisions 2026-10-20)
+
+Three follow-ups the owner asked for before approving step 5. Verified with
+`.run/tools/step4b.sh` → `.run/logs/step4b-022341.log` (PASS) and the screenshot
+`.run/shots/step4b-hub-generic-general.png`, `.run/shots/step4b2-launcher-open.png`.
+
+### 1. The daemon can no longer reach the network (compiled out)
+
+Weather, music and calendar are off the keep list and "zero outbound connections" is a stated
+goal, so the HTTP client is **removed from the daemon**, not merely left dormant:
+
+- `src/ryoku/shell/ipc/weather.go`: dropped `net/http` + the `http.Client`; `getJSON` is a stub
+  that returns `wxErrNetwork` ("mei: outbound network disabled"). Every weather poll lands on its
+  existing error path.
+- `src/ryoku/shell/ipc/music.go`: dropped `net/http` + the `http.Client`; `cacheArt` returns a
+  cached cover if one exists (never fetches) and `getJSON` (lyrics/canvas) is a stub.
+- `src/ryoku/shell/ipc/calendar.go`: dropped `net/http` + the `http.Client`; the holiday-service
+  fetch is compiled out (a cached year is still served, even stale; with no cache the year is
+  unavailable). The dead `calendarAPI`/`baseURL` were removed too.
+- Proven: `go list -deps` on the daemon does **not** contain `net/http` (only `net`, for unix
+  sockets); `grep` finds no `http.Client` outside comments; at runtime neither the daemon, the
+  shell nor the hub owned a tcp/udp socket (`ss -tunp`, three pids). Inert URL *strings* remain in
+  the binary (they are data inside the now-unreachable resolvers), but no transport is linked.
+
+### 2. "CHANGE ON MAP" hidden
+
+`src/ryoku/hub/quickshell/SettingsSheet.qml`: the timezone row's `CHANGE ON MAP` button is
+`visible: false` (it did nothing; the timezone is display-only). Kept in place, not deleted.
+
+### 3. The launcher's weather widget is off (it was already offline)
+
+The launcher's own `Weather` singleton was hard-disabled in step 2 (`online: false`; fetch,
+locate and cache-replay all return early; the refresh `Timer` is off), so it made **no calls**;
+it was rendering a date-only readout. Now the dead UI is gone as well:
+
+- `launcher/variants/main/Preview.qml`: `showWeather` forced `false` (it was drawing a hardcoded
+  "21°C / Clear sky" placeholder in the Settings preview).
+- `launcher/variants/hero/Preview.qml`: both weather blocks `visible: false`.
+- `hub/quickshell/pages/LauncherPage.qml`: the "Show weather" and "Weather units" rows are
+  commented out (they controlled a widget that can no longer appear).
+- `hub/quickshell/pages/GlobalPage.qml`: the General page drops the `weatherLocation` and
+  `weatherUnit` rows (the former claimed "empty reads it from your IP" and did nothing).
+- `bar/barstyles/qsbar/modules/WeatherWidget.qml`: `implicitWidth: 0`, so the bar's G8 island
+  reserves no space for the data-less weather slot (the wrapper's `visible: width > 0.5` hides it).
+
+**Still data-less and reported, not changed:** the bar's dashboard popup (`DashboardPopup.qml`)
+and the clock menu's `MenuWeather` still have weather tiles. They were already empty before this
+change (the daemon never started the weather topic); hiding them means a bento/column layout
+change, so it is left for the owner to call.
+
 ## Phase 6 — step 4: Settings app (`mei-hub`)
 
 Manifest scope (`docs/04-plan.md` 6.4): the Ryoku Settings app, copied to `src/ryoku/hub` and

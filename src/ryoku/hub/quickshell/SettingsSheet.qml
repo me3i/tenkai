@@ -500,6 +500,9 @@ Item {
                                             }
                                             Btn {
                                                 anchors.verticalCenter: parent.verticalCenter
+                                                // MEI: the timezone is display-only, so this button
+                                                // did nothing. Hidden, not deleted.
+                                                visible: false
                                                 text: I18n.tr("CHANGE ON MAP")
                                                 onAct: sheet.timezonePick(srow.r)
                                             }

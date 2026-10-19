@@ -1,14 +1,11 @@
 package main
 
 import (
-	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -104,9 +101,8 @@ type musicFrame struct {
 // musicState holds the resolver: its topic, the track it is resolving, and the
 // generation that invalidates in-flight work when the track changes.
 type musicState struct {
-	topic  *stateTopic
-	client *http.Client
-	dir    string
+	topic *stateTopic
+	dir   string
 
 	mu    sync.Mutex
 	gen   int
@@ -118,9 +114,8 @@ type musicState struct {
 // empty frame so a surface that loads before anything plays has state to bind.
 func (d *daemon) startMusic() {
 	s := &musicState{
-		topic:  d.registerTopic("music"),
-		client: &http.Client{Timeout: musHTTPTimeout},
-		dir:    musicCacheDir(),
+		topic: d.registerTopic("music"),
+		dir:   musicCacheDir(),
 	}
 	s.publish()
 
@@ -709,48 +704,15 @@ func musicLocalArt(raw string) (string, bool) {
 	return path, true
 }
 
-// cacheArt downloads a cover into the cache and returns its path. A cover
-// already cached is reused, so a replayed track costs no request.
+// MEI: remote artwork is off the keep list and the daemon is local-only, so the
+// cover download is compiled out (no net/http import in this file). A cover
+// already in the cache is still returned; nothing new is fetched.
 func (s *musicState) cacheArt(remote string) (string, error) {
-	dir := filepath.Join(s.dir, "art")
-	path := filepath.Join(dir, musicHash(remote)+musicArtExt(remote))
+	path := filepath.Join(s.dir, "art", musicHash(remote)+musicArtExt(remote))
 	if info, err := os.Stat(path); err == nil && info.Size() >= musMinArtBytes {
 		return path, nil
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return "", err
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), musHTTPTimeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, remote, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("User-Agent", musUserAgent)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return "", fmt.Errorf("cover status %d", resp.StatusCode)
-	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, musMaxArtBytes))
-	if err != nil {
-		return "", err
-	}
-	if len(body) < musMinArtBytes || !musicIsImage(body) {
-		return "", fmt.Errorf("cover is not an image")
-	}
-	tmp := path + ".part"
-	if err := os.WriteFile(tmp, body, 0o644); err != nil {
-		return "", err
-	}
-	if err := os.Rename(tmp, path); err != nil {
-		_ = os.Remove(tmp)
-		return "", err
-	}
-	return path, nil
+	return "", fmt.Errorf("mei: outbound network disabled")
 }
 
 // musicIsImage sniffs the magic bytes: YouTube answers a missing thumbnail size
@@ -854,26 +816,10 @@ func musicCatalogQuery(title, artist, album string) string {
 	return strings.Join(parts, " ")
 }
 
+// MEI: lyrics/canvas lookups are compiled out with the rest of the outbound
+// path; nothing is fetched over the network.
 func (s *musicState) getJSON(rawURL string, out any) error {
-	ctx, cancel := context.WithTimeout(context.Background(), musHTTPTimeout)
-	defer cancel()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("User-Agent", musUserAgent)
-	resp, err := s.client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusNotFound {
-		return fmt.Errorf("not found")
-	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("provider status %d", resp.StatusCode)
-	}
-	return json.NewDecoder(io.LimitReader(resp.Body, 4<<20)).Decode(out)
+	return fmt.Errorf("mei: outbound network disabled")
 }
 
 // musicParseLRC turns an LRC document into sorted timed lines. A line can carry

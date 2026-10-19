@@ -257,3 +257,29 @@ One clean run: `.run/logs/step4-015917.log`. Earlier runs in this step were harn
 owner review before wallpaper / notifications / tray (not started). The owner should `./mei run`,
 open Settings from the quick-settings rail and from the bar, move the **Motion → Speed** slider
 and watch the shell's panels, then RESET and confirm 100%.
+
+## Step 4 amendments (2026-10-20)
+
+Owner decisions after approving step 4: neuter weather/music/calendar outbound in the daemon,
+hide "CHANGE ON MAP", disable the launcher's weather widget (and say whether it called).
+
+| Item | Result | Evidence |
+|---|---|---|
+| daemon has no HTTP transport | **TESTED** | `go list -deps` = no `net/http` (only `net`, unix sockets); no `http.Client` in source |
+| no tcp/udp on daemon / shell / hub | **TESTED** | `ss -tunp` — 3 pids, no sockets (`step4b-022341.log`) |
+| launcher weather made no calls | **TESTED** | `Weather.qml`: `online:false`, fetch/locate/replay guarded, timer off |
+| launcher shows date only | **TESTED** | `.run/shots/step4b2-launcher-open.png` |
+| General page has no CHANGE ON MAP / weather rows | **TESTED** | `.run/shots/step4b-hub-generic-general.png` |
+| bar weather slot collapsed | **TESTED (source)** | `WeatherWidget.qml` `implicitWidth: 0`; screenshot of the collapsed bar not captured (grim crop failed) |
+| verify-untouched before/after | **PASS** | both runs |
+| clean shutdown, no strays | **TESTED** | both runs |
+
+- Two harness runs: `step4b-022032.log` (General page still showed the inert Location field —
+  fixed), `step4b-022341.log` (PASS), `step4b2-022600.log` (real-launcher shot, PASS).
+- **Reported, not changed:** the dashboard popup and clock menu still carry data-less weather
+  tiles (pre-existing; layout change deferred to the owner).
+- Audio/mute re-check by the owner: volume 1.00, not muted; PipeWire symlink absent from `.run/rt`.
+
+### Verdict
+
+**PASS.** Loop exited at the boundary. Step 5 (wallpaper + matugen) starts next.

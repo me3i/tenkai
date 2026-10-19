@@ -3,9 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,8 +12,6 @@ import (
 	"sync"
 	"time"
 )
-
-const calendarAPI = "https://nagerholidays.com/api/v4/Holidays"
 
 var calendarRegionPattern = regexp.MustCompile(`^[A-Za-z]{2}(?:-[A-Za-z0-9]{1,8})?$`)
 
@@ -45,8 +40,6 @@ type calendarFrame struct {
 
 type calendarState struct {
 	topic    *stateTopic
-	client   *http.Client
-	baseURL  string
 	cacheDir string
 	now      func() time.Time
 
@@ -137,33 +130,10 @@ func (s *calendarState) loadYear(country, subdivision string, year int) ([]calen
 		}
 	}
 
-	requestURL := strings.TrimRight(s.baseURL, "/") + "/" + country + "/" + strconv.Itoa(year)
-	response, err := s.client.Get(requestURL)
-	if err == nil && response != nil {
-		defer response.Body.Close()
-		if response.StatusCode != http.StatusOK {
-			err = fmt.Errorf("holiday service returned %s", response.Status)
-		} else {
-			var body []byte
-			body, err = io.ReadAll(io.LimitReader(response.Body, 2<<20))
-			if err == nil {
-				var parsed []nagerHoliday
-				parsed, err = decodeHolidayBytes(body)
-				if err == nil {
-					if mkdirErr := os.MkdirAll(filepath.Dir(path), 0o755); mkdirErr == nil {
-						tmp := path + ".tmp"
-						if writeErr := os.WriteFile(tmp, body, 0o600); writeErr == nil {
-							_ = os.Rename(tmp, path)
-						}
-					}
-					return filterCalendarHolidays(parsed, subdivision), "network", nil
-				}
-			}
-		}
-	}
-	if err == nil {
-		err = errors.New("holiday service unavailable")
-	}
+	// MEI: the holiday service fetch is compiled out (no net/http import here).
+	// A cached year is still served, even stale; with no cache the year is
+	// simply unavailable.
+	err := errors.New("mei: outbound network disabled")
 	if cachedErr == nil && decodeErr == nil {
 		return filterCalendarHolidays(cached, subdivision), "stale-cache", err
 	}
@@ -172,8 +142,8 @@ func (s *calendarState) loadYear(country, subdivision string, year int) ([]calen
 
 func (d *daemon) startCalendar() {
 	s := &calendarState{
-		topic: d.registerTopic("calendar"), client: &http.Client{Timeout: 10 * time.Second},
-		baseURL: calendarAPI, cacheDir: calendarCacheDir(), now: time.Now,
+		topic:    d.registerTopic("calendar"),
+		cacheDir: calendarCacheDir(), now: time.Now,
 	}
 	s.publish(calendarFrame{Status: "loading", Days: []calendarHoliday{}})
 	d.registerCall("calendar.configure", func(raw json.RawMessage) (any, error) {

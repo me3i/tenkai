@@ -29,6 +29,11 @@ Item {
         var out = [];
         for (var i = 0; i < GlobalSchema.rows.length; i++) {
             var r = GlobalSchema.rows[i];
+            // MEI: weather is off the keep list (no daemon weather, no network),
+            // so the Location and Temperature-units rows are dropped. They stay in
+            // schema/GlobalPage.js; remove this guard to restore them.
+            if (r.key === "weatherLocation" || r.key === "weatherUnit")
+                continue;
             if (r.key === "fontFamily" || r.key === "timezone") {
                 var c = {};
                 for (var k in r)
