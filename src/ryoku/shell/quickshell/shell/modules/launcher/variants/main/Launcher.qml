@@ -75,7 +75,9 @@ Item {
         if (askMode) return "RASHIN";
         return "";
     }
-    readonly property bool actionMode: routed.provider === "actions"
+    // Mei: the "/" command mode is disabled with the Actions provider (owner
+    // decision); the catalog's commands point at helpers Mei does not build.
+    readonly property bool actionMode: false
     // "?" prefix with a non-empty query and an available DDG answer: the
     // AnswerPanel takes the body above the Search fallback row.
     readonly property bool answerMode: routed.prefix === "?"
@@ -230,12 +232,14 @@ Item {
     Component.onCompleted: root.scheduleEvaluation()
 
 
-    Binding {
-        target: providerSet.actions
-        property: "activeCategory"
-        value: tabs.activeCategory
-        when: root.actionMode
-    }
+    // Mei: disabled with the Actions provider (owner decision). Kept here so the
+    // upstream binding is visible if the command mode is ever re-enabled.
+    // Binding {
+    //     target: providerSet.actions
+    //     property: "activeCategory"
+    //     value: tabs.activeCategory
+    //     when: root.actionMode
+    // }
 
     onShownChanged: {
         if (shown) {

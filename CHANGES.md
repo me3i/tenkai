@@ -13,11 +13,14 @@ off-list providers are **disabled, not deleted**.
 - `.../launcher/catalog.json`: `default`/`fallback` `hero`/`okshell` → `main`; only the `main`
   variant entry remains. The `hero`/`kairos`/`okshell` files stay on disk but are never loaded
   (physical prune deferred).
-- `.../launcher/shared/providers/Providers.qml`: instantiates only `Actions` + `Apps`. Removed
-  imports/instances for `Web`, `Radio`, `Packages`, `Script`, `Snippets`, `Find`, `Calc`,
-  `Mpris`, `Recent`, `Windows` and their aliases. `Actions` stays because
-  `variants/main/Launcher.qml:233` binds `providerSet.actions`; every command in its catalog is
-  local.
+- `.../launcher/shared/providers/Providers.qml`: instantiates `Apps` only. Removed
+  imports/instances for `Actions`, `Web`, `Radio`, `Packages`, `Script`, `Snippets`, `Find`,
+  `Calc`, `Mpris`, `Recent`, `Windows` and their aliases. The `/` command mode is disabled with
+  the Actions provider (owner decision): `variants/main/Launcher.qml` pins `actionMode: false`,
+  its `providerSet.actions` category `Binding` is commented out, and `SearchRow.qml`'s hint is
+  now "Search apps". The provider files remain on disk.
+- `.../launcher/variants/main/SearchRow.qml`: placeholder "Search apps, type / for commands" →
+  "Search apps" (the command mode is off).
 - `.../launcher/shared/Singletons/LauncherConfig.qml`: default `variant` `hero` → `main`;
   `showWeather` default `true` → `false`.
 - `.../launcher/shared/Singletons/Weather.qml`: added `readonly property bool online: false`;

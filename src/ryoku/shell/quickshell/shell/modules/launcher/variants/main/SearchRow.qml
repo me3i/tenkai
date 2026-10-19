@@ -53,7 +53,7 @@ Item {
         color: Theme.cream
         font.family: Theme.font
         font.pixelSize: MainMetrics.fontSearch * root.s
-        placeholderText: I18n.tr("Search apps, type / for commands")
+        placeholderText: I18n.tr("Search apps")
         placeholderTextColor: Theme.faint
         selectByMouse: true
         selectionColor: Theme.verm

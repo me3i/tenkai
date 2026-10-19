@@ -126,3 +126,30 @@ and recorded, never relabelled.
 **Two consecutive clean runs.** Loop exited. Stopping for owner review before the control
 sidebar (step 3). The owner should `./mei run`, press `SUPER+SPACE`, type a query, launch a
 harmless app, press Esc, and judge the motion by feel.
+
+---
+
+## Launcher amendment — "/" command mode + Actions off (owner decision, 2 clean runs, 20:32–20:33)
+
+**Change set:** `CHANGES.md` → step-2 section. `Providers.qml` is `Apps` only; `actionMode`
+pinned false and its category `Binding` commented out in `variants/main/Launcher.qml`;
+`SearchRow.qml` hint → "Search apps". Provider files stay on disk (disabled, not deleted).
+
+| Item | Result | Evidence |
+|---|---|---|
+| App search still works after the change | **TESTED** | two clean runs `.run/logs/launcher-actions-off-iter{1,2}.log` (open, search, launch kitty, fake-HOME state, Esc) |
+| `/` no longer enters a command mode | **TESTED** | typing `/` shows "No matches", no ACTIONS chip, no category tabs; `.run/shots/launcher-203307-slash.png` |
+| No `providerSet.actions` QML error | **TESTED** | shell log clean in both runs |
+| `verify-untouched` | **TESTED** | PASS before and after both runs |
+| Animation feel | **UNVERIFIED** | owner |
+
+### Verdict
+
+**Two consecutive clean runs.** Amendment done; stopping for owner review before step 3.
+
+---
+
+## Phase 6 step 3 — Control sidebar / quick settings (2026-10-19 20:34–…)
+
+**Change set:** `CHANGES.md` → "Phase 6 — step 3". Scope and acceptance below; filled in as the
+loop runs.
