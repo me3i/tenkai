@@ -426,28 +426,45 @@ baseline_hypr_sig() {
 
 write_nested_conf() {
   mkdir -p "$RUN_DIR/hypr"
-  [ -f "$RUN_DIR/hypr/nested.conf" ] && return 0
-  cat > "$RUN_DIR/hypr/nested.conf" <<'CONF'
-# Mei nested test compositor. Lives only in .run/hypr; never the owner's config.
-# Hyprland 0.56.2 accepts hyprlang .conf (verified with --verify-config).
-general {
-    border_size    = 1
-    gaps_in        = 4
-    gaps_out       = 8
-    resize_on_border = true
-}
-decoration { rounding = 6 }
-misc { disable_hyprland_logo = true force_default_wallpaper = 0 }
+  # Lua, not hyprlang: Hyprland 0.56.2 still accepts the legacy .conf form but
+  # warns that 0.57 removes it, and the nested test would stop launching. Every
+  # call below is taken from Hyprland's own shipped example
+  # (/usr/share/hypr/hyprland.lua) or from upstream Ryoku's Lua modules — no
+  # invented API. Lives only in .run/hypr; never the owner's config.
+  [ -f "$RUN_DIR/hypr/nested.lua" ] && return 0
+  cat > "$RUN_DIR/hypr/nested.lua" <<'LUA'
+-- Mei nested test compositor. Never the owner's config.
+hl.config({
+    general = {
+        border_size = 1,
+        gaps_in = 4,
+        gaps_out = 8,
+        resize_on_border = true,
+    },
+    decoration = { rounding = 6 },
+    misc = {
+        disable_hyprland_logo = true,
+        force_default_wallpaper = 0,
+        -- Hyprland pops a notification ("started without start-hyprland") for
+        -- any instance not launched by the start-hyprland watchdog. The nested
+        -- test compositor is launched directly on purpose, so silence the notice
+        -- here, in the test config only. Verified against this binary:
+        -- `strings /usr/bin/Hyprland | grep disable_watchdog_warning`, and
+        -- `Hyprland --verify-config -c .run/hypr/nested.lua` -> config ok.
+        disable_watchdog_warning = true,
+    },
+})
 
-# A few binds so the owner can drive the nested instance only.
-bind = SUPER, Q, exit,
-bind = SUPER, 1, workspace, 1
-bind = SUPER, 2, workspace, 2
-bind = SUPER, 3, workspace, 3
-bind = SUPER, SPACE, global, ryoku:launcher
-bind = SUPER, ESCAPE, global, ryoku:quicksettings
-bind = CTRL, RETURN, exec, kitty || true
-CONF
+-- A few binds so the owner can drive the nested instance only.
+-- hyprctl here resolves the nested signature from this compositor's env.
+hl.bind("SUPER + Q", hl.dsp.exec_cmd("hyprctl dispatch exit"))
+hl.bind("SUPER + 1", hl.dsp.focus({ workspace = 1 }))
+hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }))
+hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }))
+hl.bind("SUPER + SPACE", hl.dsp.global("ryoku:launcher"))
+hl.bind("SUPER + ESCAPE", hl.dsp.global("ryoku:quicksettings"))
+hl.bind("CTRL + RETURN", hl.dsp.exec_cmd("kitty"))
+LUA
 }
 
 prepare_nested_home() {
@@ -519,7 +536,7 @@ note() { printf '%s\\n' "\$*" >> "\$log/session.log"; }
 record() { local p="\$1" n="\$2"; local pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\\t%s\\t%s\\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
 
 note "starting nested Hyprland"
-Hyprland -c "\$RUN/hypr/nested.conf" >> "\$log/hyprland.log" 2>&1 &
+Hyprland -c "\$RUN/hypr/nested.lua" >> "\$log/hyprland.log" 2>&1 &
 HYPPID=\$!; record "\$HYPPID" hyprland-nested
 
 sig=""

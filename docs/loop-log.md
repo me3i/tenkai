@@ -371,3 +371,22 @@ Two defects found while doing (c):
 Still OPEN (UNVERIFIED, owner-only): reveal feel, palette taste, 144 Hz. And with the weather
 islands hidden the dashboard's lower-right quadrant is empty — acceptable or wants the clock
 island to grow? Owner's call.
+
+## Nested test compositor: hyprlang `.conf` -> Lua (owner request, 2026-10-20)
+
+`write_nested_conf()` in `mei` now emits `.run/hypr/nested.lua`, and the session template launches
+`Hyprland -c "$RUN/hypr/nested.lua"`. Reason: Hyprland 0.56.2 still parses `.conf` but warns that
+0.57 removes the format, which would have stopped the nested test from launching after an upgrade.
+The owner's live session already uses Lua and was not involved.
+
+| Check | Result |
+|---|---|
+| `Hyprland --verify-config -c .run/hypr/nested.lua` | `config ok`; Hyprland logs `[cfg] Config is lua, loading lua mgr` |
+| API used | only forms from `/usr/share/hypr/hyprland.lua` (`hl.config`, `hl.bind`, `hl.dsp.focus`, `hl.dsp.exec_cmd`, `hl.dsp.global`) and upstream `ryoku/hyprland/modules/*.lua` — nothing invented |
+| `.conf` deprecation toast | TESTED gone. Before: `.run/shots/step6-03-normal-popup.png` (04:49, `.conf`) shows both toasts top-right. After: `.run/shots/step5-01-before.png` (05:00, Lua) shows neither. Same capture path (`grim -o` on the nested output). |
+| "started without start-hyprland" toast | Silenced with `misc:disable_watchdog_warning`. The key exists in this binary (`strings /usr/bin/Hyprland`), and at runtime `hyprctl getoption misc:disable_watchdog_warning` -> `bool: true`, `set: true`. |
+| startup *log* line | Still printed: `WARN ]: WARNING: Hyprland is being launched without start-hyprland.` It is emitted before the config is parsed, so no config key can remove it. Harmless in a log; the visible toast is what the option controls. |
+| bar/launcher re-run after the change | TESTED twice, two consecutive clean runs: `.run/logs/step5-045946.log` and `step5-050041.log`, both `RESULT: PASS` with 0 `FAIL` lines, 33 `TESTED` each, verify-untouched PASS at both ends. |
+
+`~/.config/hypr` was never read from or written to: `./mei verify-untouched` PASS before and after
+every run in this change.
