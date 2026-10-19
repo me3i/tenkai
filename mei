@@ -532,6 +532,10 @@ unset XDG_VIDEOS_DIR XDG_PICTURES_DIR XDG_DOCUMENTS_DIR XDG_DOWNLOAD_DIR \\
 unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
 
 log="\$RUN/logs"; pidfile="\$RUN/pids"
+# The private bus dbus-run-session gave us. Recorded so a harness on the host can
+# reach org.freedesktop.Notifications etc. on the *nested* bus only; the live
+# bus stays at its own address and is never touched.
+printf '%s\\n' "\${DBUS_SESSION_BUS_ADDRESS:-}" > "\$RUN/bus"
 note() { printf '%s\\n' "\$*" >> "\$log/session.log"; }
 record() { local p="\$1" n="\$2"; local pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\\t%s\\t%s\\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
 

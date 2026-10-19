@@ -5,6 +5,7 @@ import Quickshell.Wayland
 import Quickshell.Io
 import Quickshell.Services.Notifications
 import Ryoku.Ui.Singletons
+import shell.services as Services
 
 PanelWindow {
     id: notifPanel
@@ -21,158 +22,35 @@ PanelWindow {
     readonly property int barBottom: root.v2BarHeight
     readonly property int gap: 6
 
-    // ── native quickshell notification server ──────────────────────────────
-    // Quickshell becomes its own org.freedesktop.Notifications D-Bus provider
-    NotificationServer {
-        id: notifServer
-        keepOnReload: true       // survive quickshell hot-reloads
-        bodySupported: true
-        imageSupported: true
-        actionsSupported: true
-
-        onNotification: function(notification) {
-            notification.tracked = true   // keep it alive / don't auto-discard
-
-            var key = "n:" + notification.id + ":" + (++notifPanel.seq)
-
-            // keep a transient (non-persisted) live reference so dismiss/invoke
-            // can still reach the real Notification object while it's alive
-            var lm = notifPanel.liveMap
-            lm[key] = notification
-            notifPanel.liveMap = lm
-
-            var entry = {
-                key: key,
-                appName: notification.appName || "",
-                summary: notification.summary || "",
-                body: notification.body || "",
-                firstSeen: notifPanel.seq
-            }
-
-            var out = [entry].concat(notifPanel.recent)
-            if (out.length > 50) out = out.slice(0, 50)
-            notifPanel.recent = out            // reassign → bindings fire
-            notifPanel.pruneDismissed()
-
-            // when the notification closes (app withdrew it, expired, or we
-            // dismissed it) drop the live ref; the history entry stays put
-            notification.closed.connect(function(reason) {
-                var lm2 = notifPanel.liveMap
-                delete lm2[key]
-                notifPanel.liveMap = lm2
-            })
-
-            notifPanel.saveCache()
-        }
-    }
-
-    property var recent: []             // [{key,appName,summary,body,firstSeen}]
-    property var dismissed: ({})         // key -> true (persisted)
-    property var liveMap: ({})           // key -> live Notification (transient, not persisted)
-    property int seq: 0                  // monotonic first-seen counter (ordering)
-    property bool cacheLoaded: false
-    property string lastSaved: ""
-
-    // pending = not dismissed → drives both the list and the badge
-    readonly property var pending: {
-        var out = []
-        for (var i = 0; i < recent.length; i++)
-            if (!dismissed[recent[i].key]) out.push(recent[i])
-        return out
-    }
-    readonly property int unreadCount: pending.length
+    // ── data comes from the one shell-wide server ──────────────────────────
+    // MEI: this flyout used to own a second NotificationServer *and* a private
+    // ~/.cache/qs-rise-notifications.json cache, so two servers raced for
+    // org.freedesktop.Notifications and the popups could disagree with this
+    // list. The single server lives in services/Notifs.qml; this panel is now a
+    // view over Notifs.history (newest first; transient and expire_timeout 0
+    // excluded there). No cache: the queue dies with the process, and nothing
+    // outside ~/projects/mei is written.
+    readonly property var pending: Services.Notifs.history
+    readonly property int unreadCount: Services.Notifs.history.length
     // scrollable list height cap, clamped to the monitor
     readonly property int listCap: Math.max(120, Math.min(420, notifPanel.height - 220))
 
     Binding { target: root; property: "notifCount"; value: notifPanel.unreadCount }
 
-    // ── persistent cache (quickshell is the sole writer; write only on change) ──
-    readonly property string cachePath: Quickshell.env("HOME") + "/.cache/qs-rise-notifications.json"
-    FileView {
-        id: cacheFile
-        path: notifPanel.cachePath
-        onLoaded: {
-            try {
-                var j = JSON.parse(cacheFile.text())
-                notifPanel.seq       = j.seq || 0
-                notifPanel.recent    = Array.isArray(j.recent) ? j.recent : []
-                notifPanel.dismissed = (j.dismissed && typeof j.dismissed === "object") ? j.dismissed : ({})
-                notifPanel.lastSaved = cacheFile.text()
-            } catch (e) {
-                notifPanel.recent = []; notifPanel.dismissed = ({})
-            }
-            notifPanel.cacheLoaded = true
-        }
-        onLoadFailed: {                  // first run: no cache yet
-            notifPanel.cacheLoaded = true
-        }
-    }
-    // force the initial load (don't rely on implicit auto-load)
-    Component.onCompleted: cacheFile.reload()
-
-    function saveCache() {
-        if (!notifPanel.cacheLoaded) return
-        var state = JSON.stringify({
-            seq: notifPanel.seq,
-            recent: notifPanel.recent,
-            dismissed: notifPanel.dismissed
-        })
-        if (state === notifPanel.lastSaved) return   // no real change → no write
-        notifPanel.lastSaved = state
-        cacheFile.setText(state)
-    }
-
-    // prune dismissed keys that fell off the (max 50) retained history
-    function pruneDismissed() {
-        var present = {}
-        for (var i = 0; i < notifPanel.recent.length; i++) present[notifPanel.recent[i].key] = true
-        var nd = {}, changed = false
-        for (var k in notifPanel.dismissed) {
-            if (present[k]) nd[k] = true; else changed = true
-        }
-        if (changed) notifPanel.dismissed = nd
-    }
-
     // ── actions ──
     function dismissOne(entry) {
-        var nd = {}
-        for (var k in notifPanel.dismissed) nd[k] = true
-        nd[entry.key] = true
-        notifPanel.dismissed = nd                // reassign → bindings update
-
-        var live = notifPanel.liveMap[entry.key]
-        if (live) {
-            live.tracked = false                 // == live.dismiss()
-            var lm = notifPanel.liveMap
-            delete lm[entry.key]
-            notifPanel.liveMap = lm
-        }
-        notifPanel.saveCache()
+        Services.Notifs.dismiss(entry)
     }
 
     function dismissAll() {
-        var nd = {}
-        for (var k in notifPanel.dismissed) nd[k] = true
-        for (var i = 0; i < notifPanel.recent.length; i++) nd[notifPanel.recent[i].key] = true
-        notifPanel.dismissed = nd
-
-        for (var k2 in notifPanel.liveMap) notifPanel.liveMap[k2].tracked = false
-        notifPanel.liveMap = ({})
-
-        notifPanel.recent = []                   // clear own history; re-arriving
-                                                    // notifications with the same key
-                                                    // stay filtered out via `dismissed`
-        notifPanel.saveCache()
+        Services.Notifs.clearAll()
     }
 
     function openNotification(entry) {
-        var live = notifPanel.liveMap[entry.key]
-        if (live && live.actions && live.actions.length > 0) {
-            live.actions[0].invoke()             // trigger the default action
-        } else if (live) {
-            live.tracked = false                 // no action to run → just acknowledge
-        }
-        // history/cache-only entries (no live ref) → nothing to invoke
+        if (entry && entry.actions && entry.actions.length > 0)
+            entry.actions[0].invoke()            // trigger the default action
+        else
+            Services.Notifs.dismiss(entry)                // no action to run → acknowledge
         root.notifVisible = false
     }
 

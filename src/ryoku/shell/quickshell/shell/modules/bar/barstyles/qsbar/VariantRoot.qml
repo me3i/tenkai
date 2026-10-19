@@ -10,6 +10,7 @@ import Quickshell.Io
 import Quickshell.Wayland
 import QtQuick
 import Ryoku.Ui.Singletons
+import shell.services as Services
 import "panels"
 import "controlcenter"
 import "../../../../services/lib/screens.js" as Screens
@@ -278,6 +279,42 @@ Item {
             else controlCenter.open(route)
         }
         function layout(): string { return JSON.stringify(theme.barLayout) }
+
+        // Notification flyout + DND, for keybinds and nested harnesses. These
+        // call the same entry points the widget and the panel's buttons call, so
+        // a test drives the real path. notifState() is the observable: one server
+        // means popups/history change together, and dnd gates popups only.
+        function notifications(open: bool): void { theme.notifVisible = open }
+        function dnd(on: bool): void { Services.Flags.dnd = on }
+        function notifDismissLatest(): void {
+            if (Services.Notifs.history.length > 0) Services.Notifs.dismiss(Services.Notifs.history[0])
+        }
+        function notifClearAll(): void { Services.Notifs.clearAll() }
+        // Mirror of the card's action buttons: invoke `key` on the notification
+        // with `id` (-1 = any), so a harness can prove the actions path without
+        // a synthetic click. Quickshell has no D-Bus InvokeAction, so this is the
+        // only way an ActionInvoked ever leaves the process.
+        function notifInvoke(id: int, key: string): string {
+            const list = Services.Notifs.tracked;
+            for (let i = 0; i < list.length; i++) {
+                const n = list[i];
+                if (id >= 0 && n.id !== id) continue;
+                const acts = n.actions || [];
+                for (let j = 0; j < acts.length; j++) {
+                    if (acts[j].identifier === key) { acts[j].invoke(); return "ok " + key }
+                }
+            }
+            return "err no action " + key;
+        }
+        function notifState(): string {
+            return JSON.stringify({
+                dnd: Services.Notifs.dnd,
+                popups: Services.Notifs.popups.length,
+                history: Services.Notifs.history.length,
+                tracked: Services.Notifs.tracked.length,
+                flyout: theme.notifVisible
+            })
+        }
     }
 
     // Theme.openBarSettings() (the contract-4 root API) requests the panel; the

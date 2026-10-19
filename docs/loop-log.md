@@ -390,3 +390,37 @@ The owner's live session already uses Lua and was not involved.
 
 `~/.config/hypr` was never read from or written to: `./mei verify-untouched` PASS before and after
 every run in this change.
+
+## Step 6 — notifications (2026-10-20)
+
+Scope: notifications only. The tray was **not** started; that is step 7.
+
+| Item | Result |
+|---|---|
+| one `NotificationServer` | TESTED: `grep -rn NotificationServer src/` -> `services/Notifs.qml:230` only |
+| panel became a view | TESTED: `NotificationPanel.qml` reads `Services.Notifs.history`, `+17 / -139`, no cache |
+| nested bus | TESTED: Mei's shell owns `org.freedesktop.Notifications` on the private bus |
+| live bus | TESTED: owner still pid 949 before and after; the nested bus address differs |
+| `notify-send` popup | TESTED |
+| urgency x3 | TESTED arrival; upstream gives urgency no styling/timeout effect, so all three look identical (look UNVERIFIED) |
+| long body | TESTED: accepted (history=4) |
+| actions | TESTED: `notifInvoke` -> `ActionInvoked 'later'`, sender exit 0, output `8 later` |
+| icon | TESTED sent (`icon-static`, 1523 B); rendering UNVERIFIED |
+| DND on/off | TESTED: popups stay 0 while on, history still fills; popup returns when off |
+| dismiss / clear all | TESTED: 4 -> 3; clear emptied history and closed popups |
+| `-t 0` | TESTED: alive after 6 s and absent from history |
+| state location | TESTED: `flags.json` under the fake HOME; no new mei/ryoku/ryogami name outside the project |
+| outbound | TESTED: both shell pids own no tcp/udp socket |
+| clean stop | TESTED |
+| two clean runs | TESTED: `.run/logs/step6-050659.log`, `step6-050728.log`, `RESULT: PASS`, 39 TESTED, 0 FAIL each |
+
+Corrections carried into this step:
+
+| Correction | Detail |
+|---|---|
+| step-5 bar colour numbers | The runs after 02:00 had `barStyle: sumi` in `.run/config/mei/shell.json`, so the `1180x36+0+0` crop measured the sumi rail and wallpaper, not the qsbar bar. Only the qsbar-pinned runs (04:59/05:00) measure the real bar. Harnesses now pin `barStyle=qsbar` and print the previous value. |
+| live notifications PID | 949 per `docs/baseline/dbus-watched.tsv`; the "935" I reported earlier was stale. |
+
+UNVERIFIED (owner only): popup motion, card appearance, icon rendering inside the card, palette
+taste, 144 Hz smoothness. Screenshots: `.run/shots/step6-03-normal-popup.png` ...
+`step6-12-actions.png`.

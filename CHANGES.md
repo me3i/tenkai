@@ -3,6 +3,57 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 6: notifications (one server, DND, actions)
+
+Exactly one `NotificationServer` in the shell. The qsbar flyout stopped being a second one: it
+raced the kept server for `org.freedesktop.Notifications` and wrote a private
+`~/.cache/qs-rise-notifications.json` outside the project.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `src/ryoku/shell/quickshell/shell/services/Notifs.qml` | unchanged; it remains the only `NotificationServer` (`Notifs.qml:230`) |
+| `.../barstyles/qsbar/panels/NotificationPanel.qml` | rewritten as a view over `Services.Notifs.history`: no server, no cache, no live map (`+17 / -139`) |
+| `.../barstyles/qsbar/VariantRoot.qml` | qsbar IPC for tests/keybinds: `notifications(open)`, `dnd(on)`, `notifDismissLatest()`, `notifClearAll()`, `notifInvoke(id,key)`, `notifState()` |
+| `mei` (test template) | the session writes `$DBUS_SESSION_BUS_ADDRESS` to `.run/bus`, so a harness reaches the nested bus without guessing its path |
+
+`notifInvoke` exists because Quickshell's server does not implement D-Bus `InvokeAction`: actions
+are invoked in-process (`action.invoke()`), the only path by which an `ActionInvoked` leaves the
+process. `notify-send -A` implies `--wait` and blocks, so the harness backgrounds the sender and
+then invokes.
+
+`Notifs.dnd` is bound from `Flags.dnd` in `shell.qml:634`; the persisted `flags.json` (fake HOME)
+is the single DND state, so the IPC toggle and the UI toggle agree.
+
+`clearAll()` leaves `expire_timeout 0` popups on screen, matching upstream `dismiss_all`. The
+harness asserts that as a contract.
+
+### Verification
+
+Two consecutive clean runs on the committed tree: `.run/logs/step6-050659.log` and
+`step6-050728.log`, both `RESULT: PASS`, 39 `TESTED`, 0 `FAIL`.
+
+| Test | Result |
+|---|---|
+| one server | TESTED: `grep -rn NotificationServer src/` -> `services/Notifs.qml:230` only |
+| cache writer removed | TESTED: no `qs-rise-notifications.json` anywhere under the fake HOME |
+| nested bus owner | TESTED: Mei shell pid owns `org.freedesktop.Notifications` on the private bus |
+| live bus untouched | TESTED: live owner still pid 949 before and after (`docs/baseline/dbus-watched.tsv`) |
+| capabilities | TESTED: `body`, `actions`, `icon-static` |
+| popup / urgency x3 / long body | TESTED arrive; appearance UNVERIFIED |
+| flyout, dismiss, clear | TESTED: 4 -> 3 on dismiss; clear emptied history and closed popups |
+| DND on/off | TESTED: popups stay 0 while on, history still records; popup returns when off |
+| `-t 0` | TESTED: still on screen after 6 s, stays out of history |
+| actions | TESTED: sender saw `ActionInvoked 'later'` (exit 0, output `8 later`) |
+| icon | TESTED sent (`icon-static`, 1523 B); rendering UNVERIFIED |
+| outbound | TESTED: both shell pids own no tcp/udp socket |
+| shutdown | TESTED: clean stop, no strays; verify-untouched PASS at both ends |
+
+Screenshots: `.run/shots/step6-03-normal-popup.png` through `step6-12-actions.png`.
+
+Owner-only (UNVERIFIED): popup motion, card look, icon rendering, palette taste, 144 Hz.
+
 ## Phase 6 — step 5 fixes (owner review): HOME guard, wallpaper wrapper, name scan, weather off
 
 Committed separately before notifications, as requested. Two consecutive clean harness runs:
