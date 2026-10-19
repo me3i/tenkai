@@ -1,0 +1,269 @@
+#!/usr/bin/env bash
+# mei — control script for the Mei project (~/projects/mei)
+#
+# SAFETY CONTRACT
+#   * Reads live-session state only (pgrep/ps/busctl/qs list). Never dispatches anything.
+#   * Writes only under ~/projects/mei.
+#   * Never kills a process whose /proc/<pid>/cmdline does not contain the project path.
+#   * `test` refuses to run until Phase 6 implements the nested-session launcher, and will
+#     refuse to start if it detects the live-session signature.
+#
+# Subcommands:
+#   baseline [--force]      capture the read-only snapshot of the live session into docs/baseline/
+#   verify-untouched [--strict]
+#                           re-hash ~/.config/{quickshell,hypr} and diff live-session process/D-Bus
+#                           names against the baseline. Config-hash diffs are always fatal;
+#                           process/DBus diffs are informational unless --strict.
+#   status                  show whether a Mei test session started by this script is running
+#   run | stop | test       Phase 6+ (run/test are stubs for now; stop is implemented)
+set -euo pipefail
+
+MEI_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+RUN_DIR="$MEI_DIR/.run"
+DOCS_DIR="$MEI_DIR/docs"
+BASE_DIR="$DOCS_DIR/baseline"
+BASE_FILE="$DOCS_DIR/baseline.txt"
+PID_FILE="$RUN_DIR/pids"
+
+die()  { printf 'mei: %s\n' "$*" >&2; exit 1; }
+note() { printf '%s\n' "$*"; }
+
+# Pattern of live-session processes Mei must never disturb.
+PROC_PATTERN='quickshell|serpantinum|Hyprland|hyprpaper|swww|swaybg|mpvpaper|hypridle|hyprlock|cliphist|clipman|copyq|wl-clipboard|wl-paste'
+
+session_bus() {
+  local bus="${DBUS_SESSION_BUS_ADDRESS:-}"
+  if [ -n "$bus" ]; then printf '%s' "$bus"; return 0; fi
+  local p=""
+  p="$(pgrep -u "$(id -u)" -x pipewire 2>/dev/null | head -n1 || true)"
+  if [ -n "$p" ] && [ -r "/proc/$p/environ" ]; then
+    bus="$(tr '\0' '\n' < "/proc/$p/environ" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -n1)"
+    [ -n "$bus" ] && { printf '%s' "$bus"; return 0; }
+  fi
+  return 1
+}
+
+capture_hashes() {  # $1 = output file
+  find "$HOME/.config/quickshell" "$HOME/.config/hypr" -type f -print0 2>/dev/null \
+    | sort -z | xargs -0 -r sha256sum > "$1"
+}
+
+capture_symlinks() {  # $1 = output file
+  find "$HOME/.config/quickshell" "$HOME/.config/hypr" -type l -printf '%p -> %l\n' 2>/dev/null \
+    | sort > "$1"
+}
+
+capture_procs() {  # $1 = output file; stable, sorted snapshot
+  { pgrep -a -f "$PROC_PATTERN" 2>/dev/null | grep -v -e 'pgrep' -e '/projects/mei/' || true; } | sort -k2 > "$1"
+}
+
+capture_dbus() {  # $1 = output file
+  local bus=""
+  if bus="$(session_bus)"; then
+    DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager list 2>&1 \
+      | grep -v -E '^:[0-9.]+[[:space:]]+[0-9]+[[:space:]]+busctl ' > "$1" || true
+  else
+    echo "(session bus not reachable from this shell)" > "$1"
+  fi
+}
+
+capture_qs_instances() {  # $1 = output file
+  if command -v qs >/dev/null 2>&1; then
+    qs list > "$1" 2>&1 || true
+  else
+    echo "(qs CLI not found)" > "$1"
+  fi
+}
+
+cmd_baseline() {
+  local force=0
+  [ "${1:-}" = "--force" ] && force=1
+  if [ -f "$BASE_DIR/config-hashes.sha256" ] && [ "$force" = 0 ]; then
+    die "baseline already exists; re-baselining after Mei ran would bake in changes. Use './mei baseline --force' only if you changed your config intentionally."
+  fi
+  mkdir -p "$BASE_DIR" "$RUN_DIR"
+  local ts; ts="$(date -Is)"
+
+  capture_hashes   "$BASE_DIR/config-hashes.sha256"
+  capture_symlinks "$BASE_DIR/config-symlinks.txt"
+  capture_procs    "$BASE_DIR/session-processes.txt"
+  capture_dbus     "$BASE_DIR/dbus-names.txt"
+  capture_qs_instances "$BASE_DIR/quickshell-instances.txt"
+  ps -eo pid,ppid,user,args --sort=pid > "$BASE_DIR/ps-full.txt"
+
+  local bus=""; bus="$(session_bus || true)"
+  {
+    echo "captured: $ts"
+    printf 'WAYLAND_DISPLAY=%s\nHYPRLAND_INSTANCE_SIGNATURE=%s\nXDG_RUNTIME_DIR=%s\n' \
+      "${WAYLAND_DISPLAY:-UNSET}" "${HYPRLAND_INSTANCE_SIGNATURE:-UNSET}" "${XDG_RUNTIME_DIR:-UNSET}"
+    printf 'DBUS_SESSION_BUS_ADDRESS=%s\n' "${bus:-UNSET}"
+    echo "nproc: $(nproc)"
+    echo "mem: $(free -h | sed -n 2p)"
+    echo "systemd-run available: $(command -v systemd-run >/dev/null 2>&1 && echo yes || echo no)"
+    echo "hypr runtime instances:"
+    ls "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr" 2>/dev/null || true
+    echo "quickshell runtime dir:"
+    find "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/quickshell" -maxdepth 2 2>/dev/null || true
+  } > "$BASE_DIR/env.txt"
+
+  {
+    echo "# Mei baseline — read-only snapshot of the live session (pre-Mei state)"
+    echo "Captured: $ts"
+    echo
+    echo "Machine-readable snapshots (used by './mei verify-untouched'):"
+    echo "  docs/baseline/config-hashes.sha256   sha256 of every file under ~/.config/quickshell + ~/.config/hypr"
+    echo "  docs/baseline/config-symlinks.txt    symlinks under those trees"
+    echo "  docs/baseline/session-processes.txt  live shell/compositor/wallpaper/clipboard/idle processes"
+    echo "  docs/baseline/quickshell-instances.txt  output of 'qs list'"
+    echo "  docs/baseline/dbus-names.txt         session bus names (Notifications/StatusNotifier/MPRIS owners)"
+    echo "  docs/baseline/ps-full.txt            full process table snapshot"
+    echo "  docs/baseline/env.txt                environment + runtime dirs"
+    echo
+    echo "## environment"
+    cat "$BASE_DIR/env.txt"
+    echo
+    echo "## ~/.config/quickshell file count"
+    printf '  %s files\n' "$(find "$HOME/.config/quickshell" -type f 2>/dev/null | wc -l)"
+    echo "  (live shell does not use this dir; it runs from an explicit --path — see processes below)"
+    echo
+    echo "## quickshell processes"
+    pgrep -a -f quickshell | grep -v 'pgrep' || echo "  (none)"
+    echo
+    echo "## live session components"
+    cat "$BASE_DIR/session-processes.txt"
+    echo
+    echo "## D-Bus owners relevant to Mei (Notifications / tray / MPRIS)"
+    grep -E 'org\.freedesktop\.Notifications|StatusNotifier|MPRIS' "$BASE_DIR/dbus-names.txt" || echo "  (none matched)"
+    echo
+    echo "## usage"
+    echo "  After any Mei test: ./mei verify-untouched   (must PASS)"
+    echo "  Intentional config change: ./mei baseline --force"
+  } > "$BASE_FILE"
+
+  note "baseline written: $BASE_FILE"
+}
+
+cmd_verify_untouched() {
+  local strict=0
+  [ "${1:-}" = "--strict" ] && strict=1
+  [ -f "$BASE_DIR/config-hashes.sha256" ] || die "no baseline yet — run './mei baseline' first"
+  mkdir -p "$RUN_DIR"
+  local tmp="$RUN_DIR/verify.tmp"
+  rm -rf "$tmp"; mkdir -p "$tmp"
+  local rc=0
+
+  capture_hashes "$tmp/config-hashes.sha256"
+  if diff -u "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256" > "$tmp/hashes.diff" 2>&1; then
+    note "OK    config hashes: ~/.config/quickshell and ~/.config/hypr are unchanged"
+  else
+    note "FAIL  config hashes differ from baseline — investigate NOW (Mei must never write these):"
+    sed 's/^/      /' "$tmp/hashes.diff"
+    rc=1
+  fi
+  capture_symlinks "$tmp/config-symlinks.txt"
+  if ! diff -u "$BASE_DIR/config-symlinks.txt" "$tmp/config-symlinks.txt" > "$tmp/symlinks.diff" 2>&1; then
+    note "FAIL  symlinks under config trees differ from baseline:"
+    sed 's/^/      /' "$tmp/symlinks.diff"
+    rc=1
+  fi
+
+  capture_procs "$tmp/session-processes.txt"
+  if diff -u "$BASE_DIR/session-processes.txt" "$tmp/session-processes.txt" > "$tmp/procs.diff" 2>&1; then
+    note "OK    session processes: same set as baseline"
+  else
+    note "INFO  session processes changed since baseline (restarts/PID churn are expected):"
+    sed 's/^/      /' "$tmp/procs.diff"
+    [ "$strict" = 1 ] && rc=1
+  fi
+
+  capture_dbus "$tmp/dbus-names.txt"
+  if diff -u "$BASE_DIR/dbus-names.txt" "$tmp/dbus-names.txt" > "$tmp/dbus.diff" 2>&1; then
+    note "OK    session bus names: same as baseline"
+  else
+    note "INFO  session bus names changed since baseline (name owners churn naturally):"
+    sed 's/^/      /' "$tmp/dbus.diff"
+    [ "$strict" = 1 ] && rc=1
+  fi
+
+  rm -rf "$tmp"
+  if [ "$rc" = 0 ]; then note "verify-untouched: PASS"; else note "verify-untouched: FAIL"; fi
+  return "$rc"
+}
+
+cmd_status() {
+  note "project:  $MEI_DIR"
+  if [ -f "$BASE_FILE" ]; then note "baseline: $(sed -n 's/^Captured: //p' "$BASE_FILE")"; else note "baseline: MISSING"; fi
+  if [ ! -f "$PID_FILE" ]; then
+    note "mei:      not running (no .run/pids; no test session started by ./mei)"
+    return 0
+  fi
+  local any=0
+  while read -r pid pgid rest; do
+    [ -n "${pid:-}" ] || continue
+    if [ -d "/proc/$pid" ]; then
+      local c
+      c="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+      if [[ "$c" == *"$MEI_DIR"* ]]; then
+        note "RUNNING   pid=$pid pgid=${pgid:-?}  $c"
+      else
+        note "STALE     pid=$pid exists but cmdline is not a Mei process — NOT touching it"
+      fi
+      any=1
+    fi
+  done < "$PID_FILE"
+  [ "$any" = 1 ] || note "mei:      not running (all recorded PIDs are gone)"
+}
+
+cmd_stop() {
+  if [ ! -f "$PID_FILE" ]; then note "mei: nothing to stop (no .run/pids)"; return 0; fi
+  while read -r pid pgid rest; do
+    [ -n "${pid:-}" ] || continue
+    [ -d "/proc/$pid" ] || continue
+    local c
+    c="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+    if [[ "$c" != *"$MEI_DIR"* ]]; then
+      note "SKIP  pid=$pid (cmdline does not contain project path)"
+      continue
+    fi
+    local pg="${pgid:-$pid}"
+    note "TERM  pid=$pid pgid=$pg  $c"
+    kill -TERM -- "-$pg" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  done < "$PID_FILE"
+  local i=0
+  while [ "$i" -lt 10 ]; do
+    local alive=0
+    while read -r pid pgid rest; do
+      [ -n "${pid:-}" ] || continue
+      if [ -d "/proc/$pid" ]; then
+        local c; c="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+        [[ "$c" == *"$MEI_DIR"* ]] && alive=1
+      fi
+    done < "$PID_FILE"
+    [ "$alive" = 0 ] && break
+    sleep 1; i=$((i+1))
+  done
+  if [ "$i" -ge 10 ]; then
+    note "some Mei processes still alive; leaving them alone (manual inspection needed)"
+  else
+    note "mei: stopped; run './mei verify-untouched' to confirm the live session is untouched"
+  fi
+  rm -f "$PID_FILE"
+}
+
+cmd_run()  { die "'run' is implemented in Phase 6 (nested-session launcher). Not available yet — refusing to start anything."; }
+cmd_test() { die "'test' is implemented in Phase 6 (wrapper around run + checks + verify-untouched). Not available yet — refusing to start anything."; }
+
+usage() {
+  sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+case "${1:-help}" in
+  baseline)         shift; cmd_baseline "${1:-}" ;;
+  verify-untouched) shift; cmd_verify_untouched "${1:-}" ;;
+  status)           shift; cmd_status ;;
+  run)              shift; cmd_run ;;
+  stop)             shift; cmd_stop ;;
+  test)             shift; cmd_test ;;
+  help|--help|-h)   usage ;;
+  *) die "unknown subcommand '${1}' — see './mei help'" ;;
+esac

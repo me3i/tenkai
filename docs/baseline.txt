@@ -1,0 +1,68 @@
+# Mei baseline — read-only snapshot of the live session (pre-Mei state)
+Captured: 2026-10-19T09:50:34+05:30
+
+Machine-readable snapshots (used by './mei verify-untouched'):
+  docs/baseline/config-hashes.sha256   sha256 of every file under ~/.config/quickshell + ~/.config/hypr
+  docs/baseline/config-symlinks.txt    symlinks under those trees
+  docs/baseline/session-processes.txt  live shell/compositor/wallpaper/clipboard/idle processes
+  docs/baseline/quickshell-instances.txt  output of 'qs list'
+  docs/baseline/dbus-names.txt         session bus names (Notifications/StatusNotifier/MPRIS owners)
+  docs/baseline/ps-full.txt            full process table snapshot
+  docs/baseline/env.txt                environment + runtime dirs
+
+## environment
+captured: 2026-10-19T09:50:34+05:30
+WAYLAND_DISPLAY=wayland-1
+HYPRLAND_INSTANCE_SIGNATURE=efb50993780079460b0cbed1363e2166a2de1d9f_1792382916_1014223445
+XDG_RUNTIME_DIR=/run/user/1000
+DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus
+nproc: 12
+mem: Mem:            11Gi       6.8Gi       2.6Gi       1.1Gi       3.1Gi       4.6Gi
+systemd-run available: yes
+hypr runtime instances:
+efb50993780079460b0cbed1363e2166a2de1d9f_1792382916_1014223445
+quickshell runtime dir:
+/run/user/1000/quickshell
+/run/user/1000/quickshell/vfs
+/run/user/1000/quickshell/vfs/c1863f9abbaccb790250679712213b6e
+/run/user/1000/quickshell/by-path
+/run/user/1000/quickshell/by-path/c1863f9abbaccb790250679712213b6e
+/run/user/1000/quickshell/by-pid
+/run/user/1000/quickshell/by-pid/935
+/run/user/1000/quickshell/by-shell
+/run/user/1000/quickshell/by-shell/c1863f9abbaccb790250679712213b6e
+/run/user/1000/quickshell/by-id
+/run/user/1000/quickshell/by-id/zpdiz4nt
+
+## ~/.config/quickshell file count
+  0 files
+  (live shell does not use this dir; it runs from an explicit --path — see processes below)
+
+## quickshell processes
+934 python3 /home/mei/.local/share/serpantinum/src/quickshell/guide/wellbeing/focus_daemon.py
+935 quickshell -p /home/mei/.local/share/serpantinum/src/quickshell/Shell.qml
+1127 /usr/bin/python3 /home/mei/.local/share/serpantinum/src/quickshell/idle/screensaver_inhibit.py
+
+## live session components
+1077 bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
+1157 bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
+896 bash /usr/local/bin/serpantinumd start
+835 Hyprland --watchdog-fd 4
+1078 inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
+1099 inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
+1074 inotifywait -m -e modify /run/user/1000/serpantinum/brightness /sys/class/backlight/intel_backlight/brightness
+934 python3 /home/mei/.local/share/serpantinum/src/quickshell/guide/wellbeing/focus_daemon.py
+935 quickshell -p /home/mei/.local/share/serpantinum/src/quickshell/Shell.qml
+1127 /usr/bin/python3 /home/mei/.local/share/serpantinum/src/quickshell/idle/screensaver_inhibit.py
+1128 /usr/bin/wl-paste --watch echo 1
+894 wl-paste --type image --watch cliphist store
+893 wl-paste --type text --watch cliphist store
+
+## D-Bus owners relevant to Mei (Notifications / tray / MPRIS)
+org.freedesktop.Notifications                                                                             935 quickshell      mei  :1.14         session-1.scope   1       -
+org.kde.StatusNotifierHost-935-1792382917900                                                              935 quickshell      mei  :1.14         session-1.scope   1       -
+org.kde.StatusNotifierWatcher                                                                             935 quickshell      mei  :1.14         session-1.scope   1       -
+
+## usage
+  After any Mei test: ./mei verify-untouched   (must PASS)
+  Intentional config change: ./mei baseline --force

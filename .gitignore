@@ -1,0 +1,6 @@
+# Mei runtime state — never commit (sockets, pids, XDG overrides, Go build dirs)
+.run/
+*.log
+
+# Read-only upstream clone (pinned commit recorded in UPSTREAM.md); never edited, not tracked
+upstream/

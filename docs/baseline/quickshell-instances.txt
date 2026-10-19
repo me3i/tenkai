@@ -1,0 +1,2 @@
+Could not find "default" config directory or shell.qml in any valid config path.
+Use --all to list all instances.

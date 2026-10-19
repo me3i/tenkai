@@ -1,0 +1,13 @@
+1077 bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
+1157 bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
+896 bash /usr/local/bin/serpantinumd start
+835 Hyprland --watchdog-fd 4
+1078 inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
+1099 inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
+1074 inotifywait -m -e modify /run/user/1000/serpantinum/brightness /sys/class/backlight/intel_backlight/brightness
+934 python3 /home/mei/.local/share/serpantinum/src/quickshell/guide/wellbeing/focus_daemon.py
+935 quickshell -p /home/mei/.local/share/serpantinum/src/quickshell/Shell.qml
+1127 /usr/bin/python3 /home/mei/.local/share/serpantinum/src/quickshell/idle/screensaver_inhibit.py
+1128 /usr/bin/wl-paste --watch echo 1
+894 wl-paste --type image --watch cliphist store
+893 wl-paste --type text --watch cliphist store
