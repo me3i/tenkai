@@ -76,7 +76,7 @@ Item {
                     id: wlist
                     width: page.colW
                     title: I18n.tr("WIDGETS")
-                    kana: "\u90e8\u54c1"
+                    kana: "PARTS"
                     root: page.root
                     tk: page.tk
                     entries: page.ownEntries

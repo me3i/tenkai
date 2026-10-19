@@ -14,13 +14,31 @@ Singleton {
 
     readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
 
+    // Mei test-mode stub (AGENTS.md rule 7): the nested test session exports
+    // MEI_TEST=1, and every power path routes through here, so nothing executes --
+    // it only logs. session.go keeps the same guard as defence in depth.
+    readonly property bool testMode: Quickshell.env("MEI_TEST") === "1"
+
     // action is one of "logout" | "reboot" | "shutdown"; the daemon validates it.
     function run(action) {
+        if (testMode) {
+            console.log("[mei-stub] suppressed session." + action + " (MEI_TEST=1)");
+            return;
+        }
         ctl.queued += "call session." + action + " {}\n";
         if (ctl.connected)
             ctl.flushQueued();
         else
             ctl.connected = true;
+    }
+
+    // Lock runs the shell's own lock verb (mei-shell lock), never the daemon.
+    function lock() {
+        if (testMode) {
+            console.log("[mei-stub] suppressed lock (MEI_TEST=1)");
+            return;
+        }
+        Quickshell.execDetached(["mei-shell", "lock"]);
     }
 
     Socket {

@@ -51,11 +51,11 @@ Item {
         case "airplane": Toggles.toggleWifi(); return;
         case "night-light": Toggles.toggleNight(); return;
         case "color": Quickshell.execDetached(["ryoku-cmd-color-picker"]); root.requestClose(); return;
-        case "settings": Quickshell.execDetached(["ryoku-shell", "hub", "open"]); root.requestClose(); return;
-        case "lock": Quickshell.execDetached(["ryoku-shell", "lock"]); root.requestClose(); return;
+        case "settings": Quickshell.execDetached(["mei-shell", "hub", "open"]); root.requestClose(); return;
+        case "lock": SessionActions.lock(); root.requestClose(); return;
         case "logout": SessionActions.run("logout"); return;
-        case "reboot": Quickshell.execDetached(["systemctl", "reboot"]); return;
-        case "shutdown": Quickshell.execDetached(["systemctl", "poweroff"]); return;
+        case "reboot": SessionActions.run("reboot"); return;
+        case "shutdown": SessionActions.run("shutdown"); return;
         }
     }
 

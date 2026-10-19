@@ -155,7 +155,7 @@ Item {
                     id: clist
                     width: page.colW
                     title: I18n.tr("INSTALLED")
-                    kana: "\u5c0e\u5165"
+                    kana: "IMPORT"
                     root: page.root
                     tk: page.tk
                     entries: page.communityEntries
@@ -280,7 +280,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("ADD")
-                    kana: "\u8ffd\u52a0"
+                    kana: "ADD"
                     collapsible: false
 
                     SettingRow {

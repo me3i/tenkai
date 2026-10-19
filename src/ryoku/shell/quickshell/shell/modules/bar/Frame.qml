@@ -64,7 +64,7 @@ Scope {
     // monitor, which runs the action only on the positive press.
     function runBarAction(id) {
         switch (id) {
-        case "lock": Quickshell.execDetached(["ryoku-shell", "lock"]); break;
+        case "lock": SessionActions.lock(); break;
         case "logout":
         case "reboot":
         case "shutdown": ShellState.askSessionAction(id, root.modelData ? root.modelData.name : ""); break;

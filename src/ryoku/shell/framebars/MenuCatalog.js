@@ -19,15 +19,20 @@ const widgets = {
     "layout-switcher": { id: "layout-switcher", nested: false },
     "quick-actions": { id: "quick-actions", nested: false }
 };
+// Mei: only "home" (audio, brightness, network status, battery, clock/date) is a
+// live tab. The other modules are disabled, not deleted: their QML files stay in
+// quicksettings/, but they are left out of this catalog, so a persisted
+// shell.json listing them normalises back to home (FrameBars.quickSettingsModulesFor).
+// Opt back in by uncommenting an entry and adding its id to quickSettingsDefaults.
 const quickSettingsModules = {
     "home": { id: "home", label: "Home", icon: "space_dashboard", source: "QuickSettingsHome.qml" },
-    "notifications": { id: "notifications", label: "Notifications", icon: "notifications", source: "QuickSettingsNotifications.qml" },
-    "weather": { id: "weather", label: "Weather", icon: "partly_cloudy_day", source: "QuickSettingsWeather.qml" },
-    "capture": { id: "capture", label: "Capture", icon: "screenshot_region", source: "QuickSettingsCapture.qml" },
-    "media": { id: "media", label: "Media", icon: "music_note", source: "QuickSettingsMedia.qml" },
-    "stage": { id: "stage", label: "Stage", icon: "wallpaper", source: "QuickSettingsStage.qml" }
+    // "notifications": { id: "notifications", label: "Notifications", icon: "notifications", source: "QuickSettingsNotifications.qml" },
+    // "weather": { id: "weather", label: "Weather", icon: "partly_cloudy_day", source: "QuickSettingsWeather.qml" },
+    // "capture": { id: "capture", label: "Capture", icon: "screenshot_region", source: "QuickSettingsCapture.qml" },
+    // "media": { id: "media", label: "Media", icon: "music_note", source: "QuickSettingsMedia.qml" },
+    // "stage": { id: "stage", label: "Stage", icon: "wallpaper", source: "QuickSettingsStage.qml" }
 };
-const quickSettingsDefaults = ["home", "notifications", "weather", "capture", "stage"];
+const quickSettingsDefaults = ["home"];
 const menus = {
     "quick-settings": { id: "quick-settings", anchor: "left", minWidth: 410, expansion: "always", widgets: ["quick-settings"], modules: quickSettingsDefaults },
     wallpaper: { id: "wallpaper", anchor: "bottom", minWidth: 1400, expansion: "always", widgets: ["theme", "wallpaper"] },

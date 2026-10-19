@@ -1334,7 +1334,7 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Quickshell.execDetached(["ryoku-shell", "hub", "open", "rashin"])
+                    onClicked: Quickshell.execDetached(["mei-shell", "hub", "open", "rashin"])
                 }
             }
             Text {

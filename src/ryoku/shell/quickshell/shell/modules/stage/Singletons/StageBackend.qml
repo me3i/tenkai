@@ -185,7 +185,7 @@ Singleton {
 
     // Verbs (fire-and-forget; the topic republish is the confirmation).
     function call(verb) {
-        const cmd = ["ryoku-shell", "stage", verb];
+        const cmd = ["mei-shell", "stage", verb];
         for (var i = 1; i < arguments.length; i++) cmd.push("" + arguments[i]);
         Quickshell.execDetached(cmd);
     }

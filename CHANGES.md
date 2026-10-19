@@ -3,6 +3,80 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 3: control sidebar / quick settings
+
+Manifest scope (`docs/04-plan.md` 6.3): the `SUPER+ESCAPE` quick-settings sidebar
+(`modules/bar/framebars/menus/MenuQuickSettings.qml` + `quicksettings/`) and the qsbar control
+centre (`barstyles/qsbar/controlcenter/`). Kept sections: clock/date, battery, audio,
+brightness, **read-only** network. Everything else is **disabled, not deleted**; opt back in by
+uncommenting the marked block.
+
+### Quick-settings surface
+
+- `shell/framebars/MenuCatalog.js`: `quickSettingsModules` keeps only `home`; `notifications`,
+  `weather`, `capture`, `media`, `stage` are commented out. `quickSettingsDefaults` →
+  `["home"]`. A persisted `shell.json` listing the old modules normalises back to `home`
+  (`FrameBars.quickSettingsModulesFor`), so no runtime config edit is needed. The module QML
+  files stay on disk.
+- `.../menus/quicksettings/QuickSettingsHome.qml`:
+  - Power actions routed through the `SessionActions` singleton instead of spawning directly:
+    lock (`Mei.lock()`), reboot/shutdown (daemon, stub-able). The old direct
+    `Quickshell.execDetached(["mei-shell","lock"])` / `["systemctl","reboot"|"poweroff"]` are gone.
+  - The `QS Bar Settings ↔ Quick Settings` surface-segment switch is commented out (it retargets
+    the bar logo at a panel outside this step's scope).
+  - Section `"Connect"` → `"Network"`. The Wi-Fi `QsTile` is now a **read-only status** tile: its
+    `onToggled`/`hasPage`/`onPageRequested` were removed, so the Wi-Fi detail page (which
+    toggles) is unreachable. Wi-Fi/Bluetooth/VPN are never toggled anywhere in this surface.
+  - Bluetooth, Airplane, Night light, Keep awake, Do not disturb and Gaming tiles are commented
+    out (a QML `Grid` still lays out invisible children, so `visible:false` alone would reserve
+    their 64px rows and push the audio section off-panel).
+  - Media hero, calendar month grid and the system monitor are commented out.
+  - The power-profile segment is commented out; the empty `powerDock` column stays so the
+    Flickable above still anchors to `powerDock.top`.
+- `.../menus/QsTabRail.qml`: the Lens / OCR / QR / colour-picker rail buttons are commented out —
+  they spawn `ryoku-cmd-*` helpers Mei does not build (dead buttons). "Mei Settings" stays and now
+  spawns `mei-shell hub open`.
+
+### Test-mode power stub (host safety)
+
+- `shell/quickshell/shell/services/SessionActions.qml`: new
+  `testMode: Quickshell.env("MEI_TEST") === "1"`. `run(action)` and the new `lock()` log
+  `[mei-stub] suppressed …` and return without spawning anything when `MEI_TEST=1`.
+- `shell/ipc/session.go`: `testStubbed()` guard in `runSessionAction` and in the `session.logout`
+  closure — the daemon refuses to exec `systemctl`/`wm.ActionSessionExit` when `MEI_TEST=1`.
+- `mei` (control script): the generated `session.sh` exports `export MEI_TEST=1` (nested tests
+  only; a real run does not set it). The nested config adds
+  `bind = SUPER, ESCAPE, global, ryoku:quicksettings`. (The writer keeps an existing
+  `nested.conf`; it was regenerated so the new bind lands.)
+
+### Kanji → English (CJK face not installed)
+
+Glyphs replaced 1:1, same `font.family`/`pixelSize`/layout (fontconfig falls back to a Latin
+face). No CJK glyph is rendered anywhere in the kept surfaces.
+
+- `.../controlcenter/kit/Routes.js`: route glosses 帶/印/配置/部品/台/有志 →
+  `BAR`/`SEAL`/`LAYOUT`/`PARTS`/`DOCK`/`PEERS`; header comment updated.
+- `.../controlcenter/routes/*.qml`: per-card `kana` seals → English (`POSITION`, `MOTION`,
+  `FORM`, `SURFACE`, `GAPS`, `HUE`, `IMPORT`, `ADD`, `BEHAVIOUR`, `PINNED`, `MARK`, `TEXT`,
+  `NUMBERS`, `DOTS`, `SAMPLE`, `PARTS`; `LayoutRoute` 引入 → `IMPORT`).
+- `.../controlcenter/kit/CcWorkspacePreview.qml`: workspace numerals 一二三四五 → `1..5`.
+- `src/ryoku/ui/Empty.qml`: the 空 ornament → `M` (brand mark); comment updated.
+
+### Binary rebrand completion
+
+Quoted executable literals `"ryoku-shell"` → `"mei-shell"` across the shell QML
+(`StageBackend`, `QsTabRail`, `RailStatus`, `LayoutWidget`, `PanelChat`, `WidgetMenu`, `Icons`).
+These would otherwise be dead (`ryoku-shell` was renamed to `mei-shell` and no symlink exists).
+`MenuQuickActions.qml` power actions were also routed through `SessionActions`
+(`Frame.qml` lock likewise), so **every** reachable power action passes the test stub.
+
+Verification (nested; two consecutive clean runs, `.run/logs/qs-iter{3,4}.log`): sidebar opens on
+`ryoku:quicksettings` and closes; shows exactly clock/date, battery, audio out/in, brightness
+reading 23%, and a read-only Wi-Fi tile (real SSID); control centre opens via
+`qs ipc call qsbar settings bars` with English glosses; one shell instance; no tcp/udp sockets;
+no PipeWire connection (real audio untouched); brightness step 23%→28%→restored (trap); no QML
+errors; `verify-untouched` PASS before and after. Details in `docs/loop-log.md`.
+
 ## Phase 6 — step 2: launcher (app search only)
 
 Manifest scope (`docs/04-plan.md` A11): `modules/launcher/shared` + `variants/main`. The

@@ -27,7 +27,7 @@ Singleton {
     readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
     readonly property string _bin: (root._shellDir && root._shellDir.length > 0)
         ? root._shellDir + "/ipc/ryoku-shell"
-        : "ryoku-shell"
+        : "mei-shell"
 
     // path(name, fallback): Quickshell.iconPath's semantics, resolved against the
     // index instead of Qt's icon engine.

@@ -119,7 +119,7 @@ Item {
         menu.close();
     }
     function refreshShell() {
-        Quickshell.execDetached(["ryoku-shell", "reload"]);
+        Quickshell.execDetached(["mei-shell", "reload"]);
         menu.close();
     }
     function videoLabel(v) { return v === "canvas" ? "Spotify Canvas" : v === "custom" ? "Custom" : "Off"; }

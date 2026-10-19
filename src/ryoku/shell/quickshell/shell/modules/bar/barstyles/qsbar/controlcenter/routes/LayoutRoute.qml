@@ -502,7 +502,7 @@ Item {
                         }
                         Item { width: parent.width - 200; height: 1 }
                         UiText {
-                            text: "\u5f15\u5165"
+                            text: "IMPORT"
                             color: Tokens.inkFaint
                             font.family: Tokens.jp
                             font.pixelSize: Tokens.fSmall

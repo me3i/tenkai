@@ -1,9 +1,9 @@
 .pragma library
 
 // QS Bar Settings routes, in rail order. One entry per page: its Latin name, its
-// kanji seal (a real word, per the desktop's language, never decoration), the
-// one-line summary the head prints (kept to a few words: it has one line), the
-// words search matches on, and the rail section it sits in.
+// short seal word (English -- the CJK face is not installed), the one-line
+// summary the head prints (kept to a few words: it has one line), the words
+// search matches on, and the rail section it sits in.
 //
 // The panel is about one thing, the bar, so the rail's first group is five
 // routes: where the bar sits (Bar), the mark and workspaces that make it this
@@ -14,22 +14,22 @@
 // panel used to also carry -- pickers, desktop widgets, the mid-work switches,
 // the session -- already has a home (the Hub, or quick settings).
 var ROUTES = [
-    { id: "bars",    label: "Bar",     gloss: "\u5e2f", file: "BarsRoute", section: "bar",
+    { id: "bars",    label: "Bar",     gloss: "BAR", file: "BarsRoute", section: "bar",
       desc: "Position, shape, surface, gaps and motion.",
       keywords: "position top bottom form full fit dock notch islands surface border corners frost shadow depth tooltip gap gaps accent colour scale size motion animation auto hide" },
-    { id: "identity", label: "Identity", gloss: "\u5370", file: "IdentityRoute", section: "bar",
+    { id: "identity", label: "Identity", gloss: "SEAL", file: "IdentityRoute", section: "bar",
       desc: "The launcher mark and the workspaces.",
       keywords: "identity logo mark wordmark word glyph icon kanji launcher brand ryoku arch hyprland workspaces spaces count marker style numbers kanji rings preview" },
-    { id: "layout",  label: "Layout",  gloss: "\u914d\u7f6e", file: "LayoutRoute", section: "bar",
+    { id: "layout",  label: "Layout",  gloss: "LAYOUT", file: "LayoutRoute", section: "bar",
       desc: "Where each widget sits on the bar.",
       keywords: "arrange order move reorder left center centre right lane add widget plugin unlock drag reset layout hide show" },
-    { id: "widgets", label: "Widgets", gloss: "\u90e8\u54c1", file: "WidgetsRoute", section: "bar",
+    { id: "widgets", label: "Widgets", gloss: "PARTS", file: "WidgetsRoute", section: "bar",
       desc: "Show, size, colour and tune each widget.",
       keywords: "widget show hide on off density icon compact colour fill ai claude codex opencode volume boost clock weather sensor temperature plugin settings" },
-    { id: "dock",    label: "Dock",    gloss: "\u53f0", file: "DockRoute", section: "bar",
+    { id: "dock",    label: "Dock",    gloss: "DOCK", file: "DockRoute", section: "bar",
       desc: "The app dock opposite the bar.",
       keywords: "dock app pinned pin edge autohide auto hide magnify frost depth shadow label media chip peek" },
-    { id: "community", label: "Community", gloss: "\u6709\u5fd7", file: "CommunityRoute", section: "community",
+    { id: "community", label: "Community", gloss: "PEERS", file: "CommunityRoute", section: "community",
       desc: "Bar widgets installed from outside Ryoku.",
       keywords: "community plugin plugins installed third party store ryostore git add remove widget" }
 ];

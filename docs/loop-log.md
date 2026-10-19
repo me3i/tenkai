@@ -149,7 +149,48 @@ pinned false and its category `Binding` commented out in `variants/main/Launcher
 
 ---
 
-## Phase 6 step 3 — Control sidebar / quick settings (2026-10-19 20:34–…)
+## Phase 6 step 3 — Control sidebar / quick settings (2026-10-19 20:34–21:23)
 
-**Change set:** `CHANGES.md` → "Phase 6 — step 3". Scope and acceptance below; filled in as the
-loop runs.
+**Change set:** `CHANGES.md` → "Phase 6 — step 3". Two empty states (`Audio.sink` null) and the
+read-only network tile are the visible result of the owner rules (read-only network; audio held
+UNVERIFIED).
+
+| Acceptance item | Result | Evidence |
+|---|---|---|
+| Sidebar opens and closes on `ryoku:quicksettings` | **TESTED** | dispatched on the nested instance; `SUPER+ESCAPE` bound in the nested conf; `.run/shots/qs-212253-open.png`, `qs-212255-closed.png` |
+| Keep-list sections only | **TESTED** | panel shows clock/date, battery 72%, audio out+in, brightness 23%, read-only Wi-Fi tile; no Connect grid, media, calendar, system, power, surface switch — `.run/shots/qs-bigmon.png` |
+| Network is read-only | **TESTED** | Wi-Fi tile has no `onToggled`/`hasPage` (code); nothing toggles Wi-Fi/BT; `QuickSettingsHome.qml` |
+| Power actions stubbed in test mode | **TESTED** | `SessionActions.testMode` (MEI_TEST) + `session.go testStubbed()`; every reachable power path routed through it (`QuickSettingsHome`, `MenuQuickActions`, `Frame.qml`); the confirmed-dialog path already used `SessionActions.run` |
+| Audio | **UNVERIFIED (expected)** | no PipeWire socket in nested `.r`; shell holds no PipeWire/Pulse socket (`ss -xp`); `Audio.sink` null → sliders blank. Real alternative (`/run/user/1000/pipewire-0`) **not** linked |
+| Brightness step + restore | **TESTED** (control path) | real backlight 23%→28%→restored to `22080` (max `96000`) via the shell's exact command, in an `EXIT` trap; live % shown in the panel. Slider drag not keyboard-driven |
+| Kanji → English (route labels / seals) | **TESTED** | control centre shows BAR/SEAL/LAYOUT/PARTS/DOCK/PEERS and POSITION/MOTION/FORM seals, no tofu — `.run/shots/qs-212258-controlcenter.png` |
+| Zero outbound | **TESTED** | `ss -tunp`: shell owns no tcp/udp sockets |
+| Exactly one shell instance | **TESTED** | `pgrep` count 1 in every iteration |
+| No dead rail helpers spawned | **TESTED** | `ryoku-cmd-google-lens|ocr|qr-scan|color-picker` never spawned |
+| No QML errors | **TESTED** | shell log clean (`is not a type`, `Failed to load`, … absent) |
+| `verify-untouched` | **TESTED** | PASS before and after every iteration |
+| Animation feel / audio control | **UNVERIFIED** | owner |
+
+### Notes / scope boundaries
+
+- Iteration 1 passed functionally but the nested output (950×508 — the host's window size) was
+  too short for the whole panel, so the audio/brightness section sat below the fold. The test
+  harness now enlarges the nested output via `hyprctl keyword monitor` (targets the **nested**
+  instance only); iter3/iter4 captured the full panel. An attempt to force the size at startup
+  with a `monitor =` line was ignored by nested Hyprland and removed.
+- The `[pipewire] connected` line in `session.log` is Quickshell's own log; `ss -xp` shows no
+  PipeWire/Pulse socket on the shell and `.r` has none, so the nested shell cannot reach real
+  audio.
+- Disabled but on disk (opt back in by uncommenting): quick-settings modules notifications /
+  weather / capture / media / stage; Connect tiles Bluetooth / Airplane / Night light / Keep
+  awake / DND / Gaming; media hero, calendar, system monitor, power profiles; rail Lens / OCR /
+  QR / colour-picker. The control centre's own `QS BAR SETTINGS | QUICK SETTINGS` switch is
+  untouched (it is not the Super+Esc sidebar's control).
+- `MenuQuickActions` is not reachable by default (no bar widget requests the `quick-actions`
+  menu); its power actions were still routed through the stub.
+
+### Verdict
+
+**Two consecutive clean runs (iter3, iter4).** Loop exited. Stopping for owner review before the
+Settings app (step 4). The owner should `./mei run`, press `SUPER+ESCAPE`, judge the motion and
+the brightness fader by feel, and press the bar logo to see the control centre's English labels.

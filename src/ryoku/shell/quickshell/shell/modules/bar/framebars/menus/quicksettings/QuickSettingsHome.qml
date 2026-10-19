@@ -90,7 +90,9 @@ Item {
                         tip: I18n.tr("Lock")
                         tipBelow: true
                         onClicked: {
-                            Quickshell.execDetached(["ryoku-shell", "lock"]);
+                            // Mei: routed through SessionActions so the test-mode
+                            // stub suppresses it (no direct ryoku-shell lock).
+                            SessionActions.lock();
                             if (root.closePanel)
                                 root.closePanel();
                         }
@@ -100,14 +102,16 @@ Item {
                         tip: I18n.tr("Click to reboot")
                         tipBelow: true
                         tipAlign: "right"
-                        onActivated: Quickshell.execDetached(["systemctl", "reboot"])
+                        // Mei: routed through SessionActions (test-mode stub).
+                        onActivated: SessionActions.run("reboot")
                     }
                     Menus.QsHoldButton {
                         icon: "power_settings_new"
                         tip: I18n.tr("Click to shut down")
                         tipBelow: true
                         tipAlign: "right"
-                        onActivated: Quickshell.execDetached(["systemctl", "poweroff"])
+                        // Mei: routed through SessionActions (test-mode stub).
+                        onActivated: SessionActions.run("shutdown")
                     }
                 }
             }
@@ -163,15 +167,15 @@ Item {
                 }
             }
 
-            // Surface switch: sets which panel the bar's brand logo opens -- this
-            // Super+Esc quick settings, or the bar-logo QS Bar Settings. The lit
-            // segment is the current target; picking the other retargets the logo.
-            Menus.QsSeg {
-                width: parent.width
-                options: [{ id: "studio", label: I18n.tr("QS BAR SETTINGS") }, { id: "quick", label: I18n.tr("QUICK SETTINGS") }]
-                current: Config.launcherTarget === "quick" ? "quick" : "studio"
-                onChose: (id) => Config.setLauncherTarget(id)
-            }
+            // Mei: the QS Bar Settings <-> Quick Settings surface switch is
+            // disabled (not deleted): it retargets the bar logo at a panel that is
+            // outside the keep list.
+            // Menus.QsSeg {
+            //     width: parent.width
+            //     options: [{ id: "studio", label: I18n.tr("QS BAR SETTINGS") }, { id: "quick", label: I18n.tr("QUICK SETTINGS") }]
+            //     current: Config.launcherTarget === "quick" ? "quick" : "studio"
+            //     onChose: (id) => Config.setLauncherTarget(id)
+            // }
         }
     }
 
@@ -196,7 +200,7 @@ Item {
             width: parent.width
             spacing: 12
 
-            Menus.QsSection { width: parent.width; label: I18n.tr("Connect") }
+            Menus.QsSection { width: parent.width; label: I18n.tr("Network") }
             Grid {
                 id: tileGrid
                 width: parent.width
@@ -205,86 +209,75 @@ Item {
                 rowSpacing: 8
                 readonly property real tileWidth: (width - columnSpacing) / 2
 
+                // Mei: network status only (owner rule). Kept as a read-only
+                // status tile -- no onToggled, no hasPage -- so the Wi-Fi detail
+                // page (which toggles) is unreachable.
                 Menus.QsTile {
                     width: tileGrid.tileWidth
                     icon: Network.kind === "ethernet" ? "lan" : "wifi"
                     label: I18n.tr("Wi-Fi")
                     sub: !Toggles.wifiOn ? I18n.tr("Off") : Network.activeSsid !== "" ? Network.activeSsid : I18n.tr("On")
                     on: Toggles.wifiOn
-                    hasPage: true
-                    pageTip: I18n.tr("Wi-Fi networks")
-                    onToggled: Toggles.toggleWifi()
-                    onPageRequested: if (root.navigate) root.navigate("network")
                 }
-                Menus.QsTile {
-                    width: tileGrid.tileWidth
-                    icon: "bluetooth"
-                    label: I18n.tr("Bluetooth")
-                    sub: Toggles.btOn ? I18n.tr("On") : I18n.tr("Off")
-                    on: Toggles.btOn
-                    hasPage: true
-                    pageTip: I18n.tr("Bluetooth devices")
-                    onToggled: Toggles.toggleBt()
-                    onPageRequested: if (root.navigate) root.navigate("bluetooth")
-                }
-                Menus.QsTile {
-                    width: tileGrid.tileWidth
-                    icon: "flight"
-                    label: I18n.tr("Airplane")
-                    sub: Toggles.wifiOn ? I18n.tr("Off") : I18n.tr("On")
-                    on: !Toggles.wifiOn
-                    onToggled: Toggles.toggleWifi()
-                }
-                // Only where the compositor can warm the screen. Both shipping
-                // compositors can; one that reports no night-light backend hides
-                // the tile instead of showing a dead toggle.
-                Menus.QsTile {
-                    visible: Wm.caps.nightLight === true
-                    width: tileGrid.tileWidth
-                    icon: "bedtime"
-                    label: I18n.tr("Night light")
-                    sub: Toggles.nightOn ? I18n.tr("On") : I18n.tr("Off")
-                    on: Toggles.nightOn
-                    onToggled: Toggles.toggleNight()
-                }
-                Menus.QsTile {
-                    width: tileGrid.tileWidth
-                    icon: "coffee"
-                    label: I18n.tr("Keep awake")
-                    sub: Toggles.keepAwake ? I18n.tr("On") + root.awakeFor() : I18n.tr("Off")
-                    on: Toggles.keepAwake
-                    onToggled: Toggles.toggleCaffeine()
-                }
-                Menus.QsTile {
-                    width: tileGrid.tileWidth
-                    icon: "do_not_disturb_on"
-                    label: I18n.tr("Do not disturb")
-                    sub: Toggles.dnd ? I18n.tr("On") : I18n.tr("Off")
-                    on: Toggles.dnd
-                    onToggled: Toggles.toggleDnd()
-                }
-                // On AC only: every lever trades battery and heat for latency, so
-                // start refuses on battery. Off must always work, or losing AC
-                // would trap the user in Game Mode. AC is the real line-power
-                // state (a full cell idling on AC still counts), so no battery
-                // is always eligible.
-                // Only where the compositor can strip itself live (Hyprland). On
-                // a compositor without live config eval the tuning script is not
-                // even installed, so a fresh tile would do nothing; hide it, not
-                // grey it, and the Grid reflows with no gap. Kept visible while
-                // game mode is already on, so a switch away from Hyprland mid-
-                // boost (the flag persists) can still be dismissed.
-                Menus.QsTile {
-                    visible: Wm.caps.liveConfigEval === true || Toggles.gameMode
-                    width: tileGrid.tileWidth
-                    icon: "sports_esports"
-                    label: I18n.tr("Gaming")
-                    available: Toggles.gameMode || Battery.onAc
-                    sub: !available ? I18n.tr("Needs AC")
-                       : Toggles.gameMode ? I18n.tr("On") : I18n.tr("Off")
-                    on: Toggles.gameMode
-                    onToggled: Toggles.toggleGame()
-                }
+                // Mei: the other Connect tiles are disabled, not deleted. They
+                // are kept here as comments because a QML Grid still lays out
+                // invisible children: `visible: false` alone would reserve their
+                // 64px rows and push the audio/brightness section off the panel.
+                // Uncomment a block to bring the tile back.
+                //
+                // Menus.QsTile {
+                //     width: tileGrid.tileWidth
+                //     icon: "bluetooth"
+                //     label: I18n.tr("Bluetooth")
+                //     sub: Toggles.btOn ? I18n.tr("On") : I18n.tr("Off")
+                //     on: Toggles.btOn
+                //     hasPage: true
+                //     pageTip: I18n.tr("Bluetooth devices")
+                //     onToggled: Toggles.toggleBt()
+                //     onPageRequested: if (root.navigate) root.navigate("bluetooth")
+                // }
+                // Menus.QsTile {
+                //     width: tileGrid.tileWidth
+                //     icon: "flight"
+                //     label: I18n.tr("Airplane")
+                //     sub: Toggles.wifiOn ? I18n.tr("Off") : I18n.tr("On")
+                //     on: !Toggles.wifiOn
+                //     onToggled: Toggles.toggleWifi()
+                // }
+                // Menus.QsTile {
+                //     width: tileGrid.tileWidth
+                //     icon: "bedtime"
+                //     label: I18n.tr("Night light")
+                //     sub: Toggles.nightOn ? I18n.tr("On") : I18n.tr("Off")
+                //     on: Toggles.nightOn
+                //     onToggled: Toggles.toggleNight()
+                // }
+                // Menus.QsTile {
+                //     width: tileGrid.tileWidth
+                //     icon: "coffee"
+                //     label: I18n.tr("Keep awake")
+                //     sub: Toggles.keepAwake ? I18n.tr("On") + root.awakeFor() : I18n.tr("Off")
+                //     on: Toggles.keepAwake
+                //     onToggled: Toggles.toggleCaffeine()
+                // }
+                // Menus.QsTile {
+                //     width: tileGrid.tileWidth
+                //     icon: "do_not_disturb_on"
+                //     label: I18n.tr("Do not disturb")
+                //     sub: Toggles.dnd ? I18n.tr("On") : I18n.tr("Off")
+                //     on: Toggles.dnd
+                //     onToggled: Toggles.toggleDnd()
+                // }
+                // Menus.QsTile {
+                //     width: tileGrid.tileWidth
+                //     icon: "sports_esports"
+                //     label: I18n.tr("Gaming")
+                //     available: Toggles.gameMode || Battery.onAc
+                //     sub: !available ? I18n.tr("Needs AC")
+                //        : Toggles.gameMode ? I18n.tr("On") : I18n.tr("Off")
+                //     on: Toggles.gameMode
+                //     onToggled: Toggles.toggleGame()
+                // }
             }
 
             Menus.QsSection { width: parent.width; label: I18n.tr("Sound & display") }
@@ -327,24 +320,26 @@ Item {
                 }
             }
 
-            Menus.MediaHero {
-                width: parent.width
-                active: root.open
-            }
-
-            Menus.QsSection { width: parent.width; label: I18n.tr("Calendar") }
-            Menus.QsCalendarEmbed {
-                width: parent.width
-                s: 1
-                open: root.open
-            }
-
-            Menus.QsSection { width: parent.width; label: I18n.tr("System") }
-            SysMonitor {
-                width: parent.width
-                s: 1
-                active: root.open
-            }
+            // Mei: media, calendar month grid and system monitor are disabled (off
+            // the keep list); kept here for opt-back-in.
+            // Menus.MediaHero {
+            //     width: parent.width
+            //     active: root.open
+            // }
+            //
+            // Menus.QsSection { width: parent.width; label: I18n.tr("Calendar") }
+            // Menus.QsCalendarEmbed {
+            //     width: parent.width
+            //     s: 1
+            //     open: root.open
+            // }
+            //
+            // Menus.QsSection { width: parent.width; label: I18n.tr("System") }
+            // SysMonitor {
+            //     width: parent.width
+            //     s: 1
+            //     active: root.open
+            // }
         }
     }
 
@@ -358,25 +353,28 @@ Item {
         anchors.rightMargin: 12
         spacing: 6
 
-        Rectangle {
-            width: parent.width
-            height: 1
-            color: Qt.rgba(Theme.onSurface.r, Theme.onSurface.g, Theme.onSurface.b, 0.10)
-        }
-        Menus.QsSection {
-            visible: PowerProfiles.available
-            width: parent.width
-            label: I18n.tr("Power")
-        }
-        Menus.QsSeg {
-            visible: PowerProfiles.available
-            width: parent.width
-            current: PowerProfiles.profile
-            options: PowerProfiles.profiles.map(profile => ({
-                id: profile,
-                label: profile === "power-saver" ? I18n.tr("Saver") : profile.charAt(0).toUpperCase() + profile.slice(1)
-            }))
-            onChose: profile => PowerProfiles.setProfile(profile)
-        }
+        // Mei: power profiles (power-profiles-daemon) are disabled (off the keep
+        // list); kept here for opt-back-in. The id stays so the Flickable above
+        // still anchors to powerDock.top.
+        // Rectangle {
+        //     width: parent.width
+        //     height: 1
+        //     color: Qt.rgba(Theme.onSurface.r, Theme.onSurface.g, Theme.onSurface.b, 0.10)
+        // }
+        // Menus.QsSection {
+        //     visible: PowerProfiles.available
+        //     width: parent.width
+        //     label: I18n.tr("Power")
+        // }
+        // Menus.QsSeg {
+        //     visible: PowerProfiles.available
+        //     width: parent.width
+        //     current: PowerProfiles.profile
+        //     options: PowerProfiles.profiles.map(profile => ({
+        //         id: profile,
+        //         label: profile === "power-saver" ? I18n.tr("Saver") : profile.charAt(0).toUpperCase() + profile.slice(1)
+        //     }))
+        //     onChose: profile => PowerProfiles.setProfile(profile)
+        // }
     }
 }

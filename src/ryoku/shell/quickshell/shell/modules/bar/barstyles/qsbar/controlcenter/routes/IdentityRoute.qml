@@ -79,7 +79,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("Mark")
-                    kana: "\u5370"
+                    kana: "SEAL"
 
                     Row {
                     width: parent.width
@@ -175,7 +175,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: page.mode === "icon" ? I18n.tr("GLYPH") : I18n.tr("WORDMARK")
-                    kana: page.mode === "icon" ? "\u7d0b" : "\u6587\u5b57"
+                    kana: page.mode === "icon" ? "MARK" : "TEXT"
 
                     Grid {
                         id: optGrid
@@ -255,7 +255,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("COUNT")
-                    kana: "\u6570"
+                    kana: "NUMBERS"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -282,7 +282,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("MARKER")
-                    kana: "\u70b9"
+                    kana: "DOTS"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -311,7 +311,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("PREVIEW")
-                    kana: "\u898b\u672c"
+                    kana: "SAMPLE"
 
                     CcWorkspacePreview {
                         width: parent.width

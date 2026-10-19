@@ -282,7 +282,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("01 DOCK")
-                    kana: "\u53f0"
+                    kana: "DOCK"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -343,7 +343,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("02 BEHAVIOUR")
-                    kana: "\u632f\u821e"
+                    kana: "BEHAVIOUR"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -402,7 +402,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("03 SURFACE")
-                    kana: "\u8868\u9762"
+                    kana: "SURFACE"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -459,7 +459,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("04 PINNED APPS")
-                    kana: "\u56fa\u5b9a"
+                    kana: "PINNED"
 
                     // A fact the title cannot carry: the dock owns the ordering.
                     UiText {

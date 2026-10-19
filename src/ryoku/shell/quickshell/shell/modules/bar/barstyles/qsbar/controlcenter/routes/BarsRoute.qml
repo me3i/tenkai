@@ -125,7 +125,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("01 POSITION")
-                    kana: "\u4f4d\u7f6e"
+                    kana: "POSITION"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -190,7 +190,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("02 MOTION")
-                    kana: "\u52d5\u304d"
+                    kana: "MOTION"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -235,7 +235,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("03 FORM")
-                    kana: "\u5f62"
+                    kana: "FORM"
 
                     Item {
                         width: parent.width
@@ -316,7 +316,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("04 SURFACE")
-                    kana: "\u8868\u9762"
+                    kana: "SURFACE"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -402,7 +402,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("05 GAPS")
-                    kana: "\u9593\u9694"
+                    kana: "GAPS"
 
                     SettingRow {
                         anchors.left: parent.left
@@ -489,7 +489,7 @@ Item {
                 SettingCard {
                     width: page.colW
                     title: I18n.tr("06 ACCENT")
-                    kana: "\u8272"
+                    kana: "HUE"
 
                     // Following the wallpaper is the honest default: matugen already
                     // derives an accent from the image, and "accent" is a real stored

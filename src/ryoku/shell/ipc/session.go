@@ -3,11 +3,17 @@ package main
 import (
 	"encoding/json"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 
 	wm "ryoku-wm"
 )
+
+// testStubbed reports whether Mei is running a nested test session, where the
+// session power actions must never reach the host (AGENTS.md rule 7). The QML
+// SessionActions singleton carries the same guard; this one is defence in depth.
+func testStubbed() bool { return os.Getenv("MEI_TEST") == "1" }
 
 // session.go runs the session power actions the confirmation dialog triggers.
 // Reboot and shutdown are system-level, so they go through systemctl. Logout
@@ -31,6 +37,10 @@ func sessionActionArgv(action string) ([]string, bool) {
 // invokes. Registration only: no process is spawned here.
 func (d *daemon) startSession() {
 	d.registerCall("session.logout", func(json.RawMessage) (any, error) {
+		if testStubbed() {
+			log.Printf("mei-shell: [mei-stub] suppressed session logout (MEI_TEST=1)")
+			return map[string]any{"ok": true}, nil
+		}
 		if err := d.wmc.Act(wm.ActionSessionExit); err != nil {
 			log.Printf("ryoku-shell: session logout: %v", err)
 		}
@@ -49,6 +59,10 @@ func (d *daemon) startSession() {
 // a failure is logged without blocking the caller (reboot and poweroff normally
 // never return). stderr is captured for the log; stdin and stdout are discarded.
 func runSessionAction(action string) {
+	if testStubbed() {
+		log.Printf("mei-shell: [mei-stub] suppressed session %s (MEI_TEST=1)", action)
+		return
+	}
 	argv, ok := sessionActionArgv(action)
 	if !ok {
 		log.Printf("ryoku-shell: unknown session action %q", action)
