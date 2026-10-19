@@ -3,6 +3,28 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 2 — dependency mapping (read-only; no code, no installs, no builds)
+
+- Wrote `docs/02-deps.md` (consolidated) from six read-only traces in `docs/02-deps/`
+  (`01-bar`, `02-overlays`, `03-wallpaper-theming`, `04-settings`, `05-names-network-uv`,
+  `06-fonts-qt-assets`). Nothing under `upstream/` was modified; no builds, no installs.
+- Resolved the seven questions (detail in `docs/02-deps.md`):
+  - matugen runs from the `ryoku-shell` daemon (`ipc/matugen.go:775`), triggered by the ryogami
+    `wallpaper` topic; it writes `~/.cache/ryoku/{colors.json,tones.json,hypr-colors.lua}` and
+    (via templates) `~/.config/{kitty,btop,qt6ct}`. matugen's `config.toml` hardcodes `~/.config`,
+    so Phase 6 must generate a Mei config; the hypr template lands in cache, not the hypr dir.
+  - Full IPC verb list + topic list recorded; audio/battery/notifications are in-process
+    (PipeWire/UPower/Quickshell), only `network`/`tray`/`wm`/`settings`/`wallpaper` are daemon topics.
+  - Kept features need **no** off-disk `ryoku/assets` (only the two brand logos, 1,146 B).
+  - Network inventory: all outbound calls belong to off-keep-list features; keep-list traffic is
+    loopback palette-bridge only.
+  - Rename/redirect table: `ryoku*`→`mei*`, `ryogami`→`mei-wall`; KEEP polkit + freedesktop/KDE
+    D-Bus names and `/run/polkit/agent-helper.socket`.
+  - `uv` is needed only by `ryostage`/Rashin (off-list) → dropped.
+  - Wallpaper: keep `ryogami` (Option B reworks ~9 files and loses reveal/live/depth; matugen
+    dominates measured bytes).
+- `./mei verify-untouched` → PASS after the phase.
+
 ## Phase 1 — read-only audit (still no upstream source touched)
 
 - Read-only audit of the pinned upstream, written to `docs/01-audit.md`. No file outside
