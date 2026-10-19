@@ -46,3 +46,26 @@ Legend: **TESTED** = observed in this run with evidence; **FAIL** = observed fai
 ### Verdict
 
 Every testable item passed. Run once → **clean**. Second clean run required before exiting the loop.
+
+---
+
+## Rebrand — iteration 2 (2026-10-19 16:57)
+
+No code change (confirmation run). Second consecutive clean pass.
+
+| Item | Result | Evidence |
+|---|---|---|
+| `verify-untouched` before | **TESTED** | PASS |
+| Bar renders, wordmark **MEI** | **TESTED** | `.run/shots/rebrand-bar-iter2.png` (crop of the new `.run/shots/test-bar.png`, 16:57) |
+| QML load errors | **TESTED** | none (`rebrand-iter2.log`) |
+| Workspaces vs nested compositor | **TESTED** | 1 / 1 (match) |
+| Zero outbound connections | **TESTED** | run log |
+| Clean shutdown / no stray processes | **TESTED** | run log + `pgrep` → none |
+| `verify-untouched` after | **TESTED** | PASS |
+| Animation feel / 144 Hz / GPU | **UNVERIFIED** | owner |
+
+### Verdict
+
+**Two consecutive clean runs.** Loop exited. Rebrand is done; stopping for owner review before
+the launcher (step 2). The owner should run `./mei run`, press `SUPER+1/2/3`, watch the pill, and
+confirm the wordmark/spacing reads right in person.
