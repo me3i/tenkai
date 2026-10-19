@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // The Hyprland half of the window-manager seam, and the only program allowed to
@@ -23,7 +24,40 @@ import (
 // otherwise syscall per frame.
 var stdout = bufio.NewWriter(os.Stdout)
 
+// homeGuard refuses to run outside Mei's confined fake home. Every file this
+// binary writes (sockets, caches, state) must live inside <project>/.run/home;
+// a manual run with the real HOME is exactly how step 5's incident happened.
+// The expected home is derived from the executable path, which is always
+// <project>/.run/bin/<binary>, so a binary copied elsewhere fails closed.
+func homeGuard() error {
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("cannot resolve executable: %w", err)
+	}
+	want := filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(exe))), ".run", "home")
+	if resolved, err := filepath.EvalSymlinks(want); err == nil {
+		want = resolved
+	}
+	home := os.Getenv("HOME")
+	if home == "" {
+		return fmt.Errorf("HOME is unset: refusing to start (expected %s)", want)
+	}
+	got, err := filepath.EvalSymlinks(home)
+	if err != nil {
+		got = filepath.Clean(home)
+	}
+	if got != want {
+		return fmt.Errorf("HOME=%s is not Mei's fake home (%s): refusing to start; use ./mei", home, want)
+	}
+	return nil
+}
+
 func main() {
+	if err := homeGuard(); err != nil {
+		fmt.Fprintln(os.Stderr, "mei:", err)
+		os.Exit(1)
+	}
+
 	if len(os.Args) < 2 {
 		usage()
 		os.Exit(2)

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -17,7 +18,40 @@ func unmarshalStrict(body string, into interface{}) error {
 	return json.Unmarshal([]byte(body), into)
 }
 
+// homeGuard refuses to run outside Mei's confined fake home. Every file this
+// binary writes (sockets, caches, state) must live inside <project>/.run/home;
+// a manual run with the real HOME is exactly how step 5's incident happened.
+// The expected home is derived from the executable path, which is always
+// <project>/.run/bin/<binary>, so a binary copied elsewhere fails closed.
+func homeGuard() error {
+	exe, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("cannot resolve executable: %w", err)
+	}
+	want := filepath.Join(filepath.Dir(filepath.Dir(filepath.Dir(exe))), ".run", "home")
+	if resolved, err := filepath.EvalSymlinks(want); err == nil {
+		want = resolved
+	}
+	home := os.Getenv("HOME")
+	if home == "" {
+		return fmt.Errorf("HOME is unset: refusing to start (expected %s)", want)
+	}
+	got, err := filepath.EvalSymlinks(home)
+	if err != nil {
+		got = filepath.Clean(home)
+	}
+	if got != want {
+		return fmt.Errorf("HOME=%s is not Mei's fake home (%s): refusing to start; use ./mei", home, want)
+	}
+	return nil
+}
+
 func main() {
+	if err := homeGuard(); err != nil {
+		fmt.Fprintln(os.Stderr, "mei:", err)
+		os.Exit(1)
+	}
+
 	args := os.Args[1:]
 	if len(args) == 0 || args[0] == "daemon" {
 		if err := runDaemon(); err != nil {
@@ -57,7 +91,8 @@ func main() {
 	}
 }
 
-func sendLine(line string) (string, error) {	conn, err := net.DialTimeout("unix", socketPath(), 2*time.Second)
+func sendLine(line string) (string, error) {
+	conn, err := net.DialTimeout("unix", socketPath(), 2*time.Second)
 	if err != nil {
 		return "", fmt.Errorf("daemon not reachable at %s (is `ryogami` running?)", socketPath())
 	}

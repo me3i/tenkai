@@ -47,6 +47,9 @@ PanelWindow {
     readonly property string dateLong: now.toLocaleDateString(Config.formatLoc, "MMMM d")
 
     // ── weather (daemon-fed singleton) ──
+    // MEI: weather is off the keep list and its feed is compiled out, so its
+    // three islands are hidden rather than deleted. Set true to restore them.
+    readonly property bool weatherUi: false
     readonly property var cur: Weather.current
     readonly property bool wxReady: Weather.available && dash.cur !== null
     readonly property var metrics: dash.wxReady ? [
@@ -301,6 +304,7 @@ PanelWindow {
 
                 Rectangle {
                     id: heroTile
+                    visible: dash.weatherUi
                     anchors { left: parent.left; top: parent.top; topMargin: rightCol.rowY }
                     width: rightCol.halfW
                     height: rightCol.rowH
@@ -354,6 +358,7 @@ PanelWindow {
 
                 Rectangle {
                     id: metricsTile
+                    visible: dash.weatherUi
                     anchors { right: parent.right; top: parent.top; topMargin: rightCol.rowY }
                     width: rightCol.halfW
                     height: rightCol.rowH
@@ -408,6 +413,7 @@ PanelWindow {
                 // temperature area-graph island (coming hours)
                 Rectangle {
                     id: graphTile
+                    visible: dash.weatherUi
                     anchors { left: parent.left; right: parent.right; top: parent.top; topMargin: rightCol.rowY + rightCol.rowH + 14; bottom: parent.bottom }
                     radius: dash.tileRadius
                     color: dash.tileFill

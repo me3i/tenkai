@@ -3,6 +3,62 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 5 fixes (owner review): HOME guard, wallpaper wrapper, name scan, weather off
+
+Committed separately before notifications, as requested. Two consecutive clean harness runs:
+`.run/logs/step5-041051.log` and `.run/logs/step5-041136.log`, both `RESULT: PASS`, zero `FAIL`
+lines, verify-untouched PASS at both ends.
+
+### a. HOME guard in every state-writing binary
+
+`homeGuard()` is the first statement of `main()` in all four binaries: `mei-shell`
+(`src/ryoku/shell/ipc/main.go`), `ryogami` (`src/ryoku/shell/ryogami/daemon/main.go`), `mei-hub`
+(`src/ryoku/hub/backend/main.go`) and `mei-hub`'s sibling provider `mei-wm-hyprland`
+(`src/ryoku/wm/hyprland/main.go`). It derives the allowed home from the executable path
+(`<project>/.run/bin/<binary>` -> `<project>/.run/home`), so a binary copied anywhere else fails
+closed; `HOME` unset also fails. It applies to client verbs too (`ryogami wallpaper`, `mei-hub
+config get`), because a client with the real HOME resolves the real cache dir — the precise shape
+of the step-5 incident.
+
+Same guard shape in four files rather than a shared package: the four live in three separate Go
+modules and a shared internal package would add a fourth import path for ~20 lines. Revisit only
+if a fifth consumer appears.
+
+### b. `./mei wallpaper <path|next|prev|random>`
+
+New subcommand in `mei`; pins `HOME`, `MEI_HOME`, `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`,
+`XDG_STATE_HOME`, `XDG_DATA_HOME` and `XDG_RUNTIME_DIR` to the nested values, resolves the path
+with `realpath`, requires the session (`$PID_FILE` + `.r/ryogami.sock`) and calls the ryogami CLI.
+The harness now changes both wallpapers through it, so it is exercised on every run.
+
+### c. verify-untouched: new entries since baseline
+
+`docs/baseline/new-name-watch.txt` records the paths under `~/.cache`, `~/.local/state`,
+`~/.local/share` and `~/.config` (depth 3) whose *path segment* starts with `mei`, `ryoku` or
+`ryogami`; `verify-untouched` re-scans, diffs, prints additions and fails on any. Removals are
+INFO (cleanup is allowed).
+
+Deviation from the literal instruction, with evidence: a bare substring match is unusable on this
+host — it flags `~/.config/google-chrome/MEIPreload` (Chrome DRM), `~/.cache/fish/namei.fish`,
+`~/.local/share/Steam/friends/GameInviteNotification.res` and
+`~/.local/share/applications/mimeinfo.cache`. Verified that the anchored rule still catches both
+real incident paths (`~/.cache/ryogami`, `~/.local/state/mei-wallpaper`), and that creating
+`~/.cache/ryogami` flips the check to FAIL and removing it flips it back to PASS.
+
+### d. Re-run with the `Frame.qml` edit
+
+Honest count: the two clean runs before this commit were made **before** the `Frame.qml` edit, so
+the committed step-5 state had zero clean runs. Now it has two.
+
+### e. Weather tiles hidden (disabled, not deleted)
+
+- `bar/framebars/menus/MenuWeather.qml`: `visible: false` at the root, so the clock menu, the
+  (unreachable) quick-settings weather page and the weather frame widget collapse together.
+- `bar/barstyles/qsbar/panels/DashboardPopup.qml`: `weatherUi: false` gates the three weather
+  islands (`heroTile`, `metricsTile`, `graphTile`). The clock island remains; the right column
+  below it is now empty by design.
+- The bar's own `WeatherWidget` was already zero-width since step 4, so the bar is unchanged.
+
 ## Phase 6 — step 5: wallpaper + matugen theming
 
 Scope: ryogami stills-only, the wallpaper -> palette path, Mei's minimal matugen config, and

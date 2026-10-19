@@ -18,6 +18,12 @@ import Ryoku.Ui.Singletons
 Item {
     id: root
 
+    // MEI: weather is off the keep list and the daemon never opens the weather
+    // topic, so the whole surface is hidden (disabled, not deleted). Hidden at
+    // the root so the clock menu, the quick-settings tab and the weather frame
+    // widget all collapse together; positioners skip invisible children.
+    visible: false
+
     required property real s
     required property bool open
 

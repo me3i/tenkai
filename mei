@@ -21,7 +21,11 @@
 #                           (:1.NNN) and app-owned names (steam, protonvpn, kitty, firefox, …) are
 #                           ignored. Other process diffs are informational unless --strict.
 #   status                  show whether a Mei test session started by this script is running
-#   run | stop | test       Phase 6+ (run/test are stubs for now; stop is implemented)
+#   run | stop | test       start / stop the nested session, or run it under the full harness
+#   wallpaper <path|next|prev|random>
+#                           change the nested session's wallpaper through the ryogami CLI with
+#                           Mei's confined HOME/XDG env. Use this, never the binary directly:
+#                           the daemons refuse to start unless HOME is .run/home.
 set -euo pipefail
 
 # `less` is NOT installed on this host. Any git call that would page (log, diff,
@@ -102,6 +106,24 @@ capture_symlinks() {  # $1 = output file
     | sort > "$1"
 }
 
+# Names that must never appear under the live user's data dirs. The filter is
+# anchored at the start of each path segment, not a bare substring: a substring
+# match flags ~/.config/google-chrome/MEIPreload, ~/.cache/fish/namei.fish,
+# ~/.local/share/Steam/friends/GameInviteNotification.res and
+# ~/.local/share/applications/mimeinfo.cache, none of which are ours.
+NAME_SCAN_ROOTS=("$HOME/.cache" "$HOME/.local/state" "$HOME/.local/share" "$HOME/.config")
+NAME_SCAN_RE='(^|/)(mei|ryoku|ryogami)([._-]|$)'
+
+capture_names() {  # $1 = output file
+  local d roots=()
+  for d in "${NAME_SCAN_ROOTS[@]}"; do [ -d "$d" ] && roots+=("$d"); done
+  if [ "${#roots[@]}" -eq 0 ]; then : > "$1"; return 0; fi
+  # grep exits 1 on "no match", which under `set -o pipefail` would abort the
+  # whole script: an empty result is the healthy case, not an error.
+  find "${roots[@]}" -mindepth 1 -maxdepth 3 2>/dev/null \
+    | sed "s|^$HOME/||" | { grep -iE "$NAME_SCAN_RE" || true; } | sort -u > "$1"
+}
+
 capture_procs() {  # $1 = output file; stable, sorted snapshot
   { pgrep -a -f "$PROC_PATTERN" 2>/dev/null | grep -v -e 'pgrep' -e '/projects/mei/' || true; } | sort -k2 > "$1"
 }
@@ -170,6 +192,7 @@ cmd_baseline() {
 
   capture_hashes   "$BASE_DIR/config-hashes.sha256"
   capture_symlinks "$BASE_DIR/config-symlinks.txt"
+  capture_names    "$BASE_DIR/new-name-watch.txt"
   capture_procs    "$BASE_DIR/session-processes.txt"
   capture_dbus     "$BASE_DIR/dbus-names.txt"
   dbus_watch_filter < "$BASE_DIR/dbus-names.txt" > "$BASE_DIR/dbus-watched.tsv"
@@ -255,6 +278,23 @@ cmd_verify_untouched() {
     rc=1
   fi
 
+  if [ -f "$BASE_DIR/new-name-watch.txt" ]; then
+    capture_names "$tmp/new-name-watch.txt"
+    local added removed
+    added="$(comm -13 "$BASE_DIR/new-name-watch.txt" "$tmp/new-name-watch.txt" || true)"
+    removed="$(comm -23 "$BASE_DIR/new-name-watch.txt" "$tmp/new-name-watch.txt" || true)"
+    if [ -z "$added" ]; then
+      note "OK    no new mei/ryoku/ryogami entries under ~/.cache, ~/.local/{state,share}, ~/.config"
+    else
+      note "FAIL  NEW mei/ryoku/ryogami entries outside the project since baseline:"
+      printf '%s\n' "$added" | sed 's/^/      /'
+      rc=1
+    fi
+    [ -z "$removed" ] || { note "INFO  entries present at baseline but gone now (cleanup is fine):"; printf '%s\n' "$removed" | sed 's/^/      /'; }
+  else
+    note "INFO  baseline has no name snapshot; re-run './mei baseline --force' to add one"
+  fi
+
   capture_procs "$tmp/session-processes.txt"
   if diff -u "$BASE_DIR/session-processes.txt" "$tmp/session-processes.txt" > "$tmp/procs.diff" 2>&1; then
     note "OK    session processes: same set as baseline"
@@ -281,6 +321,33 @@ cmd_verify_untouched() {
   rm -rf "$tmp"
   if [ "$rc" = 0 ]; then note "verify-untouched: PASS"; else note "verify-untouched: FAIL"; fi
   return "$rc"
+}
+
+# ryogami's CLI is a client: it resolves the socket through XDG_RUNTIME_DIR and
+# writes its cache under HOME. Both must be the nested values, which is exactly
+# what this wrapper pins — step 5's incident was a direct binary call that
+# inherited the real HOME. The daemons now also refuse a non-nested HOME.
+cmd_wallpaper() {
+  [ "$#" -ge 1 ] || die "usage: ./mei wallpaper <image path | next | prev | random>"
+  [ -f "$PID_FILE" ] || die "no Mei session is running — start one with './mei run'"
+  [ -S "$MEI_DIR/.r/ryogami.sock" ] || die "no ryogami socket at .r/ryogami.sock — is the session up?"
+  local arg="$1" mode="set"
+  case "$arg" in
+    next|prev|random) mode="$arg" ;;
+    *)
+      [ -f "$arg" ] || die "no such image: $arg"
+      arg="$(realpath -- "$arg")"
+      ;;
+  esac
+  note "wallpaper: $mode $arg"
+  HOME="$RUN_DIR/home" \
+  MEI_HOME="$RUN_DIR/home" \
+  XDG_CONFIG_HOME="$RUN_DIR/config" \
+  XDG_CACHE_HOME="$RUN_DIR/home/.cache" \
+  XDG_STATE_HOME="$RUN_DIR/state" \
+  XDG_DATA_HOME="$RUN_DIR/data" \
+  XDG_RUNTIME_DIR="$MEI_DIR/.r" \
+  "$RUN_DIR/bin/ryogami" wallpaper "$mode" "$arg"
 }
 
 cmd_status() {
@@ -697,7 +764,9 @@ cmd_test() {
 }
 
 usage() {
-  sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+  local last
+  last="$(grep -n '^set -euo pipefail$' "${BASH_SOURCE[0]}" | cut -d: -f1)"
+  sed -n "2,$((last - 1))p" "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
 }
 
 case "${1:-help}" in
@@ -706,6 +775,7 @@ case "${1:-help}" in
   status)           shift; cmd_status ;;
   run)              shift; cmd_run ;;
   stop)             shift; cmd_stop ;;
+  wallpaper)        shift; cmd_wallpaper "$@" ;;
   test)             shift; cmd_test ;;
   help|--help|-h)   usage ;;
   *) die "unknown subcommand '${1}' — see './mei help'" ;;

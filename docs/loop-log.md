@@ -345,3 +345,29 @@ animation feel, palette colour correctness/taste, 144 Hz smoothness. Before/afte
 `.run/shots/step5-01-before.png`, `step5-02-set1-reveal-015.png`,
 `step5-03-set1-reveal-060.png`, `step5-04-set1-settled.png`, `step5-05-set2-settled.png`,
 `step5-launcher-p1.png`, `step5-launcher-p2.png`.
+
+## Step 5 fixes — owner review (2026-10-20)
+
+Owner's four objections were all correct. Run count, honestly: the two clean runs on record were
+made **before** the `Frame.qml` edit, so the committed step-5 tree had zero clean runs.
+
+| # | Item | Result |
+|---|------|--------|
+| a | HOME guard, four binaries | TESTED: each refuses `HOME=/home/mei` with exit 1 before any file access; probe XDG dirs still empty afterwards; `HOME` unset also refuses |
+| b | `./mei wallpaper` | TESTED: both harness wallpaper changes go through it (SPIKE: palette + pixels changed both times) |
+| c | new-entry scan | TESTED: decoy `~/.cache/mei-probe-test` and `~/.cache/ryogami` -> FAIL listing the path; removal -> PASS |
+| d | re-run after `Frame.qml` | TESTED: two consecutive runs, `step5-041051.log` + `step5-041136.log`, both `RESULT: PASS`, 0 FAIL lines |
+| e | weather tiles | Hidden (`MenuWeather` root, `DashboardPopup` `weatherUi`) — lint-clean, look UNVERIFIED |
+
+Two defects found while doing (c):
+
+1. `capture_names` initially aborted the whole script: `grep` exits 1 on zero matches and
+   `set -o pipefail` propagated it. Fixed with `{ grep ... || true; }` — the empty result is the
+   healthy case.
+2. A literal substring match for `mei|ryoku|ryogami` cannot work on this host. It flags
+   `MEIPreload` (Chrome), `namei.fish`, `GameInviteNotification.res`, `mimeinfo.cache`. The check
+   is anchored at the start of each path segment instead; both real incident paths still match.
+
+Still OPEN (UNVERIFIED, owner-only): reveal feel, palette taste, 144 Hz. And with the weather
+islands hidden the dashboard's lower-right quadrant is empty — acceptable or wants the clock
+island to grow? Owner's call.
