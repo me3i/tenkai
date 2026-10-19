@@ -3,6 +3,72 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 — step 4: Settings app (`mei-hub`)
+
+Manifest scope (`docs/04-plan.md` 6.4): the Ryoku Settings app, copied to `src/ryoku/hub` and
+kept as **five pages only** — General, Appearance, Bar, Launcher, Motion. It persists to
+`$XDG_CONFIG_HOME/mei` and **cannot write Hyprland config**. Everything else is **disabled, not
+deleted** (original blocks are kept commented in place).
+
+### Pages and rail
+
+- `quickshell/Hub.qml`: `groups` reduced to
+  `GENERAL:[global]` + `DESKTOP:[desktop(Appearance), bar-studio(Bar), launcher(Launcher),
+  animations(Motion)]`; the original catalogue is kept as a commented block and the line above
+  records how to restore it. Default `section` changed `"windowmanager"` → `"global"` (the old
+  default was a disabled page). The masthead `UPDATES` chip is `visible:false` (Updates page off
+  list); `FILES` stays (it only lists paths). `sectionAvailable()` now returns false for any
+  section not in the active rail, which also stops a persisted `hub.toml` section (e.g.
+  `displays`) resurrecting a disabled page.
+- Page titles aligned with the rail: `GlobalPage` "Global/GLOBAL" → "General/GENERAL",
+  `DesktopPage` "Desktop/DESKTOP" → "Appearance/APPEARANCE", `BarStudioPage` "Bar Studio" → "Bar",
+  `LauncherPage` "App Launcher" → "Launcher", `AnimationsPage` "Animations" → "Motion" (and its
+  blurb no longer points at the disabled "Advanced" section).
+- Rebrand: "Mei Settings" window title, `M` mark / "Mei" name, `mei-hub` binary/config verbs,
+  `mei-shell.sock`, `~/.config|.cache|.state/mei` paths, lock `$XDG_RUNTIME_DIR/mei-hub.lock`.
+  `Ryoku.*` QML URIs, D-Bus names, font names and the Go module names are intentionally unchanged.
+
+### Hyprland writer severed (owner requirement: Settings never writes Hyprland config)
+
+- `Hub.qml`: `hyprGet`/`hyprDefaultsGet` are pinned `running:false`; `requestReloadCoverPrune` is a
+  no-op; the `requestQuit` reload-cover prune is commented out.
+- `backend/desktop.go`: `runDesktop` refuses `save|preview|restore|set-rebind` with the new
+  `errWMWriteDisabled`; `applyDesktop()`/`reloadDesktop()` in `Hub.qml` are no-ops.
+- `backend/schemes.go`: the `pkill -USR1 kitty` recolour is commented out.
+- No `settings.lua`, `rebinds.lua` or `user_edits/` is produced anywhere (verified by `find` over
+  the whole fake HOME and the fake config dir).
+
+### Motion page (kept, must drive real animation)
+
+- `MOTION` (Hyprland window editor) and `FOCUS FLASH` cards are `visible:false`; `animPresetGet`
+  is pinned off. The **SHELL MOTION** card is kept: `theme.motion.scale` (Speed) and
+  `theme.motion.reduce`, which `src/ryoku/ui/Singletons/Tokens.qml` reads for every `dur()`.
+- Those two keys are written live via `Settings.patch`, so they are outside the hub's
+  draft/save ledger. `Hub.qml:resetDefaults()` now also calls `Settings.reset("theme.motion")`,
+  otherwise RESET TO DEFAULTS left the shell's motion changed.
+
+### Off-list things disabled in the kept pages
+
+- `pages/BarStudioPage.qml`: the **BAR STYLE** card (`styleSect`, `visible:false`) is fed by
+  RyoStore's `barstyles` catalogue. Its `ryostore catalog` process is pinned `running:false` and
+  `browseBarStyles()` no longer shells out to `ryostore`.
+- `quickshell/SettingsSheet.qml`: the weather-city search called
+  `curl https://geocoding-api.open-meteo.com/...`; the debounce no longer issues that request.
+  (Weather is not on the keep list; the field/popup stays but does not go online.)
+- `pages/DesktopPage.qml` already hides the Clipboard tab and the boot `reloadCover` row
+  (both off list). `GlobalPage`'s timezone picker and shell restart were already made
+  display-only/no-op in this step.
+
+### Rename misses fixed in kept shell surfaces
+
+- `shell/services/Icons.qml`: the tray/app icon index ran `$MEI_SHELL_DIR/ipc/ryoku-shell`, which
+  never exists now (the daemon is built to Mei's bin dir) and failed on every start; it now
+  resolves `mei-shell` by name, so the icon index actually loads.
+- `shell/modules/bar/barstyles/qsbar/Theme.qml`: Wi-Fi/Bluetooth launch
+  `ryoku-shell hub open connections` → `mei-shell ...`.
+- `shell/services/Capture.qml`: `ryoku-shell clip-copy` / `ryoku-shell sound shutter` →
+  `mei-shell ...`.
+
 ## Phase 6 — step 3: control sidebar / quick settings
 
 Manifest scope (`docs/04-plan.md` 6.3): the `SUPER+ESCAPE` quick-settings sidebar

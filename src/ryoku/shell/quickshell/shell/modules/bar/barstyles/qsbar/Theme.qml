@@ -2538,8 +2538,8 @@ Item {
     // live there); the daemon spawns or navigates the single Hub instance. This
     // replaces the old terminal launchers (impala / bluetui / bluetoothctl) that
     // predate the Hub owning connection settings.
-    readonly property string launchWifiCmd: "ryoku-shell hub open connections"
-    readonly property string launchBtCmd:   "ryoku-shell hub open connections"
+    readonly property string launchWifiCmd: "mei-shell hub open connections"
+    readonly property string launchBtCmd:   "mei-shell hub open connections"
     property bool modPower:      false   // default off (toggle in ControlPanel)
     property bool modBluetooth:  false   // default off (toggle in ControlPanel)
     property bool modBrightness: true

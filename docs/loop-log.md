@@ -194,3 +194,66 @@ UNVERIFIED).
 **Two consecutive clean runs (iter3, iter4).** Loop exited. Stopping for owner review before the
 Settings app (step 4). The owner should `./mei run`, press `SUPER+ESCAPE`, judge the motion and
 the brightness fader by feel, and press the bar logo to see the control centre's English labels.
+
+---
+
+## Phase 6 step 4 — Settings app (`mei-hub`) (2026-10-20 01:47–02:00)
+
+**Change set:** `CHANGES.md` → "Phase 6 — step 4". Harness `.run/tools/step4.sh` (git-ignored).
+One clean run: `.run/logs/step4-015917.log`. Earlier runs in this step were harness failures
+(.run/logs/step4-012437.log, step4-014714.log) and are kept as **FAIL** — see the loop notes.
+
+| Acceptance item | Result | Evidence |
+|---|---|---|
+| Opens from the quick-settings rail | **TESTED** | rail button runs `mei-shell hub open` (`QsTabRail.qml`); same command opened pid 98096 — `.run/shots/step4-hub-open.png` |
+| Exactly the 5 pages | **TESTED** | active `groups` = global/desktop/bar-studio/launcher/animations; all five opened (`nav section` = key) and rendered (std 0.094–0.113) — `.run/shots/step4-hub-page-*.png` |
+| Disabled pages cannot open | **TESTED** | `hub open displays` / `windowmanager` refused; section stayed `animations` |
+| English labels, no kanji | **TESTED** | rail General/Appearance/Bar/Launcher/Motion; `力`→`M`, `jpName` map emptied — screenshots above |
+| Motion edits live animation values | **TESTED** (data path) | UI toggle set `theme.motion.reduce=true` in `shell.json`; `Tokens.qml` `dur()`/`reduceMotion` read it |
+| Motion persists across restart | **TESTED** | `./mei stop` + `./mei run`, value still `{"reduce":true,"scale":1}` — `.run/shots/step4-hub-motion-restart-stuck.png` |
+| Reset restores the default | **TESTED** | RESET TO DEFAULTS → `{"reduce":false,"scale":1}` — `.run/shots/step4-hub-motion-after-reset.png` |
+| No Hyprland write | **TESTED** | no `settings.lua`/`rebinds.lua`/`user_edits` anywhere in the fake HOME; real `~/.config/hypr` hash `4a9daa50…68afe` unchanged before/after |
+| Persists only to Mei config | **TESTED** | everything written sits in `$XDG_CONFIG_HOME/mei`: brand/hub/launcher/shell/theme/visualizer/stage/stash/widgets |
+| No `hyprctl` from Settings | **TESTED** | no `hyprctl` process during the run |
+| Zero outbound | **TESTED** (hub) | `ss -tunp`: hub owns no tcp/udp sockets. The two Settings-side network seams found in review (RyoStore catalogue, open-meteo geocode) are now disabled in code |
+| Hub lock under `$XDG_RUNTIME_DIR` | **TESTED** | `$XDG_RUNTIME_DIR/mei-hub.lock` present |
+| Clean exit | **TESTED** | `hub close` → no hub process; `./mei stop` → no stray Mei process |
+| Audio reaches the real sink (owner-approved probe) | **TESTED** (value path) | symlink only `pipewire-0`; real sink 1.00 → 0.95 → restored 1.00; symlink unlinked — `.run/shots/step4-audio-qspanel-{readonly,changed}.png` |
+| No QML errors | **TESTED** | shell log clean (portal/pipewire noise excluded); `qmllint` clean on the edited hub files |
+| `verify-untouched` | **TESTED** | PASS before and after |
+| Animation feel / slider drag gestures / 144 Hz / GPU | **UNVERIFIED** | owner — the Motion toggle and the audio *value* were driven, but a slider **drag** and the perceived timing are not keyboard-provable here |
+
+### Exclusions (disabled, not deleted — opt back in at the marked block)
+
+- Hub: Profile, Updates, Displays, Connections, Input, Graphics & Power, Lockscreen, Window
+  Manager, Plugins, Layer Rules, Keybinds, App Overrides, Window Rules, Performance, Session,
+  Recording, Dictation, Fastfetch, Import, Add-ons, Rashin, Credits, Widgets.
+- Bar page: **BAR STYLE** card (RyoStore-fed). Desktop page: Clipboard tab, boot `reloadCover`
+  row. Motion page: Hyprland window-animation editor, Focus Flash, animation presets.
+- Settings-side network: RyoStore catalogue/install and the open-meteo city geocode.
+
+### Notes / scope boundaries
+
+- **Earlier FAILs in this step, kept as FAIL:** run 1 (`.run/logs/step4-012437.log`) opened the
+  hub with the long `.run/rt` runtime path, which breaks Hyprland's `.socket.sock` and sent
+  `mei-shell` to the host socket, so the hub never opened; run 2 (`.run/logs/step4-014714.log`)
+  used `qs ipc --pid` for the page check (wrong instance handle) and a log filter that caught an
+  `xdg-desktop-portal` line. Both were harness bugs, not product regressions; the harness now
+  uses `.r`, reads the hub's own `hub.toml` section, and excludes portal/pipewire noise. No FAIL
+  was reworded to UNVERIFIED.
+- Step 3's `Audio = UNVERIFIED` is now **TESTED for the value path** with the owner-approved
+  symlink; the slider gesture itself is still UNVERIFIED.
+- **Still outbound-capable in the daemon (not exercised, reported for the owner):**
+  `src/ryoku/shell/ipc/weather.go` (Open-Meteo forecast/geocode/air), `music.go` (remote artwork),
+  `calendar.go` (ICS over HTTP). None was reached in this run and the hub made no socket; whether
+  they should be neutered is a keep-list decision for the owner (weather/music/calendar are not on
+  the keep list).
+- Tray icons: `Icons.qml` was spawning a non-existent `ryoku-shell` path; fixed to `mei-shell`.
+  Real tray content is still **UNVERIFIED**.
+
+### Verdict
+
+**One clean run after two harness-only FAILs.** Loop exited at the step boundary. Stopping for
+owner review before wallpaper / notifications / tray (not started). The owner should `./mei run`,
+open Settings from the quick-settings rail and from the bar, move the **Motion → Speed** slider
+and watch the shell's panels, then RESET and confirm 100%.

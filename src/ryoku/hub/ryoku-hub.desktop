@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Mei Settings
+GenericName=Settings
+Comment=Configure the Mei desktop: appearance, bar and launcher
+Exec=mei-shell hub open
+Terminal=false
+Icon=mei-hub
+Categories=Settings;DesktopSettings;
+Keywords=hub;settings;preferences;mei;configure;appearance;bar;launcher;motion;

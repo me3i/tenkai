@@ -25,9 +25,9 @@ Singleton {
     // Resolve the binary the way the shell does elsewhere: a checkout runs it out
     // of MEI_SHELL_DIR/ipc, a deployed box finds it on PATH.
     readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
-    readonly property string _bin: (root._shellDir && root._shellDir.length > 0)
-        ? root._shellDir + "/ipc/ryoku-shell"
-        : "mei-shell"
+    // MEI: the daemon is `mei-shell` and is built to Mei's bin dir (on PATH), not
+    // <MEI_SHELL_DIR>/ipc; resolve it by name so the icon index actually loads.
+    readonly property string _bin: "mei-shell"
 
     // path(name, fallback): Quickshell.iconPath's semantics, resolved against the
     // index instead of Qt's icon engine.
