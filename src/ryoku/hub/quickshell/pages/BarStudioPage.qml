@@ -151,7 +151,11 @@ Item {
     ]
     // The running bar style, default the built-in frame style. The frame, rails
     // and zone editors below are Sumi's; a folder style owns its own layout.
-    readonly property string activeStyle: page.fval("barStyle", "sumi")
+    // MEI: default qsbar, not sumi. The fallback fired whenever the hub could
+    // not read the current id (no store yet, or a bare probe harness) and wrote
+    // "sumi" into the shipped settings, which made a fresh Mei start on the
+    // alternative left rail instead of the keep-list top bar.
+    readonly property string activeStyle: page.fval("barStyle", "qsbar")
     readonly property bool sumiActive: page.activeStyle === "sumi"
     readonly property string activeName: {
         for (let i = 0; i < page.barStyles.length; i++)

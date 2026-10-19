@@ -298,8 +298,8 @@ run adds the wallpaper/launcher assertions). Final PASS log: `.run/logs/step5-02
 | still wallpaper sets | **TESTED** | wallpaper-area mean `0C1724` -> `BB7165` -> `8A89B0` |
 | reveal transition runs | **TESTED (frames)** | 3 distinct frames at 0.15 s / 0.60 s / settled; **feel UNVERIFIED** |
 | palette regenerates | **TESTED** | `$HOME/.cache/mei/{colors,tones}.json` written; primary `#904b40` |
-| bar recolours | **TESTED** | bar strip mean `B07165` -> `9C7EC5` |
-| launcher recolours | **TESTED** | launcher accent `E4D3CF` -> `DAD9E4` |
+| bar recolours | **INVALID — see the correction below** | the old `B07165` -> `9C7EC5` measured the sumi rail, not the bar |
+| launcher recolours | **INVALID — see the correction below** | the old `E4D3CF` -> `DAD9E4` came from the same sumi run |
 | second wallpaper recolours again | **TESTED** | colors.json hash changes; bar + accent change |
 | matugen + right config path in log | **TESTED** | `matugen render: matugen -c /home/mei/projects/mei/.run/config/mei/matugen/config.toml json …` |
 | no outbound | **TESTED** | `ss -tunp`: ryogami, daemon and shell own no tcp/udp; `go list -deps` has no `net/http` |
@@ -308,6 +308,27 @@ run adds the wallpaper/launcher assertions). Final PASS log: `.run/logs/step5-02
 | real configs/caches untouched | **TESTED** | sha256 of `~/.config/{kitty,qt6ct,gtk-3.0}` + absent `{btop,gtk-4.0}`, `~/.cache/{ryoku,matugen}` identical before/after |
 | ryogami resource use | **TESTED** | VmRSS/VmHWM 10.9 MB, 10-11 threads, 0.0% CPU at idle |
 | verify-untouched before/after | **PASS** | both ends |
+
+### Correction — the bar numbers above measured the wrong bar
+
+The runs behind `B07165 -> 9C7EC5` had `barStyle: sumi` in `.run/config/mei/shell.json`
+(the hub's unreadable-id fallback wrote it), so the `1180x36+0+0` crop was the sumi left rail
+over the wallpaper, not the qsbar top bar. Those two rows are **invalid for the bar**.
+
+Valid measurement with `qsbar` pinned — both runs print `nested shell.json barStyle: qsbar`:
+
+| Run | bar strip before | after set 1 (warm) | after set 2 (purple) | launcher accent |
+|---|---|---|---|---|
+| `.run/logs/step5-045946.log` | `E0D9EC` | `E6D7D3` | `E0D9EC` | `F2956A` -> `6873A7` |
+| `.run/logs/step5-050041.log` | `E0D9EC` | `E6D7D3` | `E0D9EC` | `F2956A` -> `6873A7` |
+
+Both runs agree pixel-for-pixel. The crop is the bar itself: `.run/shots/step5-bar-after1-crop.png`
+shows the MEI wordmark, the workspace pill, audio, clock and the tray glyphs. The bar returns to
+its starting colour on set 2 because set 2 is the default wallpaper, i.e. the original palette.
+
+**Fixed at the source:** the hub no longer invents `sumi`. `Hub.qml` shipped defaults and
+`BarStudioPage.qml`'s `activeStyle` fallback are both `qsbar` now, so an unreadable id can no
+longer reseed the alternative rail.
 
 ### Gaps this step exposed (all fixed)
 

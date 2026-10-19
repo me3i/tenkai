@@ -545,7 +545,7 @@ Rectangle {
         "spin": 0, "x": 0, "y": 0.58, "w": 1, "h": 0.42, "grow": "up", "angle": 0, "tiltX": 0, "tiltY": 0,
         "markText": "M", "markImage": "", "markTint": true, "name": "Mei",
         "reloadCover": ReloadCoverModel.empty(),
-        "language": "Auto", "barStyle": "sumi", "obi": {}, "nacre": NacreConfig.defaultConfig(), "qsbar": {}, "dock": {},
+        "language": "Auto", "barStyle": "qsbar", "obi": {}, "nacre": NacreConfig.defaultConfig(), "qsbar": {}, "dock": {},
         "clipboard.widthPercent": 65, "clipboard.heightPercent": 42, "clipboard.bottomPercent": 0,
         "clipboard.panelRadius": 18, "clipboard.paneRadius": 12, "clipboard.cardRadius": 9,
         "clipboard.pruneWeekly": false
