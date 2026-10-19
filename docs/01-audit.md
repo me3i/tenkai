@@ -532,6 +532,7 @@ This list is a *families* inventory — a per-file `grep -rn` sweep is a Phase 6
 | **Ryoku fonts** (7 roles) | ❌ all missing | Phase 4 (approval) |
 | Nested Hyprland test harness | scaffold exists (`.run/test-hypr.conf` planned) | Phase 4/6 |
 | Baseline + `verify-untouched` | ✅ PASS | done |
+| `less` (git's default pager) | ❌ **not installed** — git must be called with `--no-pager` (or `GIT_PAGER=cat`); `./mei` exports both `GIT_PAGER=cat` and `PAGER=cat` | — |
 
 ---
 

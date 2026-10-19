@@ -11,12 +11,21 @@
 # Subcommands:
 #   baseline [--force]      capture the read-only snapshot of the live session into docs/baseline/
 #   verify-untouched [--strict]
-#                           re-hash ~/.config/{quickshell,hypr} and diff live-session process/D-Bus
-#                           names against the baseline. Config-hash diffs are always fatal;
-#                           process/DBus diffs are informational unless --strict.
+#                           re-hash ~/.config/{quickshell,hypr} and re-check live-session state.
+#                           Config-hash/symlink diffs are always fatal. A change of owner PID for a
+#                           watched well-known D-Bus name (Notifications, tray watcher, ScreenSaver,
+#                           secrets, pipewire/pulse, portals) is always fatal; connection IDs
+#                           (:1.NNN) and app-owned names (steam, protonvpn, kitty, firefox, …) are
+#                           ignored. Other process diffs are informational unless --strict.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       Phase 6+ (run/test are stubs for now; stop is implemented)
 set -euo pipefail
+
+# `less` is NOT installed on this host. Any git call that would page (log, diff,
+# show) would otherwise fail with "error: cannot run less". Force cat everywhere,
+# and document this so ad-hoc git use also passes --no-pager.
+export GIT_PAGER=cat
+export PAGER=cat
 
 MEI_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 RUN_DIR="$MEI_DIR/.run"
@@ -30,6 +39,17 @@ note() { printf '%s\n' "$*"; }
 
 # Pattern of live-session processes Mei must never disturb.
 PROC_PATTERN='quickshell|serpantinum|Hyprland|hyprpaper|swww|swaybg|mpvpaper|hypridle|hyprlock|cliphist|clipman|copyq|wl-clipboard|wl-paste'
+
+# Well-known session-bus names whose owner must not change while Mei runs. Only
+# these are compared (one line each); unique connection IDs (:1.NNN) and app-owned
+# names churn whenever any app starts. A change of owner PID here is fatal.
+DBUS_WATCH_RE='^org[.]freedesktop[.](Notifications|ScreenSaver|secrets)$'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]kde[.]StatusNotifierWatcher$'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]portal[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]impl[.]portal[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]pipewire[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]pulseaudio[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]ReserveDevice1[.]'
 
 session_bus() {
   local bus="${DBUS_SESSION_BUS_ADDRESS:-}"
@@ -67,6 +87,41 @@ capture_dbus() {  # $1 = output file
   fi
 }
 
+# Reduce a `busctl list` stream (live or the frozen baseline file) to
+# "NAME<TAB>PID" for watched well-known names only.
+dbus_watch_filter() {
+  awk -v re="$DBUS_WATCH_RE" '$1 ~ re { print $1 "\t" $2 }' | sort -u
+}
+
+capture_dbus_watched() {  # $1 = output file; live watched names -> NAME<TAB>PID
+  local bus=""
+  if bus="$(session_bus)"; then
+    DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager list 2>/dev/null \
+      | grep -v -E '^:[0-9.]+[[:space:]]+[0-9]+[[:space:]]+busctl ' \
+      | dbus_watch_filter > "$1" || true
+  else
+    echo "(session bus not reachable from this shell)" > "$1"
+  fi
+}
+
+# One line per watched name; returns 1 if any owner PID differs (always fatal).
+compare_dbus_watched() {  # $1 = baseline NAME<TAB>PID, $2 = current NAME<TAB>PID
+  local base="$1" cur="$2" name bpid cpid rc=0
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    bpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$base")"
+    cpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$cur")"
+    bpid="${bpid:--}"; cpid="${cpid:--}"
+    if [ "$bpid" = "$cpid" ]; then
+      printf '      OK      %-46s owner pid %s\n' "$name" "$cpid"
+    else
+      printf '      CHANGE  %-46s owner pid %s -> %s\n' "$name" "$bpid" "$cpid"
+      rc=1
+    fi
+  done < <(cut -f1 "$base" "$cur" | sort -u)
+  return "$rc"
+}
+
 capture_qs_instances() {  # $1 = output file
   if command -v qs >/dev/null 2>&1; then
     qs list > "$1" 2>&1 || true
@@ -88,6 +143,7 @@ cmd_baseline() {
   capture_symlinks "$BASE_DIR/config-symlinks.txt"
   capture_procs    "$BASE_DIR/session-processes.txt"
   capture_dbus     "$BASE_DIR/dbus-names.txt"
+  dbus_watch_filter < "$BASE_DIR/dbus-names.txt" > "$BASE_DIR/dbus-watched.tsv"
   capture_qs_instances "$BASE_DIR/quickshell-instances.txt"
   ps -eo pid,ppid,user,args --sort=pid > "$BASE_DIR/ps-full.txt"
 
@@ -115,7 +171,8 @@ cmd_baseline() {
     echo "  docs/baseline/config-symlinks.txt    symlinks under those trees"
     echo "  docs/baseline/session-processes.txt  live shell/compositor/wallpaper/clipboard/idle processes"
     echo "  docs/baseline/quickshell-instances.txt  output of 'qs list'"
-    echo "  docs/baseline/dbus-names.txt         session bus names (Notifications/StatusNotifier/MPRIS owners)"
+    echo "  docs/baseline/dbus-names.txt         full session bus listing (record only)"
+    echo "  docs/baseline/dbus-watched.tsv       watched well-known names + owner PID (verify checks these)"
     echo "  docs/baseline/ps-full.txt            full process table snapshot"
     echo "  docs/baseline/env.txt                environment + runtime dirs"
     echo
@@ -176,13 +233,18 @@ cmd_verify_untouched() {
     [ "$strict" = 1 ] && rc=1
   fi
 
-  capture_dbus "$tmp/dbus-names.txt"
-  if diff -u "$BASE_DIR/dbus-names.txt" "$tmp/dbus-names.txt" > "$tmp/dbus.diff" 2>&1; then
-    note "OK    session bus names: same as baseline"
+  if [ -f "$BASE_DIR/dbus-watched.tsv" ]; then
+    cp "$BASE_DIR/dbus-watched.tsv" "$tmp/base-watched.tsv"
   else
-    note "INFO  session bus names changed since baseline (name owners churn naturally):"
-    sed 's/^/      /' "$tmp/dbus.diff"
-    [ "$strict" = 1 ] && rc=1
+    dbus_watch_filter < "$BASE_DIR/dbus-names.txt" > "$tmp/base-watched.tsv"
+  fi
+  capture_dbus_watched "$tmp/dbus-watched.tsv"
+  note "D-Bus well-known names Mei must not steal (owner PID must not change):"
+  if compare_dbus_watched "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv"; then
+    note "OK    session bus: all watched names still owned by the same PID"
+  else
+    note "FAIL  a watched D-Bus name changed owner (a Mei shell must never take these):"
+    rc=1
   fi
 
   rm -rf "$tmp"

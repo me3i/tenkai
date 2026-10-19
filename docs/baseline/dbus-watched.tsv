@@ -1,0 +1,16 @@
+org.freedesktop.impl.portal.desktop.gtk	984
+org.freedesktop.impl.portal.desktop.hyprland	1006
+org.freedesktop.impl.portal.desktop.kwallet	-
+org.freedesktop.impl.portal.PermissionStore	966
+org.freedesktop.impl.portal.Secret	-
+org.freedesktop.Notifications	935
+org.freedesktop.portal.Desktop	944
+org.freedesktop.portal.Documents	971
+org.freedesktop.portal.Tracker	-
+org.freedesktop.ReserveDevice1.Audio0	792
+org.freedesktop.ReserveDevice1.Audio1	792
+org.freedesktop.ScreenSaver	1127
+org.freedesktop.secrets	795
+org.kde.StatusNotifierWatcher	935
+org.pipewire.Telephony	792
+org.pulseaudio.Server	793
