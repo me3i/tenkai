@@ -295,7 +295,7 @@ cmd_status() {
     [ -n "${pid:-}" ] || continue
     if [ -d "/proc/$pid" ]; then
       local c
-      c="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+      c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
       if [[ "$c" == *"$MEI_DIR"* ]]; then
         note "RUNNING   pid=$pid pgid=${pgid:-?}  $c"
       else
@@ -313,7 +313,7 @@ cmd_stop() {
     [ -n "${pid:-}" ] || continue
     [ -d "/proc/$pid" ] || continue
     local c
-    c="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+    c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
     if [[ "$c" != *"$MEI_DIR"* ]]; then
       note "SKIP  pid=$pid (cmdline does not contain project path)"
       continue
@@ -328,7 +328,7 @@ cmd_stop() {
     while read -r pid pgid rest; do
       [ -n "${pid:-}" ] || continue
       if [ -d "/proc/$pid" ]; then
-        local c; c="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null || true)"
+        local c; c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
         [[ "$c" == *"$MEI_DIR"* ]] && alive=1
       fi
     done < "$PID_FILE"
@@ -343,8 +343,333 @@ cmd_stop() {
   rm -f "$PID_FILE"
 }
 
-cmd_run()  { die "'run' is implemented in Phase 6 (nested-session launcher). Not available yet — refusing to start anything."; }
-cmd_test() { die "'test' is implemented in Phase 6 (wrapper around run + checks + verify-untouched). Not available yet — refusing to start anything."; }
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 6 nested-session launcher + test harness
+#
+# Everything below runs ONLY inside `dbus-run-session` with a fake HOME and
+# project XDG redirects; the live session is never touched. `run` launches and
+# leaves it up; `test` = guard + verify-untouched + run + checks + `stop` +
+# verify-untouched, reporting each checklist item TESTED/UNVERIFIED.
+# ─────────────────────────────────────────────────────────────────────────────
+
+baseline_hypr_sig() {
+  [ -f "$BASE_DIR/env.txt" ] || return 1
+  sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$BASE_DIR/env.txt" | head -n1
+}
+
+write_nested_conf() {
+  mkdir -p "$RUN_DIR/hypr"
+  [ -f "$RUN_DIR/hypr/nested.conf" ] && return 0
+  cat > "$RUN_DIR/hypr/nested.conf" <<'CONF'
+# Mei nested test compositor. Lives only in .run/hypr; never the owner's config.
+# Hyprland 0.56.2 accepts hyprlang .conf (verified with --verify-config).
+general {
+    border_size    = 1
+    gaps_in        = 4
+    gaps_out       = 8
+    resize_on_border = true
+}
+decoration { rounding = 6 }
+misc { disable_hyprland_logo = true force_default_wallpaper = 0 }
+
+# A few binds so the owner can drive the nested instance only.
+bind = SUPER, Q, exit,
+bind = SUPER, 1, workspace, 1
+bind = SUPER, 2, workspace, 2
+bind = SUPER, 3, workspace, 3
+bind = CTRL, RETURN, exec, kitty || true
+CONF
+}
+
+prepare_nested_home() {
+  mkdir -p "$RUN_DIR/home" "$RUN_DIR/config" "$RUN_DIR/cache" "$RUN_DIR/state" \
+           "$RUN_DIR/data" "$RUN_DIR/rt" "$RUN_DIR/hypr" "$RUN_DIR/logs" "$RUN_DIR/bin" "$RUN_DIR/qml"
+  chmod 700 "$RUN_DIR/rt"
+  # Hyprland names its IPC sockets $XDG_RUNTIME_DIR/hypr/<signature>/.socket2.sock.
+  # The signature is 61 chars, so the full path must stay <= 107 bytes or the
+  # *event* socket is silently disabled ("Socket2 path is too long"). The
+  # project path is 22 chars, so .run/rt cannot fit. Expose the same directory
+  # through a short symlink for the child's XDG_RUNTIME_DIR; all bytes still
+  # land under .run/rt.
+  ln -sfn "$RUN_DIR/rt" "$MEI_DIR/.r"
+  mkdir -p "$RUN_DIR/home/.config/fontconfig" "$RUN_DIR/home/Pictures"
+  if [ ! -f "$RUN_DIR/home/.config/fontconfig/fonts.conf" ]; then
+    cat > "$RUN_DIR/home/.config/fontconfig/fonts.conf" <<EOF
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <include>/etc/fonts/fonts.conf</include>
+  <dir>$RUN_DIR/data/fonts</dir>
+</fontconfig>
+EOF
+  fi
+  # read-only view of the owner's wallpaper library inside the fake home
+  if [ -d "$HOME/Pictures/Wallpapers" ] && [ ! -e "$RUN_DIR/home/Pictures/Wallpapers" ]; then
+    ln -s "$HOME/Pictures/Wallpapers" "$RUN_DIR/home/Pictures/Wallpapers"
+  fi
+}
+
+write_session_script() {  # $1 = absolute host wayland socket, $2 = live baseline signature
+  cat > "$RUN_DIR/session.sh" <<SESSION
+#!/usr/bin/env bash
+set -uo pipefail
+MEI_DIR="__MEI_DIR__"
+BASELINE_SIG="__BASELINE_SIG__"
+RUN="\$MEI_DIR/.run"
+export HOME="\$RUN/home"
+export XDG_CONFIG_HOME="\$RUN/config"
+export XDG_CACHE_HOME="\$RUN/cache"
+export XDG_STATE_HOME="\$RUN/state"
+export XDG_DATA_HOME="\$RUN/data"
+export XDG_RUNTIME_DIR="\$MEI_DIR/.r"
+export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
+export PATH="\$RUN/bin:\$PATH"
+export QML2_IMPORT_PATH="\$RUN/qml"
+export QML_IMPORT_PATH="\$RUN/qml"
+export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
+export QSG_RENDER_LOOP=threaded
+export WAYLAND_DISPLAY="__HOST_WAYLAND__"
+unset MEI_POLKIT_AGENT HYPRLAND_INSTANCE_SIGNATURE
+unset XDG_VIDEOS_DIR XDG_PICTURES_DIR XDG_DOCUMENTS_DIR XDG_DOWNLOAD_DIR \\
+      XDG_MUSIC_DIR XDG_DESKTOP_DIR XDG_TEMPLATES_DIR XDG_PUBLICSHARE_DIR
+unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
+
+log="\$RUN/logs"; pidfile="\$RUN/pids"
+note() { printf '%s\\n' "\$*" >> "\$log/session.log"; }
+record() { local p="\$1" n="\$2"; local pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\\t%s\\t%s\\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
+
+note "starting nested Hyprland"
+Hyprland -c "\$RUN/hypr/nested.conf" >> "\$log/hyprland.log" 2>&1 &
+HYPPID=\$!; record "\$HYPPID" hyprland-nested
+
+sig=""
+for i in \$(seq 1 150); do
+  d="\$(ls -d "\$XDG_RUNTIME_DIR"/hypr/*/ 2>/dev/null | head -n1 || true)"
+  [ -n "\$d" ] && { sig="\$(basename "\$d")"; break; }
+  kill -0 "\$HYPPID" 2>/dev/null || { note "Hyprland died before ready"; exit 1; }
+  sleep 0.2
+done
+[ -n "\$sig" ] || { note "no Hyprland instance appeared"; exit 1; }
+if [ -n "\$BASELINE_SIG" ] && [ "\$sig" = "\$BASELINE_SIG" ]; then
+  note "REFUSING: nested signature equals the live baseline (\$sig)"
+  kill -TERM "\$HYPPID" 2>/dev/null || true
+  exit 1
+fi
+export HYPRLAND_INSTANCE_SIGNATURE="\$sig"
+note "hyprland instance: \$sig (baseline \$BASELINE_SIG)"
+
+for i in \$(seq 1 100); do
+  w="\$(ls "\$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)"
+  [ -n "\$w" ] && { export WAYLAND_DISPLAY="\$(basename "\$w")"; break; }
+  sleep 0.2
+done
+note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY"
+
+note "starting mei-shell daemon"
+"\$RUN/bin/mei-shell" daemon >> "\$log/daemon.log" 2>&1 &
+DPID=\$!; record "\$DPID" mei-shell-daemon
+
+wait "\$HYPPID"
+note "Hyprland exited; terminating daemon"
+kill -TERM "\$DPID" 2>/dev/null || true
+wait "\$DPID" 2>/dev/null || true
+note "session done"
+SESSION
+  sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__HOST_WAYLAND__|$1|g; s|__BASELINE_SIG__|${2:-}|g" "$RUN_DIR/session.sh"
+  chmod +x "$RUN_DIR/session.sh"
+}
+
+cmd_run() {
+  [ -x "$RUN_DIR/bin/mei-shell" ] || die "mei-shell not built — run the Phase 6 build first"
+  [ -d "$RUN_DIR/qml/Ryoku/Ui" ] || die "QML modules not assembled under .run/qml"
+
+  # Refuse to clobber a session that is still up.
+  if [ -f "$PID_FILE" ]; then
+    local alive=0 p
+    while read -r p _; do
+      [ -n "${p:-}" ] && [ -d "/proc/$p" ] && alive=1
+    done < "$PID_FILE"
+    [ "$alive" = 1 ] && die "a Mei session is already running (see .run/pids); run './mei stop' first"
+  fi
+
+  local bsig; bsig="$(baseline_hypr_sig || true)"
+  local host_wl="${WAYLAND_DISPLAY:-}"
+  if [ -n "$host_wl" ] && [[ "$host_wl" != /* ]]; then
+    host_wl="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/$host_wl"
+  fi
+  [ -n "$host_wl" ] || die "no WAYLAND_DISPLAY in this shell — cannot open a nested window"
+  [ -e "$host_wl" ] || die "WAYLAND_DISPLAY=$host_wl does not exist"
+
+  prepare_nested_home
+  write_nested_conf
+  write_session_script "$host_wl" "$bsig"
+  # Clean runtime previous runs left behind. Only reached when no session is
+  # running (checked below), so this never touches a live instance.
+  rm -rf "$RUN_DIR/rt/hypr" "$RUN_DIR/rt/quickshell"
+  rm -f "$RUN_DIR/rt/mei-shell.sock" "$RUN_DIR/rt/mei-shell.sock.lock" "$RUN_DIR"/rt/wayland-* 2>/dev/null || true
+  : > "$PID_FILE"
+  : > "$RUN_DIR/logs/session.log"
+  : > "$RUN_DIR/logs/hyprland.log"
+  : > "$RUN_DIR/logs/daemon.log"
+
+  # The nested compositor opens as a window on the host; the session script
+  # scrubs the inherited signature and refuses to start the shell unless the
+  # nested instance is provably a different one.
+  local runner=(dbus-run-session -- bash "$RUN_DIR/session.sh")
+  local cap="none (systemd-run unavailable; process group only)"
+  if command -v systemd-run >/dev/null 2>&1 && systemd-run --user --scope --quiet true >/dev/null 2>&1; then
+    runner=(systemd-run --user --scope --quiet \
+      -p MemoryMax=3G -p CPUQuota=200% -- \
+      dbus-run-session -- bash "$RUN_DIR/session.sh")
+    cap="MemoryMax=3G CPUQuota=200% (systemd-run --user --scope)"
+  fi
+  setsid "${runner[@]}" >> "$RUN_DIR/logs/session.log" 2>&1 &
+  local lp=$!
+  printf '%s\t%s\tnested-launcher\n' "$lp" "$lp" >> "$PID_FILE"
+  note "nested session launched (launcher pid $lp)"
+  note "  cap: $cap"
+  note "  logs: $RUN_DIR/logs/{session,hyprland,daemon}.log"
+  note "  stop: ./mei stop"
+}
+
+nested_sig() {  # print the nested instance signature while it is up
+  local d; d="$(ls -d "$MEI_DIR/.r"/hypr/*/ 2>/dev/null | head -n1 || true)"
+  [ -n "$d" ] && basename "$d"
+}
+
+nested_hyprctl() {  # $1 = json flag, rest = argv; targeted at the nested instance only
+  local sig="$1"; shift
+  HYPRLAND_INSTANCE_SIGNATURE="$sig" XDG_RUNTIME_DIR="$MEI_DIR/.r" hyprctl "$@" 2>/dev/null
+}
+
+cmd_test() {
+  note "=== Phase 6 step-1 test: bar + workspaces (nested) ==="
+
+  # The decisive guard lives in session.sh: it compares the *nested* signature
+  # against the live baseline after the nested compositor starts, and refuses
+  # before the daemon/shell are ever launched.
+  local bsig; bsig="$(baseline_hypr_sig || true)"
+
+  note "--- verify-untouched BEFORE first launch ---"
+  cmd_verify_untouched || die "baseline already dirty before launch — stopping"
+  note
+
+  cmd_run
+
+  # wait for the nested instance + shell to come up
+  local sig="" i=0
+  while [ "$i" -lt 75 ]; do
+    sig="$(nested_sig || true)"
+    [ -n "$sig" ] && [ "$sig" != "$bsig" ] && break
+    sleep 0.4; i=$((i+1))
+  done
+  if [ -z "$sig" ] || [ "$sig" = "$bsig" ]; then
+    note "FAIL  nested Hyprland did not come up (see .run/logs/)"
+    cmd_stop || true
+    return 1
+  fi
+  note "nested instance: $sig"
+  [ "$sig" != "$bsig" ] && note "OK    guard: nested signature differs from live baseline"
+
+  # Persistent workspaces give the bar cells to draw: a real window per
+  # workspace keeps each one alive, then focus a middle one.
+  for w in 1 2 3; do
+    nested_hyprctl "$sig" dispatch workspace "$w" >/dev/null 2>&1 || true
+    nested_hyprctl "$sig" dispatch exec "kitty --hold -e true" >/dev/null 2>&1 || true
+    sleep 0.6
+  done
+  nested_hyprctl "$sig" dispatch workspace 2 >/dev/null 2>&1 || true
+
+  # let the daemon + qs settle
+  sleep 12
+
+  echo
+  echo "=== checklist ==="
+
+  # 1. bar renders — a mapped layer surface named by the shell + no QML load errors
+  local layers shelllog qml_err
+  layers="$(nested_hyprctl "$sig" -j layers || true)"
+  shelllog="$RUN_DIR/logs/shell.log"
+  for cand in "$RUN_DIR/state/mei/surfaces/shell.log" \
+              "$RUN_DIR/home/.local/state/mei/surfaces/shell.log"; do
+    [ -f "$cand" ] && { shelllog="$cand"; break; }
+  done
+  if printf '%s' "$layers" | grep -qiE 'ryoku|quickshell|mei'; then
+    note "TESTED      bar renders: layer surface(s) mapped in the nested compositor"
+    printf '%s' "$layers" | sed -E 's/.*"namespace": ?"([^"]+)".*/              layer: \1/;t;d' | sort -u | head
+  else
+    note "UNVERIFIED  bar renders: no shell layer surface seen via hyprctl -j layers yet"
+  fi
+  if [ -f "$shelllog" ]; then
+    qml_err="$(grep -ciE 'is not a type|is not installed|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Non-existent attached object|Failed to load|Cannot read property' "$shelllog" 2>/dev/null || true)"
+    qml_err="${qml_err:-0}"
+    if [ "$qml_err" = 0 ]; then
+      note "TESTED      shell QML log has no errors ($shelllog)"
+    else
+      note "UNVERIFIED  shell QML log has $qml_err suspicious lines — see $shelllog"
+      grep -iE 'is not a type|is not installed|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Non-existent attached object|Failed to load|Cannot read property' "$shelllog" 2>/dev/null | head -8 | sed 's/^/              /' || true
+    fi
+  else
+    note "UNVERIFIED  shell log not found yet (qs may still be compiling)"
+  fi
+
+  # 2. workspaces match nested Hyprland state
+  local ws ws_nested ws_topic
+  ws="$(nested_hyprctl "$sig" -j workspaces || true)"
+  ws_nested="$(printf '%s' "$ws" | jq 'length' 2>/dev/null || echo 0)"
+  ws_topic="$(timeout 2 socat - UNIX-CONNECT:"$MEI_DIR/.r/mei-shell.sock" <<< 'subscribe wm' 2>/dev/null | head -n1 | jq -r '.workspaces | length' 2>/dev/null || echo '?')"
+  if [ -n "$ws" ] && [ "$ws_nested" = "$ws_topic" ]; then
+    note "TESTED      workspaces: nested compositor=$ws_nested, daemon topic=$ws_topic (match)"
+  elif [ -n "$ws" ]; then
+    note "UNVERIFIED  workspaces: nested compositor=$ws_nested, daemon topic=$ws_topic (mismatch)"
+  else
+    note "UNVERIFIED  workspaces: no data from the nested instance"
+  fi
+  if command -v grim >/dev/null 2>&1; then
+    mkdir -p "$RUN_DIR/shots"
+    if XDG_RUNTIME_DIR="$MEI_DIR/.r" WAYLAND_DISPLAY=wayland-1 grim -o WAYLAND-1 "$RUN_DIR/shots/test-bar.png" 2>/dev/null; then
+      note "TESTED      pixel capture: .run/shots/test-bar.png ($(identify -format '%wx%h' "$RUN_DIR/shots/test-bar.png" 2>/dev/null))"
+    fi
+  fi
+
+  # 3. process hygiene
+  local daemon_pid; daemon_pid="$(pgrep -f "$RUN_DIR/bin/mei-shell daemon" | head -n1 || true)"
+  if [ -n "$daemon_pid" ]; then
+    note "TESTED      daemon up (pid $daemon_pid)"
+  else
+    note "UNVERIFIED  daemon not seen (see .run/logs/daemon.log)"
+  fi
+
+  # 4. zero outbound network from our processes
+  local ourpids outbound
+  ourpids="$(cat "$PID_FILE" 2>/dev/null | awk '{print $1}' | paste -sd, -)"
+  if command -v ss >/dev/null 2>&1 && [ -n "$ourpids" ]; then
+    outbound="$(ss -Htnp state established 2>/dev/null | grep -E "pid=(${ourpids//,/|})" || true)"
+    if [ -z "$outbound" ]; then
+      note "TESTED      zero outbound connections from Mei PIDs"
+    else
+      note "UNVERIFIED  outbound connections seen:"; printf '%s\n' "$outbound" | sed 's/^/              /'
+    fi
+  else
+    note "UNVERIFIED  network check skipped (ss unavailable)"
+  fi
+
+  echo
+  echo "=== stopping ==="
+  cmd_stop || true
+  sleep 2
+  local stray
+  stray="$(pgrep -af "$RUN_DIR/bin/mei-shell|quickshell/shell|mei-wm-hyprland" | grep -v pgrep || true)"
+  if [ -z "$stray" ]; then
+    note "TESTED      clean shutdown: no stray Mei processes"
+  else
+    note "UNVERIFIED  stray processes remain:"; printf '%s\n' "$stray" | sed 's/^/              /'
+  fi
+
+  echo
+  note "--- verify-untouched AFTER first launch ---"
+  cmd_verify_untouched || note "FAIL  live config changed during the test — investigate immediately"
+}
 
 usage() {
   sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'

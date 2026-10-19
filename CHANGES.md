@@ -3,6 +3,82 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 6 step 1 — bar + workspaces (code + build + nested test)
+
+Deliverable: `docs/06-step1.md`. Stop point: launcher/sidebar/notifications/Settings not started.
+
+### Copied into `src/` (upstream = `98a0368`, v0.75.5-beta.20)
+
+- `ryoku/shell/quickshell/{shell,plugins}` → `src/ryoku/shell/quickshell/{shell,plugins}`
+- `ryoku/ui` → `src/ryoku/ui`; `ryoku/shell/framebars` → `src/ryoku/shell/framebars`
+- `ryoku/wm` → `src/ryoku/wm`; `ryoku/shell/{ipc,plugin,matugen}` → `src/ryoku/shell/…`
+- Upstream `tests/`, `qa/`, CI files stripped. Vendored Go deps kept so builds are offline.
+
+### Source modifications
+
+- `src/ryoku/wm/hyprland/caps.go`: removed `CapLiveConfigEval`, `CapConfigReload`,
+  `CapPaletteBorder` (Mei never writes Hyprland config).
+- `src/ryoku/shell/ipc/daemon.go`: `bootstrap()` reduced to `startSettings`, `startTray`,
+  `startMusic`, `startNetwork`, `startNightlight`, `paintWorker`, `watchMatugenKnobs`, `startWM`,
+  `startComponents`. Removed weather/updates/calendar, keypress, clipboard, polkit, session,
+  power sounds, sleep/wake, auto power saver, leds/hub, ryogami, stage.
+- `src/ryoku/shell/ipc/control.go`: hub lock moved from `/tmp/ryoku-hub.lock` to
+  `$XDG_RUNTIME_DIR/mei-hub.lock`.
+- `src/ryoku/wm/hyprland/watch.go`: if `.socket2.sock` is missing, poll `hyprctl` every 500 ms
+  (`socketExists`, `pollOnce`). Only reachable in the nested test (see below); the live session
+  keeps the event-driven path.
+- `src/ryoku/shell/quickshell/shell/shell.qml`: `Desktop` → `active: false`,
+  `widgetsEnabled: false` (desktop clock/calendar is off-list).
+- `src/ryoku/shell/matugen/config.toml`: reduced to `[config]` — no templates, no post-hook, so
+  matugen cannot write into the owner's home.
+- Renames (source-wide): `RYOKU_*` → `MEI_*` (SHELL_DIR/PATH/POLKIT_AGENT/STATE_PATH/
+  SCREENRECORD_DIR/SCREENSHOT_DIR/PLUGINS_DIR/WM), `ryoku-shell.sock` → `mei-shell.sock`,
+  `ryoku-pill.sock` → `mei-pill.sock`, `ryoku-reload-cover` → `mei-reload-cover`,
+  `ryoku-hub.lock` → `mei-hub.lock`, `local/share/ryoku` → `local/share/mei`,
+  `ryoku-wallpaper` → `mei-wallpaper`, `ryoku-plugins-place` → `mei-plugins-place`,
+  Go package `ryoku` → `mei`, provider `ryoku-wm-<name>` → `mei-wm-<name>`.
+  Deliberately **not** renamed: `Ryoku.*` QML module URIs, D-Bus names, polkit paths, font
+  names, `ryogami`.
+
+### `./mei` (control script)
+
+- New `run` / `test` / `stop`-integration: fake `HOME=.run/home`, `XDG_*=.run/{config,cache,
+  state,data,rt}`, private `dbus-run-session`, nested `Hyprland -c .run/hypr/nested.conf`.
+- New `stop`: signals only recorded PIDs whose `/proc/<pid>/cmdline` contains `$MEI_DIR`;
+  `run` refuses to clobber a session that is still alive.
+- Resource cap: `systemd-run --user --scope -p MemoryMax=3G -p CPUQuota=200%` when available
+  (fallback: process group only).
+- Stale runtime cleaning (`rt/hypr`, `rt/quickshell`, sockets) before each launch.
+- Short symlink `.r → .run/rt` exported as `XDG_RUNTIME_DIR` for the child. Hyprland names its
+  event socket `$XDG_RUNTIME_DIR/hypr/<61-char signature>/.socket2.sock`; the 107-byte UNIX
+  limit was exceeded (111 bytes) and Hyprland silently disabled Socket2. `.r` makes it 106.
+  All bytes still land under `.run/rt`. `.r` added to `.gitignore`.
+
+### Build (offline, `nice -n 10`, `-p 2` / `-j2`)
+
+- `.run/bin/mei-shell` (~15.6 MB), `.run/bin/mei-wm-hyprland` (~6.7 MB).
+- Blobs plugin via cmake/ninja → `.run/build/blobs/qml/Ryoku/Blobs`.
+- QML modules assembled at `.run/qml/Ryoku/{Ui,FrameBars,PluginKit,Blobs,Wm/Hyprland}`.
+- Fake-home fontconfig at `.run/home/.config/fontconfig/fonts.conf` (system config + Google
+  Fonts `SpaceGrotesk[wght].ttf`, `Fraunces[…].ttf` fetched from the OFL repo).
+
+### Verification
+
+- `./mei test` exit 0 twice; `./mei verify-untouched` **PASS** before and after.
+- Bar layer surfaces mapped (`ryoku-frame`, `ryoku-frame-edge`, `quickshell`); QML log has no
+  load/type errors; workspaces nested 3 / daemon topic 3 (match); pixel capture 950×1024;
+  zero outbound TCP from Mei PIDs; clean shutdown, no stray processes.
+- Manual multi-workspace check: 5 cells, active pill moved from cell 5 to cell 2 on a nested
+  `workspace 2` dispatch.
+- **UNVERIFIED**: animation smoothness/visibility (still capture only), real GPU/144 Hz,
+  audio (no PipeWire socket in the fake runtime dir), tray/network content (private bus).
+
+### Baseline
+
+- Host rebooted at 16:29 (kernel 7.2.9 → 7.2.11). Config hashes were unchanged; the baseline
+  was re-captured (`./mei baseline --force`). Hyprland 0.56.2-4 / Quickshell 0.3.2-1 / Qt 6.12.0
+  unchanged, so the `.conf` verification still holds.
+
 ## Phase 4 — extraction plan (plan only; no code, no installs, no builds)
 
 - Wrote `docs/04-plan.md` (10 sections): HOME-confinement trace + fixes, the exact `src/`

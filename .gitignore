@@ -4,3 +4,4 @@
 
 # Read-only upstream clone (pinned commit recorded in UPSTREAM.md); never edited, not tracked
 upstream/
+.r

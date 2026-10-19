@@ -7,8 +7,12 @@
       6       2 root     [kworker/R-kvfree_rcu_reclaim]
       7       2 root     [kworker/R-slub_flushwq]
       8       2 root     [kworker/R-netns]
+      9       2 root     [kworker/0:0-events]
      10       2 root     [kworker/0:0H-kblockd]
+     11       2 root     [kworker/0:1-rcu_gp]
+     12       2 root     [kworker/u48:0-events_unbound]
      13       2 root     [kworker/R-mm_percpu_wq]
+     14       2 root     [kworker/u48:1-flush-259:0]
      15       2 root     [ksoftirqd/0]
      16       2 root     [rcu_preempt]
      17       2 root     [rcub/0]
@@ -22,16 +26,19 @@
      25       2 root     [idle_inject/2]
      26       2 root     [migration/2]
      27       2 root     [ksoftirqd/2]
+     28       2 root     [kworker/2:0-cgroup_release]
      29       2 root     [kworker/2:0H-i915_cleanup]
      30       2 root     [cpuhp/4]
      31       2 root     [idle_inject/4]
      32       2 root     [migration/4]
      33       2 root     [ksoftirqd/4]
+     34       2 root     [kworker/4:0-events]
      35       2 root     [kworker/4:0H-i915_cleanup]
      36       2 root     [cpuhp/6]
      37       2 root     [idle_inject/6]
      38       2 root     [migration/6]
      39       2 root     [ksoftirqd/6]
+     40       2 root     [kworker/6:0-events]
      41       2 root     [kworker/6:0H-i915_cleanup]
      42       2 root     [cpuhp/8]
      43       2 root     [idle_inject/8]
@@ -43,36 +50,43 @@
      49       2 root     [idle_inject/9]
      50       2 root     [migration/9]
      51       2 root     [ksoftirqd/9]
+     52       2 root     [kworker/9:0-slub_flushwq]
      53       2 root     [kworker/9:0H-kblockd]
      54       2 root     [cpuhp/10]
      55       2 root     [idle_inject/10]
      56       2 root     [migration/10]
      57       2 root     [ksoftirqd/10]
-     59       2 root     [kworker/10:0H-kblockd]
+     58       2 root     [kworker/10:0-i915-unordered]
+     59       2 root     [kworker/10:0H-i915_cleanup]
      60       2 root     [cpuhp/11]
      61       2 root     [idle_inject/11]
      62       2 root     [migration/11]
      63       2 root     [ksoftirqd/11]
+     64       2 root     [kworker/11:0-events]
      65       2 root     [kworker/11:0H-kblockd]
      66       2 root     [cpuhp/1]
      67       2 root     [idle_inject/1]
      68       2 root     [migration/1]
      69       2 root     [ksoftirqd/1]
+     70       2 root     [kworker/1:0-events]
      71       2 root     [kworker/1:0H-kblockd]
      72       2 root     [cpuhp/3]
      73       2 root     [idle_inject/3]
      74       2 root     [migration/3]
      75       2 root     [ksoftirqd/3]
-     77       2 root     [kworker/3:0H-i915_cleanup]
+     76       2 root     [kworker/3:0-events]
+     77       2 root     [kworker/3:0H-kblockd]
      78       2 root     [cpuhp/5]
      79       2 root     [idle_inject/5]
      80       2 root     [migration/5]
      81       2 root     [ksoftirqd/5]
-     83       2 root     [kworker/5:0H-i915_cleanup]
+     82       2 root     [kworker/5:0-memcg]
+     83       2 root     [kworker/5:0H-kblockd]
      84       2 root     [cpuhp/7]
      85       2 root     [idle_inject/7]
      86       2 root     [migration/7]
      87       2 root     [ksoftirqd/7]
+     88       2 root     [kworker/7:0-events]
      89       2 root     [kworker/7:0H-kblockd]
      90       2 root     [kdevtmpfs]
      91       2 root     [kworker/R-inet_frag_wq]
@@ -81,6 +95,8 @@
      94       2 root     [kauditd]
      95       2 root     [khungtaskd]
      96       2 root     [oom_reaper]
+     97       2 root     [kworker/u48:2-events_unbound]
+     98       2 root     [kworker/1:1-events]
      99       2 root     [kworker/R-writeback]
     100       2 root     [kcompactd0]
     101       2 root     [ksmd]
@@ -88,208 +104,171 @@
     103       2 root     [kworker/R-kblockd]
     104       2 root     [kworker/R-blkcg_punt_bio]
     105       2 root     [kworker/R-kintegrityd]
+    106       2 root     [kworker/8:1-events]
     107       2 root     [irq/9-acpi]
+    108       2 root     [kworker/9:1-inode_switch_wbs]
+    109       2 root     [kworker/2:1-events]
     110       2 root     [kworker/R-tpm_dev_wq]
     111       2 root     [kworker/R-ata_sff]
     112       2 root     [kworker/R-edac-poller]
     113       2 root     [kworker/R-devfreq_wq]
     114       2 root     [watchdogd]
     115       2 root     [kworker/R-quota_events_unbound]
-    117       2 root     [kswapd0]
-    118       2 root     [kworker/R-kthrotld]
-    119       2 root     [irq/120-pciehp]
-    120       2 root     [kworker/R-acpi_thermal_pm]
-    123       2 root     [hwrng]
-    125       2 root     [kworker/R-hfi-updates]
-    126       2 root     [kworker/R-mld]
-    127       2 root     [kworker/R-ipv6_addrconf]
-    128       2 root     [kworker/R-kstrp]
+    116       2 root     [kworker/3:1-events]
+    117       2 root     [kworker/4:1-i915-unordered]
+    118       2 root     [kswapd0]
+    119       2 root     [kworker/R-kthrotld]
+    120       2 root     [irq/120-pciehp]
+    121       2 root     [kworker/R-acpi_thermal_pm]
+    122       2 root     [kworker/u48:3-events_unbound]
+    123       2 root     [kworker/10:1]
+    124       2 root     [hwrng]
+    125       2 root     [kworker/u48:4-events_unbound]
+    126       2 root     [kworker/R-hfi-updates]
+    127       2 root     [kworker/6:1-events]
+    128       2 root     [kworker/R-mld]
+    129       2 root     [kworker/R-ipv6_addrconf]
+    130       2 root     [kworker/R-kstrp]
+    131       2 root     [kworker/7:1-cgroup_free]
+    132       2 root     [kworker/5:1-mm_percpu_wq]
+    133       2 root     [kworker/11:1-events]
+    137       2 root     [kworker/u49:0-rtw89_tx_wq]
+    147       2 root     [kworker/7:2-mm_percpu_wq]
+    220       2 root     [kworker/6:2-i915-unordered]
     221       2 root     [kworker/R-nvme-wq]
     222       2 root     [kworker/R-nvme-reset-wq]
     223       2 root     [kworker/R-nvme-delete-wq]
     224       2 root     [kworker/R-nvme-auth-wq]
-    226       2 root     [kworker/R-ttm]
-    227       2 root     [card1-crtc0]
-    228       2 root     [card1-crtc1]
-    229       2 root     [card1-crtc2]
-    230       2 root     [card1-crtc3]
-    231       2 root     [kworker/4:1H-i915_cleanup]
-    257       2 root     [kworker/2:1H-i915_cleanup]
-    289       2 root     [kworker/0:1H-i915_cleanup]
-    295       2 root     [jbd2/nvme0n1p2-8]
-    296       2 root     [kworker/R-ext4-rsv-conversion]
-    310       2 root     [kworker/8:1H-i915_cleanup]
-    345       1 root     /usr/lib/systemd/systemd-journald
-    361       2 root     [kworker/10:1H-i915_cleanup]
-    363       1 root     /usr/lib/systemd/systemd-userdbd
-    375       2 root     [kworker/9:1H-i915_cleanup]
-    378       2 root     [kworker/0:3-mm_percpu_wq]
-    382       2 root     [psimon]
-    391       1 systemd+ /usr/lib/systemd/systemd-timesyncd
-    396       2 root     [kworker/R-iprt-VBoxWQueue]
-    398       1 root     /usr/lib/systemd/systemd-udevd
-    406       2 root     [psimon]
-    447       2 root     [iprt-VBoxTscThread]
-    467       2 root     [kworker/5:1H-kblockd]
-    519       2 root     [irq/146-SYNA2BA6:00]
-    523       2 root     [nv_queue]
-    524       2 root     [nv_mem_pool_scrubber_queue]
-    525       2 root     [nv_mem_pool_scrubber_queue]
+    225       2 root     [kworker/R-ttm]
+    226       2 root     [card1-crtc0]
+    227       2 root     [card1-crtc1]
+    228       2 root     [card1-crtc2]
+    229       2 root     [card1-crtc3]
+    230       2 root     [kworker/6:1H-kblockd]
+    231       2 root     [kworker/2:2-events]
+    232       2 root     [kworker/2:1H-kblockd]
+    241       2 root     [kworker/8:2-rcu_gp]
+    257       2 root     [kworker/10:1H-i915_cleanup]
+    258       2 root     [kworker/10:2-cgroup_free]
+    287       2 root     [kworker/9:2-i915-unordered]
+    290       2 root     [kworker/8:1H-i915_cleanup]
+    296       2 root     [jbd2/nvme0n1p2-8]
+    297       2 root     [kworker/R-ext4-rsv-conversion]
+    309       2 root     [kworker/4:2-i915-unordered]
+    312       2 root     [kworker/11:1H-i915_cleanup]
+    347       1 root     /usr/lib/systemd/systemd-journald
+    361       2 root     [kworker/3:2-events]
+    362       2 root     [kworker/3:3-i915-unordered]
+    376       2 root     [kworker/9:1H-i915_cleanup]
+    377       1 root     /usr/lib/systemd/systemd-userdbd
+    381       2 root     [psimon]
+    382       2 root     [kworker/2:3-events]
+    384       2 root     [kworker/0:2-i915-unordered]
+    390       2 root     [kworker/1:1H-kblockd]
+    392       1 systemd+ /usr/lib/systemd/systemd-timesyncd
+    395       2 root     [kworker/0:3-cgroup_free]
+    401       2 root     [kworker/R-iprt-VBoxWQueue]
+    403       1 root     /usr/lib/systemd/systemd-udevd
+    407       2 root     [psimon]
+    448       2 root     [iprt-VBoxTscThread]
+    464       2 root     [kworker/5:1H-i915_cleanup]
+    482       2 root     [kworker/5:2-mm_percpu_wq]
+    506       2 root     [kworker/1:2-events]
+    516       2 root     [irq/146-SYNA2BA6:00]
+    525       2 root     [nv_queue]
     526       2 root     [nv_mem_pool_scrubber_queue]
-    527       2 root     [nv_queue]
-    529       2 root     [nv_open_q]
-    533       2 root     [irq/147-nvidia]
-    534       2 root     [nvidia]
-    535       2 root     [nv_queue]
-    542       2 root     [irq/148-mei_me]
-    549       2 root     [nvidia-modeset/kthread_q]
-    550       2 root     [nvidia-modeset/deferred_close_kthread_q]
-    559       2 root     [kworker/7:1H-i915_cleanup]
+    527       2 root     [nv_mem_pool_scrubber_queue]
+    528       2 root     [nv_mem_pool_scrubber_queue]
+    529       2 root     [nv_queue]
+    531       2 root     [nv_open_q]
+    532       2 root     [irq/147-nvidia]
+    533       2 root     [nvidia]
+    534       2 root     [nv_queue]
+    540       2 root     [kworker/u48:5-events_unbound]
+    543       2 root     [irq/148-mei_me]
+    545       2 root     [kworker/u48:6-events_unbound]
+    547       2 root     [kworker/u48:7-events_unbound]
+    556       2 root     [nvidia-modeset/kthread_q]
+    557       2 root     [nvidia-modeset/deferred_close_kthread_q]
+    559       2 root     [kworker/11:2-events]
     568       2 root     [kworker/R-cfg80211]
-    574       2 root     [irq/16-processor_thermal_device_pci]
-    584       2 root     [kworker/u49:1-rtw89_tx_wq]
-    598       2 root     [UVM global queue]
-    599       2 root     [UVM deferred release queue]
-    600       2 root     [UVM Tools Event Queue]
-    611       1 dbus     /usr/bin/dbus-broker-launch --scope system --audit
-    616     611 dbus     dbus-broker --log 10 --controller 9 --machine-id ecd750fc49704ac8a63048f67151ad10 --max-bytes 536870912 --max-fds 4096 --max-matches 131072 --audit
-    619       1 root     /usr/bin/NetworkManager --no-daemon
-    622       1 root     /usr/lib/bluetooth/bluetoothd
-    624       1 root     /usr/lib/systemd/systemd-logind
-    681       2 root     [irq/151-rtw89_pci]
-    682       2 root     [kworker/11:2-i915-unordered]
+    576       2 root     [kworker/7:1H-kblockd]
+    578     377 root     systemd-userwork: waiting...
+    579     377 root     systemd-userwork: waiting...
+    580     377 root     systemd-userwork: waiting...
+    583       2 root     [kworker/u49:1-i915_flip]
+    584       2 root     [kworker/u49:2]
+    585       2 root     [irq/16-processor_thermal_device_pci]
+    592       2 root     [kworker/6:3-rcu_gp]
+    594       2 root     [kworker/6:4]
+    601       2 root     [UVM global queue]
+    602       2 root     [UVM deferred release queue]
+    603       2 root     [UVM Tools Event Queue]
+    619       1 dbus     /usr/bin/dbus-broker-launch --scope system --audit
+    623       2 root     [kworker/2:4]
+    624     619 dbus     dbus-broker --log 10 --controller 9 --machine-id ecd750fc49704ac8a63048f67151ad10 --max-bytes 536870912 --max-fds 4096 --max-matches 131072 --audit
+    632       1 root     /usr/bin/NetworkManager --no-daemon
+    634       1 root     /usr/lib/bluetooth/bluetoothd
+    636       1 root     /usr/lib/systemd/systemd-logind
+    683       2 root     [irq/151-rtw89_pci]
     685       1 root     /usr/bin/python3 -m proton.vpn.daemon
     688       1 root     /usr/lib/iwd/iwd
     691       1 root     /usr/bin/ly-dm
     692       1 root     /usr/bin/sddm
-    738     692 root     /usr/lib/Xorg -nolisten tcp -background none -seat seat0 vt2 -auth /run/sddm/xauth_phuZDY -noreset -displayfd 16
-    739       2 root     [kworker/6:1H-i915_cleanup]
+    738     692 root     /usr/lib/Xorg -nolisten tcp -background none -seat seat0 vt2 -auth /run/sddm/xauth_SOlCJG -noreset -displayfd 16
+    739       2 root     [kworker/4:1H-kblockd]
     757       1 root     /usr/lib/power-profiles-daemon
     763       1 polkitd  /usr/lib/polkit-1/polkitd --no-debug --log-level=notice
     777       2 root     [nvidia-drm/timeline-16]
-    785     692 root     /usr/lib/sddm/sddm-helper --socket /tmp/sddm-auth-dcfca2f5-1e35-4b3d-83bd-8f943642d87f --id 1 --start /usr/bin/start-hyprland --user mei --autologin
-    787       2 root     [kworker/11:1H-i915_cleanup]
-    788       2 root     [kworker/1:1H-i915_cleanup]
-    790       2 root     [psimon]
-    794       1 mei      /usr/lib/systemd/systemd --user
-    796     794 mei      (sd-pam)
-    802     794 mei      /usr/bin/dbus-broker-launch --scope user
-    804     802 mei      dbus-broker --log 11 --controller 10 --machine-id ecd750fc49704ac8a63048f67151ad10 --max-bytes 100000000000000 --max-fds 25000000000000 --max-matches 5000000000
-    805     794 mei      /usr/bin/pipewire
-    806     794 mei      /usr/bin/wireplumber
-    808     794 mei      /usr/bin/pipewire-pulse
-    809     794 mei      /usr/bin/gnome-keyring-daemon --foreground --components=pkcs11,secrets --control-directory=/run/user/1000/keyring
+    785     692 root     /usr/lib/sddm/sddm-helper --socket /tmp/sddm-auth-d8055030-a1af-4fb3-b384-4c61ac7bd22a --id 1 --start /usr/bin/start-hyprland --user mei --autologin
+    787       2 root     [kworker/0:1H-i915_cleanup]
+    789       2 root     [psimon]
+    793       1 mei      /usr/lib/systemd/systemd --user
+    795     793 mei      (sd-pam)
+    801     793 mei      /usr/bin/dbus-broker-launch --scope user
+    803     801 mei      dbus-broker --log 11 --controller 10 --machine-id ecd750fc49704ac8a63048f67151ad10 --max-bytes 100000000000000 --max-fds 25000000000000 --max-matches 5000000000
+    804     793 mei      /usr/bin/pipewire
+    805     793 mei      /usr/bin/wireplumber
+    807     793 mei      /usr/bin/pipewire-pulse
+    808     793 mei      /usr/bin/gnome-keyring-daemon --foreground --components=pkcs11,secrets --control-directory=/run/user/1000/keyring
     819     785 mei      /usr/bin/start-hyprland
-    847     819 mei      Hyprland --watchdog-fd 4
-    860       2 root     [krfcommd]
-    889     794 mei      /usr/lib/gvfsd
-    895     794 mei      /usr/lib/gvfsd-fuse /run/user/1000/gvfs -f
-    898     794 mei      /usr/lib/dconf-service
-    909     847 mei      wl-paste --type text --watch cliphist store
-    910     847 mei      wl-paste --type image --watch cliphist store
-    912     847 mei      bash /usr/local/bin/serpantinumd start
-    950     912 mei      python3 /home/mei/.local/share/serpantinum/src/quickshell/guide/wellbeing/focus_daemon.py
-    951     912 mei      quickshell -p /home/mei/.local/share/serpantinum/src/quickshell/Shell.qml
-    962     794 mei      /usr/lib/xdg-desktop-portal
-    963     847 mei      Xwayland :1 -rootless -core -listenfd 65 -listenfd 66 -displayfd 113 -wm 110
-    984     794 mei      /usr/lib/xdg-permission-store
-    993     794 mei      /usr/lib/xdg-document-portal
-    999     993 root     fusermount3 -o rw,nosuid,nodev,fsname=portal,auto_unmount,subtype=portal -- /run/user/1000/doc
-   1002     794 mei      /usr/lib/xdg-desktop-portal-gtk
-   1012     794 mei      /usr/lib/at-spi-bus-launcher
-   1019    1012 mei      /usr/bin/dbus-broker-launch --config-file=/usr/share/defaults/at-spi2/accessibility.conf --scope user
-   1020    1019 mei      dbus-broker --log 10 --controller 9 --machine-id ecd750fc49704ac8a63048f67151ad10 --max-bytes 100000000000000 --max-fds 6400000 --max-matches 5000000000
-   1022     794 mei      /usr/lib/at-spi2-registryd --use-gnome-session
-   1024     794 mei      /usr/lib/xdg-desktop-portal-hyprland
-   1052       1 root     /usr/lib/upowerd
-   1094     951 mei      inotifywait -m -e modify /run/user/1000/serpantinum/brightness /sys/class/backlight/intel_backlight/brightness
-   1096     951 mei      python3 -u -c  import glob, os, select, struct, sys, time  is_64bit = struct.calcsize("P") == 8 event_fmt = "qqHHi" if is_64bit else "iiHHi" event_size = struct.calcsize(event_fmt)  def read_sysfs(pattern):     for path in glob.glob(pattern):         try:             with open(path, "r") as f:                 if int(f.read().strip() or 0) > 0:                     return 1         except Exception:             pass     return 0  last_caps = read_sysfs("/sys/class/leds/*capslock*/brightness") last_num = read_sysfs("/sys/class/leds/*numlock*/brightness")  def find_kbd_devices():     devs = glob.glob("/dev/input/by-id/*-event-kbd")     if not devs:         devs = glob.glob("/dev/input/by-path/*-event-kbd")     if not devs:         devs = glob.glob("/dev/input/event*")     return devs  def scan_devices():     res = {}     for path in find_kbd_devices():         try:             fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)             res[fd] = path         except Exception:             pass     return res  def remove_fd(fd):     fds.pop(fd, None)     try:         os.close(fd)     except Exception:         pass  fds = scan_devices()  if fds:     while True:         try:             if not fds:                 time.sleep(1)                 fds = scan_devices()                 if not fds:                     continue             rlist, _, _ = select.select(list(fds.keys()), [], [])             for fd in rlist:                 while True:                     try:                         buf = os.read(fd, event_size)                         if not buf or len(buf) < event_size:                             remove_fd(fd)                             break                         _, _, ev_type, ev_code, ev_val = struct.unpack(event_fmt, buf)                         if ev_type == 17:                             if ev_code == 1:                                 val = 1 if ev_val > 0 else 0                                 if val != last_caps:                                     last_caps = val                                     sys.stdout.write(f"capslock {val}\n")                                     sys.stdout.flush()                             elif ev_code == 0:                                 val = 1 if ev_val > 0 else 0                                 if val != last_num:                                     last_num = val                                     sys.stdout.write(f"numlock {val}\n")                                     sys.stdout.flush()                     except (BlockingIOError, InterruptedError):                         break                     except Exception:                         remove_fd(fd)                         break         except Exception:             dead = []             for fd in list(fds.keys()):                 try:                     select.select([fd], [], [], 0)                 except Exception:                     dead.append(fd)             for fd in dead:                 remove_fd(fd)             time.sleep(1) else:     def open_leds(pattern, old):         for fd in old:             try:                 os.close(fd)             except Exception:                 pass         res = []         for path in glob.glob(pattern):             try:                 res.append(os.open(path, os.O_RDONLY))             except Exception:                 pass         return res      def any_on(fds):         for fd in fds:             try:                 if int(os.pread(fd, 16, 0).strip() or 0) > 0:                     return 1             except Exception:                 pass         return 0      caps_glob = "/sys/class/leds/*capslock*/brightness"     num_glob = "/sys/class/leds/*numlock*/brightness"     caps_fds = open_leds(caps_glob, [])     num_fds = open_leds(num_glob, [])     count = 0     while True:         time.sleep(0.25)         count += 1         if count >= 120:             count = 0             caps_fds = open_leds(caps_glob, caps_fds)             num_fds = open_leds(num_glob, num_fds)         c = any_on(caps_fds)         if c != last_caps:             last_caps = c             sys.stdout.write(f"capslock {c}\n")             sys.stdout.flush()         n = any_on(num_fds)         if n != last_num:             last_num = n             sys.stdout.write(f"numlock {n}\n")             sys.stdout.flush() 
-   1097     951 mei      bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
-   1098     951 mei      inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
-   1117     951 mei      inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
-   1149     951 mei      /usr/bin/python3 /home/mei/.local/share/serpantinum/src/quickshell/idle/screensaver_inhibit.py
-   1150     951 mei      /usr/bin/wl-paste --watch echo 1
-   1172    1097 mei      bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
-   1173    1172 mei      socat -u UNIX-CONNECT:/run/user/1000/hypr/efb50993780079460b0cbed1363e2166a2de1d9f_1792387759_1195980162/.socket2.sock -
-   1694       2 root     [kworker/3:1H-i915_cleanup]
-   2800       1 mei      /opt/firefox-bin/firefox --class Firefox --name Firefox
-   2809       1 mei      /opt/firefox-bin/crashhelper 2800 9 /tmp/ 11 20261007201254
-   2895    2800 mei      /opt/firefox-bin/firefox-bin -contentproc -ipcHandle 0 -signalPipe 1 -initialChannelId {2f6b045b-99ca-48f3-a792-876e7beaa477} -parentPid 2800 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 1 forkserver
-   2910     794 mei      /usr/lib/gvfsd-metadata
-   2916    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -parentBuildID 20261007201254 -prefsHandle 0:38350 -prefMapHandle 1:298887 -sandboxReporter 2 -chrootClient 3 -ipcHandle 4 -initialChannelId {d92664ff-a909-4c9a-a240-72fab590997e} -parentPid 2800 -crashHelperPid 2809 -crashHelper 5 -crashReporter 6 -appDir /opt/firefox-bin/browser 2 socket
-   2938    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:38437 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {0194840e-827f-4908-8bfe-d544fdf919c7} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 3 tab
-   2948    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -parentBuildID 20261007201254 -prefsHandle 0:38437 -prefMapHandle 1:298887 -sandboxReporter 2 -chrootClient 3 -ipcHandle 4 -initialChannelId {e0b9a395-e034-4be3-8e05-cfe1ac991f39} -parentPid 2800 -crashHelperPid 2809 -crashHelper 5 -crashReporter 6 -appDir /opt/firefox-bin/browser 4 rdd
-   3080    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:38557 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {cdf30402-3244-4405-8424-50470dadc5b8} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 6 tab
-   3123    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -parentBuildID 20261007201254 -sandboxingKind 0 -prefsHandle 0:55480 -prefMapHandle 1:298887 -sandboxReporter 2 -chrootClient 3 -ipcHandle 4 -initialChannelId {724e6949-6cd6-4406-86a1-114b4b062f6a} -parentPid 2800 -crashHelperPid 2809 -crashHelper 5 -crashReporter 6 -appDir /opt/firefox-bin/browser 7 utility
-   7086     794 mei      /usr/lib/gvfs-udisks2-volume-monitor
-   7090       1 root     /usr/lib/udisks2/udisksd
-   7369       2 root     [kworker/7:2-events]
-   9012       2 root     [kworker/5:1-i915-unordered]
-  13868       2 root     [kworker/9:2-mm_percpu_wq]
-  13876     951 mei      /usr/bin/bash /home/mei/.local/share/serpantinum/src/quickshell/watchers/sys_fetcher.sh --stream 2
-  16479       2 root     [kworker/4:2-events]
-  21495    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51808 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {056fb9c7-a7c7-4001-a4b5-7220fa7a588a} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 229 tab
-  21555    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51808 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {4b30a246-3015-42bd-9286-816adc8c09e1} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 230 tab
-  22035       2 root     [kworker/3:1-i915-unordered]
-  22414       2 root     [kworker/2:2-mm_percpu_wq]
-  25963       2 root     [kworker/10:0-i915-unordered]
-  26875       2 root     [kworker/8:1-events]
-  31002       2 root     [kworker/11:1-events]
-  32012       2 root     [kworker/9:0]
-  33869       2 root     [kworker/7:0-events]
-  34291       2 root     [kworker/10:2-i915-unordered]
-  34486    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51860 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {e8be782f-d4c3-47bd-b704-5c55afb61e7a} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 446 tab
-  35193       2 root     [kworker/4:1-cgroup_free]
-  35196       2 root     [kworker/u48:0-events_unbound]
-  35670       2 root     [kworker/2:1-i915-unordered]
-  35834       2 root     [kworker/1:0-i915-unordered]
-  35982       2 root     [kworker/6:2-events]
-  36488    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51862 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {97716700-6a83-4af0-baed-af17bb7d9851} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 484 tab
-  36601    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51862 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {e591cc4e-15e7-4e47-bbae-26374daa1f62} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 486 tab
-  36681    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51862 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {33750db8-4d68-4be0-a041-cd488ca368d3} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 488 tab
-  36687    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51862 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {b71c317d-8862-471e-b244-a5cb20f1fbdb} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 489 tab
-  38121    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51862 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {0e50e83f-f5eb-452b-a516-00b968d3e54c} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 501 tab
-  38468       2 root     [kworker/3:2]
-  38469       2 root     [kworker/1:1-i915-unordered]
-  38510       2 root     [kworker/0:1]
-  38609       2 root     [kworker/5:0-events]
-  38640       2 root     [kworker/6:0-i915-unordered]
-  38974       2 root     [kworker/u49:3-rtw89_tx_wq]
-  40060       2 root     [kworker/u48:2-events_unbound]
-  40409       2 root     [kworker/u48:1-events_power_efficient]
-  40580     847 mei      kitty
-  40593   40580 mei      /usr/bin/kitten __atexit__
-  40595   40580 mei      fish
-  40596   40580 mei      /usr/bin/kitten __watch_conf__ 40580 100 /etc/xdg/kitty/kitty.conf /home/mei/.config/kitty/kitty.conf
-  40632   40595 mei      opencode
-  40657   40632 mei      /usr/bin/opencode serve --service
-  41238       1 mei      /usr/lib/librewolf/librewolf
-  41304   41238 mei      /usr/lib/librewolf/librewolf -contentproc -parentBuildID 20261013200414 -prefsHandle 0:34555 -prefMapHandle 1:300743 -sandboxReporter 2 -chrootClient 3 -ipcHandle 4 -initialChannelId {eb5973f5-218a-4e86-b06d-17e054dc2b71} -parentPid 41238 -appDir /usr/lib/librewolf/browser 1 socket
-  41350   41238 mei      /usr/lib/librewolf/librewolf -contentproc -ipcHandle 0 -signalPipe 1 -initialChannelId {89a7d762-b4e7-4922-afce-9fc9f337f65e} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 2 forkserver
-  41389   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:35153 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {34d4c34b-54f9-4762-9d34-ba38372acfc9} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 3 tab
-  41398   41350 mei      /usr/lib/librewolf/librewolf -contentproc -parentBuildID 20261013200414 -prefsHandle 0:35153 -prefMapHandle 1:300743 -sandboxReporter 2 -chrootClient 3 -ipcHandle 4 -initialChannelId {779f13fd-9e6e-4e00-a4c8-1318c57cb429} -parentPid 41238 -appDir /usr/lib/librewolf/browser 4 rdd
-  41500   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:50332 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {f4e49bbc-55c9-4626-8ce8-624bfba29386} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 5 tab
-  41537   41350 mei      /usr/lib/librewolf/librewolf -contentproc -parentBuildID 20261013200414 -sandboxingKind 0 -prefsHandle 0:50373 -prefMapHandle 1:300743 -sandboxReporter 2 -chrootClient 3 -ipcHandle 4 -initialChannelId {f66db251-a384-42f4-a606-c6827276c0b0} -parentPid 41238 -appDir /usr/lib/librewolf/browser 6 utility
-  41578       2 root     [kworker/6:1-i915-unordered]
-  41583   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46450 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {73bbe43d-e858-4cff-ae22-ea5ee010aaf4} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 7 tab
-  41589   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46450 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {5ba696a0-c9d0-4814-988c-998f84dd7ecc} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 8 tab
-  41616   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46450 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {7d1b96df-111a-4436-b4ec-90037fb930f6} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 9 tab
-  41621   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46450 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {085a06e6-636c-492d-bc6d-d1906b1d78c0} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 10 tab
-  41758     363 root     systemd-userwork: waiting...
-  41780       2 root     [kworker/u49:0+i915_flip]
-  41791     363 root     systemd-userwork: waiting...
-  41792     363 root     systemd-userwork: waiting...
-  41801       2 root     [kworker/4:0-i915-unordered]
-  41893    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51861 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {79d6f48f-429d-4814-a6c8-0ed34f023a30} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 503 tab
-  41941    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51861 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {06480242-53ac-47a9-ae91-3b4510e633d7} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 504 tab
-  42235   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46557 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {9f5751f2-c728-4180-a5e4-9a92174f76bc} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 11 tab
-  42241   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46557 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {a7f49488-f0b6-4fbe-9939-892312d7b40e} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 12 tab
-  42481     951 mei      cava -p /dev/fd/63
-  42482   42481 mei      [bash] <defunct>
-  42514    2895 mei      /opt/firefox-bin/firefox-bin -contentproc -isForBrowser -prefsHandle 0:51861 -prefMapHandle 1:298887 -jsInitHandle 2:162336 -parentBuildID 20261007201254 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {403ae258-79ba-44ac-bde1-dfe2a99e3674} -parentPid 2800 -crashHelperPid 2809 -crashHelper 6 -crashReporter 7 -greomni /opt/firefox-bin/omni.ja -appomni /opt/firefox-bin/browser/omni.ja -appDir /opt/firefox-bin/browser 505 tab
-  42595   41350 mei      /usr/lib/librewolf/librewolf -contentproc -isForBrowser -prefsHandle 0:46557 -prefMapHandle 1:300743 -jsInitHandle 2:162336 -parentBuildID 20261013200414 -sandboxReporter 3 -chrootClient 4 -ipcHandle 5 -initialChannelId {60c3d47c-02b1-49cd-8e9c-02da993feda2} -parentPid 41238 -greomni /usr/lib/librewolf/omni.ja -appomni /usr/lib/librewolf/browser/omni.ja -appDir /usr/lib/librewolf/browser 13 tab
-  42973       2 root     [kworker/8:2]
-  43131       2 root     [kworker/u48:3-events_unbound]
-  43153   40657 mei      /usr/bin/bash -c cd /home/mei/projects/mei bash -n mei && echo "syntax OK" echo "===== baseline --force ====="; ./mei baseline --force; echo "EXIT=$?" echo "--- per-tree hash counts ---" sed -E 's#^[0-9a-f]+  /home/mei/##' docs/baseline/config-hashes.sha256 | sed -E 's#^((\.config|\.cache)/[^/]+)/.*#\1#' | sort | uniq -c echo "--- baseline.txt head ---"; sed -n '1,3p' docs/baseline.txt
-  43155   43153 mei      bash ./mei baseline --force
-  43177   43155 mei      ps -eo pid,ppid,user,args --sort=pid
+    846     819 mei      Hyprland --watchdog-fd 4
+    859       2 root     [krfcommd]
+    887     793 mei      /usr/lib/gvfsd
+    893     793 mei      /usr/lib/gvfsd-fuse /run/user/1000/gvfs -f
+    896     793 mei      /usr/lib/dconf-service
+    907     846 mei      wl-paste --type text --watch cliphist store
+    908     846 mei      wl-paste --type image --watch cliphist store
+    910     846 mei      bash /usr/local/bin/serpantinumd start
+    948     910 mei      python3 /home/mei/.local/share/serpantinum/src/quickshell/guide/wellbeing/focus_daemon.py
+    949     910 mei      quickshell -p /home/mei/.local/share/serpantinum/src/quickshell/Shell.qml
+    956     793 mei      /usr/lib/xdg-desktop-portal
+    960     846 mei      Xwayland :1 -rootless -core -listenfd 65 -listenfd 66 -displayfd 113 -wm 110
+    967     793 mei      /usr/lib/xdg-permission-store
+    979       2 root     [kworker/3:1H-i915_cleanup]
+    998     793 mei      /usr/lib/xdg-desktop-portal-gtk
+   1010     793 mei      /usr/lib/at-spi-bus-launcher
+   1016    1010 mei      /usr/bin/dbus-broker-launch --config-file=/usr/share/defaults/at-spi2/accessibility.conf --scope user
+   1017    1016 mei      dbus-broker --log 10 --controller 9 --machine-id ecd750fc49704ac8a63048f67151ad10 --max-bytes 100000000000000 --max-fds 6400000 --max-matches 5000000000
+   1018     793 mei      /usr/lib/at-spi2-registryd --use-gnome-session
+   1020     793 mei      /usr/lib/xdg-desktop-portal-hyprland
+   1046       1 root     /usr/lib/upowerd
+   1088     949 mei      inotifywait -m -e modify /run/user/1000/serpantinum/brightness /sys/class/backlight/intel_backlight/brightness
+   1090     949 mei      python3 -u -c  import glob, os, select, struct, sys, time  is_64bit = struct.calcsize("P") == 8 event_fmt = "qqHHi" if is_64bit else "iiHHi" event_size = struct.calcsize(event_fmt)  def read_sysfs(pattern):     for path in glob.glob(pattern):         try:             with open(path, "r") as f:                 if int(f.read().strip() or 0) > 0:                     return 1         except Exception:             pass     return 0  last_caps = read_sysfs("/sys/class/leds/*capslock*/brightness") last_num = read_sysfs("/sys/class/leds/*numlock*/brightness")  def find_kbd_devices():     devs = glob.glob("/dev/input/by-id/*-event-kbd")     if not devs:         devs = glob.glob("/dev/input/by-path/*-event-kbd")     if not devs:         devs = glob.glob("/dev/input/event*")     return devs  def scan_devices():     res = {}     for path in find_kbd_devices():         try:             fd = os.open(path, os.O_RDONLY | os.O_NONBLOCK)             res[fd] = path         except Exception:             pass     return res  def remove_fd(fd):     fds.pop(fd, None)     try:         os.close(fd)     except Exception:         pass  fds = scan_devices()  if fds:     while True:         try:             if not fds:                 time.sleep(1)                 fds = scan_devices()                 if not fds:                     continue             rlist, _, _ = select.select(list(fds.keys()), [], [])             for fd in rlist:                 while True:                     try:                         buf = os.read(fd, event_size)                         if not buf or len(buf) < event_size:                             remove_fd(fd)                             break                         _, _, ev_type, ev_code, ev_val = struct.unpack(event_fmt, buf)                         if ev_type == 17:                             if ev_code == 1:                                 val = 1 if ev_val > 0 else 0                                 if val != last_caps:                                     last_caps = val                                     sys.stdout.write(f"capslock {val}\n")                                     sys.stdout.flush()                             elif ev_code == 0:                                 val = 1 if ev_val > 0 else 0                                 if val != last_num:                                     last_num = val                                     sys.stdout.write(f"numlock {val}\n")                                     sys.stdout.flush()                     except (BlockingIOError, InterruptedError):                         break                     except Exception:                         remove_fd(fd)                         break         except Exception:             dead = []             for fd in list(fds.keys()):                 try:                     select.select([fd], [], [], 0)                 except Exception:                     dead.append(fd)             for fd in dead:                 remove_fd(fd)             time.sleep(1) else:     def open_leds(pattern, old):         for fd in old:             try:                 os.close(fd)             except Exception:                 pass         res = []         for path in glob.glob(pattern):             try:                 res.append(os.open(path, os.O_RDONLY))             except Exception:                 pass         return res      def any_on(fds):         for fd in fds:             try:                 if int(os.pread(fd, 16, 0).strip() or 0) > 0:                     return 1             except Exception:                 pass         return 0      caps_glob = "/sys/class/leds/*capslock*/brightness"     num_glob = "/sys/class/leds/*numlock*/brightness"     caps_fds = open_leds(caps_glob, [])     num_fds = open_leds(num_glob, [])     count = 0     while True:         time.sleep(0.25)         count += 1         if count >= 120:             count = 0             caps_fds = open_leds(caps_glob, caps_fds)             num_fds = open_leds(num_glob, num_fds)         c = any_on(caps_fds)         if c != last_caps:             last_caps = c             sys.stdout.write(f"capslock {c}\n")             sys.stdout.flush()         n = any_on(num_fds)         if n != last_num:             last_num = n             sys.stdout.write(f"numlock {n}\n")             sys.stdout.flush() 
+   1091     949 mei      bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
+   1092     949 mei      inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
+   1110     949 mei      inotifywait -m -e create,delete,modify,moved_to,moved_from /home/mei/.cache/serpantinum/recording
+   1141     949 mei      /usr/bin/python3 /home/mei/.local/share/serpantinum/src/quickshell/idle/screensaver_inhibit.py
+   1143     949 mei      /usr/bin/wl-paste --watch echo 1
+   1166    1091 mei      bash /home/mei/.local/share/serpantinum/src/scripts/current_focus.sh
+   1167    1166 mei      socat -u UNIX-CONNECT:/run/user/1000/hypr/efb50993780079460b0cbed1363e2166a2de1d9f_1792407547_2121810691/.socket2.sock -
+   1912     846 mei      kitty
+   1924    1912 mei      /usr/bin/kitten __atexit__
+   1926    1912 mei      fish
+   1927    1912 mei      /usr/bin/kitten __watch_conf__ 1912 100 /etc/xdg/kitty/kitty.conf /home/mei/.config/kitty/kitty.conf
+   1963    1926 mei      opencode
+   1986    1963 mei      /usr/bin/opencode serve --service
+   4730    1986 mei      /usr/bin/bash -c cd /home/mei/projects/mei cat >> CHANGES.md <<'EOF'  ## Baseline re-capture (external reboot, 2026-10-19) - The host rebooted at 16:29 (kernel 7.2.9 -> 7.2.11). The live Hyprland   instance signature changed and every live PID shifted, so the 13:39 baseline   no longer described the running session. Config hashes were still identical   (`./mei verify-untouched` reported "config hashes: all watched trees   unchanged"); the mismatch was process/D-Bus owner identity only. - Re-ran `./mei baseline --force`. Hyprland (0.56.2-4), Quickshell (0.3.2-1)   and Qt (6.12.0) are unchanged, so the earlier `.conf`/`.lua` verification   still applies. EOF ./mei baseline --force 2>&1 | tail -4 echo ./mei verify-untouched 2>&1 | tail -5
+   4732    4730 mei      bash ./mei baseline --force
+   4733    4730 mei      tail -4
+   4754    4732 mei      ps -eo pid,ppid,user,args --sort=pid
