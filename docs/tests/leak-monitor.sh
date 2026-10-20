@@ -54,6 +54,19 @@ while [ ! -e "$STOP" ]; do
       rt="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p' | head -1)"
       wl="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^WAYLAND_DISPLAY=//p' | head -1)"
       ppid="$(awk '{print $4}' "/proc/$pid/stat" 2>/dev/null)"
+      # A daemon recorded at the instant it is exec'd can briefly expose an
+      # empty environ. Retry twice; then fail closed (it could default live).
+      if [ -z "$rt" ]; then
+        for _ in 1 2; do
+          [ -d "/proc/$pid" ] || break
+          sleep 0.1
+          rt="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p' | head -1)"
+          wl="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^WAYLAND_DISPLAY=//p' | head -1)"
+          [ -n "$rt" ] && break
+        done
+      fi
+      [ -d "/proc/$pid" ] || continue
+      [ "$(awk '{print $3}' "/proc/$pid/stat" 2>/dev/null)" = "Z" ] && continue
       # The launcher is the harness parent (setsid/systemd-run); it inherits
       # the live environment only to spawn the nested session. It is not UI.
       if [ "$name" = "nested-launcher" ]; then continue; fi
