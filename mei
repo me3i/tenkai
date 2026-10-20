@@ -537,6 +537,9 @@ export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
 # mei-shell daemon). Nested tests only; a real run does not set this.
 export MEI_TEST=1
 export QSG_RENDER_LOOP=threaded
+# A nested surface must never fall back to the host X server: with no Wayland
+# socket, Qt exits instead of painting a stray window on the live desktop.
+export QT_QPA_PLATFORM=wayland
 export WAYLAND_DISPLAY="__HOST_WAYLAND__"
 unset MEI_POLKIT_AGENT HYPRLAND_INSTANCE_SIGNATURE
 unset XDG_VIDEOS_DIR XDG_PICTURES_DIR XDG_DOCUMENTS_DIR XDG_DOWNLOAD_DIR \\
@@ -650,12 +653,21 @@ cmd_run() {
   # The nested compositor opens as a window on the host; the session script
   # scrubs the inherited signature and refuses to start the shell unless the
   # nested instance is provably a different one.
-  local runner=(dbus-run-session -- bash "$RUN_DIR/session.sh")
+  local inner=(dbus-run-session -- bash "$RUN_DIR/session.sh")
   local cap="none (systemd-run unavailable; process group only)"
+  # Test hook: run on a caller-supplied private bus instead of a fresh
+  # dbus-run-session one. Only docs/tests/phase8-handover.sh sets it, to prove
+  # the D-Bus name handover when an old owner stops before Mei starts. ./mei
+  # itself never sets MEI_BUS_ADDRESS.
+  if [ -n "${MEI_BUS_ADDRESS:-}" ]; then
+    inner=(env DBUS_SESSION_BUS_ADDRESS="$MEI_BUS_ADDRESS" bash "$RUN_DIR/session.sh")
+    note "using caller-supplied private bus (MEI_BUS_ADDRESS); no dbus-run-session"
+  fi
+  local runner=("${inner[@]}")
   if command -v systemd-run >/dev/null 2>&1 && systemd-run --user --scope --quiet true >/dev/null 2>&1; then
     runner=(systemd-run --user --scope --quiet \
       -p MemoryMax=3G -p CPUQuota=200% -- \
-      dbus-run-session -- bash "$RUN_DIR/session.sh")
+      "${inner[@]}")
     cap="MemoryMax=3G CPUQuota=200% (systemd-run --user --scope)"
   fi
   setsid "${runner[@]}" >> "$RUN_DIR/logs/session.log" 2>&1 &
