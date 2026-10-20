@@ -799,3 +799,84 @@ is **not** running here. Optimisation candidates are proposed in the report; **n
 
 Safety: `./mei verify-untouched: PASS` before and after; the live shell was never signalled or
 queried over IPC; no product file changed.
+
+## Phase 10B — launcher open-surface CPU (2026-10-20, 15:00–17:10)
+
+Owner instruction: pick candidate 1 only (launcher open-surface CPU), find the actual
+cause before changing anything, no visual change, one change per commit, then the
+launcher test, a nested-start smoke test and the leak check — no full `phase9.sh`.
+
+**The premise did not survive.** The Phase 10A figure (qs 19.43 s CPU per 60 s while
+the launcher was open) did **not** reproduce when the same committed harness was run
+again an hour later: the same window measured **1.19 s**. The cost is only there when
+the nested window is actually being presented to the live compositor; when it is not,
+the nested compositor stops producing frames and the client has nothing to animate.
+Everything below was measured in the presented state, which is the expensive one.
+
+**Attribution** (nested session, 60 s window, launcher open, config-only A/B in the
+nested fake home, config written *before* the session so no reload lands in the
+window; `.run/logs/` has no copy of these ad-hoc runs, the numbers are in the
+transcript):
+
+| variant | qs CPU s/60 s | vol ctxt/s |
+|---|---:|---:|
+| default (horizon on, blur on), run 1 | 21.59 | 809.22 |
+| default, run 2 (repeat) | 21.59 | 814.13 |
+| horizon off | 9.15 | 250.23 |
+| frost blur off only | 25.11 | 1136.31 |
+| `LIBGL_ALWAYS_SOFTWARE=1` forced | 110.81 | 137.62 |
+
+So: the **horizon Canvas is 12.4 s of the 21.6 s** (the Canvas is rasterised on the
+CPU by Qt, so this is real CPU on any machine, and it scales with the panel's refresh
+rate); the frost blur is worth ~0.2 s here; the remaining ~9 s is the full-screen
+transparent overlay being rasterised by the **software** nested compositor (the nested
+output is 60 Hz, the live panel is 144 Hz).
+
+**Change 1 — `e10855d`, the hairline across the desktop** (owner's report): the
+visualiser drew a permanent 1 px line across the whole screen at 75.8 % of the height.
+Cause: the spectrum's silent rest is a near-flat level (`Spectrum.levels = flat(0.02)`)
+and the idle wave was on by default, so `fade` stayed at 1 and the field kept drawing
+that rest. `Motion.qml` already calls the idle wave "the user's opted-in resting
+animation" and `fade` was built to "clear on silence instead of freezing"; the shipped
+default contradicted both. `idleWave` now defaults to false in the shell's visualiser
+defaults, in `VizItem`'s fallback, and in the Settings page's defaults. Proof: the
+brightest full-width row went from mean 165.1 at y=781 to 145.1 (wallpaper only) at
+y=454, and rows 770–790 are clean wallpaper.
+
+**Change 2 — `f9c0ea6`, the horizon repaint**: the wave drifts at ~7 px/s, so a repaint
+per display frame redrew the strip to move the line by <0.1 px. The repaint is now
+gated on the picture having moved 0.35 px (~24 repaints/s instead of one per frame;
+144/s on a 144 Hz panel). Same phase, same curves, same durations, same picture.
+
+| 60 s window, launcher open | qs CPU s | CPU % | vol ctxt/s |
+|---|---:|---:|---:|
+| before | 25.91 | 43.18 | 1131.13 |
+| after | 13.45 | 22.42 | 671.77 |
+| idle control, same runs | 0.59 / 0.54 | | |
+
+Visual proof (nested, wallpaper pinned, `/tmp/opencode/shots/proof2_{before,after}/`):
+the settled frames differ in **205 of 482,600 pixels** — 168 along the horizon line
+(its antialiased edge moving by a fraction of a pixel; band mean difference 3.7/255)
+and 33 in the bar's clock, which ticked between the runs. Frame for frame, the before
+build repainted the canvas on every captured frame (~1,290 changed pixels in the wave
+band each time) while the after build repaints about every other captured frame and
+leaves the band otherwise untouched.
+
+**Checks after both changes**: nested-start smoke 6/6 (session up, signature differs
+from the live baseline, private bus, bar layer, qsbar IPC, no hard QML errors),
+launcher acceptance 13/13 (`docs/tests/launcher-check.sh`, exit 0), leak self-test 7/7
+(`docs/tests/leak-check.sh`, exit 0 — it must run with the *host* `XDG_RUNTIME_DIR`;
+running it with the nested one exported makes the guard call the nested dir "live" and
+every nested case fails, which is a harness mistake, not a regression).
+`./mei verify-untouched`: PASS before and after. kitty 1505210, hash `9ff508…`, live
+D-Bus owners still 949.
+
+**Brightness note**: the panel read 18240 instead of 27840 after the session (exactly
+two hardware 5 % steps down). The nested session provably does not touch the backlight:
+starting it, opening quick settings and opening the launcher all left the value alone
+and no `brightnessctl` process was ever spawned, so the two steps came from outside the
+harness (hardware keys while the nested window had focus). Restored to 27840.
+
+**Still unverified**: the live 144 Hz GPU session. The nested numbers overstate the
+compositing part and understate the repaint part; the live trial must re-measure the
+launcher before the wave change is called a win.
