@@ -135,3 +135,19 @@ outbound call). The owner should correct this reading if it is wrong.
 | D | the full test loop and the idle measurement table | running |
 
 B7, B8 and B9 are the three still open. B7 and B8 are wiring, B9 is new code.
+
+## What you lose, and what it would cost to add
+
+Every serpantinum feature with no Mei equivalent, and the one-line cost of each.
+Nothing here is decided: the list is for you to pick from. The "your binds" column
+names the binds in your own config that depend on the feature.
+
+| feature | your binds that depend on it | what Mei has instead | the cost to add it |
+|---|---|---|---|
+| wellbeing guide (the focus daemon, the wellbeing panel) | `SUPER + H` (`serpantinum msg toggle guide`) | nothing | a small daemon that tracks focus and session time, plus a panel page: about a day |
+| calendar | `SUPER + S` (`serpantinum msg toggle calendar`) | nothing (the calendar was trimmed; it is also in your exclusion list) | a calendar panel reading the same local sources your shell does: about a day |
+| quick-actions palette (the floating action panel) | none directly (it is bound to nothing in your config) | the launcher and the control centre cover most of it | a floating panel with the actions you had: half a day |
+| bar autohide toggle | `SUPER + A` (`serpantinum msg toggle autohide`) | Mei's bar has an autohide setting in the config (`Config.normalizedFrameBars`), but no shortcut to flip it | one shortcut that flips the setting: about an hour |
+| move a window to a workspace with `SUPER + SHIFT + number` | `SUPER + SHIFT + 1..0` | **nothing needed**: Hyprland can do this itself, with no shell at all. The dispatcher is in the binary (`movetoworkspace`, `moveWindowToWorkspace`); the classic form is `hyprctl dispatch movetoworkspace 2` | one line in your keybinds: `hl.dsp.exec_cmd("hyprctl dispatch movetoworkspace " .. ws)` — and the Lua form would be the same thing through `hl.dsp` |
+| image editor on `SHIFT + Print` | `SHIFT + Print` (and `SUPER + SHIFT + Print`) | Mei's `mei-screenshot` takes the picture (full screen or a dragged region), puts it in the clipboard and announces it | point the bind at an editor you already have (a one-line change), or a small editor surface: an hour |
+| idle timeouts (dim, lock, DPMS, suspend) | none (they are a timeout, not a bind) | **not built yet**: this is the one real gap | a state machine over Quickshell's idle-notify (the API is there: `IdleMonitor` with `isIdle` and `respectInhibitors`), four timeouts and four actions: about a day |
