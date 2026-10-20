@@ -294,7 +294,7 @@ ShellRoot {
                 id: launcherLoader
                 property bool open: perScreen.st ? perScreen.st.launcherOpen : false
                 property bool showNow: false
-                activeAsync: open || launcherHold.running
+                activeAsync: Config.moduleOn("launcher") && (open || launcherHold.running)
                 onItemChanged: if (launcherLoader.item) Qt.callLater(function() { launcherLoader.showNow = launcherLoader.open; })
                 onOpenChanged: {
                     if (launcherLoader.open) {
