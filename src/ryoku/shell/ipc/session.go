@@ -21,6 +21,12 @@ func testStubbed() bool { return os.Getenv("MEI_TEST") == "1" }
 // machine off. The QML singleton carries the same guard.
 func shutdownStubbed() bool { return os.Getenv("MEI_STUB_SHUTDOWN") == "1" }
 
+// powerStubbed reports the live trial's wider stub: no power action may end
+// the owner's session by accident. MEI_STUB_POWER=1 covers logout, reboot,
+// suspend and shutdown. Lock is not a power action and is never stubbed here.
+// The QML singleton carries the same guard.
+func powerStubbed() bool { return os.Getenv("MEI_STUB_POWER") == "1" }
+
 // session.go runs the session power actions the confirmation dialog triggers.
 // Reboot and shutdown are system-level, so they go through systemctl. Logout
 // ends the session by asking the compositor to exit, through the wm seam.
@@ -47,6 +53,10 @@ func (d *daemon) startSession() {
 			log.Printf("mei-shell: [mei-stub] suppressed session logout (MEI_TEST=1)")
 			return map[string]any{"ok": true}, nil
 		}
+		if powerStubbed() {
+			log.Printf("mei-shell: [mei-stub] suppressed session logout (MEI_STUB_POWER=1)")
+			return map[string]any{"ok": true}, nil
+		}
 		if err := d.wmc.Act(wm.ActionSessionExit); err != nil {
 			log.Printf("ryoku-shell: session logout: %v", err)
 		}
@@ -67,6 +77,10 @@ func (d *daemon) startSession() {
 func runSessionAction(action string) {
 	if testStubbed() {
 		log.Printf("mei-shell: [mei-stub] suppressed session %s (MEI_TEST=1)", action)
+		return
+	}
+	if powerStubbed() {
+		log.Printf("mei-shell: [mei-stub] suppressed session %s (MEI_STUB_POWER=1)", action)
 		return
 	}
 	if action == "shutdown" && shutdownStubbed() {

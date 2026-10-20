@@ -1085,9 +1085,11 @@ export QML_IMPORT_PATH="\$RUN/qml"
 export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
 export MEI_APP_HOME="__REAL_HOME__"
 export MEI_APP_XDG_RUNTIME_DIR="$rt"
-# A live run is not a test run: MEI_TEST is deliberately NOT set, so the
-# power actions are real. Only shutdown stays stubbed for the first trial.
-export MEI_STUB_SHUTDOWN=1
+# A live run is not a test run: MEI_TEST is deliberately NOT set. But no power
+# action may end the owner's session by accident in the first trial: logout,
+# reboot, suspend and shutdown are all stubbed (MEI_STUB_POWER=1). Lock is not
+# a power action and stays real.
+export MEI_STUB_POWER=1
 export QSG_RENDER_LOOP=threaded
 export QT_QPA_PLATFORM=wayland
 unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM

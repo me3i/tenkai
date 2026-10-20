@@ -28,11 +28,19 @@ profile sets it.
    reads Mei's own `desktop.json` first (so the chosen terminal is still Mei's),
    then re-exports `HOME` and the `XDG_*` variables from `MEI_APP_HOME` for the
    child. Without that variable the behaviour is exactly as before.
-2. **Power actions are real in a live run; only shutdown stays stubbed.** A
-   live run is not a test run, so `MEI_TEST` is deliberately not set there and
-   logout and reboot are real. `MEI_STUB_SHUTDOWN=1` (set only by the live
-   profile) keeps **shutdown** stubbed for the first trial, in both the QML
-   path (`SessionActions.qml`) and the daemon (`session.go`, defence in depth).
+2. **No power action may end the owner's session by accident in the first
+   live trial.** A live run is not a test run, so `MEI_TEST` is deliberately not
+   set there. `MEI_STUB_POWER=1` (set by `./mei live`, both profiles) stubs
+   **logout, reboot, suspend and shutdown**, in both the QML path
+   (`SessionActions.qml`) and the daemon (`session.go`, defence in depth), each
+   logging `[mei-stub] suppressed session.<action> (MEI_STUB_POWER=1)`. **Lock
+   is not a power action and stays real.** The narrower `MEI_STUB_SHUTDOWN=1`
+   still exists for a run that wants everything real except shutdown.
+   Note: the daemon does not register the session verbs in this build (the
+   Phase 6 trim left the session module out of the bootstrap), so the buttons
+   are inert here anyway; the stub makes the QML log the suppression instead
+   of sending a call, and it is the guard that will hold if the session module
+   is ever wired in.
 3. **The ryogami live-display guard has one explicit override.**
    `MEI_ALLOW_LIVE_DISPLAY=1` is set by exactly one caller, `./mei live
    --profile full`, and it is the owner's own hand on the switch: every other

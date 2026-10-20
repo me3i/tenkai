@@ -111,6 +111,9 @@ It prints:
 * the shell pid, the monitor log path, and the commands that open the launcher
   and the quick settings.
 
+The **monitor starts by itself** with `./mei live` — there is no second command
+to run. It writes `.run/logs/live-monitor-<stamp>.log` and `.csv` every 5 s.
+
 **Opening the surfaces** (run these yourself, from your own terminal — no
 Hyprland config change is needed, and none is made):
 
@@ -178,8 +181,11 @@ session's own runtime, nothing in your config files):
 - it starts ryogami with the live-display guard **explicitly overridden**
   (`MEI_ALLOW_LIVE_DISPLAY=1` — set only by `--profile full`; every other path
   still refuses);
-- the power actions are **real** (a live run is not a test run), except
-  **shutdown**, which stays stubbed for this first trial;
+- the power actions are **stubbed** for this first trial: logout, reboot,
+  suspend and shutdown all log `[mei-stub] suppressed` instead of running.
+  **Lock stays real.** (They are inert in this build anyway: the daemon does
+  not register the session verbs, so the sidebar's power buttons do nothing
+  either way. The stub is there so that stays true if that ever changes.)
 - every file it writes stays in `~/projects/mei/.run`; apps it launches get
   your **real** HOME and XDG variables;
 - your Hyprland config is never written.
@@ -212,8 +218,9 @@ session's own runtime, nothing in your config files):
 - [ ] **Wallpaper**: setting one reveals it smoothly; the colours re-theme
       (matugen) without a flash or a black screen.
 - [ ] **Lock** only: the lock action works. Do **not** try logout, reboot or
-      shutdown in the first trial — shutdown is stubbed on purpose, but logout
-      and reboot are real, so leave them alone.
+      shutdown in the first trial — all of them are stubbed on purpose (they
+      log `[mei-stub] suppressed` and nothing happens), and the lock is the
+      one action that stays real.
 - [ ] `live-monitor-*.log` shows the CPU and RSS; compare them with the
       nested numbers below.
 - [ ] `./mei live-stop` stops Mei; then `serpantinumd start` brings your old

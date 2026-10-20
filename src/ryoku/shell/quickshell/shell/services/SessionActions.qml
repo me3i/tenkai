@@ -20,14 +20,24 @@ Singleton {
     readonly property bool testMode: Quickshell.env("MEI_TEST") === "1"
 
     // A live run is not a test run: the power actions are real there, because
-    // MEI_TEST is deliberately not set. The first live trial still keeps
-    // shutdown stubbed, so a stray confirmation cannot power the machine off.
+    // MEI_TEST is deliberately not set. The first live trial still stubs them,
+    // so a mis-click in the sidebar cannot end the owner's session:
+    // MEI_STUB_POWER=1 covers logout, reboot, suspend and shutdown. Lock is
+    // not a power action and stays real.
+    readonly property bool powerStubbed: Quickshell.env("MEI_STUB_POWER") === "1"
+
+    // The narrower variant, for a run that wants everything real except
+    // shutdown.
     readonly property bool shutdownStubbed: Quickshell.env("MEI_STUB_SHUTDOWN") === "1"
 
     // action is one of "logout" | "reboot" | "shutdown"; the daemon validates it.
     function run(action) {
         if (testMode) {
             console.log("[mei-stub] suppressed session." + action + " (MEI_TEST=1)");
+            return;
+        }
+        if (root.powerStubbed) {
+            console.log("[mei-stub] suppressed session." + action + " (MEI_STUB_POWER=1)");
             return;
         }
         if (action === "shutdown" && root.shutdownStubbed) {
