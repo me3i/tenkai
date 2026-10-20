@@ -185,12 +185,17 @@ echo "  verify-untouched: $( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u 
 
 # ── table ────────────────────────────────────────────────────────────────────
 echo; echo "================ PHASE 9 TABLE ================"
+brstatus=TESTED
+brnote="real 5% brightness step via the QML path and the hub verb, restored"
+grep -q 'brightness control UNVERIFIED' "${SRC[core]:-}" 2>/dev/null && { brstatus=PARTIAL; brnote="brightness UNVERIFIED (no backlight/tool)"; }
+grep -q '^FAIL.*brightness' "${SRC[core]:-}" 2>/dev/null && { brstatus=FAIL; brnote="brightness check FAILED"; }
+[ "${RC[core]:-1}" != 0 ] && { brstatus=FAIL; brnote="core failed"; }
 row() { printf '%-3s %-46s %-9s %s\n' "$1" "$2" "$3" "$4"; }
 row "#" "item" "status" "evidence"
 row "1"  "launch, no QML errors"                     "$([ ${RC[core]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[core]:-}"
 row "2"  "bar + workspaces match Hyprland"            "$([ ${RC[core]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[core]:-}"
 row "3"  "launcher open/search/launch/close"          "$([ ${RC[core]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[core]:-}"
-row "4"  "sidebar (clock, battery, net, audio, brightness)" "TESTED" "panel+clock+read-only audio TESTED; real 5% brightness step via the QML path and the hub verb, restored (${SRC[core]:-})"
+row "4"  "sidebar (clock, battery, net, audio, brightness)" "$brstatus" "panel+clock+read-only audio TESTED; $brnote (${SRC[core]:-})"
 row "5"  "notifications"                              "$([ ${RC[item5]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[item5]:-}"
 row "6"  "tray"                                       "$([ ${RC[item6]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[item6]:-}"
 row "7"  "wallpaper + recolour"                       "$([ ${RC[item7]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[item7]:-}"
