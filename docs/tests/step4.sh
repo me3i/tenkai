@@ -61,7 +61,12 @@ done
 [ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; "$MEI/mei" stop; exit 1; }
 [ -n "$SIG" ] && ok "nested Hyprland instance ($SIG)" || { bad "no nested instance"; "$MEI/mei" stop; exit 1; }
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
-H() { hyprctl "$@" 2>/dev/null; }
+H() {
+  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
+    || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
+  XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
+}
 WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
 note "nested WAYLAND_DISPLAY=$WDISP"

@@ -19,10 +19,15 @@ fail=0; SIG=""; QS=""; BUS=""; DPID=""; SHELLLOG=""
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
-H() { hyprctl "$@" 2>/dev/null; }
+H() {
+  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
+    || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
+  XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
+}
 D() { H dispatch "hl.dsp.global(\"ryoku:$1\")" >/dev/null 2>&1; }
-IPC() { qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
-SH() { qs ipc --pid "$QS" call shell "$@" 2>&1; }
+IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
+SH() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call shell "$@" 2>&1; }
 owner() { busctl --address="$BUS" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }
 
 cleanup() {
@@ -61,8 +66,28 @@ note "nested sig $SIG, display $WAYLAND_DISPLAY, shell $QS, daemon $DPID"
   || bad "nested display is $WAYLAND_DISPLAY"
 
 echo; echo "=== 1. launch: one shell, fresh defaults, private bus, no QML errors ==="
-nqs="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
-[ "$nqs" = 1 ] && ok "exactly one shell instance" || bad "shell instances: $nqs"
+# Count only Quickshell servers bound to the nested runtime. Any Mei qs on
+# another runtime is a leak onto the live session: kill it (we started it).
+nqs=0; leak=""
+for _ in $(seq 1 10); do
+  nqs=0; leak=""
+  for p in $(pgrep -f "^qs -p $MEI/" 2>/dev/null); do
+    prt="$(tr '\0' '\n' < /proc/$p/environ 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p')"
+    [ -z "$prt" ] && continue
+    if [ "$prt" = "$RT" ]; then
+      case "$(tr '\0' '\n' < /proc/$p/cmdline 2>/dev/null | head -3 | tail -1)" in
+        */quickshell/shell) nqs=$((nqs+1)) ;;
+      esac
+    else leak="$leak $p:$prt"; fi
+  done
+  [ -z "$leak" ] && [ "$nqs" = 1 ] && break
+  sleep 0.4
+done
+if [ -n "$leak" ]; then
+  for lp in $leak; do kill -TERM "${lp%%:*}" 2>/dev/null || true; done
+  bad "Mei qs leaked outside the nested runtime (killed):$leak"
+fi
+[ "$nqs" = 1 ] && ok "exactly one shell instance (nested runtime)" || bad "shell instances: $nqs"
 BASELINE_SIG="$(sed -n 's/^BASELINE_SIG="\(.*\)"$/\1/p' "$RUN/session.sh")"
 [ -n "$BASELINE_SIG" ] && [ "$SIG" != "$BASELINE_SIG" ] && ok "nested signature differs from the live baseline" || bad "nested signature equals baseline"
 LIVE_BUS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$HOST_XDG/bus}"

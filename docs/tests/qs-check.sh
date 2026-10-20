@@ -7,7 +7,12 @@ RUN="$MEI/.run"
 export XDG_RUNTIME_DIR="$MEI/.r"
 export WAYLAND_DISPLAY=wayland-1
 SIG=""
-H() { HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
+H() {
+  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
+    || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
+  XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
+}
 fail=0
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }

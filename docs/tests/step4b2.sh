@@ -29,7 +29,12 @@ done
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
-H() { hyprctl "$@" 2>/dev/null; }
+H() {
+  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
+    || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
+  XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
+}
 shot() { grim -o "${WDISP^^}" "$RUN/shots/step4b2-$1.png" 2>/dev/null && echo "  shot: step4b2-$1.png"; }
 
 MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"

@@ -27,6 +27,15 @@ note(){ echo "NOTE        $*"; }
 
 # ── cold start ──────────────────────────────────────────────────────────────
 echo "=== cold start (backup $BK) ==="
+# Any Mei qs attached to the live runtime is ours and must go before we start.
+for p in $(pgrep -f "^qs -p $MEI/" 2>/dev/null); do
+  prt="$(tr '\0' '\n' < /proc/$p/environ 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p')"
+  [ -z "$prt" ] && continue
+  if [ "$prt" != "$RT" ]; then
+    echo "NOTE        killing leaked Mei qs $p (runtime ${prt:-unset})"
+    kill -TERM "$p" 2>/dev/null || true
+  fi
+done
 if pgrep -f "^qs -p $MEI/src/ryoku/shell|^$RUN/bin/mei-shell daemon" >/dev/null 2>&1; then
   bad "a nested session is already running; refusing to cold-start over it"
   echo "RESULT: FAIL"; exit 1

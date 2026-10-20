@@ -57,9 +57,14 @@ WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
 BSIG="$(sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$MEI/docs/baseline/env.txt" | head -1)"
 [ "$SIG" != "$BSIG" ] && ok "nested Hyprland signature differs from the live baseline" || { bad "nested signature equals the baseline"; "$MEI/mei" stop; exit 1; }
-H() { hyprctl "$@" 2>/dev/null; }
+H() {
+  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
+    || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
+  XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
+}
 SCREENW="$(hyprctl -j monitors 2>/dev/null | jq -r '.[0].width // empty' 2>/dev/null)"
-IPC() { qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
+IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
 shot() { grim -o "${WDISP^^}" "$RUN/shots/step7-$1.png" 2>/dev/null && echo "  shot: step7-$1.png"; }
 sleep 3
 

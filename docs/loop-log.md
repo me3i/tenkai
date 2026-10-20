@@ -641,3 +641,20 @@ Core item 2 no longer focuses workspaces 2/3: the acceptance pass now stays on w
 per the owner's directive, so no test surface or window can appear on another workspace. The
 bar's per-workspace sync is checked on the single workspace the pass uses; multi-workspace
 focus sync is no longer exercised and must be reported as reduced coverage.
+
+## Live-runtime leak: the confirmation pass failed item 1 (2026-10-20)
+
+The third run failed with "shell instances: 2", and a Mei `qs` was seen briefly on
+`XDG_RUNTIME_DIR=/run/user/1000` (the owner's live session). Two causes:
+
+1. Every harness defined `H() { hyprctl "$@"; }` (or set only the signature), so when the
+   nested socket was momentarily absent, `hyprctl` fell back to the live instance. A
+   `dispatch global ryoku:quicksettings` then opened a panel in the owner's session.
+2. Nothing rejected a Mei `qs` whose `XDG_RUNTIME_DIR` was not the nested runtime, and item 1
+   counted it as a second shell.
+
+Fix: `H()` now refuses unless `$RT/hypr/$SIG/.socket.sock` exists and always passes
+`XDG_RUNTIME_DIR=$RT` + the nested signature; every `IPC`/`SH` client does the same. Item 1
+settles, counts only servers bound to `$RT`, and kills (TERM) any Mei `qs` on another runtime;
+the cold start does the same before launching anything. No live process is ever signalled:
+the filter is `qs -p /home/mei/projects/mei/...`, which cannot match the live shell.
