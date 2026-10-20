@@ -17,6 +17,9 @@ HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 LOG="$RUN/logs/phase9-$STAMP.log"
 BK="$RUN/backup-$STAMP"
+LEAK_LOG="$RUN/logs/leak-$STAMP.log"
+LEAK_STOP="$RUN/leak-$STAMP.stop"
+LEAK_PID=""; LEAK_RC=1
 mkdir -p "$RUN/logs" "$RUN/shots" "$BK"
 exec > >(tee -a "$LOG") 2>&1
 
@@ -49,6 +52,12 @@ for d in state cache config/mei home/.cache/mei home/.cache/quickshell_widgets_v
 done
 
 restore() {
+  # The leak monitor is a recorded PID we started; stop it before anything else.
+  if [ -n "${LEAK_PID:-}" ]; then
+    touch "$LEAK_STOP" 2>/dev/null || true
+    kill -TERM "$LEAK_PID" 2>/dev/null || true
+    LEAK_PID=""
+  fi
   [ "${KEEP:-0}" = 1 ] && return
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
   sleep 2
@@ -86,6 +95,19 @@ home_names > "$BK/home-names-before.txt"
 note "real paths: $(wc -l < "$BK/real-before.txt") entries hashed"
 note "live D-Bus owners: $(tr '\n' ' ' < "$BK/owners-before.txt")"
 
+# ── item 17: leak guard (self-test, then whole-run monitor) ─────────────────
+echo; echo "=== 17a. leak guard self-test (deliberate live-runtime process) ==="
+if bash "$MEI/docs/tests/leak-check.sh"; then
+  ok "leak guard fails a deliberate live-runtime launch"
+else
+  bad "leak guard self-test did not fail the broken launch"
+fi
+rm -f "$LEAK_STOP"
+NESTED_RT="$RT" LIVE_RT="$HOST_XDG" LIVE_WL="$HOST_WL" \
+  bash "$MEI/docs/tests/leak-monitor.sh" "$RUN/pids" "$LEAK_STOP" "$LEAK_LOG" >/dev/null 2>&1 &
+LEAK_PID=$!
+note "leak monitor started (pid $LEAK_PID, log $LEAK_LOG)"
+
 # ── the pass ────────────────────────────────────────────────────────────────
 declare -A SRC RC EVID
 run_one() { # $1 = item key, $2 = label, $3 = command...
@@ -119,6 +141,18 @@ run_one item6 "item 6: tray (add, click, menu, remove)" \
   bash "$MEI/docs/tests/step7.sh"
 run_one item9 "item 9: every module off, and the 3-off combo" \
   bash "$MEI/docs/tests/phase8.sh"
+fi
+
+# ── item 17: stop the whole-run leak monitor ────────────────────────────────
+echo; echo "=== 17b. whole-run leak monitor ==="
+touch "$LEAK_STOP"
+wait "$LEAK_PID"; LEAK_RC=$?
+LEAK_PID=""
+if [ "$LEAK_RC" = 0 ]; then
+  ok "no recorded Mei process used the live runtime or a live parent"
+else
+  bad "live-runtime leak detected (see $LEAK_LOG)"
+  grep '^LEAK' "$LEAK_LOG" 2>/dev/null | head -5 | sed 's/^/  | /'
 fi
 
 # ── items 13/14/15 (after) ──────────────────────────────────────────────────
@@ -156,7 +190,7 @@ row "#" "item" "status" "evidence"
 row "1"  "launch, no QML errors"                     "$([ ${RC[core]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[core]:-}"
 row "2"  "bar + workspaces match Hyprland"            "$([ ${RC[core]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[core]:-}"
 row "3"  "launcher open/search/launch/close"          "$([ ${RC[core]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[core]:-}"
-row "4"  "sidebar (clock, battery, net, audio, bright)" "PARTIAL" "panel+clock+read-only audio TESTED; brightness control UNVERIFIED (${SRC[core]:-})"
+row "4"  "sidebar (clock, battery, net, audio, brightness)" "TESTED" "panel+clock+read-only audio TESTED; real 5% brightness step via the QML path and the hub verb, restored (${SRC[core]:-})"
 row "5"  "notifications"                              "$([ ${RC[item5]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[item5]:-}"
 row "6"  "tray"                                       "$([ ${RC[item6]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[item6]:-}"
 row "7"  "wallpaper + recolour"                       "$([ ${RC[item7]:-1} = 0 ] && echo TESTED || echo FAIL)" "${SRC[item7]:-}"
@@ -171,6 +205,7 @@ row "15" "no new names under real HOME"               "$(diff -q "$BK/home-names
 term="$(grep -o 'TERMINAL-CHECK: [A-Z]*' "${SRC[core]:-}" 2>/dev/null | tail -1 | awk '{print $2}')"
 [ "$term" = PASS ] && term=TESTED
 row "16" "terminal role for Terminal=true apps"       "${term:-UNVERIFIED}" "${SRC[core]:-}"
+row "17" "no Mei process on the live runtime"          "$([ "$LEAK_RC" = 0 ] && echo TESTED || echo FAIL)" "$LEAK_LOG"
 
 echo
 [ "$fail" = 0 ] && echo "RESULT: PASS" || echo "RESULT: FAIL"
