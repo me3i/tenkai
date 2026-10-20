@@ -21,6 +21,12 @@ Singleton {
     property string error: ""
     property bool busy: false
 
+    // What the lock is waiting for: "selfcheck", "verify", or nothing. The
+    // daemon answers on the same socket for other commands too (the protocol
+    // report, for one), and an answer the lock did not ask for must not be
+    // read as a refused password.
+    property string waiting: ""
+
     // The compositor's own lock state (ext-session-lock-v1): whether the
     // session is locked, and whether the compositor calls the lock secure.
     // They are the compositor's answer, not Mei's wish.
@@ -49,6 +55,7 @@ Singleton {
             return;
         root.error = "";
         root.busy = true;
+        root.waiting = "selfcheck";
         send("lock-selfcheck\n");
     }
 
@@ -64,6 +71,7 @@ Singleton {
             return;
         root.busy = true;
         root.error = "";
+        root.waiting = "verify";
         send("lock-verify\n" + password + "\n");
     }
 
@@ -102,7 +110,14 @@ Singleton {
                     reply = null;
                 }
                 root.busy = false;
-                if (reply && reply.selfcheck) {
+                if (root.waiting === "") {
+                    // An answer nobody asked for: the daemon's own commands
+                    // (the protocol report) come back on this socket too.
+                    return;
+                }
+                const asked = root.waiting;
+                root.waiting = "";
+                if (asked === "selfcheck" && reply && reply.selfcheck) {
                     // The readiness answer: lock only if the setup works.
                     if (reply.ok) {
                         root.locked = true;
@@ -118,10 +133,10 @@ Singleton {
                     }
                     return;
                 }
-                if (reply && reply.ok) {
+                if (asked === "verify" && reply && reply.ok) {
                     root.locked = false;
                     root.error = "";
-                } else {
+                } else if (asked === "verify") {
                     root.error = (reply && reply.reason) ? reply.reason
                         : "the password was refused";
                 }

@@ -22,6 +22,7 @@ TESTS=(
   "screenshot helper|docs/tests/screenshot-module.sh"
   "lock|docs/tests/lock-module.sh"
   "session lock (protocol)|docs/tests/session-lock-module.sh"
+  "lock ui reaches out to nothing|docs/tests/lock-ui-outbound.sh"
   "idle and screensaver|docs/tests/idle-module.sh"
   "start and fallback|docs/tests/start-fallback.sh"
   "picker sources|docs/tests/picker-outbound.sh"

@@ -93,6 +93,32 @@ the assets and licences, the README and the CI workflow, and the no-VM install
 checks. `docs/PUBLISH-NOTES.md` already describes how to publish from a clean
 export.
 
+## The lock screen's look (2026-10-21)
+
+The lock screen is the **orbital dial** from Ryoku's own clockwork lockscreen
+theme, taken from upstream and adapted (`modules/lock/OrbitalClock.qml`): the
+dial with its two rings of ticks, the spotlight that follows the minute and
+the second, the big hour numeral and the date, and the theme's pill shape for
+the password field. The greeter's parts (the SDDM components, the user and
+session models, the fingerprint hint, the reveal and the windup) are not a
+session lock and were left out; the bundled Outfit font is not redistributed,
+because upstream ships it without a licence file (the system font is used
+instead, and CREDITS.md says so).
+
+The upstream theme is under Ryoku's GPL-3.0-or-later, and the adapted clock
+keeps the attribution in its header. The clock only runs while the lock is up:
+it lives in the lock's surface.
+
+`docs/tests/lock-ui-outbound.sh` proves that the lock's QML has no outbound
+call, no network asset and no bundled file, and that the check itself can
+fail. The screenshots (nested only) are in `.run/shots/lock-before.png` and
+`.run/shots/lock-after.png`.
+
+The other lock-screen visuals upstream has: the clockwork theme is the only
+one in the tree, and it is the only look Mei took. The rest of the greeter
+(SDDM's own components, the input form, the fingerprint hint) is a login
+screen, not a session lock.
+
 ## Where to resume
 
 **Item 2, the network and Bluetooth hosts.** Hosts that do not live in the
