@@ -475,7 +475,11 @@ func setupQmlImportPath() {
 // widgets subscribe to them; they only act when a surface asks.
 func (d *daemon) bootstrap() {
 	d.startSettings()
-	d.startTray()
+	if moduleDisabled("tray") {
+		fmt.Println("mei-shell: tray module off in shell.json; no StatusNotifierWatcher claimed")
+	} else {
+		d.startTray()
+	}
 	d.startMusic()
 	d.startNetwork()
 	d.startNightlight()
