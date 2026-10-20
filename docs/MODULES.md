@@ -36,7 +36,7 @@ places that must agree:
 |---|---|---|
 | `bar` | `shell.qml:249` (Frame `LazyLoader`) + `:467`/`:484` (`barToggle`) + `:775` (`bar()` IPC) + `daemon.go:114` | no bar window is created at all; bar shortcuts are no-ops |
 | `launcher` | `shell.qml:297` (launcher loader) + `:467`/`:484` + `:751` (`openSurface`) + `daemon.go:114` | loader never activates; shortcut/IPC return silently |
-| `control_center` | `shell.qml:467`/`:477`/`:484` + `:751` + `daemon.go:114` | `quicksettings` and `screenshot` commands are swallowed |
+| `control_center` | `shell.qml:467`/`:477`/`:484` + `:751` + `daemon.go:114` + the new `modules/controlcenter/ControlCenterHost.qml` | `quicksettings` and `screenshot` commands are swallowed. With the bar off the panel is hosted by the shell's own host (see below) |
 | `notifications` | `services/Notifs.qml:233-236` (`Loader.active`) | no `NotificationServer` object → no D-Bus name |
 | `tray` | `daemon.go:91` (`moduleDisabled`) + `:478` (bootstrap) | no `StatusNotifierWatcher` host |
 | `wallpaper` | `mei:588` (session template) + `shell.qml:467`/`:751` + `daemon.go:114` | ryogami is not started; wallpaper menu is swallowed |
@@ -47,6 +47,28 @@ places that must agree:
 The daemon half of the switchboard is `moduleDisabled` (`daemon.go:91`); the QML
 half is `Config.moduleOn` (`Config.qml:47`). Both treat anything but an explicit
 `false` as enabled.
+
+## The control centre does not need the bar
+
+The panel used to be reachable only through the bar's menu bus, which made the
+`bar` module a hard dependency for the `control_center` module: with the bar off
+the control centre could not open at all, although its own flag said it was on.
+
+The panel now has its own surface host, `modules/controlcenter/ControlCenterHost.qml`,
+built by the shell **only when the bar is off**. It reuses the bar style's
+`ControlCenter` component and gives it a `Theme` instance of its own (the bar
+creates one per bar root), so no panel QML was rewritten. With the bar on, the bar
+style instantiates the same panel exactly as before, so that path is unchanged.
+
+| bar | control_center | what happens | proof |
+|---|---|---|---|
+| off | on | the panel opens and closes on the shortcut, with no bar layer | `docs/tests/control-center-matrix.sh` A |
+| on | off | the bar renders; the panel stays shut | same test, B |
+| on | on | unchanged: the bar hosts the panel, and the request still reaches `ShellState` | same test, C |
+
+`docs/tests/control-center-matrix.sh` runs all three as separate nested sessions
+(one cold start each) and asserts `verify-untouched` after every one. The Phase 8
+module matrix still passes with the change (50 TESTED, 0 FAIL).
 
 ## Disable a component
 

@@ -19,6 +19,7 @@ import "modules/wallpaper/Singletons" as WallCfg
 import "modules/desktop"
 import "modules/visualizer"
 import "modules/bar"
+import "modules/controlcenter"
 import "modules/dock"
 import "modules/launcher"
 import "modules/overview"
@@ -77,6 +78,17 @@ ShellRoot {
     // providers as surfaces migrate) at load rather than on the first keybind.
     ServiceLoader {
         services: [ShellState, ScreenTime, Keypresses, KeyboardLayout]
+    }
+
+    // The control centre's own surface host. It is built only when the bar is
+    // off: the bar style instantiates the same panel, so a session with the bar
+    // on keeps exactly one control centre, hosted by the bar as before. With
+    // the bar off this host answers the "quick-settings" surface request, so
+    // the control_center module flag no longer depends on the bar module.
+    LazyLoader {
+        id: controlCenterLoader
+        activeAsync: Config.moduleOn("control_center") && !Config.moduleOn("bar")
+        ControlCenterHost { }
     }
 
     readonly property string reloadStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-reload-cover.json"
