@@ -12,11 +12,13 @@ Singleton {
     // profile once for the whole shell); the dwell and scheduling timers below (osdHide,
     // notifHide, startupReveal) are functional, not motion, so reduce never gates them.
     readonly property bool reduce: Perf.reduceMotion
+        || (Config.theme && Config.theme.motion && Config.theme.motion.reduce === true)
 
     // Global animation tempo: Perf's user multiplier (performance.json motionSpeed,
     // default 1.0) scales every duration below, so the whole shell speeds up or eases
     // off in one place; reduce still wins by collapsing to an instant cut.
     readonly property real speed: Perf.motionSpeed
+        * (Config.theme && Config.theme.motion && Config.theme.motion.scale ? Config.theme.motion.scale : 1)
     function dur(ms) { return root.reduce ? 0 : Math.round(ms * root.speed); }
 
     // Bar, spacer, hover and startup reveal/hide. Measured ease-out-cubic over
