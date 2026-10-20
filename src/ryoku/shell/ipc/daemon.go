@@ -512,6 +512,10 @@ func (d *daemon) bootstrap() {
 	// fails closed: if the session's polkit slot is already held by another
 	// agent, the existing agent keeps working and Mei does not fight it.
 	d.startPolkit()
+	// The ScreenSaver inhibitor service: only where it is asked for (the full
+	// live profile sets MEI_SCREENSAVER_NAME=1), and only when the session's
+	// name is free. The shell's idle service watches the inhibitor count.
+	d.startScreensaver()
 	d.startNetwork()
 	d.startNightlight()
 	go d.paintWorker()

@@ -4,6 +4,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	wm "ryoku-wm"
@@ -88,10 +90,50 @@ func (d *daemon) brightness(sub string) string {
 	if !ok {
 		return "err brightness: expected up or down"
 	}
+	// A harness seam: the idle module dims and restores the panel, and a
+	// nested test must never touch the owner's backlight. With
+	// MEI_BRIGHTNESS_FAKE set, the step is written to that file instead of the
+	// hardware.
+	if fake := os.Getenv("MEI_BRIGHTNESS_FAKE"); fake != "" {
+		cur := 0
+		if b, err := os.ReadFile(fake); err == nil {
+			cur, _ = strconv.Atoi(strings.TrimSpace(string(b)))
+		}
+		if sub == "up" {
+			cur += 5
+		} else {
+			cur -= 5
+		}
+		if cur < 0 {
+			cur = 0
+		}
+		if err := os.WriteFile(fake, []byte(strconv.Itoa(cur)), 0o644); err != nil {
+			return "err brightness: " + err.Error()
+		}
+		return "ok"
+	}
 	if err := exec.Command("ryoku-cmd-brightness", argv...).Run(); err != nil {
 		return "err brightness: " + err.Error()
 	}
 	return "ok"
+}
+
+// brightnessPercent reads the panel's current brightness as a percentage, the
+// same number the OSD shows. It is 0 when there is no backlight.
+func brightnessPercent() int {
+	dev := backlightDevice()
+	if dev == "" {
+		return 0
+	}
+	cur, ok := readSysInt(filepath.Join(dev, "brightness"))
+	if !ok {
+		return 0
+	}
+	max, ok := readSysInt(filepath.Join(dev, "max_brightness"))
+	if !ok || max <= 0 {
+		return 0
+	}
+	return cur * 100 / max
 }
 
 // isLocked accepts only generation- and session-bound compositor proof. A
