@@ -3,6 +3,25 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 9 follow-up — brightness helper restored
+
+`ryoku-cmd-brightness` was referenced by `src/ryoku/shell/ipc/control.go` but never copied into
+`src/`, so the hub's `brightness` verb (the `XF86MonBrightnessUp`/`Down` path) always failed.
+The QML fader used `brightnessctl` directly and worked, which hid the gap. Copied the upstream
+script to `src/ryoku/shell/scripts/ryoku-cmd-brightness` (kept the upstream name because
+`control.go` execs it by name) and symlinked it into `$RUN/bin` in `mei`.
+
+MEI change vs upstream: the upstream script swallowed every failure (`|| true`). If a backlight
+exists and `brightnessctl` is missing or its write fails, and no external DDC monitor path
+exists, the script now prints the reason and exits 1, so the hub verb returns a real error
+instead of "ok". No other behaviour changed.
+
+Dependency/permission: `brightnessctl` (present here) writes `/sys/class/backlight/*`. On this
+host the write works as user `mei` (verified 5% step 27840 → 32640 → 27840); packaging must
+ship the usual udev rule or `video`-group permission for the backlight and must not assume it.
+The optional `ryoku-hw-backlight` selector (upstream) is absent here; with a single
+`intel_backlight` device the brightnessctl default is correct.
+
 ## Phase 9 — tray strip: pinned-only model
 
 The bar now draws every pinned tray item, including pixmap-only items (apps that publish

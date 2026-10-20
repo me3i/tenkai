@@ -411,7 +411,7 @@ Go `exec.Command`, shell scripts `[REPORTED]` + spot checks `[TESTED]`.
 | Feature (keep-list) | Binaries | On this machine |
 |---|---|---|
 | Audio (volume, bars) | `wpctl`, `pactl`, PipeWire/wireplumber | ✅ `wpctl`, `pactl`, wireplumber (runtime) |
-| Brightness | `ryoku-cmd-brightness` (script) → `ryoku-hw-backlight` / `brightnessctl` / `ddcutil` | `brightnessctl` ✅; Ryoku helper scripts ship in `ryoku/shell/scripts/` |
+| Brightness | `ryoku-cmd-brightness` (script) → `ryoku-hw-backlight` / `brightnessctl` / `ddcutil` | `brightnessctl` ✅; helper copied to `src/ryoku/shell/scripts/ryoku-cmd-brightness` and symlinked into `.run/bin`. Write access to `/sys/class/backlight/*` is required (udev rule or `video` group); on this host user `mei` can already write it (5% step verified). `ryoku-hw-backlight` and `ddcutil` are optional/absent. |
 | Nightlight | `ryoku-cmd-nightlight` → `hyprsunset` | not checked |
 | Network | `nmcli`, `iw` | ✅ both |
 | Battery / power | Quickshell UPower + `PowerProfiles` (D-Bus) | `power-profiles-daemon` not checked |

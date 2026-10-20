@@ -92,7 +92,7 @@ The shell talks to it via `modules/bar/barstyles/qsbar/core/IpcRouter.qml`, and 
 | control sidebar | surface-id; `theme` | `settings`, `network`, `tray` | quick settings |
 | clock/date | — | — (calendar = holidays, off-list) | local `Clock` |
 | audio | `audio` | — | in-process: PipeWire/`AudioData.qml` |
-| brightness | `brightness` | — | shell-out |
+| brightness | `brightness` | — | shell-out: `ryoku-cmd-brightness` → `brightnessctl` (needs backlight write access: udev rule or `video` group) |
 | network | — | **`network`** | status is a daemon topic |
 | battery | — | — | in-process: UPower |
 | system tray | — | **`tray`** | |

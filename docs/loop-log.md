@@ -682,3 +682,16 @@ was not re-run. To certify the harness: `bash docs/tests/phase9.sh` (~35-40 min)
 The final `./mei verify-untouched` **PASSed**; the owner's kitty PID 1912 and its config hash
 (`9ff50812...`) were unchanged. Its session-process diff listed only the owner's
 serpantinum/update-notifier processes, not Mei.
+
+## Brightness helper wired, failing honestly (2026-10-20)
+
+`src/ryoku/shell/ipc/control.go` execs `ryoku-cmd-brightness`, but the script had never been
+copied into `src/`; only `mei-app` was. The QML fader (`Devices.setBacklight`) calls
+`brightnessctl` directly, so the slider worked while the media-key verb always errored.
+Copied the upstream script to `src/ryoku/shell/scripts/ryoku-cmd-brightness` and symlinked it
+into `$RUN/bin` from `mei`. MEI change: the script now reports a panel write failure (missing
+`brightnessctl` or a failed write) when no external DDC path exists, instead of returning
+success silently; the hub verb surfaces it. Verified on the host: 27840 -> 32640 (5%) ->
+27840 restore; helper with a failing `brightnessctl` exits 1 with a message. `docs/01-audit.md`,
+`docs/02-deps.md` and `CHANGES.md` record the `brightnessctl` dependency and the udev/`video`
+group write access; no udev or group change was made.

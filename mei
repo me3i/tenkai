@@ -497,6 +497,12 @@ prepare_nested_home() {
   if [ -f "$MEI_DIR/src/ryoku/shell/scripts/mei-app" ]; then
     ln -sfn "$MEI_DIR/src/ryoku/shell/scripts/mei-app" "$RUN_DIR/bin/mei-app"
   fi
+  # Brightness helper (mei-shell's `brightness` verb execs it by this upstream
+  # name; the script itself is copied from upstream and kept verbatim except
+  # for honest error reporting). Symlinked, so the session always uses source.
+  if [ -f "$MEI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness" ]; then
+    ln -sfn "$MEI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness" "$RUN_DIR/bin/ryoku-cmd-brightness"
+  fi
   mkdir -p "$RUN_DIR/home/.config/fontconfig" "$RUN_DIR/home/Pictures"
   if [ ! -f "$RUN_DIR/home/.config/fontconfig/fonts.conf" ]; then
     cat > "$RUN_DIR/home/.config/fontconfig/fonts.conf" <<EOF

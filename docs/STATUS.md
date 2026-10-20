@@ -8,7 +8,7 @@ Updated 2026-10-20. One page. **TESTED** = a nested run with a log under `.run/l
 |---|---|---|---|
 | Bar (qsbar), workspaces | TESTED nested | `35c94a3`, `daa53aa`, `93c216a` | `barStyle` pinned to `qsbar` in shipped default, fallback and nested config |
 | Launcher | TESTED nested | `9b2fc22`, `35c94a3` | `/` command mode and Actions provider disabled, not deleted |
-| Control centre / sidebar | TESTED nested | `67041b8` | kanji labels are English |
+| Control centre / sidebar | TESTED nested | `67041b8` | kanji labels are English; brightness 5% step via the QML path and the hub verb, restored (helper `ryoku-cmd-brightness` now shipped) |
 | Settings (5 pages) | TESTED nested | `c3e1403`, `daa53aa` | never writes Hyprland config; sumi/kairos unreachable |
 | Wallpaper + matugen | TESTED nested | `3092464`, `3973514` | stills only, guarded |
 | Notifications | TESTED nested | `a3d4886` | one `NotificationServer`, no cache file |
@@ -29,5 +29,5 @@ Updated 2026-10-20. One page. **TESTED** = a nested run with a log under `.run/l
 ## Owner-only (UNVERIFIED)
 
 144 Hz smoothness and animation feel; tray glyphs from real apps (ProtonVPN, Steam) and their
-menus; real audio/brightness hardware; wallpaper reveal on the real display; notification look;
+menus; real audio hardware (writes were not exercised); wallpaper reveal on the real display; notification look;
 whether the bar fits the real 1080p screen.

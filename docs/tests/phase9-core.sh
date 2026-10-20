@@ -3,7 +3,8 @@
 # own. Run by phase9.sh after the cold start; also usable alone.
 #   1  launch + no QML errors      2  bar + workspaces match Hyprland
 #   3  launcher (docs/tests/launcher-check.sh)
-#   4  sidebar (panel, clock render, read-only audio)   10 missing dependency
+#   4  sidebar (panel, clock render, read-only audio, real brightness)
+#  10  missing dependency (brightness helper + brightnessctl)
 #   11 clean shutdown              12  5-minute idle capture
 set -uo pipefail
 MEI=/home/mei/projects/mei
@@ -31,6 +32,9 @@ SH() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call shell "$@" 2>&1; }
 owner() { busctl --address="$BUS" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }
 
 cleanup() {
+  # Real-hardware brightness: restore the pre-test level before anything else,
+  # even if the script dies mid-step (owner rule 7: small steps, restore).
+  [ -n "${BR_RESTORE:-}" ] && brightnessctl set "$BR_RESTORE" >/dev/null 2>&1 || true
   [ "${KEEP:-0}" = 1 ] && return
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
 }
@@ -178,19 +182,77 @@ if [ -n "$VOL" ]; then
 else
   note "no audio sink readable from the host (read-only check skipped)"
 fi
+
+echo; echo "--- 4b. brightness: real 5% step, restored on exit (keep-list) ---"
+if command -v brightnessctl >/dev/null 2>&1 && [ -n "$(brightnessctl get 2>/dev/null)" ]; then
+  BR_DEV="$(brightnessctl -m 2>/dev/null | cut -d, -f1)"
+  BR_MAX="$(brightnessctl max 2>/dev/null)"
+  BR_BEFORE="$(brightnessctl get 2>/dev/null)"
+  BR_RESTORE="$BR_BEFORE"   # cleanup() restores this even if the script dies
+  restore_brightness() { brightnessctl set "$BR_BEFORE" >/dev/null 2>&1 || true; }
+  note "backlight $BR_DEV: $BR_BEFORE of $BR_MAX before"
+  # (a) the QML fader's exact write path (Devices.setBacklight)
+  bash -c 'BL=$(ryoku-hw-backlight 2>/dev/null); brightnessctl ${BL:+-d "$BL"} set 5%+ >/dev/null 2>&1' || true
+  BR_QML="$(brightnessctl get 2>/dev/null)"
+  if [ -n "$BR_QML" ] && [ "$BR_QML" != "$BR_BEFORE" ]; then
+    ok "QML brightness write path moved $BR_DEV ${BR_BEFORE} -> ${BR_QML} of ${BR_MAX} (5%)"
+  else
+    bad "QML brightness write path did not move $BR_DEV (${BR_BEFORE} -> ${BR_QML:-?})"
+  fi
+  restore_brightness
+  BR_REST="$(brightnessctl get 2>/dev/null)"
+  [ "$BR_REST" = "$BR_BEFORE" ] && ok "brightness restored between the two steps" \
+    || bad "brightness not restored between steps ($BR_REST != $BR_BEFORE)"
+  # (b) the media-key path: mei-shell brightness -> ryoku-cmd-brightness
+  BOUT="$(env HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" \
+    XDG_CACHE_HOME="$RUN/home/.cache" XDG_STATE_HOME="$RUN/state" \
+    XDG_DATA_HOME="$RUN/data" XDG_RUNTIME_DIR="$RT" \
+    DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1)"; BRC=$?
+  BR_HUB="$(brightnessctl get 2>/dev/null)"
+  if [ "$BRC" = 0 ] && [ -n "$BR_HUB" ] && [ "$BR_HUB" != "$BR_BEFORE" ]; then
+    ok "hub brightness verb moved $BR_DEV ${BR_BEFORE} -> ${BR_HUB} of ${BR_MAX} (5%)"
+  else
+    bad "hub brightness verb failed (rc=$BRC, ${BR_BEFORE} -> ${BR_HUB:-?}) out=${BOUT}"
+  fi
+  restore_brightness
+  BR_DONE="$(brightnessctl get 2>/dev/null)"
+  [ "$BR_DONE" = "$BR_BEFORE" ] && ok "brightness restored to $BR_BEFORE" \
+    || bad "brightness not restored ($BR_DONE != $BR_BEFORE)"
+  BR_RESTORE=""
+else
+  note "no brightnessctl or no backlight on this host; brightness control UNVERIFIED"
+fi
 D quicksettings; sleep 0.8
 
-echo; echo "=== 10. missing optional dependency: brightness helper ==="
-BOUT="$(env HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" \
-  XDG_CACHE_HOME="$RUN/home/.cache" XDG_STATE_HOME="$RUN/state" \
-  XDG_DATA_HOME="$RUN/data" XDG_RUNTIME_DIR="$RT" \
-  DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1)"; BRC=$?
-echo "  output: $BOUT"
-[ "$BRC" != 0 ] && ok "brightness verb fails cleanly without the helper (rc=$BRC)" || bad "brightness verb exited 0 without a helper"
-case "$BOUT" in
-  *brightness*) ok "the error names the brightness step" ;;
-  *) note "unexpected error text (still a clean failure)" ;;
-esac
+echo; echo "=== 10. missing dependency: brightness helper and brightnessctl ==="
+HELPER="$RUN/bin/ryoku-cmd-brightness"
+[ -x "$HELPER" ] && ok "brightness helper is installed in the nested bin" \
+  || bad "brightness helper missing from $RUN/bin"
+if [ -e "$HELPER" ]; then
+  HSAVED="$(readlink -f "$HELPER" 2>/dev/null || echo "$HELPER")"
+  rm -f "$HELPER"
+  BOUT="$(env HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" \
+    XDG_CACHE_HOME="$RUN/home/.cache" XDG_STATE_HOME="$RUN/state" \
+    XDG_DATA_HOME="$RUN/data" XDG_RUNTIME_DIR="$RT" \
+    DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1)"; BRC=$?
+  ln -sfn "$HSAVED" "$HELPER"
+  echo "  output: $BOUT"
+  [ "$BRC" != 0 ] && ok "hub brightness verb fails cleanly without the helper (rc=$BRC)" \
+    || bad "brightness verb exited 0 without the helper"
+  case "$BOUT" in
+    *brightness*) ok "the error names the brightness step" ;;
+    *) note "unexpected error text (still a clean failure)" ;;
+  esac
+else
+  bad "cannot test helper-missing degradation"
+fi
+# The QML probe must come back empty when brightnessctl fails, so the fader
+# hides itself instead of showing a control that does nothing.
+FAKE="$RUN/deps/bin-no-brightnessctl"; mkdir -p "$FAKE"
+printf '#!/bin/sh\nexit 127\n' > "$FAKE/brightnessctl"; chmod +x "$FAKE/brightnessctl"
+PROBE="$(PATH="$FAKE:$PATH" bash -c 'BL=$(ryoku-hw-backlight 2>/dev/null); brightnessctl ${BL:+-d "$BL"} -m 2>/dev/null | cut -d, -f4 | tr -d "%"')"
+[ -z "$PROBE" ] && ok "with brightnessctl failing, the panel probe is empty (fader hides)" \
+  || bad "probe returned '$PROBE' with brightnessctl failing"
 [ -d "/proc/$DPID" ] && ok "daemon alive after the failed step" || bad "daemon died"
 [ -d "/proc/$QS" ] && ok "shell alive after the failed step" || bad "shell died"
 
