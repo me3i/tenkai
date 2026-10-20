@@ -1,3 +1,23 @@
+# CHANGES.md — modifications vs upstream Ryoku
+
+Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
+`src/`; every modification is recorded here, newest first.
+
+## Phase 9 — tray strip: pinned-only model
+
+The bar now draws every pinned tray item, including pixmap-only items (apps that publish
+`IconPixmap` with no `IconName`). A per-delegate `visible` binding read `modelData.service`
+before it was populated and never recovered, so the cell stayed unpainted; the model is now
+filtered to pinned services instead. The status slot no longer gates its own visibility on its
+children's width (an invisible parent forces its children invisible, so the slot could stay
+collapsed when the first item arrived). Verified in the nested session: a 24px ARGB pixmap
+renders at 14x14 (`14x14+98+13` in the bar band), and `barX` becomes non-zero.
+
+| File | Change |
+|---|---|
+| qsbar `TrayWidget.qml` | `refreshTrayModel()` keeps only pinned services; delegates are always visible; pin/unpin rebuilds the strip |
+| qsbar `BarSlot.qml` | status group visible when the status module is on, not when `implicitWidth > 0.5` (circular) |
+
 ## Phase 9 — safety pass: no by-name signals, no kitty theming
 
 Mei never signals a process it did not start, and it does not theme or configure kitty.
@@ -16,11 +36,6 @@ closed when the hub does not open; `BREAK_HUB=1` proves that gate can fail.
 | `wm/niri/config_binds.go` | cheatsheet toggle no longer kills `qs -c keys` by name (provider is unbuilt/out of scope) |
 | `docs/tests/step4.sh` | fake `HOME` for `mei-shell`, hub-gated checks, hub-window crop, `BREAK_HUB` fault injection |
 | `hub/backend/schemes_test.go` | stale `ryoku` config path → `mei` |
-
-# CHANGES.md — modifications vs upstream Ryoku
-
-Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
-`src/`; every modification is recorded here, newest first.
 
 ## Phase 8 — module switchboard
 

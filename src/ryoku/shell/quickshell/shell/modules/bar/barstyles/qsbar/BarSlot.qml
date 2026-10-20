@@ -931,7 +931,12 @@ PanelWindow {
             readonly property real barContentRightInset: barSlot.root.v2IconGroupPadding
             readonly property real trayCaretX: statusRow.x + statusTrayRow.x + trayWidget.x + trayWidget.width / 2
             readonly property real notifCaretX: statusRow.x + statusTrayRow.x + notifWidget.x + notifWidget.width / 2
-            visible: implicitWidth > 0.5
+            // MEI: do not gate visibility on implicitWidth. That is circular:
+            // an invisible parent forces its children invisible, the Row then
+            // measures 0, and the status slot (tray + bell) never expands when
+            // the first tray item arrives. Visibility follows the module flag;
+            // the animated implicitWidth still collapses an empty group to 0.
+            visible: barSlot.root.modStatus
             implicitWidth: barSlot.root.modStatus
                 ? Math.round(statusRow.implicitWidth) + 2 * barSlot.root.v2IconGroupPadding
                 : 0

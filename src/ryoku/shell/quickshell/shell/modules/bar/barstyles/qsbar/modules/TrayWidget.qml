@@ -41,7 +41,12 @@ Item {
                 // 22px action cell plus the surrounding Row's 2px cluster gap.
                 implicitWidth: root.v2ActionIconCellWidth
                 implicitHeight: 28
-                visible: root.trayPinned.indexOf(modelData.service) >= 0
+                // MEI: the model below holds only pinned services (refreshTrayModel),
+                // so the cell is always drawn. The old per-delegate binding
+                // `root.trayPinned.indexOf(modelData.service) >= 0` evaluated before
+                // modelData was readable and never recovered, so a pinned pixmap
+                // item stayed unpainted (theme-name items happened to win the race).
+                visible: true
 
                 Image {
                     anchors.centerIn: parent
@@ -153,11 +158,27 @@ Item {
     // MEI: pin a service the first time it appears, so its icon is drawn
     // without a trip through the panel (Theme.trayAutoPin), then re-measure the
     // anchor once the slot has expanded.
+    function refreshTrayModel() {
+        var its = Tray.items || []
+        var out = []
+        for (var i = 0; i < its.length; i++)
+            if (root.trayPinned.indexOf(its[i].service) >= 0) out.push(its[i])
+        rootMod.trayModel = out
+    }
     Connections {
         target: Tray
         function onItemsChanged() {
             root.trayAutoPin()
-            rootMod.trayModel = (Tray.items || []).slice()
+            rootMod.refreshTrayModel()
+            Qt.callLater(publishAnchor)
+        }
+    }
+    // A pin/unpin from the tray panel changes Theme.trayPinned without touching
+    // Tray.items; rebuild the strip so the bar follows.
+    Connections {
+        target: root
+        function onTrayPinnedChanged() {
+            rootMod.refreshTrayModel()
             Qt.callLater(publishAnchor)
         }
     }
@@ -172,7 +193,7 @@ Item {
     onWidthChanged: publishAnchor()
     onVisibleChanged: publishAnchor()
     Component.onCompleted: Qt.callLater(function() {
-        rootMod.trayModel = (Tray.items || []).slice()
+        rootMod.refreshTrayModel()
         publishAnchor()
     })
 }
