@@ -158,6 +158,14 @@ else
 fi
 
 echo; echo "=== BEFORE the first wallpaper ==="
+# The nested session keeps its wallpaper between runs (the cold start moves the
+# state and restores it), so the wallpaper on screen when the harness starts is
+# whatever the last run left. Setting the same picture again changes nothing
+# and the "the wallpaper area changed" check below would fail for a reason that
+# has nothing to do with the product. The harness therefore primes a known
+# wallpaper first, so "set 1" and "set 2" are always a real change.
+"$MEI/mei" wallpaper "$RUN/wall/wall-2-green.png" >/dev/null 2>&1 || note "could not prime the wallpaper"
+for _ in 1 2 3 4 5; do sleep 1.2; done
 shot 01-before
 COL0="$(sha256sum "$RUN/home/.cache/mei/colors.json" 2>/dev/null | awk '{print $1}')"
 note "colors.json before: ${COL0:-absent}"
