@@ -121,19 +121,17 @@ outbound call). The owner should correct this reading if it is wrong.
 |---|---|---|
 | 0 | the control centre stops depending on the bar | **done** (`3ac455c`, `docs/tests/control-center-matrix.sh` 3/3) |
 | A | this audit | **done** (this file) |
-| B1 | power menu: register the session verbs, wire the sidebar, keep both stubs | next |
-| B2 | OSD: start the daemon's watcher so the existing surfaces fire | next |
-| B3 | clipboard history: start the daemon's topic, bound it, clear-all | next |
-| B4 | polkit agent: start it behind a flag, off in dev and overlay | next |
-| B5 | media keys: the daemon's verbs plus the keybind snippet | next |
-| B6 | screenshots: a `grim` capture to Pictures plus the clipboard | next |
-| B7 | wallpaper picker: the owner's folder only | next |
-| B8 | network and bluetooth panels: their own host, read-only paths | next |
-| B9 | idle: dim/lock/DPMS/suspend with inhibitors | big, new code |
-| B10 | lock: an in-shell PAM lock that cannot touch the live session | big, new code, the highest risk |
-| C | the keybind snippet, the profiles, MODULES.md, LIVE-CHECKLIST.md | after the MUSTs |
-| D | the full test loop and the idle measurement table | last |
+| B1 | power menu: register the session verbs, wire the sidebar, keep both stubs | **done** (`c7046dd`, `docs/tests/power-menu.sh` 20/20) |
+| B2 | OSD: start the daemon's watcher so the existing surfaces fire | **done** (`cdc074b`, `docs/tests/osd-module.sh` 5/5) |
+| B3 | clipboard history: start the daemon's topic, bound it, clear-all | **done** (`86634d4`, `docs/tests/clipboard-module.sh` 8/8) |
+| B4 | polkit agent: start it behind a flag, off in dev and overlay | **done** (`2a7e6e2`, `docs/tests/polkit-module.sh` 6/6) |
+| B5 | media keys: the daemon's verbs plus the keybind snippet | **done** (`fd1a178`, a Go test with a fake MPRIS player) |
+| B6 | screenshots: a `grim` capture to Pictures plus the clipboard | **done** (`b63a6c0`, `docs/tests/screenshot-module.sh` 8/8) |
+| B10 | lock: an in-shell PAM lock that cannot touch the live session | **done** (`620d232`, `fa2a29b`, `docs/tests/lock-module.sh` 15/15) |
+| B7 | wallpaper picker: the owner's folder only | **open**: the wallpaper module and its menu exist; the picker's own sources still have to be checked for outbound calls |
+| B8 | network and bluetooth panels: their own host, read-only paths | **open**: the panels are bar-hosted, so they need a host like the control centre's |
+| B9 | idle: dim/lock/DPMS/suspend with inhibitors | **open**: the only one that is new code rather than restored code |
+| C | the keybind snippet, the profiles, MODULES.md, LIVE-CHECKLIST.md | **done** for the snippet and the checklist (`53ea469`); the module matrix needs the new components |
+| D | the full test loop and the idle measurement table | running |
 
-B9 and B10 are the two that need new code rather than restored code; they are
-also the two that carry the most risk, so they come last and each gets its own
-evidence.
+B7, B8 and B9 are the three still open. B7 and B8 are wiring, B9 is new code.
