@@ -1,3 +1,5 @@
+# CHANGES.md — modifications vs upstream Ryoku
+
 ## Baseline PID update (kitty restart, 2026-10-20)
 
 The owner restarted their terminal during Phase 10A, so the live kitty is a new
@@ -13,7 +15,39 @@ else in the baseline was re-captured, so the leak-detection reference stays as
 strict as it was: kitty is not part of the compared session-process set and its
 connection ids are ignored by the D-Bus watch filter.
 
-# CHANGES.md — modifications vs upstream Ryoku
+## Phase 10B — two visual/behaviour changes (2026-10-20)
+
+1. **Visualiser idle wave now defaults to off** (upstream deviation, visible).
+   Upstream ships `idleWave: true` for the desktop visualiser. Mei now ships
+   `false`, in three places that must agree: the shell's visualiser defaults
+   (`modules/visualizer/Singletons/Config.qml`), the per-item fallback
+   (`modules/visualizer/Singletons/VizItem.qml`) and the Settings page's own
+   defaults (`hub/quickshell/Hub.qml`).
+   *Why:* with the idle wave on, the spectrum's silent rest (a near-flat level,
+   `Spectrum.levels = flat(0.02)`) kept `fade` at 1, so the visualiser drew that
+   rest as a permanent 1 px hairline across the whole screen at 75.8 % of the
+   height — it read as a stray workspace divider, not as a visualiser. The
+   upstream code already describes the idle wave as "the user's opted-in resting
+   animation" and `fade` as the thing that "clears on silence instead of
+   freezing"; only the default contradicted that.
+   *Still available:* Settings -> Desktop -> Visualizer -> "Idle wave" (advanced),
+   so anyone who wants the slow wave can turn it back on. Turning it on is the
+   only way to see the line again.
+   *Proof:* the brightest full-width row of a nested screenshot went from mean
+   165.1 at y=781 to 145.1 at y=454 (wallpaper only); rows 770-790 are clean
+   wallpaper. Commit `e10855d`.
+
+2. **The launcher's horizon repaints only when it has moved** (behaviour, not
+   visible). `modules/launcher/variants/main/RestDashboard.qml` now gates the
+   wave's canvas repaint on the picture having moved by 0.35 px (about 24
+   repaints/s) instead of repainting on every display frame (60/s nested, 144/s
+   on a 144 Hz panel). The wave drifts at ~7 px/s, so a per-frame repaint moved
+   the line by less than a tenth of a pixel while redrawing the whole strip on
+   the CPU. Phase, curves, durations, geometry and colours are unchanged; the
+   settled frames differ in 205 of 482,600 pixels (168 along the wave line, 33
+   in the bar's clock, which ticked between the runs). Measured in the nested
+   session: 25.91 s -> 13.45 s of CPU per 60 s of open launcher (-48 %).
+   *Still to be checked live:* the wave's smoothness at 144 Hz. Commit `f9c0ea6`.
 
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
