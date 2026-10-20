@@ -65,7 +65,18 @@ H() {
 }
 SCREENW="$(hyprctl -j monitors 2>/dev/null | jq -r '.[0].width // empty' 2>/dev/null)"
 IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
-shot() { grim -o "${WDISP^^}" "$RUN/shots/step7-$1.png" 2>/dev/null && echo "  shot: step7-$1.png"; }
+wake() { H dispatch dpms on >/dev/null 2>&1; H dispatch movecursor 960 540 >/dev/null 2>&1; }
+shot() {
+  local f="$RUN/shots/step7-$1.png" i
+  rm -f "$f"
+  for i in 1 2 3; do
+    wake
+    timeout 20 grim -o "${WDISP^^}" "$f" 2>/dev/null && { echo "  shot: step7-$1.png"; return 0; }
+    sleep 1
+  done
+  bad "screenshot step7-$1.png failed after 3 attempts"
+  return 1
+}
 sleep 3
 
 BUS="$(cat "$RUN/bus" 2>/dev/null)"

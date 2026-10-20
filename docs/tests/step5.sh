@@ -101,7 +101,24 @@ H() {
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-shot() { grim -o "${WDISP^^}" "$RUN/shots/step5-$1.png" 2>/dev/null && echo "  shot: step5-$1.png"; }
+wake() { H dispatch dpms on >/dev/null 2>&1; H dispatch movecursor 960 540 >/dev/null 2>&1; }
+shot() {
+  local f="$RUN/shots/step5-$1.png" i
+  rm -f "$f"
+  for i in 1 2 3; do
+    wake
+    timeout 20 grim -o "${WDISP^^}" "$f" 2>/dev/null && { echo "  shot: step5-$1.png"; return 0; }
+    sleep 1
+  done
+  bad "screenshot step5-$1.png failed after 3 attempts"
+  return 1
+}
+snap() {
+  local f="$RUN/shots/$1"
+  rm -f "$f"
+  wake
+  timeout 20 grim -o "${WDISP^^}" "$f" 2>/dev/null || { bad "screenshot $f failed"; return 1; }
+}
 M() { "$RUN/bin/mei-shell" "$@"; }
 RY() { "$RUN/bin/ryogami" "$@"; }
 
@@ -173,32 +190,41 @@ note "colors.json after set 1: $COL1"
 [ -n "$COL0" ] && [ "$COL0" != "$COL1" ] && ok "colors.json changed on the first palette" || note "colors.json was absent before (first palette)"
 
 echo; echo "=== bar + launcher recolour (pixel evidence) ==="
-grim -o "${WDISP^^}" "$RUN/shots/step5-bar-after1.png" 2>/dev/null
+snap step5-bar-after1.png
 magick "$RUN/shots/step5-bar-after1.png" -crop 1180x36+0+0 +repage "$RUN/shots/step5-bar-after1-crop.png" 2>/dev/null
 BAR1="$(sha256sum "$RUN/shots/step5-bar-after1-crop.png" | awk '{print $1}')"
 BARAVG1="$(magick "$RUN/shots/step5-bar-after1-crop.png" -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 note "bar strip mean colour / hash after set 1: ${BARAVG1} / ${BAR1:0:12}"
 H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
-grim -o "${WDISP^^}" "$RUN/shots/step5-launcher-p1.png" 2>/dev/null && note "shot: step5-launcher-p1.png"
+snap step5-launcher-p1.png && note "shot: step5-launcher-p1.png"
 LACC1="$(magick "$RUN/shots/step5-launcher-p1.png" -crop 40x12+540+430 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 note "launcher accent dot under set 1: ${LACC1}"
 H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1
 
 echo; echo "=== SET 2: purple still (recolour again) ==="
 "$MEI/mei" wallpaper "$RUN/wall/wall-3-purple.jpg" || bad "wallpaper set 2 failed"
-sleep 2.5
-shot 05-set2-settled
+WAVG1="$(magick "$RUN/shots/step5-04-set1-settled.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+WAVG2=""
+for i in 1 2 3 4 5; do
+  sleep 1.5
+  shot 05-set2-settled || break
+  WAVG2="$(magick "$RUN/shots/step5-05-set2-settled.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+  [ -n "$WAVG2" ] && [ "$WAVG2" != "$WAVG1" ] && break
+  wake
+  [ "$i" -lt 5 ] && "$MEI/mei" wallpaper "$RUN/wall/wall-3-purple.jpg" >/dev/null 2>&1
+  true
+done
 COL2="$(sha256sum "$RUN/home/.cache/mei/colors.json" | awk '{print $1}')"
 note "colors.json after set 2: $COL2"
 [ "$COL1" != "$COL2" ] && ok "palette changed again on the second wallpaper" || bad "palette did not change on the second wallpaper"
-grim -o "${WDISP^^}" "$RUN/shots/step5-bar-after2.png" 2>/dev/null
+snap step5-bar-after2.png
 magick "$RUN/shots/step5-bar-after2.png" -crop 1180x36+0+0 +repage "$RUN/shots/step5-bar-after2-crop.png" 2>/dev/null
 BAR2="$(sha256sum "$RUN/shots/step5-bar-after2-crop.png" | awk '{print $1}')"
 BARAVG2="$(magick "$RUN/shots/step5-bar-after2-crop.png" -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 note "bar strip mean colour / hash after set 2: ${BARAVG2} / ${BAR2:0:12}"
 [ "$BAR1" != "$BAR2" ] && ok "bar strip pixels differ between the two palettes (${BARAVG1} -> ${BARAVG2})" || bad "bar strip did not recolour"
 H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
-grim -o "${WDISP^^}" "$RUN/shots/step5-launcher-p2.png" 2>/dev/null && note "shot: step5-launcher-p2.png"
+snap step5-launcher-p2.png && note "shot: step5-launcher-p2.png"
 LACC2="$(magick "$RUN/shots/step5-launcher-p2.png" -crop 40x12+540+430 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 [ -n "$LACC1" ] && [ "$LACC1" != "$LACC2" ] && ok "launcher accent recoloured with the palette (${LACC1} -> ${LACC2})" || bad "launcher accent did not recolour (${LACC1:-?} -> ${LACC2:-?})"
 H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1

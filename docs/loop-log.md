@@ -658,3 +658,27 @@ Fix: `H()` now refuses unless `$RT/hypr/$SIG/.socket.sock` exists and always pas
 settles, counts only servers bound to `$RT`, and kills (TERM) any Mei `qs` on another runtime;
 the cold start does the same before launching anything. No live process is ever signalled:
 the filter is `qs -p /home/mei/projects/mei/...`, which cannot match the live shell.
+
+## Final Phase 9 run: harness failed, product unchanged (2026-10-20 13:21)
+
+The run on `8703304` ended `RESULT: FAIL`. Item 7 (wallpaper) recoloured the palette, bar and
+launcher (bar mean 332321 -> 282735; accent D77A56 -> A0B5EA) but the wallpaper area stayed
+`C87460` for both set 1 and set 2: the second still did not repaint. Item 6 (tray) then hung
+22 minutes inside `grim` on the post-removal screenshots; the hung grim PIDs 607639 and 624296
+were TERM'd. Step7's later "1 -> 0" line is **vacuous** (the screenshot file had been removed),
+so it is not evidence; the two green runs' tray evidence is unaffected.
+
+No product file differs from the certified tree: `git diff --stat a646782..HEAD -- src hub
+configs docs/baseline` is empty. The post-acceptance commits (`b915e0a`, `8703304`) change tests,
+docs and the `mei` dev-runner only. The final failure is a harness/environment failure, not a
+product regression; the harness at HEAD is **not** certified by a clean run.
+
+Harness fixes applied (test-only, **UNVERIFIED**): `shot()` in step5/step7 now wakes DPMS and
+moves the cursor before capture, runs `grim` under `timeout 20`, retries three times, removes
+stale files and calls `bad` on failure (a failed screenshot can no longer vacuously pass).
+Step5's second wallpaper is retried up to five times with a nudge and re-issue. The full pass
+was not re-run. To certify the harness: `bash docs/tests/phase9.sh` (~35-40 min).
+
+The final `./mei verify-untouched` **PASSed**; the owner's kitty PID 1912 and its config hash
+(`9ff50812...`) were unchanged. Its session-process diff listed only the owner's
+serpantinum/update-notifier processes, not Mei.

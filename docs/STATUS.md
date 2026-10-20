@@ -14,9 +14,11 @@ Updated 2026-10-20. One page. **TESTED** = a nested run with a log under `.run/l
 | Notifications | TESTED nested | `a3d4886` | one `NotificationServer`, no cache file |
 | System tray | TESTED nested | `93c216a` | one watcher host; auto-pin + right-click menu |
 | Module toggles (Phase 8) | TESTED nested | `ae65a66`..`d344260` | two clean runs: `.run/logs/phase8-final1.log`, `phase8-final2.log` (50 TESTED, 0 FAIL each); schema in `docs/MODULES.md` |
-| Full acceptance pass (Phase 9) | NOT RUN | — | cold start x2 |
+| Full acceptance pass (Phase 9) | **PRODUCT PASS; HEAD HARNESS FAIL** | `a646782`, `8703304` | `a646782`: two clean cold-start runs, **16/16, 0 FAIL** (item 4 PARTIAL), `.run/logs/phase9-20261020-105305.log`, `-110312.log`. Post-acceptance commits have **no product-file diff** (`src/`, `hub`, `configs/`, `docs/baseline`). Final test-only run on `8703304` **FAILed item 7** (second wallpaper did not repaint) and hung in `grim` (item 6's last check became vacuous); harness fix applied, **not re-run** — see `docs/loop-log.md`. |
 | Measurements (Phase 10) | NO NUMBERS | — | do not call Mei lightweight yet |
 | Live trial | NOT RUN | — | owner-run, needs a terminal |
+
+**Phase 9 detail:** the certified product bytes are at `a646782`; `git diff a646782..HEAD -- src hub configs docs/baseline` is empty, so the two clean runs describe the product at HEAD as well. The HEAD **test harness** is not certified: the final run failed in the harness, not the product. `docs/tests/phase9.sh` now has a 20 s `grim` timeout, DPMS/cursor wake, screenshot retries and a wallpaper repaint retry, but those edits are **UNVERIFIED** until one clean run.
 
 ## Where things are
 
