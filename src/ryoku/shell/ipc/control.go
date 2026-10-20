@@ -118,6 +118,61 @@ func (d *daemon) brightness(sub string) string {
 	return "ok"
 }
 
+// brightnessDim steps the panel down to a percentage and remembers how many
+// steps it took, so brightness.restore puts it back exactly where it was. The
+// idle module uses it: a dim that cannot be undone is not a dim.
+func (d *daemon) brightnessDim(percent string) string {
+	target, err := strconv.Atoi(strings.TrimSpace(percent))
+	if err != nil || target < 0 || target > 100 {
+		return "err brightness.dim: expected a percentage"
+	}
+	cur := d.brightnessLevel()
+	if cur <= 0 {
+		return "ok brightness.dim: no backlight to dim"
+	}
+	steps := (cur - target + 4) / 5
+	if steps <= 0 {
+		d.dimSteps = 0
+		return "ok brightness.dim: already at " + strconv.Itoa(cur) + "%"
+	}
+	for i := 0; i < steps; i++ {
+		if r := d.brightness("down"); r != "ok" {
+			return r
+		}
+	}
+	d.dimSteps = steps
+	return "ok brightness.dim: " + strconv.Itoa(steps) + " steps"
+}
+
+// brightnessRestore steps the panel back up by exactly the number of steps the
+// dim took.
+func (d *daemon) brightnessRestore() string {
+	if d.dimSteps <= 0 {
+		return "ok brightness.restore: nothing to restore"
+	}
+	for i := 0; i < d.dimSteps; i++ {
+		if r := d.brightness("up"); r != "ok" {
+			return r
+		}
+	}
+	d.dimSteps = 0
+	return "ok brightness.restore"
+}
+
+// brightnessLevel is the panel's current brightness as a percentage, honouring
+// the harness seam so a nested test never reads (or writes) the real panel.
+func (d *daemon) brightnessLevel() int {
+	if fake := os.Getenv("MEI_BRIGHTNESS_FAKE"); fake != "" {
+		if b, err := os.ReadFile(fake); err == nil {
+			if v, err := strconv.Atoi(strings.TrimSpace(string(b))); err == nil {
+				return v
+			}
+		}
+		return 0
+	}
+	return brightnessPercent()
+}
+
 // brightnessPercent reads the panel's current brightness as a percentage, the
 // same number the OSD shows. It is 0 when there is no backlight.
 func brightnessPercent() int {

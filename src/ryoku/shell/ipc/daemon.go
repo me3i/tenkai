@@ -203,6 +203,7 @@ type daemon struct {
 	sleepMu      sync.RWMutex
 	sleep        *sleepCycle // coordinated login1 suspend transaction; guarded by sleepMu
 	music        *musicState // the last reported track, and the player it came from
+	dimSteps     int         // how many brightness steps the idle dim took, for the exact restore
 	suspendReqMu sync.Mutex
 	suspendReq   map[string]*suspendRequest
 }
@@ -1304,6 +1305,13 @@ func (d *daemon) dispatch(line string) string {
 			return "err brightness: expected up or down"
 		}
 		return d.brightness(args[0])
+	case "brightness.dim":
+		if len(args) != 1 {
+			return "err brightness.dim: expected a percentage"
+		}
+		return d.brightnessDim(args[0])
+	case "brightness.restore":
+		return d.brightnessRestore()
 	case "hub":
 		if moduleDisabled("settings") {
 			return "ok settings module off"

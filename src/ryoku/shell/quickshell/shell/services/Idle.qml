@@ -25,9 +25,11 @@ Singleton {
 
     property int idleSeconds: 0
     property bool dimmed: false
-    property int dimSteps: 0
     property int screensaverInhibits: 0
     property string lastAction: ""
+    property bool locked: false
+    property bool dpmsOff_: false
+    property bool suspended: false
 
     // The config, re-read when it changes.
     FileView {
@@ -38,8 +40,9 @@ Singleton {
         atomicWrites: true
         onFileChanged: reload()
         onLoaded: {
+            // FileView.text is a method in this Quickshell, not a property.
             try {
-                const d = JSON.parse(text);
+                const d = JSON.parse(text() || "{}");
                 for (const k in d)
                     root.cfg[k] = d[k];
             } catch (e) {
@@ -51,9 +54,13 @@ Singleton {
     // while anything holds an idle-inhibit.
     IdleMonitor {
         id: mon
-        enabled: root.cfg.enabled === true
+        enabled: root.on
         respectInhibitors: true
-        timeout: 1000
+        // Quickshell's idle timeout is in SECONDS (measured against the
+        // compositor: a timeout of 2 flips the idle state after about two
+        // seconds). The module counts the idle seconds itself, so the monitor
+        // only has to notice the idle quickly.
+        timeout: 1
         onIsIdleChanged: root.idleChanged()
     }
 
@@ -74,23 +81,6 @@ Singleton {
         }
         Component.onCompleted: connected = true
         onConnectionStateChanged: if (connected) { write("subscribe screensaver\n"); flush(); }
-    }
-
-    // The inhibit the shell holds while an app asked through the D-Bus
-    // interface to keep the machine awake. It needs a window to hang on, so a
-    // one pixel transparent surface carries it.
-    PanelWindow {
-        id: inhWindow
-        visible: root.screensaverInhibits > 0
-        width: 1
-        height: 1
-        color: "transparent"
-        anchors { top: true; left: true }
-    }
-    IdleInhibitor {
-        id: inh
-        enabled: root.screensaverInhibits > 0
-        window: inhWindow
     }
 
     Timer {
@@ -145,16 +135,29 @@ Singleton {
         }
     }
 
+    readonly property bool on: root.cfg.enabled === true && Config.moduleOn("idle")
+
     function second() {
-        if (root.cfg.enabled !== true)
+        if (!root.on)
             return;
         if (!mon.isIdle) {
             root.idleSeconds = 0;
             root.undim();
             root.wake();
+            root.suspended = false;
+            return;
+        }
+        // An app that asked through the D-Bus interface to keep the machine
+        // awake (a video, a call) holds the idle off: the idle time does not
+        // count, and nothing is dimmed, locked or suspended. When it is
+        // released, the idle starts counting again from zero.
+        if (root.screensaverInhibits > 0) {
+            root.idleSeconds = 0;
+            root.checkLockState();
             return;
         }
         root.idleSeconds++;
+        root.checkLockState();
         const s = root.idleSeconds;
         if (root.cfg.dim && s >= root.cfg.dim)
             root.dim();
@@ -166,33 +169,22 @@ Singleton {
             root.suspend();
     }
 
-    // dim steps the panel down to the configured level and remembers how many
-    // steps it took, so the restore puts it back exactly where it was.
+    // dim asks the daemon to step the panel down to the configured level. The
+    // daemon remembers how many steps it took, so the restore is exact.
     function dim() {
         if (root.dimmed)
             return;
-        const pct = Math.round((OsdFeed.brightness || 0) * 100);
-        const target = root.cfg.dimPercent || 40;
-        const steps = Math.ceil((pct - target) / 5);
-        if (steps <= 0) {
-            root.dimmed = true;
-            return;
-        }
-        for (let i = 0; i < steps; i++)
-            root.command("brightness down");
-        root.dimSteps = steps;
         root.dimmed = true;
-        root.lastAction = "dim " + steps + " steps";
+        root.lastAction = "dim";
+        root.command("brightness.dim " + (root.cfg.dimPercent || 40));
     }
 
     function undim() {
         if (!root.dimmed)
             return;
-        for (let i = 0; i < root.dimSteps; i++)
-            root.command("brightness up");
-        root.dimSteps = 0;
         root.dimmed = false;
         root.lastAction = "restore";
+        root.command("brightness.restore");
     }
 
     function lockNow() {
@@ -203,16 +195,35 @@ Singleton {
         Lock.lock();
     }
 
+    // A lock that was dismissed (the right password) must not stop the next
+    // idle from locking again.
+    function checkLockState() {
+        if (root.locked && !Lock.locked)
+            root.locked = false;
+    }
+
     function dpmsOff() {
+        if (root.dpmsOff_)
+            return;
+        root.dpmsOff_ = true;
         root.lastAction = "dpms off";
         root.call("wm.act", { "action": "output.power", "args": ["off"] });
     }
 
+    // The display only wakes if it was put to sleep: an "on" every second
+    // would be a dispatcher call per second for nothing.
     function wake() {
+        if (!root.dpmsOff_)
+            return;
+        root.dpmsOff_ = false;
+        root.lastAction = "dpms on";
         root.call("wm.act", { "action": "output.power", "args": ["on"] });
     }
 
     function suspend() {
+        if (root.suspended)
+            return;
+        root.suspended = true;
         root.lastAction = "suspend";
         root.call("session.suspend", {});
     }

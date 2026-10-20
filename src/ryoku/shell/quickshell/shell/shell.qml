@@ -78,7 +78,7 @@ ShellRoot {
     // Construct the shared services (ShellState's per-monitor state now, heavier
     // providers as surfaces migrate) at load rather than on the first keybind.
     ServiceLoader {
-        services: [ShellState, ScreenTime, Keypresses, KeyboardLayout]
+        services: [ShellState, ScreenTime, Keypresses, KeyboardLayout, Idle]
     }
 
     // The control centre's own surface host. It is built only when the bar is

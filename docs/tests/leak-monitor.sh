@@ -42,6 +42,17 @@ live_shell="$(busctl --user list --no-legend 2>/dev/null | awk '$1=="org.freedes
 live_hypr="$(ps -eo pid=,args= 2>/dev/null | awk '$2=="Hyprland" && $0 !~ /-c /{print $1; exit}')"
 LIVE_PIDS="${LEAK_LIVE_PIDS:-$live_shell $live_hypr}"
 
+# The owners of the well-known names on the LIVE session bus. A Mei process
+# holding one of them would be taking a name away from the live session, which
+# is the same class of leak as a live runtime or a live display. (The names the
+# idle module offers, org.freedesktop.ScreenSaver among them, belong to the
+# live session in the full profile and must never be claimed from a test.)
+LIVE_NAME_OWNERS=""
+if [ -S "$LIVE_RT/bus" ]; then
+  LIVE_NAME_OWNERS="$(busctl --address="unix:path=$LIVE_RT/bus" list --no-legend 2>/dev/null \
+    | awk 'NF>=2 && $1 !~ /^:/ {print $2}' | sort -u | tr '\n' ' ')"
+fi
+
 printf 'monitor: pidfile=%s nested=%s live=%s live_wl=%s live_pids=%s\n' \
   "$PIDFILE" "$NESTED_RT" "$LIVE_RT" "$LIVE_WL" "$LIVE_PIDS" >> "$LOG"
 
@@ -248,6 +259,11 @@ check_pid() { # $1 pid, $2 name
   for lp in $LIVE_PIDS; do
     [ -n "$lp" ] && [ "$ppid" = "$lp" ] && v "$pid" "$name" "is a child of live PID $lp"
   done
+  case " $LIVE_NAME_OWNERS " in
+  *" $pid "*)
+    v "$pid" "$name" "owns a well-known name on the live session bus"
+    ;;
+  esac
 }
 
 while [ ! -e "$STOP" ]; do

@@ -73,20 +73,21 @@ func (a *screensaverAgent) UnInhibit(cookie uint32) *dbus.Error {
 	return nil
 }
 
-// GetActive is the other method of the interface: the running inhibitors.
-func (a *screensaverAgent) GetActive() ([]dbus.Variant, *dbus.Error) {
+// GetActive is the other method of the interface: the running inhibitors, as
+// the interface describes them (an array of "cookie" entries).
+func (a *screensaverAgent) GetActive() ([]map[string]dbus.Variant, *dbus.Error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	out := make([]dbus.Variant, 0, len(a.active))
+	out := make([]map[string]dbus.Variant, 0, len(a.active))
 	for cookie := range a.active {
-		out = append(out, dbus.MakeVariant(uint32(cookie)))
+		out = append(out, map[string]dbus.Variant{"cookie": dbus.MakeVariant(uint32(cookie))})
 	}
 	return out, nil
 }
 
 // startScreensaver offers the ScreenSaver service, but only where it is asked
-// for and only when the name is free.
-func (d *daemon) startScreensaver() {
+// for and only when the name is free. It reports whether it took the slot.
+func (d *daemon) startScreensaver() bool {
 	topic := d.registerTopic("screensaver")
 	agent := newScreensaverAgent(func(count int) {
 		frame, _ := json.Marshal(map[string]any{"count": count})
@@ -94,25 +95,26 @@ func (d *daemon) startScreensaver() {
 	})
 	if os.Getenv("MEI_SCREENSAVER_NAME") != "1" {
 		log.Printf("mei-shell: the screensaver service is not offered here (set MEI_SCREENSAVER_NAME=1)")
-		return
+		return false
 	}
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		log.Printf("mei-shell: screensaver service not offered: %v", err)
-		return
+		return false
 	}
 	if err := conn.Export(agent, dbus.ObjectPath(screensaverPath), screensaverIface); err != nil {
 		log.Printf("mei-shell: screensaver service not offered: %v", err)
-		return
+		return false
 	}
 	// DoNotQueue: if the slot is taken, the request fails and the other agent
 	// keeps it. Mei never steals the name.
 	reply, err := conn.RequestName(screensaverName, dbus.NameFlagDoNotQueue)
 	if err != nil || reply != dbus.RequestNameReplyPrimaryOwner {
 		log.Printf("mei-shell: screensaver service not offered (the slot is held): %v", err)
-		return
+		return false
 	}
 	log.Printf("mei-shell: screensaver service offered (%s)", screensaverName)
 	frame, _ := json.Marshal(map[string]any{"count": 0})
 	topic.publish(frame)
+	return true
 }

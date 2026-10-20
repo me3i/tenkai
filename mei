@@ -996,6 +996,7 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     done
     printf 'dbus-name\torg.freedesktop.Notifications\tnotification server\n'
     printf 'dbus-name\torg.kde.StatusNotifierWatcher\ttray watcher\n'
+    printf 'dbus-name\torg.freedesktop.ScreenSaver\tthe screensaver inhibitor service\n'
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
     printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
     printf 'layer-namespace\tryoku-osd\tOSD surface\n'
@@ -1057,7 +1058,7 @@ live_print_claims() { # $1 = profile, $2 = abort-any | abort-unexpected
       # In the full profile these collisions are the point: the old shell must
       # be stopped first, and the caller checks the two D-Bus names by hand.
       case "$kind:$name" in
-      dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher) ;;
+      dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher|dbus-name:org.freedesktop.ScreenSaver) ;;
       layer-namespace:wallpaper-bg|layer-namespace:ryoku-frame|layer-namespace:ryoku-tray|layer-namespace:ryoku-notifications) ;;
       *) collide=1 ;;
       esac
@@ -1127,6 +1128,10 @@ write_live_session() { # $1 = profile, $2 = display, $3 = signature, $4 = runtim
     # fails closed when another agent holds it, so a second agent can never
     # appear.
     polkit='export MEI_POLKIT_AGENT=1'
+    # The ScreenSaver inhibitor service: the apps that ask through the D-Bus
+    # interface (Chromium, Electron) can then hold the idle off. The daemon
+    # only takes the name when it is free.
+    polkit="$polkit; export MEI_SCREENSAVER_NAME=1"
   fi
   cat > "$RUN_DIR/live-session.sh" <<SESSION
 #!/usr/bin/env bash

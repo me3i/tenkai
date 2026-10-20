@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
+	"strings"
 	"time"
 
 	wm "ryoku-wm"
@@ -26,6 +28,7 @@ func (d *daemon) startWM() {
 		if err := d.wmc.Act(wm.Action(a.Action), a.Args...); err != nil {
 			return nil, err
 		}
+		log.Printf("mei-shell: wm.act %s %s", a.Action, strings.Join(a.Args, " "))
 		return map[string]any{"ok": true}, nil
 	})
 	go d.watchWindowManager()

@@ -21,6 +21,7 @@ TESTS=(
   "polkit prompt|docs/tests/polkit-module.sh"
   "screenshot helper|docs/tests/screenshot-module.sh"
   "lock|docs/tests/lock-module.sh"
+  "idle and screensaver|docs/tests/idle-module.sh"
   "start and fallback|docs/tests/start-fallback.sh"
   "picker sources|docs/tests/picker-outbound.sh"
 )
