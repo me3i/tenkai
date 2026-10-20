@@ -91,6 +91,25 @@ Item {
                 height: 35 * root.s
                 color: root.pillInnerLine
             }
+            // The minutes and the seconds, on either side of the pill's line.
+            // (Upstream draws this in the greeter's layer; the pill is the
+            // clock's own, so it belongs here.)
+            Text {
+                x: 34 * root.s
+                anchors.verticalCenter: parent.verticalCenter
+                text: String(root.curM).padStart(2, "0")
+                font.pixelSize: 26 * root.s
+                font.weight: Font.Bold
+                color: root.mainText
+            }
+            Text {
+                x: 196 * root.s
+                anchors.verticalCenter: parent.verticalCenter
+                text: String(root.curS).padStart(2, "0")
+                font.pixelSize: 26 * root.s
+                font.weight: Font.Bold
+                color: root.mainText
+            }
         }
 
         // The minute ring: 60 ticks and the numbers every five minutes.
