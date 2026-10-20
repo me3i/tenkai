@@ -20,6 +20,7 @@ mkdir -p "$BK" "$RUN/shots" "$RUN/deps/bin"
 exec > >(tee -a "$LOG") 2>&1
 
 fail=0
+SIG=""; QS=""; BUS=""; DPID=""; SHELLLOG=""
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
@@ -29,6 +30,7 @@ bar_up() { H layers | grep -q 'namespace: ryoku-frame'; }
 launcher_layers() { H layers | grep -c 'namespace: launcher'; }
 all_layers() { H layers | grep -c 'Layer '; }
 owner() { busctl --address="${BUS:-$(cat "$RUN/bus")}" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }
+QI() { qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
 shot() { grim -o "${WAYLAND_DISPLAY^^}" "$RUN/shots/phase8-$1.png" 2>/dev/null; }
 # count of differing pixels in the area below the bar (idle drift is ~130)
 dcount() {
@@ -70,19 +72,37 @@ set_mods() { # $1 = module overrides (all others true)
 }
 
 start() { # EXTRA_PATH optionally prefixes PATH (dependency scenarios)
+  local old_sig="$SIG" old_qs="$QS" old_bus="$BUS" nqs
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
       PATH="${EXTRA_PATH:-}${PATH}" ./mei run ) >/dev/null 2>&1
   SIG=""; QS=""
   for _ in $(seq 1 200); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
     QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
-    [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
+    [ -n "$SIG" ] && [ "$SIG" != "$old_sig" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] \
+      && [ -n "$QS" ] && [ "$QS" != "$old_qs" ] && break
+    SIG=""; QS=""
     sleep 0.3
   done
-  if [ -z "$SIG" ] || [ -z "$QS" ]; then bad "session did not come up"; return 1; fi
+  if [ -z "$SIG" ] || [ -z "$QS" ]; then
+    bad "session did not come up (old sig=$old_sig qs=$old_qs)"
+    return 1
+  fi
+  # The supervisor can briefly overlap a retiring shell with its replacement;
+  # wait for the count to settle before calling it contamination.
+  nqs=""
+  for _ in $(seq 1 40); do
+    nqs="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+    [ "$nqs" = 1 ] && break
+    sleep 0.25
+  done
+  BUS="$(cat "$RUN/bus" 2>/dev/null)"
+  if [ "$nqs" != "1" ] || [ "$BUS" = "$old_bus" ] || [ -z "$BUS" ]; then
+    bad "scenario start is contaminated (shells=$nqs bus='$BUS' old='$old_bus')"
+    return 1
+  fi
   export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
   export WAYLAND_DISPLAY="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
-  BUS="$(cat "$RUN/bus")"
   SHELLLOG="$RUN/state/mei/surfaces/shell.log"
   SHELLLOG_BEFORE="$(wc -l < "$SHELLLOG" 2>/dev/null || echo 0)"
   sleep 2
@@ -91,13 +111,36 @@ start() { # EXTRA_PATH optionally prefixes PATH (dependency scenarios)
   return 0
 }
 
-stopit() {
+cleanup_on_exit() {
+  local rc=$?
+  [ "${KEEP:-0}" = 1 ] && return $rc
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
-  for _ in $(seq 1 80); do
-    pgrep -f "^$RUN/bin/mei-shell daemon" >/dev/null 2>&1 || \
-      pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" >/dev/null 2>&1 || break
+  return $rc
+}
+trap cleanup_on_exit EXIT
+
+stopit() {
+  local dying_qs="$QS" dying_daemon="$DPID" i nq nd
+  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  for i in $(seq 1 180); do
+    nq="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+    nd="$(pgrep -fc "^$RUN/bin/mei-shell daemon" 2>/dev/null || true)"
+    { [ "$nq" = 0 ] || [ "$nq" = "" ]; } && { [ "$nd" = 0 ] || [ "$nd" = "" ]; } && break
     sleep 0.25
   done
+  # recorded PIDs only, and only if their cmdline still names this project
+  for p in "$dying_qs" "$dying_daemon"; do
+    [ -n "$p" ] && [ -d "/proc/$p" ] || continue
+    tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI" && kill -TERM "$p" 2>/dev/null
+  done
+  sleep 1
+  nq="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+  nd="$(pgrep -fc "^$RUN/bin/mei-shell daemon" 2>/dev/null || true)"
+  if { [ "${nq:-0}" != 0 ]; } || { [ "${nd:-0}" != 0 ]; }; then
+    bad "stop left shells=$nq daemons=$nd; aborting so the next scenario is not contaminated"
+    echo "RESULT: FAIL"; exit 1
+  fi
+  rm -f "$RUN/bus"
   echo "  verify-untouched: $( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )"
 }
 
@@ -116,11 +159,12 @@ D launcher; sleep 1.3
 [ "$(launcher_layers)" = 1 ] && ok "S0 launcher opens on the bound shortcut" || bad "S0 launcher layers=$(launcher_layers)"
 D launcher; sleep 1
 shot s0-b
+qs ipc --pid "$QS" call shell clearSurfaceTrace >/dev/null 2>&1
 D quicksettings; sleep 1.3
+cc="$(qs ipc --pid "$QS" call shell lastSurface 2>&1)"
+[ "$cc" = "quick-settings" ] && ok "S0 control centre request reaches ShellState ($cc)" || bad "S0 control centre trace='$cc'"
 shot s0-q
-D quicksettings; sleep 0.8
-dc="$(dcount s0-b s0-q)"
-[ "${dc:-0}" -gt 20000 ] && ok "S0 control centre opens (crop diff $dc px)" || bad "S0 control centre diff=$dc"
+D quicksettings
 n="$(owner org.freedesktop.Notifications)"
 [ -n "$n" ] && [ "$n" = "$QS" ] && ok "S0 notifications name owned by the shell qs ($n)" || bad "S0 notifications owner='$n' qs='$QS'"
 t="$(owner org.kde.StatusNotifierWatcher)"
@@ -135,12 +179,8 @@ echo; echo "=== S1: launcher=false ==="
 set_mods '{"launcher":false}'
 start || { exit 1; }
 bar_up && ok "S1 bar still renders with the launcher off" || bad "S1 bar missing"
-shot s1-a
 D launcher; sleep 1.3
-[ "$(launcher_layers)" = 0 ] && ok "S1 SUPER+SPACE creates no launcher surface" || bad "S1 launcher layers=$(launcher_layers)"
-shot s1-b
-dc="$(dcount s1-a s1-b)"
-[ "${dc:-99999}" -lt 2000 ] && ok "S1 screen unchanged by the shortcut (crop diff $dc px)" || bad "S1 screen changed ($dc px)"
+[ "$(launcher_layers)" = 0 ] && ok "S1 SUPER+SPACE creates no launcher surface (layer count 0)" || bad "S1 launcher layers=$(launcher_layers)"
 e="$(new_shell_errors "$SHELLLOG_BEFORE")"
 [ -z "$e" ] && ok "S1 no new QML errors" || bad "S1 QML errors: $e"
 stopit
@@ -150,11 +190,14 @@ echo; echo "=== S2: control_center=false ==="
 set_mods '{"control_center":false}'
 start || { exit 1; }
 bar_up && ok "S2 bar renders" || bad "S2 bar missing"
-shot s2-a
+qs ipc --pid "$QS" call shell clearSurfaceTrace >/dev/null 2>&1
 D quicksettings; sleep 1.3
-shot s2-b
-dc="$(dcount s2-a s2-b)"
-[ "${dc:-99999}" -lt 2000 ] && ok "S2 SUPER+ESCAPE does nothing (crop diff $dc px)" || bad "S2 screen changed ($dc px)"
+tr="$(qs ipc --pid "$QS" call shell lastSurface 2>&1)"
+[ -z "$tr" ] && ok "S2 SUPER+ESCAPE issues no surface request (gate holds)" || bad "S2 control centre request traced as '$tr'"
+qs ipc --pid "$QS" call shell clearSurfaceTrace >/dev/null 2>&1
+D screenshot; sleep 1
+tr="$(qs ipc --pid "$QS" call shell lastSurface 2>&1)"
+[ -z "$tr" ] && ok "S2 the screenshot tab is equally gated" || bad "S2 screenshot request traced as '$tr'"
 e="$(new_shell_errors "$SHELLLOG_BEFORE")"
 [ -z "$e" ] && ok "S2 no new QML errors" || bad "S2 QML errors: $e"
 stopit

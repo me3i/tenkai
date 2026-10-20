@@ -63,6 +63,16 @@ ShellRoot {
     property int warm: 0
     Timer { interval: 1500; running: true; repeat: false; onTriggered: root.warm = 1 }
 
+    // Diagnostic: the last surface id actually requested through ShellState,
+    // i.e. after the module gate in toggleSurface/openSurface. A gated request
+    // leaves it empty, so harnesses can assert the gate itself rather than a
+    // screenshot margin.
+    property string surfaceTrace: ""
+    Connections {
+        target: ShellState
+        function onSurfaceRequested(id, mon, context) { root.surfaceTrace = id }
+    }
+
     // Construct the shared services (ShellState's per-monitor state now, heavier
     // providers as surfaces migrate) at load rather than on the first keybind.
     ServiceLoader {
@@ -778,6 +788,8 @@ ShellRoot {
         }
         function closeAllMenus(mon: string): void { ShellState.closeSurface("", mon); }
         function sessionConfirm(mon: string, action: string): void { ShellState.askSessionAction(action, mon); }
+        function clearSurfaceTrace(): void { root.surfaceTrace = "" }
+        function lastSurface(): string { return root.surfaceTrace }
     }
 
     // The Hub's "Place on the desktop" button lands here: a slider cannot let a
