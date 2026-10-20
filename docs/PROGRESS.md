@@ -138,6 +138,26 @@ Checked in the upstream tree, not guessed:
 | the UNLOCK label's hover | the input's button | **yes** |
 | the circular reveal (`OpacityMask`) | the greeter's wipe-in | no |
 
+## The acceptance gate (STEP 1, 2026-10-21)
+
+`./mei accept` (docs/tests/accept.sh) runs every machine-checkable criterion
+and prints one table: the gate id, the name, PASS / FAIL / UNVERIFIED and the
+evidence path. `docs/CRITERIA.md` holds the list and says what each gate
+checks. The human gates (the lock's accept path, the second output, the
+compositor's inhibitors, the real panel, the 144 Hz feel, the horizon line,
+the real tray apps, the real notifications, the real audio hardware, and
+Wi-Fi and Bluetooth through the terminal tools) are UNVERIFIED by design.
+
+Gates with no runnable check yet are listed as TODO with what they need, and
+are not counted as passed: F4 (notifications), F5 (the tray), F6 (the
+wallpaper and the palette), F7 (the settings app), F12 (the module matrix),
+Q3 (the frozen screenshots) and Q4 (the idle table).
+
+The network and Bluetooth panel hosts are DEFERRED: the flags stay off, the
+panels are not built, and `nmtui` and `bluetoothctl` are the fallback. That
+is written into `docs/LIVE-CHECKLIST.md`, together with the list of every
+remaining difference from your previous shell.
+
 ## Where to resume
 
 **Item 2, the network and Bluetooth hosts.** Hosts that do not live in the

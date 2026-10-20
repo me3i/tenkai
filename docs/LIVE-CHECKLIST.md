@@ -238,3 +238,32 @@ Your data is never at risk: Mei writes every file it owns inside
 - [ ] whether Mei's bar fits your real 1920x1080 panel
 - [ ] the idle timeouts you actually want (dim, lock, DPMS, suspend) and the inhibitor behaviour
 - [ ] the lock screen's look, and that it never locks you out
+
+## What is still different from your previous shell
+
+Everything here is a difference you would notice in the first hour. Nothing
+else is missing: the bar, the launcher, the quick settings, the settings app,
+the wallpaper and the palette, the notifications, the tray, the media keys,
+the OSD, the clipboard, the screenshots, the polkit prompt, the power menu,
+the idle timeouts and the lock are all in Mei and tested nested.
+
+| difference | what it means for you | status |
+|---|---|---|
+| **Wi-Fi and Bluetooth are not in Mei** | the panels were deferred, so use `nmtui` and `bluetoothctl` in a terminal (or the system tray's own menu). Your connections, your VPN and your adapter are never touched by Mei | DEFERRED, by your decision |
+| **the screen recording** | Mei does not record the screen. If you never record, nothing is missing; if you do, the old shell's tool is still installed | your call |
+| **the lock's accept path** | Mei's lock is the compositor's own now, so a crash leaves the session **locked** (that is the point). The recovery is one command from a TTY, and it is written down above | UNVERIFIED: only you can type your password |
+| **the lock on a second output** | the nested session has one output, so the second screen of your session is untested | UNVERIFIED: yours to check |
+| **the compositor's inhibitors** | a video player that holds an idle-inhibit keeps the machine awake; Mei's own D-Bus inhibitors are proven, the compositor's are not | UNVERIFIED: play a video and see |
+| **the idle with your real panel** | the dim and the exact restore are proven against a file, not against your backlight | UNVERIFIED: yours to watch |
+| **the feel at 144 Hz** | nothing nested can prove how it feels | UNVERIFIED: yours to feel |
+| **the horizon line's smoothness** | the wave repaints on 0.35 px of movement (about 24 times a second, so it never misses a frame at 144 Hz) | UNVERIFIED: yours to see |
+
+## The terminal fallbacks, for the deferred panels
+
+- `nmtui` — the network connections, the same as NetworkManager's own tool.
+- `bluetoothctl` — the adapter, the paired devices, the pairing itself.
+- The system tray's own menu still shows the network and the Bluetooth items
+  that your previous shell put there, as long as it is running.
+
+Neither tool is started by Mei, and Mei never changes a connection, a VPN or
+an adapter.

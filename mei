@@ -700,6 +700,9 @@ SESSION
   chmod +x "$RUN_DIR/session.sh"
 }
 
+# The acceptance gate: every machine-checkable criterion, one table.
+cmd_accept(){ docs/tests/accept.sh "$@"; }
+
 cmd_run() {
   [ -x "$RUN_DIR/bin/mei-shell" ] || die "mei-shell not built — run the Phase 6 build first"
   [ -d "$RUN_DIR/qml/Ryoku/Ui" ] || die "QML modules not assembled under .run/qml"
@@ -1654,6 +1657,7 @@ case "${1:-help}" in
   live-status)      shift; cmd_live_status "$@" ;;
   wallpaper)        shift; cmd_wallpaper "$@" ;;
   test)             shift; cmd_test ;;
+  accept)           shift; cmd_accept "$@" ;;
   help|--help|-h)   usage ;;
   *) die "unknown subcommand '${1}' — see './mei help'" ;;
 esac
