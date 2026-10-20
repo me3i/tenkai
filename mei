@@ -33,6 +33,16 @@
 #                             old shell still owns the notification or tray name,
 #                             prints what it will do and waits for YES.
 #                           Never started by the harness: the owner runs it.
+#   start [--fallback "cmd"] [--real-power]
+#                           the NON-interactive start for an autostart line. It asks
+#                           nothing, does nothing if Mei already runs, runs the
+#                           same collision preflight as `live --profile full` and
+#                           exits non-zero (without touching anything) when the
+#                           old shell still owns the notification or tray name.
+#                           --fallback runs a command once if Mei does not come
+#                           up, and only when no Mei process is left. --real-power
+#                           leaves MEI_STUB_POWER unset, so logout, reboot and
+#                           suspend are real; the default stays stubbed.
 #   live-stop              stop only Mei's own live pids and their descendants
 #                           (walked through /proc parent links) and restore what
 #                           the live run changed.
@@ -57,6 +67,9 @@ BASE_FILE="$DOCS_DIR/baseline.txt"
 PID_FILE="$RUN_DIR/pids"
 LIVE_PID_FILE="$RUN_DIR/live-pids"
 LIVE_PROFILE_FILE="$RUN_DIR/live-profile"
+# The self-monitor is a test tool, not part of Mei: it lives in its own file so
+# that "is Mei running?" and "is every Mei process gone?" mean what they say.
+LIVE_TOOLS_FILE="$RUN_DIR/live-tools"
 LIVE_BACKUP_DIR="$RUN_DIR/live-backup"
 
 die()  { printf 'mei: %s\n' "$*" >&2; exit 1; }
@@ -986,11 +999,14 @@ walk(d)
 }
 
 live_dbus_owner() { # $1 = well-known name -> owning pid (or empty)
-  busctl --user list --no-pager 2>/dev/null | awk -v n="$1" '$1==n {print $2; exit}'
+  # The read must never abort the caller: a bus that is not reachable is
+  # simply "nobody owns it".
+  busctl --user list --no-pager 2>/dev/null | awk -v n="$1" '$1==n {print $2; exit}' || true
 }
 
 live_shortcut_owner() { # $1 = shortcut name -> "yes" if the live session has it
   hyprctl globalshortcuts 2>/dev/null | grep -q "^$1 " && echo yes || echo ""
+  return 0
 }
 
 live_print_claims() { # $1 = profile, $2 = abort-any | abort-unexpected
@@ -1061,15 +1077,21 @@ PY
   echo "module flags for $profile: $modules"
 }
 
-write_live_session() { # $1 = profile, $2 = wayland display, $3 = signature, $4 = runtime dir
-  local profile="$1" wl="$2" sig="$3" rt="$4" bus
+write_live_session() { # $1 = profile, $2 = display, $3 = signature, $4 = runtime dir, $5 = real power (1 = power actions are live)
+  local profile="$1" wl="$2" sig="$3" rt="$4" real_power="${5:-0}" bus
   bus="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$rt/bus}"
-  local ryogami='  # wallpaper module is off in this profile: ryogami is not started'
-  local polkit='  # the polkit agent is off in this profile: only the full profile registers one'
+  # Every injected block is a SINGLE line: the substitution below is one sed
+  # expression, and a newline in a value would break it (the full profile's
+  # script was never substituted before this was noticed).
+  local ryogami='# wallpaper module is off in this profile: ryogami is not started'
+  local polkit='# the polkit agent is off in this profile: only the full profile registers one'
+  # The power actions are stubbed unless the owner asks for them to be real
+  # (--real-power). The default stays stubbed: a mis-click must not end the
+  # session. Lock is not a power action and is never stubbed.
+  local power='export MEI_STUB_POWER=1'
+  [ "$real_power" = "1" ] && power='# --real-power: the power actions are live'
   if [ "$profile" = "full" ]; then
-    ryogami='export MEI_ALLOW_LIVE_DISPLAY=1
-"$RUN/bin/ryogami" daemon >> "$log/live-ryogami.log" 2>&1 &
-RPID=$!; record "$RPID" ryogami'
+    ryogami='export MEI_ALLOW_LIVE_DISPLAY=1; "$RUN/bin/ryogami" daemon >> "$log/live-ryogami.log" 2>&1 & RPID=$!; record "$RPID" ryogami'
     # The agent registers only if the session's polkit slot is free; the daemon
     # fails closed when another agent holds it, so a second agent can never
     # appear.
@@ -1104,7 +1126,7 @@ export MEI_APP_XDG_RUNTIME_DIR="$rt"
 # action may end the owner's session by accident in the first trial: logout,
 # reboot, suspend and shutdown are all stubbed (MEI_STUB_POWER=1). Lock is not
 # a power action and stays real.
-export MEI_STUB_POWER=1
+__POWER__
 export QSG_RENDER_LOOP=threaded
 export QT_QPA_PLATFORM=wayland
 unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
@@ -1128,8 +1150,163 @@ SESSION
   local real_home
   real_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
   [ -n "$real_home" ] || real_home="$HOME"
-  sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__PROFILE__|$profile|g; s|__RYOGAMI__|$ryogami|g; s|__POLKIT__|$polkit|g; s|__REAL_HOME__|$real_home|g; s|__REAL_DATA_DIRS__|$real_home/.local/share:$real_home/.local/share/flatpak/exports/share:/usr/local/share:/usr/share|g" "$RUN_DIR/live-session.sh"
+  # The substitution is done in python, not sed: a value may contain '&'
+  # (a shell redirect), and in a sed replacement '&' means "the whole match".
+  # That silently corrupted the full profile's script until the start test
+  # caught it.
+  python3 - "$RUN_DIR/live-session.sh" "$MEI_DIR" "$profile" "$ryogami" "$polkit" "$power" \
+    "$real_home" "$real_home/.local/share:$real_home/.local/share/flatpak/exports/share:/usr/local/share:/usr/share" <<'PY'
+import sys
+path = sys.argv[1]
+keys = ["__MEI_DIR__", "__PROFILE__", "__RYOGAMI__", "__POLKIT__", "__POWER__",
+        "__REAL_HOME__", "__REAL_DATA_DIRS__"]
+text = open(path).read()
+for key, value in zip(keys, sys.argv[2:]):
+    text = text.replace(key, value)
+open(path, "w").write(text)
+PY
+  if grep -q '__[A-Z_]*__' "$RUN_DIR/live-session.sh"; then
+    printf 'mei: the live session script still has a placeholder in it; refusing to start\n' >&2
+    grep -n '__[A-Z_]*__' "$RUN_DIR/live-session.sh" >&2
+    return 1
+  fi
   chmod +x "$RUN_DIR/live-session.sh"
+}
+
+# live_all_gone reports whether every recorded Mei process is gone, descendants
+# included. The fallback must only run when this is true: two shells at once
+# would fight over the same names.
+live_all_gone() {
+  [ -f "$LIVE_PID_FILE" ] || return 0
+  local p d
+  while read -r p _; do
+    [ -n "${p:-}" ] || continue
+    [ -d "/proc/$p" ] && return 1
+    while read -r d; do
+      [ -n "${d:-}" ] && [ -d "/proc/$d" ] && return 1
+    done < <(live_descendants "$p")
+  done < "$LIVE_PID_FILE"
+  return 0
+}
+
+# live_ready reports whether Mei is up: its bar layer is mapped and it owns the
+# notification name. Both are read-only checks against the live session.
+live_ready() {
+  # The bar layer is mapped and the notification name belongs to one of Mei's
+  # own recorded processes. Both are read-only checks against the live session.
+  hyprctl -j layers 2>/dev/null | grep -q "ryoku-frame" || return 1
+  local owner p
+  owner="$(live_dbus_owner org.freedesktop.Notifications)"
+  [ -n "$owner" ] || return 1
+  while read -r p _; do
+    [ -n "${p:-}" ] && [ "$p" = "$owner" ] && return 0
+  done < "$LIVE_PID_FILE"
+  return 1
+}
+
+# cmd_start is the NON-interactive start for the autostart line. It never asks a
+# question, it is idempotent, it runs the same collision preflight as
+# `./mei live --profile full`, and it can fall back to the old shell if Mei does
+# not come up.
+cmd_start() {
+  local profile="full" fallback="" real_power=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --profile) profile="${2:-}"; shift 2 || true ;;
+      --fallback) fallback="${2:-}"; shift 2 || true ;;
+      --real-power) real_power=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      *) die "usage: ./mei start [--profile full] [--fallback \"command\"] [--real-power]" ;;
+    esac
+  done
+  case "$profile" in overlay|full) ;; *) die "usage: ./mei start [--profile full] ..." ;; esac
+
+  local stamp logf
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  logf="$RUN_DIR/logs/mei-start-$stamp.log"
+  mkdir -p "$RUN_DIR/logs"
+  # The log is the record the owner reads if the start goes wrong.
+  exec > >(tee -a "$logf") 2>&1
+
+  note "mei start: profile=$profile real_power=$real_power stamp=$stamp"
+
+  # 0. idempotent: a running Mei is left alone.
+  if live_any_alive "$LIVE_PID_FILE"; then
+    note "Mei is already running; nothing to do"
+    return 0
+  fi
+  if live_any_alive "$PID_FILE"; then
+    note "a nested Mei session is running; refusing to start a live one"
+    return 1
+  fi
+
+  # 1. the live session we are joining
+  local wl="${WAYLAND_DISPLAY:-}" sig="${HYPRLAND_INSTANCE_SIGNATURE:-}" rt="${XDG_RUNTIME_DIR:-}"
+  [ -n "$wl" ] || { note "no WAYLAND_DISPLAY in this shell: the autostart line must run inside the session"; return 1; }
+  [ -n "$rt" ] || rt="/run/user/$(id -u)"
+  [ -e "$rt/$wl" ] || { note "the live wayland socket $rt/$wl is missing"; return 1; }
+  [ -n "$sig" ] || { note "no HYPRLAND_INSTANCE_SIGNATURE in this shell"; return 1; }
+  note "joining the live session: display=$wl signature=$sig runtime=$rt"
+
+  # 2. the preflight: in the full profile the old shell must be gone. This is
+  # where an autostart fails loudly instead of hanging.
+  if [ "$profile" = "full" ]; then
+    local n owner
+    for n in org.freedesktop.Notifications org.kde.StatusNotifierWatcher; do
+      owner="$(live_dbus_owner "$n")"
+      if [ -n "$owner" ]; then
+        note "REFUSING: PID $owner still owns $n. Stop the old shell first, or use --fallback."
+        return 1
+      fi
+    done
+  fi
+  live_print_claims "$profile" abort-unexpected || {
+    note "REFUSING: Mei would claim something the live session already owns"
+    return 1
+  }
+
+  # 3. start
+  live_write_modules "$profile"
+  write_live_session "$profile" "$wl" "$sig" "$rt" "$real_power"
+  : > "$LIVE_PID_FILE"
+  : > "$RUN_DIR/logs/live-session.log"
+  setsid bash "$RUN_DIR/live-session.sh" >> "$RUN_DIR/logs/live-session.log" 2>&1 &
+  local launcher=$!
+  printf '%s\t%s\t%s\n' "$launcher" "$launcher" "live-launcher" >> "$LIVE_PID_FILE"
+  note "Mei starting (pid $launcher)"
+
+  # 4. the self-monitor
+  local q="" i=0
+  while [ $i -lt 120 ]; do
+    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $MEI_DIR/src/ryoku/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
+    [ -n "$q" ] && break
+    i=$((i + 1)); sleep 0.5
+  done
+  [ -n "$q" ] && printf '%s\t%s\t%s\n' "$q" "$q" "live-shell" >> "$LIVE_PID_FILE"
+  setsid python3 "$MEI_DIR/docs/tests/live-monitor.py" >> "$RUN_DIR/logs/live-monitor.out" 2>&1 &
+  printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_TOOLS_FILE"
+
+  # 5. the fallback: if Mei does not come up, the old shell may take over, but
+  # never while any Mei process is alive.
+  if [ -n "$fallback" ]; then
+    note "waiting up to 15 s for Mei to come up (fallback: $fallback)"
+    i=0
+    while [ $i -lt 30 ]; do
+      live_ready && break
+      live_all_gone || break
+      i=$((i + 1)); sleep 0.5
+    done
+    if live_ready; then
+      note "Mei is up (bar layer and notification name); the fallback was not run"
+    elif live_all_gone; then
+      note "Mei did not come up and no Mei process is left; running the fallback once"
+      eval "$fallback" >>"$logf" 2>&1 || note "the fallback command failed"
+    else
+      note "Mei is running but not ready; the fallback was NOT run (two shells would fight)"
+    fi
+  fi
+  note "log: $logf"
+  return 0
 }
 
 cmd_live() {
@@ -1197,7 +1374,7 @@ cmd_live() {
 
   # 4. module flags and the session script
   live_write_modules "$profile"
-  write_live_session "$profile" "$wl" "$sig" "$rt"
+  write_live_session "$profile" "$wl" "$sig" "$rt" 0
   : > "$LIVE_PID_FILE"
   : > "$RUN_DIR/logs/live-session.log"
   setsid bash "$RUN_DIR/live-session.sh" >> "$RUN_DIR/logs/live-session.log" 2>&1 &
@@ -1213,7 +1390,7 @@ cmd_live() {
   done
   [ -n "$q" ] || die "the Mei shell did not come up (see $RUN_DIR/logs/live-daemon.log)"
   setsid python3 "$MEI_DIR/docs/tests/live-monitor.py" >> "$RUN_DIR/logs/live-monitor.out" 2>&1 &
-  printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_PID_FILE"
+  printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_TOOLS_FILE"
   echo "$profile" > "$LIVE_PROFILE_FILE"
 
   echo
@@ -1277,6 +1454,12 @@ cmd_live_stop() {
   for s in "$rt/mei-shell.sock" "$rt/ryogami.sock" "$rt/mei-hub.lock"; do
     [ -e "$s" ] && { rm -f "$s"; note "removed $s"; }
   done
+  if [ -f "$LIVE_TOOLS_FILE" ]; then
+    while read -r tp _; do
+      [ -n "${tp:-}" ] && [ -d "/proc/$tp" ] && { note "TERM  monitor pid=$tp"; kill -TERM "$tp" 2>/dev/null || true; }
+    done < "$LIVE_TOOLS_FILE"
+    rm -f "$LIVE_TOOLS_FILE"
+  fi
   rm -f "$LIVE_PID_FILE" "$LIVE_PROFILE_FILE"
   note "mei: live session stopped"
 }
@@ -1309,6 +1492,7 @@ case "${1:-help}" in
   run)              shift; cmd_run ;;
   stop)             shift; cmd_stop ;;
   live)             shift; cmd_live "$@" ;;
+  start)            shift; cmd_start "$@" ;;
   live-stop)        shift; cmd_live_stop "$@" ;;
   live-status)      shift; cmd_live_status "$@" ;;
   wallpaper)        shift; cmd_wallpaper "$@" ;;

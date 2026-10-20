@@ -92,6 +92,23 @@ end
 --   centre, which the binds above open; the calendar and the guide are out of
 --   scope by your own decision.
 
+-- --- rescue binds (they depend on no shell at all) --------------------------------
+-- These two are the safety net: they work even if Mei is broken, because they
+-- only use the compositor and your own terminal. Put them near the top of the
+-- file, so they are there whatever else you paste.
+
+-- a terminal, using the same `terminal` your own config already defines
+hl.bind(mainMod .. " + RETURN", hl.dsp.exec_cmd(terminal))
+
+-- the revert: it stops Mei and starts serpantinumd again. It does NOT edit
+-- your Hyprland config; the autostart line stays a manual step, so nothing
+-- here can rewrite your configuration behind your back.
+hl.bind(mainMod .. " + SHIFT + R", hl.dsp.exec_cmd("bash ~/projects/mei/docs/revert-to-serpantinum.sh"))
+
+-- If the screen is blank and no terminal is reachable: Ctrl+Alt+F3 gives you a
+-- TTY. Log in, then:
+--     bash ~/projects/mei/docs/revert-to-serpantinum.sh
+
 -- --- switching over -------------------------------------------------------------
 --
 -- 1. In ~/.config/hypr/config/autostart.lua, comment out:
@@ -103,6 +120,18 @@ end
 --      hl.exec_cmd("~/projects/mei/mei live --profile full")
 --
 -- 2. Log out and back in (or run `serpantinumd stop` and then the line above).
+--
+-- The autostart line is safe to use as it stands: `./mei start` never asks a
+-- question, it does nothing if Mei is already running, and it refuses (with a
+-- log line and a non-zero exit) if your old shell still owns the notification
+-- or tray name, so a double start cannot happen. Add the fallback so a broken
+-- Mei hands the session back to serpantinumd:
+--
+--      hl.exec_cmd("~/projects/mei/mei start --fallback \"serpantinumd start\"")
+--
+-- The fallback only runs when no Mei process is left, so the two shells are
+-- never both running. Keep `--real-power` off for the first days: logout,
+-- reboot and suspend stay stubbed until you add it deliberately.
 --
 -- To go back, in one command:
 --
