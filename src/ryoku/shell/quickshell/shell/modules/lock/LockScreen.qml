@@ -11,11 +11,13 @@ import shell.services
 // The lock itself belongs to the compositor (ext-session-lock-v1): it covers
 // every output and nothing else can be drawn over it, so a crash of the shell
 // leaves the session locked instead of open. This file is only what the user
-// sees on top of it: a clock, the date and the password field.
+// sees on top of it.
 //
-// The password is Mei's own: the daemon checks it against PAM. The lock does
-// not engage at all when that check cannot pass, because a lock that cannot
-// be opened is a way to lose the session.
+// The clock is the "orbital" dial from Ryoku's clockwork lockscreen theme
+// (OrbitalClock.qml, adapted from upstream). The password field is Mei's own:
+// the daemon checks it against PAM. The lock does not engage at all when that
+// check cannot pass, because a lock that cannot be opened is a way to lose
+// the session.
 //
 // The compositor gives the surface the keyboard, so while it is up the key
 // presses cannot reach anything else.
@@ -26,70 +28,18 @@ Item {
     // surface; it fills the output.
     anchors.fill: parent
 
-    // The clock: a big time and the date, so the screen reads as a lock screen
-    // and not as an error.
-    property string clockText: ""
-    property string dateText: ""
-
-    Timer {
-        interval: 1000
-        repeat: true
-        running: true
-        onTriggered: win.updateClock()
+    // The dial, and with it the time and the date.
+    OrbitalClock {
+        anchors.fill: parent
     }
 
-    // The password field holds the focus for as long as the lock is up: the
-    // shell's own surfaces may ask for it, and a key press that lands
-    // somewhere else is a key press the owner cannot see.
-    Timer {
-        interval: 2000
-        repeat: true
-        running: true
-        onTriggered: if (pw.activeFocus === false)
-            pw.forceActiveFocus()
-    }
-
-    function updateClock() {
-        const now = new Date();
-        const hh = String(now.getHours()).padStart(2, "0");
-        const mm = String(now.getMinutes()).padStart(2, "0");
-        win.clockText = hh + ":" + mm;
-        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const months = ["January", "February", "March", "April", "May", "June", "July",
-            "August", "September", "October", "November", "December"];
-        win.dateText = days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate();
-    }
-
-    Component.onCompleted: {
-        win.updateClock();
-        pw.text = "";
-        // A surface that has only just been mapped cannot hold the item focus
-        // yet, so the field is focused again on the next tick.
-        Qt.callLater(function() {
-            pw.forceActiveFocus();
-        });
-    }
-
+    // The prompt, on the free right-hand side of the dial.
     Column {
-        anchors.centerIn: parent
-        spacing: 18
-        width: Math.min(420, win.width - 80)
-
-        Text {
-            text: win.clockText
-            color: "#f2f2f5"
-            font.pixelSize: 76
-            font.weight: Font.Light
-            horizontalAlignment: Text.AlignHCenter
-            width: parent.width
-        }
-        Text {
-            text: win.dateText
-            color: "#9a9aa4"
-            font.pixelSize: 17
-            horizontalAlignment: Text.AlignHCenter
-            width: parent.width
-        }
+        anchors.right: parent.right
+        anchors.rightMargin: 90 * (win.height / 768)
+        anchors.verticalCenter: parent.verticalCenter
+        spacing: 16
+        width: Math.min(420, win.width * 0.32)
 
         TextField {
             id: pw
@@ -104,6 +54,13 @@ Item {
             // keypress cannot land somewhere else while the lock is up.
             focus: true
             onAccepted: win.tryUnlock()
+            // The theme's own shape: a dark pill with a thin border.
+            background: Rectangle {
+                radius: height / 2
+                color: "#080808"
+                border.color: "#222222"
+                border.width: 1
+            }
         }
 
         Text {
@@ -121,6 +78,26 @@ Item {
             onClicked: win.tryUnlock()
             anchors.horizontalCenter: parent.horizontalCenter
         }
+    }
+
+    // The password field holds the focus for as long as the lock is up: the
+    // shell's own surfaces may ask for it, and a key press that lands
+    // somewhere else is a key press the owner cannot see.
+    Timer {
+        interval: 2000
+        repeat: true
+        running: true
+        onTriggered: if (pw.activeFocus === false)
+            pw.forceActiveFocus()
+    }
+
+    Component.onCompleted: {
+        pw.text = "";
+        // A surface that has only just been mapped cannot hold the item focus
+        // yet, so the field is focused again on the next tick.
+        Qt.callLater(function() {
+            pw.forceActiveFocus();
+        });
     }
 
     function tryUnlock() {

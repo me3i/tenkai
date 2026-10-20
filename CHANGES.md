@@ -1,5 +1,25 @@
 # CHANGES.md — modifications vs upstream Ryoku
 
+## The lock screen's look (2026-10-21)
+
+The lock screen used a plain clock, a date and a white password field. It now
+uses the **"orbital" dial** from Ryoku's own clockwork lockscreen theme, taken
+from upstream and adapted (`modules/lock/OrbitalClock.qml`): the dial with its
+two rings of ticks, the spotlight that follows the minute and the second, the
+big hour numeral and the date, and the theme's own pill shapes for the
+password field.
+
+What was left out of the upstream theme, and why: the greeter's parts (the SDDM
+components, the user and session models, the fingerprint hint, the reveal and
+the windup animation) are not a session lock and are not on Mei's keep list;
+the bundled Outfit font is not redistributed because upstream ships it without
+a licence file, so the system font is used instead. The clock only runs while
+the lock is up: it is part of the lock's surface and stops with it.
+
+The lock's logic is untouched: it is still the compositor's own session lock
+(ext-session-lock-v1), the password is still checked against PAM by the daemon,
+and a broken PAM setup still refuses the lock instead of covering the screen.
+
 ## Baseline PID update (kitty restart, 2026-10-20)
 
 The owner restarted their terminal during Phase 10A, so the live kitty is a new

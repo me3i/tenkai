@@ -20,6 +20,20 @@ at `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/Scene.qml:1`.
 - **JetBrains Mono Nerd Font**, **Inter**, **Noto Sans**, **Noto Color Emoji**
   — installed as Arch packages and used under their own licences.
 
+## The lock screen's clock
+
+- **The "orbital" dial** — adapted from Ryoku's clockwork lockscreen theme
+  (`ryoku/lockscreen/qylock/themes/clockwork/orbital/Main.qml` upstream; the
+  theme is by Darkkal44). The theme is part of Ryoku and is under the same
+  **GPL-3.0-or-later** licence as the rest of it; the adapted clock lives in
+  `src/ryoku/shell/quickshell/shell/modules/lock/OrbitalClock.qml` and keeps
+  the attribution in its header.
+- **The Outfit font** that the theme bundles is **not** bundled here: the
+  upstream tree ships it without a licence file, and an asset without a licence
+  is not redistributed. The clock uses the system's own font instead, so the
+  shapes differ slightly from the greeter's. (Outfit itself is published under
+  the SIL Open Font License 1.1 by Google Fonts.)
+
 ## Upstream assets
 
 Assets copied from Ryoku (icons, illustrations, sounds) remain under their
