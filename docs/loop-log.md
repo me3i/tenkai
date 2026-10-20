@@ -199,7 +199,7 @@ the brightness fader by feel, and press the bar logo to see the control centre's
 
 ## Phase 6 step 4 — Settings app (`mei-hub`) (2026-10-20 01:47–02:00)
 
-**Change set:** `CHANGES.md` → "Phase 6 — step 4". Harness `.run/tools/step4.sh` (git-ignored).
+**Change set:** `CHANGES.md` → "Phase 6 — step 4". Harness `docs/tests/step4.sh` (versioned in docs/tests).
 One clean run: `.run/logs/step4-015917.log`. Earlier runs in this step were harness failures
 (.run/logs/step4-012437.log, step4-014714.log) and are kept as **FAIL** — see the loop notes.
 
@@ -286,7 +286,7 @@ hide "CHANGE ON MAP", disable the launcher's weather widget (and say whether it 
 
 ## Step 5 — wallpaper + matugen theming (nested)
 
-Loop: 6 runs of `.run/tools/step5.sh` (three exposed real gaps, then clean passes; the final
+Loop: 6 runs of `docs/tests/step5.sh` (three exposed real gaps, then clean passes; the final
 run adds the wallpaper/launcher assertions). Final PASS log: `.run/logs/step5-0259*.log`
 (the previous clean PASS is `.run/logs/step5-025738.log`).
 
@@ -497,3 +497,17 @@ UNVERIFIED (owner only): tray icon legibility on the real wallpaper — the Adwa
 real apps with submenus; 144 Hz smoothness. Screenshots: `.run/shots/step7-01-tray-icon.png`,
 `step7-02-tray-menu.png`, `step7-03-tray-panel.png`, `step7-04-two-icons.png`,
 `step7-05-after-one-removed.png`, `step7-06-after-both-removed.png`.
+
+## Stage 1 — harness versioned, status page (2026-10-20)
+
+Owner approved step 7 (keep auto-pin and right-click menu; tinting deferred to the live trial)
+and asked for the test harnesses to leave the git-ignored `.run/tools`.
+
+| Item | Result |
+|---|---|
+| harness move | TESTED: `docs/tests/step*.sh`, `sni-test.py`, `launcher-check.sh`, `qs-check.sh` moved to `docs/tests/`; the three `sni-test.py` call sites in `step7.sh` now use `$MEI/docs/tests/sni-test.py` |
+| harness still runs from there | TESTED: `bash docs/tests/step7.sh` -> `RESULT: PASS`, 32 TESTED, 0 FAIL (`.run/logs/step7-moved.log`) |
+| barStyle | TESTED: shipped default `Hub.qml:548` `"barStyle": "qsbar"`; `services/Config.qml:193` `"qsbar"`; `BarStudioPage.qml:158` fallback `"qsbar"`; nested `.run/config/mei/shell.json` -> `qsbar`; zero `kairos` references under `src/ryoku/hub/` |
+| sumi/kairos in Settings | TESTED: `BarStudioPage.qml:335` BAR STYLE card `visible: false`, its ryostore `Process` `running: false` at `:86` |
+| status page | `docs/STATUS.md` (one screen) |
+| verify-untouched | PASS before and after |

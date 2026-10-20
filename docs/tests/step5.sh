@@ -1,0 +1,251 @@
+#!/usr/bin/env bash
+# Phase 6 step 5 acceptance: wallpaper + matugen theming.
+#  - ryogami runs stills-only, guarded to the nested WAYLAND_DISPLAY
+#  - a still wallpaper sets and the reveal runs
+#  - the palette (colors.json / tones.json) regenerates in the fake HOME
+#  - the bar and launcher recolour; a second wallpaper recolours again
+#  - matugen runs with Mei's minimal config; no outbound; no strays; nothing
+#    written to the real ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0},
+#    ~/.cache/ryoku or ~/.cache/matugen
+set -uo pipefail
+MEI=/home/mei/projects/mei
+RUN="$MEI/.run"
+RT="$MEI/.r"
+HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
+LOG="$RUN/logs/step5-$(date +%H%M%S).log"
+mkdir -p "$RUN/shots"
+exec > >(tee -a "$LOG") 2>&1
+fail=0
+ok()  { echo "TESTED      $*"; }
+bad() { echo "FAIL        $*"; fail=1; }
+note(){ echo "NOTE        $*"; }
+
+REAL_DIRS=(/home/mei/.config/kitty /home/mei/.config/btop /home/mei/.config/qt6ct \
+           /home/mei/.config/gtk-3.0 /home/mei/.config/gtk-4.0 \
+           /home/mei/.cache/ryoku /home/mei/.cache/matugen)
+hash_real() {
+  for d in "${REAL_DIRS[@]}"; do
+    if [ -e "$d" ]; then
+      printf '%s %s\n' "$d" "$(find "$d" -type f -exec sha256sum {} + 2>/dev/null | sort | sha256sum | awk '{print $1}')"
+    else
+      printf '%s ABSENT\n' "$d"
+    fi
+  done
+}
+
+echo "=== STATIC PROOF ==="
+if (cd "$MEI/src/ryoku/shell/ryogami/daemon" && go list -deps . 2>/dev/null | grep -qx 'net/http'); then
+  bad "net/http is in the ryogami dependency graph"
+else
+  ok "net/http is NOT in the ryogami dependency graph (unix sockets only)"
+fi
+for lib in "$MEI/.run/bin/ryogami" "$MEI/.run/bin/mei-shell"; do
+  if strings "$lib" | grep -q '47616'; then bad "$(basename "$lib") embeds the palette-bridge port"; else ok "$(basename "$lib") has no 47616 reference"; fi
+done
+if ss -ltnp 2>/dev/null | grep -q ':47616'; then bad "something listens on 47616"; else ok "no listener on 127.0.0.1:47616 (real session)"; fi
+
+echo; echo "=== GUARDS (HOME, then display) ==="
+# The real HOME must be refused, before the display is even considered.
+if out=$(HOME=/home/mei "$RUN/bin/ryogami" daemon 2>&1); then
+  bad "HOME guard did not refuse the real HOME"
+elif grep -q "not Mei's fake home" <<<"$out"; then
+  ok "HOME guard refuses the real HOME: $(echo "$out" | head -1)"
+else
+  bad "refused for the wrong reason: $(echo "$out" | head -1)"
+fi
+# Display guard, run with the fake HOME so the HOME guard cannot mask it.
+if out=$(HOME="$RUN/home" env -u MEI_HOST_WAYLAND_SOCKET "$RUN/bin/ryogami" daemon 2>&1); then bad "display guard did not refuse with the env unset"; else ok "display guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME="$RUN/home" XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" MEI_HOST_WAYLAND_SOCKET="$HOST_XDG/$HOST_WL" "$RUN/bin/ryogami" daemon 2>&1); then bad "display guard allowed the live display"; else ok "display guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME=/home/mei "$RUN/bin/mei-shell" daemon 2>&1); then bad "mei-shell accepted the real HOME"; else ok "mei-shell HOME guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME=/home/mei "$RUN/bin/mei-hub" config get bar 2>&1); then bad "mei-hub accepted the real HOME"; else ok "mei-hub HOME guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME=/home/mei "$RUN/bin/mei-wm-hyprland" caps 2>&1); then bad "mei-wm-hyprland accepted the real HOME"; else ok "mei-wm-hyprland HOME guard: $(echo "$out" | head -1)"; fi
+
+echo; echo "=== REAL-PATH HASHES BEFORE ==="
+hash_real | tee "$RUN/step5-real-before.txt"
+
+echo; echo "=== verify-untouched BEFORE ==="
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
+
+# The nested fake config must run the keep-list qsbar bar, not the sumi rail:
+# with sumi the top-strip crop below is wallpaper, so the bar assertion would be
+# meaningless. (barStyle is patched only through the settings store; the hub's
+# Bar page falls back to "sumi" when it cannot read the current id.)
+SHELLJSON="$RUN/config/mei/shell.json"
+note "nested shell.json barStyle: $(jq -r '.barStyle' "$SHELLJSON" 2>/dev/null || echo '?')"
+[ "$(jq -r '.barStyle' "$SHELLJSON" 2>/dev/null)" = "qsbar" ] || {
+  jq '.barStyle = "qsbar"' "$SHELLJSON" > "$SHELLJSON.tmp" && mv "$SHELLJSON.tmp" "$SHELLJSON"
+  note "pinned barStyle=qsbar in the nested fake config"
+}
+
+echo; echo "=== starting ./mei run ==="
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run || { bad "mei run failed"; exit 1; }
+
+SIG=""; QS=""
+for _ in $(seq 1 120); do
+  SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
+  QS="$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+  [ -n "$SIG" ] && [ -n "$QS" ] && break
+  sleep 0.5
+done
+[ -n "$SIG" ] && [ -n "$QS" ] || { bad "session did not come up"; "$MEI/mei" stop; exit 1; }
+if [ "$SIG" = "efb50993780079460b0cbed1363e2166a2de1d9f_1792407547_2121810691" ]; then bad "nested signature equals the baseline"; "$MEI/mei" stop; exit 1; fi
+ok "nested Hyprland signature differs from the baseline"
+
+export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
+WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
+export WAYLAND_DISPLAY="$WDISP"
+H() { hyprctl "$@" 2>/dev/null; }
+shot() { grim -o "${WDISP^^}" "$RUN/shots/step5-$1.png" 2>/dev/null && echo "  shot: step5-$1.png"; }
+M() { "$RUN/bin/mei-shell" "$@"; }
+RY() { "$RUN/bin/ryogami" "$@"; }
+
+MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"
+[ -n "$MON" ] && H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1
+sleep 3
+
+RPID="$(pgrep -f "$RUN/bin/ryogami daemon" | head -1)"
+DPID="$(pgrep -f "$RUN/bin/mei-shell daemon" | head -1)"
+note "ryogami pid=$RPID  daemon pid=$DPID  shell pid=$QS"
+
+echo; echo "=== ryogami is running under the guard ==="
+if [ -n "$RPID" ]; then
+  ok "ryogami running (pid $RPID)"
+  grep -q "display guard ok" "$RUN/logs/ryogami.log" && ok "ryogami logged the display guard: $(grep 'display guard ok' "$RUN/logs/ryogami.log" | tail -1)" || bad "no display-guard line in ryogami.log"
+  grep -q "listening on $RT/ryogami.sock" "$RUN/logs/ryogami.log" && ok "ryogami listens on the nested runtime socket" || bad "ryogami socket path unexpected"
+else
+  bad "ryogami is not running"
+fi
+[ -S "$RT/ryogami.sock" ] && ok "nest runtime holds ryogami.sock" || bad "no ryogami.sock in $RT"
+
+echo; echo "=== matugen config is Mei's minimal one ==="
+CFG="$RUN/config/mei/matugen/config.toml"
+if [ -f "$CFG" ]; then
+  if grep -qE '^[[:space:]]*(output_path|input_path|post_hook)[[:space:]]*=' "$CFG" || grep -qE '^[[:space:]]*\[templates\.' "$CFG"; then
+    bad "config carries templates or a post_hook:"; cat "$CFG"
+  else
+    ok "config renders nothing: no [templates.*], no post_hook ($CFG)"
+  fi
+  if grep -q '^\[config\]' "$CFG" && grep -q '^\[templates\]' "$CFG"; then
+    ok "config is the minimal valid form ([config] + empty [templates]; matugen 4.2.0 requires the templates key)"
+  else
+    bad "config is not the expected minimal form"; cat "$CFG"
+  fi
+else
+  bad "no matugen config at $CFG"
+fi
+
+echo; echo "=== BEFORE the first wallpaper ==="
+shot 01-before
+COL0="$(sha256sum "$RUN/home/.cache/mei/colors.json" 2>/dev/null | awk '{print $1}')"
+note "colors.json before: ${COL0:-absent}"
+WAVG0="$(magick "$RUN/shots/step5-01-before.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+note "wallpaper area mean colour before: ${WAVG0}"
+
+echo; echo "=== OUTBOUND CHECK (stills, before any change) ==="
+sleep 2
+for p in "$RPID" "$DPID" "$QS"; do
+  [ -n "$p" ] || continue
+  ss -tunp 2>/dev/null | grep -qE "pid=$p," && { bad "pid $p owns a tcp/udp socket:"; ss -tunp | grep -E "pid=$p,"; } || ok "pid $p owns no tcp/udp socket"
+done
+
+echo; echo "=== SET 1: warm still ==="
+"$MEI/mei" wallpaper "$RUN/wall/wall-1-warm.jpg" || bad "wallpaper set 1 failed (./mei wallpaper)"
+sleep 0.15; shot 02-set1-reveal-015
+sleep 0.60; shot 03-set1-reveal-060
+sleep 1.60; shot 04-set1-settled
+sleep 1.0
+python3 - "$RUN/home/.cache/mei/colors.json" "$RUN/home/.cache/mei/tones.json" <<'PY' && ok "palette regenerated on set 1" || bad "palette missing/invalid on set 1"
+import json,sys
+c=json.load(open(sys.argv[1])); t=json.load(open(sys.argv[2]))
+assert isinstance(c,dict) and len(c)>8, "colors too small"
+assert isinstance(t,dict) and len(t)>3, "tones too small"
+print("  primary:", (c.get("primary") or {}).get("hex") if isinstance(c.get("primary"),dict) else c.get("primary"))
+print("  background:", (c.get("background") or {}).get("hex") if isinstance(c.get("background"),dict) else c.get("background"))
+PY
+COL1="$(sha256sum "$RUN/home/.cache/mei/colors.json" | awk '{print $1}')"
+note "colors.json after set 1: $COL1"
+[ -n "$COL0" ] && [ "$COL0" != "$COL1" ] && ok "colors.json changed on the first palette" || note "colors.json was absent before (first palette)"
+
+echo; echo "=== bar + launcher recolour (pixel evidence) ==="
+grim -o "${WDISP^^}" "$RUN/shots/step5-bar-after1.png" 2>/dev/null
+magick "$RUN/shots/step5-bar-after1.png" -crop 1180x36+0+0 +repage "$RUN/shots/step5-bar-after1-crop.png" 2>/dev/null
+BAR1="$(sha256sum "$RUN/shots/step5-bar-after1-crop.png" | awk '{print $1}')"
+BARAVG1="$(magick "$RUN/shots/step5-bar-after1-crop.png" -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+note "bar strip mean colour / hash after set 1: ${BARAVG1} / ${BAR1:0:12}"
+H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
+grim -o "${WDISP^^}" "$RUN/shots/step5-launcher-p1.png" 2>/dev/null && note "shot: step5-launcher-p1.png"
+LACC1="$(magick "$RUN/shots/step5-launcher-p1.png" -crop 40x12+540+430 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+note "launcher accent dot under set 1: ${LACC1}"
+H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1
+
+echo; echo "=== SET 2: purple still (recolour again) ==="
+"$MEI/mei" wallpaper "$RUN/wall/wall-3-purple.jpg" || bad "wallpaper set 2 failed"
+sleep 2.5
+shot 05-set2-settled
+COL2="$(sha256sum "$RUN/home/.cache/mei/colors.json" | awk '{print $1}')"
+note "colors.json after set 2: $COL2"
+[ "$COL1" != "$COL2" ] && ok "palette changed again on the second wallpaper" || bad "palette did not change on the second wallpaper"
+grim -o "${WDISP^^}" "$RUN/shots/step5-bar-after2.png" 2>/dev/null
+magick "$RUN/shots/step5-bar-after2.png" -crop 1180x36+0+0 +repage "$RUN/shots/step5-bar-after2-crop.png" 2>/dev/null
+BAR2="$(sha256sum "$RUN/shots/step5-bar-after2-crop.png" | awk '{print $1}')"
+BARAVG2="$(magick "$RUN/shots/step5-bar-after2-crop.png" -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+note "bar strip mean colour / hash after set 2: ${BARAVG2} / ${BAR2:0:12}"
+[ "$BAR1" != "$BAR2" ] && ok "bar strip pixels differ between the two palettes (${BARAVG1} -> ${BARAVG2})" || bad "bar strip did not recolour"
+H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
+grim -o "${WDISP^^}" "$RUN/shots/step5-launcher-p2.png" 2>/dev/null && note "shot: step5-launcher-p2.png"
+LACC2="$(magick "$RUN/shots/step5-launcher-p2.png" -crop 40x12+540+430 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+[ -n "$LACC1" ] && [ "$LACC1" != "$LACC2" ] && ok "launcher accent recoloured with the palette (${LACC1} -> ${LACC2})" || bad "launcher accent did not recolour (${LACC1:-?} -> ${LACC2:-?})"
+H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1
+
+WAVG1="$(magick "$RUN/shots/step5-04-set1-settled.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+WAVG2="$(magick "$RUN/shots/step5-05-set2-settled.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
+note "wallpaper area mean colour: before ${WAVG0} -> set 1 ${WAVG1} -> set 2 ${WAVG2}"
+if [ -n "$WAVG0" ] && [ -n "$WAVG1" ] && [ -n "$WAVG2" ] && [ "$WAVG0" != "$WAVG1" ] && [ "$WAVG1" != "$WAVG2" ]; then
+  ok "the still wallpaper itself painted and changed on both sets"
+else
+  bad "the wallpaper area did not change as expected"
+fi
+
+echo; echo "=== matugen invocations in the daemon log ==="
+if grep -q 'matugen scheme:' "$RUN/logs/daemon.log"; then ok "scheme generation logged: $(grep 'matugen scheme:' "$RUN/logs/daemon.log" | tail -1 | cut -c1-140)"; else bad "no 'matugen scheme:' line"; fi
+if grep -q "matugen render: matugen -c $CFG" "$RUN/logs/daemon.log"; then ok "render pass logged with Mei's config path: $(grep 'matugen render:' "$RUN/logs/daemon.log" | tail -1 | cut -c1-160)"; else bad "no render line with $CFG"; fi
+
+echo; echo "=== outbound after a palette pass ==="
+sleep 2
+for p in $(pgrep -f "$RUN/bin/ryogami daemon") $(pgrep -f "$RUN/bin/mei-shell daemon") "$QS"; do
+  [ -n "$p" ] || continue
+  ss -tunp 2>/dev/null | grep -qE "pid=$p," && { bad "pid $p owns a tcp/udp socket after the palette:"; ss -tunp | grep -E "pid=$p,"; } || ok "pid $p still owns no tcp/udp socket"
+done
+
+echo; echo "=== ryogami resource use ==="
+if [ -n "$RPID" ] && [ -r "/proc/$RPID/status" ]; then
+  note "ryogami $(grep -E '^(VmRSS|VmHWM|Threads):' "/proc/$RPID/status" | tr '\n' ' ')"
+  ps -o pid,rss,%cpu,etime,cmd -p "$RPID" | tail -1
+fi
+
+echo; echo "=== SHUTDOWN ==="
+"$MEI/mei" stop || true
+sleep 2
+# comm-based so a shell whose *command line* merely mentions these paths is not
+# mistaken for a stray; Quickshell is matched only when its cmdline names Mei.
+stray=""
+for n in ryogami matugen mei-shell mei-hub; do
+  p="$(pgrep -x "$n" 2>/dev/null | tr '\n' ',' || true)"
+  [ -n "$p" ] && stray="$stray $n=$p"
+done
+for p in $(pgrep -x quickshell 2>/dev/null || true); do
+  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI/src/ryoku"; then stray="$stray quickshell=$p"; fi
+done
+[ -z "$stray" ] && ok "clean shutdown: no stray ryogami / matugen / mei-shell / project quickshell" || bad "stray:$stray"
+
+echo; echo "=== REAL-PATH HASHES AFTER ==="
+hash_real | tee "$RUN/step5-real-after.txt"
+if diff -u "$RUN/step5-real-before.txt" "$RUN/step5-real-after.txt" >/dev/null; then ok "real ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0}, ~/.cache/ryoku, ~/.cache/matugen unchanged"; else bad "a real path changed:"; diff -u "$RUN/step5-real-before.txt" "$RUN/step5-real-after.txt"; fi
+
+echo; echo "=== verify-untouched AFTER ==="
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
+
+echo; echo "RESULT: $([ "$fail" = 0 ] && echo PASS || echo FAIL)"
+echo "log: $LOG"
+exit "$fail"

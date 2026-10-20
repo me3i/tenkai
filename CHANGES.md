@@ -162,7 +162,7 @@ the committed step-5 state had zero clean runs. Now it has two.
 ## Phase 6 — step 5: wallpaper + matugen theming
 
 Scope: ryogami stills-only, the wallpaper -> palette path, Mei's minimal matugen config, and
-removal of every app-theming fan-out. Verified: `.run/tools/step5.sh` ->
+removal of every app-theming fan-out. Verified: `docs/tests/step5.sh` ->
 `.run/logs/step5-025738.log` (PASS) and the final run (PASS with the wallpaper/launcher
 assertions). Screenshots in `.run/shots/step5-*.png`.
 
@@ -258,7 +258,7 @@ assertions). Screenshots in `.run/shots/step5-*.png`.
 ## Phase 6 — step 4 amendments (owner decisions 2026-10-20)
 
 Three follow-ups the owner asked for before approving step 5. Verified with
-`.run/tools/step4b.sh` → `.run/logs/step4b-022341.log` (PASS) and the screenshot
+`docs/tests/step4b.sh` → `.run/logs/step4b-022341.log` (PASS) and the screenshot
 `.run/shots/step4b-hub-generic-general.png`, `.run/shots/step4b2-launcher-open.png`.
 
 ### 1. The daemon can no longer reach the network (compiled out)
@@ -478,7 +478,7 @@ off-list providers are **disabled, not deleted**.
   owner's real `~/.local/share` (+ flatpak export) and the system dirs, so the launcher lists
   the same `.desktop` files as the live session; writes still go to the fake `XDG_DATA_HOME`.
   The nested config gains `bind = SUPER, SPACE, global, ryoku:launcher`.
-- Test harness only (git-ignored, `.run/tools/`): `vkbd` (a `zwp_virtual_keyboard_v1` client)
+- Test harness only (versioned in `docs/tests/`): `vkbd` (a `zwp_virtual_keyboard_v1` client)
   and `launcher-check.sh`, so real keystrokes drive the launcher search field in the nested
   session.
 
