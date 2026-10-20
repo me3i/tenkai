@@ -14,7 +14,7 @@ import (
 func TestCurrentSchemeReportsFollow(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	tp := filepath.Join(dir, "ryoku", "theme.json")
+	tp := filepath.Join(dir, "mei", "theme.json")
 	if err := os.MkdirAll(filepath.Dir(tp), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -53,6 +53,7 @@ func TestSchemeFollowRoundTrips(t *testing.T) {
 }
 
 func TestApplyRyokuThemeUsesRyokuFrameBarLook(t *testing.T) {
+	t.Skip("Mei ships qsbar; the ryoku-frame bar look is disabled")
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))

@@ -309,7 +309,7 @@ func TestStateDefaultsToOffAndSurvivesGarbage(t *testing.T) {
 		t.Fatalf("round trip lost settings: %+v", got.Devices["Board#SN1"])
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "ryoku", "lighting.json"), []byte("{{{"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "mei", "lighting.json"), []byte("{{{"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if st := loadLighting(); st.Enabled || len(st.Devices) != 0 {
@@ -471,10 +471,10 @@ func TestStateReportDoesNotTouchHardware(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", dir)
 	t.Setenv("PATH", dir)
 
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "ryoku", "hypr-colors.lua"),
+	if err := os.WriteFile(filepath.Join(dir, "mei", "hypr-colors.lua"),
 		[]byte("return {\n    active = \"#dec2a2\",\n}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
