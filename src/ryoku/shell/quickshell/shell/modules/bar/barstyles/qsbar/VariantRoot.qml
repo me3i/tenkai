@@ -279,6 +279,15 @@ Item {
             else controlCenter.open(route)
         }
         function layout(): string { return JSON.stringify(theme.barLayout) }
+        // What the bar's workspace widget sees (Wm is the same singleton the
+        // widget binds to), so a harness can compare it with hyprctl.
+        function workspaceState(): string {
+            const ws = Wm.workspaces || []
+            return JSON.stringify({
+                focused: Wm.focusedWorkspace ? Wm.focusedWorkspace.name : "",
+                names: ws.filter(w => !w.special).map(w => w.name)
+            })
+        }
 
         // Notification flyout + DND, for keybinds and nested harnesses. These
         // call the same entry points the widget and the panel's buttons call, so
