@@ -511,3 +511,41 @@ and asked for the test harnesses to leave the git-ignored `.run/tools`.
 | sumi/kairos in Settings | TESTED: `BarStudioPage.qml:335` BAR STYLE card `visible: false`, its ryostore `Process` `running: false` at `:86` |
 | status page | `docs/STATUS.md` (one screen) |
 | verify-untouched | PASS before and after |
+
+## Phase 8 — module switchboard (2026-10-20)
+
+Owner asked for one central config with an enable flag per module, each toggle proved on and
+off, missing dependencies degraded, and `docs/MODULES.md`. Reused the existing architecture:
+the daemon already had a per-component gate and the settings store already owned shell.json.
+
+| Change | Where |
+|---|---|
+| `modules` map in shell.json (defaults all true, missing key = on) | `services/Config.qml:46-47,208` (QML), `ipc/settings.go:106-109,276` (daemon/Hub schema) |
+| QML gates | bar `shell.qml:249`; launcher `:297`; surface command map `:467-485`; IPC `openSurface` `:751`; `bar()` `:775`; notifications `Notifs.qml:233-236` |
+| daemon gates | `moduleDisabled` `daemon.go:91`; `surfaceModule` `:114`; tray bootstrap `:478`; dispatch `:1067`; hub `:1244` |
+| wallpaper | ryogami is started by the session script, so `mei:588` skips it when the flag is false |
+| motion selection | reads the **existing** `theme.motion` block (`Motion.qml:15,21` via `Config.qml:54`); no new motion key |
+| theme selection | the **existing** `theme.theme` / `theme.matugen.*` in shell.json; the settings store already re-themes on save (`settings.go:1106`) |
+
+No default behaviour was changed: `theme.theme` stays `"Default"` (orange accents),
+`matugen.mode` stays `"Dark"`, motion stays `{1,false}`, and no wallpaper is seeded or forced.
+An earlier attempt to force `defaultMatugenKnobs().Mode = "dark"` was **reverted** — the
+shipped schema already defaults to Dark + Default, so forcing it changed a default that was
+already correct.
+
+Loop (one nested session per scenario; `docs/tests/phase8.sh`):
+
+| Run | Result | What it exposed |
+|---|---|---|
+| 1 | FAIL | four harness defects: assertions ran before the wallpaper's first paint; `busctl` prints `-` for an unowned name; direct `mei-shell` calls were refused by the fake-HOME guard; brightness error text comes from the CLI wrapper |
+| 2 | FAIL | one scenario still caught the wallpaper mid-fade (settle accepted a mean of 0.066) |
+| 3 | PASS | added a "painted + still" settle and a fake-HOME env for CLI calls |
+
+Semantics measured in S10: `launcher=false` applies live (the open surface is torn down);
+`tray=false` needs a restart (the watcher stays claimed). The rest of the table is in
+`docs/MODULES.md`.
+
+Anti-bloat note: no plugin framework, no second config file, no extra process. The switchboard
+is two functions (`moduleOn`, `moduleDisabled`) plus the loaders that already existed. The one
+new schema field (`modules`) also round-trips through the daemon/Hub settings store so a Settings
+save cannot drop it.

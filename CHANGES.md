@@ -3,6 +3,26 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 8 — module switchboard
+
+One central `modules` map in `shell.json`, read by both halves of the shell. Defaults are all
+`true`; a missing key means ON. No default look changed: `theme.theme` stays `Default` (orange),
+`matugen.mode` stays `Dark`, motion stays `{1,false}`.
+
+| File | Change |
+|---|---|
+| `.../shell/services/Config.qml` | `modules` alias + `moduleOn(name)` + defaults; `theme` alias (the existing shell.json theme/motion block) replacing a proposed top-level motion key |
+| `.../shell/services/Motion.qml` | `theme.motion.reduce` / `.scale` folded into the existing Perf-driven values |
+| `.../shell/services/Notifs.qml` | `NotificationServer` now lives in a `Loader` gated on `modules.notifications` (the type has no `enabled` property; instantiating it claims the name) |
+| `.../shell/shell.qml` | bar in a `LazyLoader`; launcher loader gated; `surfaceModule`/`surfaceModuleId` gate `toggleSurface`/`openSurface`/`bar()` |
+| `ipc/daemon.go` | `moduleDisabled`, `surfaceModule`, tray bootstrap gate, dispatch gate, hub gate |
+| `ipc/settings.go` | `Modules` field in the settings schema + all-true defaults, so the store round-trips the map |
+| `mei` | session template consults `modules.wallpaper` before starting ryogami |
+| `docs/MODULES.md`, `docs/tests/phase8.sh` | usage doc (schema, read sites, restart semantics, widget/theme worked examples) and the toggle harness |
+
+Deviations from upstream: `modules` is a Mei-only key; upstream's `performance.json`
+`disabledComponents` path is untouched and still governs the legacy per-component list.
+
 ## Phase 7 — step 7: system tray (qsbar)
 
 One watcher host (`src/ryoku/shell/ipc/tray.go`); the bar draws the icons and
