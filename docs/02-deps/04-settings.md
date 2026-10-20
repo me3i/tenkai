@@ -6,7 +6,7 @@ it. Mei keeps the Hub **look and UI framework** but only the pages that edit
 config is removed, and the Hyprland write path is severed so Settings never
 writes or generates Hyprland config.
 
-- Upstream root (read-only): `/home/mei/projects/mei/upstream`. All paths below
+- Upstream root (read-only): `$HOME/projects/mei/upstream`. All paths below
   are relative to `upstream/ryoku/` unless a fuller path is given.
 - Labels: **[READ]** = read from source, not executed. **[UNVERIFIED]** =
   inferred, not proven by a run. **[TESTED]** = proven by an executed test; the

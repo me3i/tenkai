@@ -13,7 +13,7 @@ import sys
 import time
 from datetime import datetime
 
-MEI = "/home/mei/projects/mei"
+MEI = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RUN = os.path.join(MEI, ".run")
 PIDFILE = os.path.join(RUN, "live-pids")
 STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")

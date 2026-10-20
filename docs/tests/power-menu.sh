@@ -6,7 +6,7 @@
 # MEI_STUB_POWER=1 (the first live trial) both suppress every action, and the
 # test asserts that no systemctl power command ran.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"

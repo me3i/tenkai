@@ -1,7 +1,7 @@
 # 02 — Launcher and control sidebar
 
 Source: Ryoku v0.75.5-beta.20 @ `98a0368`, read-only sparse checkout
-`/home/mei/projects/mei/upstream`. Everything below is cited to `file:line`.
+`$HOME/projects/mei/upstream`. Everything below is cited to `file:line`.
 Because this phase only *read* the tree (no build, no run), every claim is
 `[READ]` unless noted `[UNVERIFIED]` (an off-disk helper's internals, or a
 runtime behaviour a static read cannot prove). There are no `[TESTED]` claims in

@@ -5,3 +5,12 @@
 # Read-only upstream clone (pinned commit recorded in UPSTREAM.md); never edited, not tracked
 upstream/
 .r
+
+# The owner's local setup: the previous shell's commands, the private audit and
+# the scrub terms. Never tracked: the public repo must not name them.
+.local/
+
+# The captured baseline of the live session: a process list and the D-Bus names
+# it owns. That is the owner's own setup, so it is not in the public repo.
+docs/baseline/
+docs/baseline.txt

@@ -19,40 +19,40 @@ Never do stage 2 before stage 1 is clean.
 
 Read-only investigation, 2026-10-20, no changes made.
 
-**How your live Quickshell (PID 949) starts:**
+**How your live Quickshell starts:**
 
 ```
-quickshell -p /home/mei/.local/share/serpantinum/src/quickshell/Shell.qml
+quickshell -p $HOME/.local/share/the previous shell/src/quickshell/Shell.qml
 ```
 
 Its process chain is:
 
 ```
 846  Hyprland --watchdog-fd 4                 <- the live compositor
-910    bash /usr/local/bin/serpantinumd start <- started by the autostart
-949      quickshell -p .../serpantinum/src/quickshell/Shell.qml
+910    bash /usr/local/bin/<your previous shell's start command> <- started by the autostart
+949      quickshell -p .../the previous shell/src/quickshell/Shell.qml
 ```
 
 The autostart line lives in your own Hyprland config:
 
 ```lua
 -- ~/.config/hypr/config/autostart.lua:5
-hl.exec_cmd("serpantinumd start")
+hl.exec_cmd("<your previous shell's start command>")
 ```
 
 **What your live shell owns that Mei would collide with** (owner in brackets):
 
 | what | owner | notes |
 |---|---|---|
-| `org.freedesktop.Notifications` | PID 949 (quickshell) | the notification daemon — **Mei would take this name in the full profile** |
-| `org.kde.StatusNotifierWatcher` | PID 949 (quickshell) | the tray watcher — **Mei would take this name in the full profile** |
-| `org.kde.StatusNotifierHost-949-1792407549521` | PID 949 | its own SNI host; app-owned, ignored |
-| layer surface `wallpaper-bg` (1920x1080) | PID 949 | your wallpaper |
-| layer surface `quickshell` (1912x40 at 4,4) | PID 949 | your bar, at the top edge |
-| layer surface `qs-floating-overlay` (1920x1080) | PID 949 | your full-screen transparent overlay |
+| `org.freedesktop.Notifications` | your live shell | the notification daemon — **Mei would take this name in the full profile** |
+| `org.kde.StatusNotifierWatcher` | your live shell | the tray watcher — **Mei would take this name in the full profile** |
+| `org.kde.StatusNotifierHost-<your shell>` | your live shell | its own SNI host; app-owned, ignored |
+| layer surface `wallpaper-bg` (1920x1080) | your live shell | your wallpaper |
+| layer surface `quickshell` (the bar, at the top edge) | your live shell | your bar, at the top edge |
+| layer surface `qs-floating-overlay` (1920x1080) | your live shell | your full-screen transparent overlay |
 | global shortcuts over the protocol | **none** | `hyprctl globalshortcuts` says "none", so Mei's `ryoku:*` names are free |
-| 671 key binds | your Hyprland config | all of them dispatch to your own shell (`serpantinum ...`) |
-| your wallpaper | PID 949 (it draws the layer itself) | no hyprpaper/swww is running |
+| 671 key binds | your Hyprland config | all of them dispatch to your own shell (`the previous shell ...`) |
+| your wallpaper | your live shell (it draws the layer itself) | no hyprpaper/swww is running |
 
 Mei's overlay profile claims **none** of the names above: its D-Bus names, its
 screen edge and its wallpaper are all off, and its layer namespaces
@@ -66,7 +66,7 @@ wrote the backlight):
 
 ```lua
 -- ~/.config/hypr/config/keybinds.lua:26
-hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("serpantinum brightness lower"), { locked = true })
+hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("the previous shell brightness lower"), { locked = true })
 ```
 
 ---
@@ -76,23 +76,23 @@ hl.bind("XF86MonBrightnessDown", hl.dsp.exec_cmd("serpantinum brightness lower")
 **Stop your current shell:**
 
 ```bash
-serpantinumd stop
+<your previous shell's stop command>
 ```
 
-*Copied from `/usr/local/bin/serpantinumd` (its `stop` verb), which your
-autostart line `hl.exec_cmd("serpantinumd start")` starts. Not yet run by the
+*Copied from `/usr/local/bin/<your previous shell>` (its `stop` verb), which your
+autostart line `hl.exec_cmd("<your previous shell's start command>")` starts. Not yet run by the
 agent — check that it reads as the command you expect before you use it.*
 
 **Bring it back:**
 
 ```bash
-serpantinumd start
+<your previous shell's start command>
 ```
 
 *Copied from your own autostart line in `~/.config/hypr/config/autostart.lua:5`.
 Not yet run by the agent.*
 
-If `serpantinumd stop` leaves anything behind, `serpantinumd status` tells you
+If `<your previous shell's stop command>` leaves anything behind, `<your previous shell> status` tells you
 what it thinks is running.
 
 ---
@@ -172,7 +172,7 @@ the point: it will not fight your running shell for the same names.
 So the order is:
 
 ```bash
-serpantinumd stop          # your shell's own stop command
+<your previous shell's stop command>          # your shell's own stop command
 cd ~/projects/mei
 ./mei live --profile full  # prints what it will do, then waits for YES
 ```
@@ -199,7 +199,7 @@ session's own runtime, nothing in your config files):
 
 ### Stage 2 checklist (long)
 
-- [ ] `serpantinumd stop` stops your old shell; your bar and wallpaper are
+- [ ] `<your previous shell's stop command>` stops your old shell; your bar and wallpaper are
       gone (that is expected — Mei draws its own now).
 - [ ] `./mei live --profile full` refuses while the old names are owned, and
       starts after you type YES.
@@ -220,8 +220,8 @@ session's own runtime, nothing in your config files):
       your real hardware.
 - [ ] **Notifications**: a real notification arrives (from any app) and looks
       right; the actions on it work.
-- [ ] **Tray**: icons appear for your real apps, including **ProtonVPN** and
-      **Steam**; the menus open and close.
+- [ ] **Tray**: icons appear for your real apps, including **your VPN app** and
+      **a game launcher**; the menus open and close.
 - [ ] **Wallpaper**: setting one reveals it smoothly; the colours re-theme
       (matugen) without a flash or a black screen.
 - [ ] **Lock** only: the lock action works. Do **not** try logout, reboot or
@@ -230,7 +230,7 @@ session's own runtime, nothing in your config files):
       one action that stays real.
 - [ ] `live-monitor-*.log` shows the CPU and RSS; compare them with the
       nested numbers below.
-- [ ] `./mei live-stop` stops Mei; then `serpantinumd start` brings your old
+- [ ] `./mei live-stop` stops Mei; then `<your previous shell's start command>` brings your old
       shell back and everything is as it was.
 
 ---
@@ -243,7 +243,7 @@ session's own runtime, nothing in your config files):
 3. Restore one of:
    ```bash
    cd ~/projects/mei && ./mei live-stop     # stop Mei
-   serpantinumd start                       # bring your old shell back
+   <your previous shell's start command>                       # bring your old shell back
    ```
 4. If the console is unusable, reboot: `systemctl reboot`.
 
@@ -278,7 +278,7 @@ The live monitor writes a line every 5 s:
 ## 7. What is still unproven
 
 - 144 Hz smoothness and animation feel (your eyes only).
-- The real tray glyphs and menus of ProtonVPN and Steam.
+- The real tray glyphs and menus of your VPN app and a game launcher.
 - Real audio hardware writes and the brightness slider on the real panel.
 - The wallpaper reveal and re-colour on the real display.
 - Whether the bar fits your real 1920x1080 panel.

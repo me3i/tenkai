@@ -7,7 +7,7 @@
 # are switched off for the test (the clipboard is the host's, and a
 # notification would be the owner's), and both are on the live checklist.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"

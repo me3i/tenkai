@@ -10,7 +10,7 @@
 #  - dismiss / clear work; no notification state outside the fake HOME
 #  - no outbound; clean stop
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"
 RT="$MEI/.r"
 SHELL_DIR="$MEI/src/ryoku/shell/quickshell/shell"
@@ -27,9 +27,9 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 
-REAL_DIRS=(/home/mei/.config/kitty /home/mei/.config/btop /home/mei/.config/qt6ct \
-           /home/mei/.config/gtk-3.0 /home/mei/.config/gtk-4.0 \
-           /home/mei/.cache/ryoku /home/mei/.cache/matugen)
+REAL_DIRS=($HOME/.config/kitty $HOME/.config/btop $HOME/.config/qt6ct \
+           $HOME/.config/gtk-3.0 $HOME/.config/gtk-4.0 \
+           $HOME/.cache/ryoku $HOME/.cache/matugen)
 hash_real() {
   for d in "${REAL_DIRS[@]}"; do
     if [ -e "$d" ]; then
@@ -260,8 +260,8 @@ if find "$RUN/home" -name 'qs-rise-notifications*' 2>/dev/null | grep -q .; then
 else
   ok "no qs-rise-notifications file anywhere under the fake HOME"
 fi
-found_real="$(find /home/mei/.cache /home/mei/.local/state /home/mei/.local/share /home/mei/.config \
-  -mindepth 1 -maxdepth 3 2>/dev/null | sed 's|^/home/mei/||' | grep -iE '(^|/)(mei|ryoku|ryogami)([._-]|$)' || true)"
+found_real="$(find $HOME/.cache $HOME/.local/state $HOME/.local/share $HOME/.config \
+  -mindepth 1 -maxdepth 3 2>/dev/null | sed 's|^$HOME/||' | grep -iE '(^|/)(mei|ryoku|ryogami)([._-]|$)' || true)"
 [ -z "$found_real" ] && ok "no mei/ryoku/ryogami entry appeared outside the project" || { bad "new entries outside the project:"; printf '            %s\n' "$found_real"; }
 
 echo; echo "=== OUTBOUND ==="

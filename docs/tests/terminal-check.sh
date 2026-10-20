@@ -8,7 +8,7 @@
 #  - a Terminal=true launcher entry (htop) launches through the same chain
 #  - an unknown role fails cleanly
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 STAMP="$(date +%H%M%S)"
 LOG="$RUN/logs/terminal-check-$STAMP.log"
@@ -20,7 +20,7 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 H() {
-  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null

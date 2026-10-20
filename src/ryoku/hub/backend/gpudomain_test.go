@@ -133,7 +133,7 @@ func sampleSpec(windows bool) vmSpec {
 		Domain:     "ryoku-win11",
 		MemMB:      16384,
 		Pin:        buildPinPlan([][]int{{0, 1}, {2, 3}, {4, 5}, {6, 7}}, 0),
-		Disk:       "/home/nero/.local/share/ryoku/vm/win11/disk.qcow2",
+		Disk:       "/home/testuser/.local/share/ryoku/vm/win11/disk.qcow2",
 		InstallISO: "/tmp/win11.iso",
 		VirtioISO:  "/usr/share/virtio-win/virtio-win.iso",
 		GPU:        GPU{Slot: "0000:01:00.0", Functions: []string{"0000:01:00.0", "0000:01:00.1"}},

@@ -7,7 +7,7 @@
 #
 # Evidence: this log plus .run/shots/phase8-*.png.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 CFG="$RUN/config/mei/shell.json"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
@@ -25,7 +25,7 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 H() {
-  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null

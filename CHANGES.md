@@ -3,14 +3,15 @@
 ## Baseline PID update (kitty restart, 2026-10-20)
 
 The owner restarted their terminal during Phase 10A, so the live kitty is a new
-process (1505210, parent = live Hyprland 846) instead of the recorded 1912. The
-kitty **config hash is unchanged** (`9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145`,
+process (a new one, parent = the live compositor) instead of the recorded one. The
+kitty **config hash is unchanged** (`<the kitty config hash>`,
 the watched `~/.config/kitty` tree), the live D-Bus owners (`Notifications`,
-`StatusNotifierWatcher`) are still PID 949, and `./mei verify-untouched` passes.
+`StatusNotifierWatcher`) are still owned by the same live process, and
+`./mei verify-untouched` passes.
 
 Only the kitty lines in `docs/baseline/ps-full.txt` and the two kitty connection
-ids in `docs/baseline/dbus-names.txt` were updated (1912/1924/1926/1927 ->
-1505210/1505223/1505225/1505235, `:1.29`/`:1.30` -> `:1.1815`/`:1.1816`). Nothing
+ids in the local baseline capture were updated to the new process and its
+connections. Nothing
 else in the baseline was re-captured, so the leak-detection reference stays as
 strict as it was: kitty is not part of the compared session-process set and its
 connection ids are ignored by the D-Bus watch filter.
@@ -80,9 +81,9 @@ profile sets it.
    new `run` role (`mei-app run -- <program> [args...]`) for the app-search
    path, which used to `Spawn.run` the desktop entry directly and therefore
    handed the app Mei's fake HOME. That was measured live: a kitty opened from
-   Mei's search had `HOME=/home/mei/projects/mei/.run/home` (a blank profile
-   for any real app), and now has `HOME=/home/mei`,
-   `XDG_CONFIG_HOME=/home/mei/.config`. The nested session is unchanged: the
+   Mei's search had `HOME=$HOME/projects/mei/.run/home` (a blank profile
+   for any real app), and now has `HOME=$HOME`,
+   `XDG_CONFIG_HOME=$HOME/.config`. The nested session is unchanged: the
    launcher's app still gets the fake home there
    (`docs/tests/launcher-check.sh`: "app HOME = fake home").
 2. **No power action may end the owner's session by accident in the first
@@ -255,7 +256,7 @@ both `RESULT: PASS`, 32 `TESTED`, 0 `FAIL`.
 | Test | Result |
 |---|---|
 | one watcher host | TESTED: no QML names it; `tray.go` declares it; daemon exposes the `tray.*` verbs |
-| live bus before / after | TESTED: owner pid 949 unchanged; nested bus address differs |
+| live bus before / after | TESTED: the live owner is unchanged; the nested bus address differs |
 | nested owner | TESTED: Mei's daemon pid, different from 949 |
 | icon appears / size | TESTED: auto-pinned; 24 px pixmap drawn in a `14x14` box (`14x14+122+13`); theme ink `7x11` |
 | left click | TESTED: SNI `Activate` delivered |
@@ -303,7 +304,7 @@ Two consecutive clean runs on the committed tree: `.run/logs/step6-050659.log` a
 | one server | TESTED: `grep -rn NotificationServer src/` -> `services/Notifs.qml:230` only |
 | cache writer removed | TESTED: no `qs-rise-notifications.json` anywhere under the fake HOME |
 | nested bus owner | TESTED: Mei shell pid owns `org.freedesktop.Notifications` on the private bus |
-| live bus untouched | TESTED: live owner still pid 949 before and after (`docs/baseline/dbus-watched.tsv`) |
+| live bus untouched | TESTED: the live owner is the same before and after (the local baseline capture) |
 | capabilities | TESTED: `body`, `actions`, `icon-static` |
 | popup / urgency x3 / long body | TESTED arrive; appearance UNVERIFIED |
 | flyout, dismiss, clear | TESTED: 4 -> 3 on dismiss; clear emptied history and closed popups |
@@ -355,7 +356,7 @@ INFO (cleanup is allowed).
 
 Deviation from the literal instruction, with evidence: a bare substring match is unusable on this
 host — it flags `~/.config/google-chrome/MEIPreload` (Chrome DRM), `~/.cache/fish/namei.fish`,
-`~/.local/share/Steam/friends/GameInviteNotification.res` and
+`~/.local/share/a game launcher/friends/GameInviteNotification.res` and
 `~/.local/share/applications/mimeinfo.cache`. Verified that the anchored rule still catches both
 real incident paths (`~/.cache/ryogami`, `~/.local/state/mei-wallpaper`), and that creating
 `~/.cache/ryogami` flips the check to FAIL and removing it flips it back to PASS.
@@ -385,7 +386,7 @@ assertions). Screenshots in `.run/shots/step5-*.png`.
 
 - `src/ryoku/shell/ryogami/daemon/` copied from `upstream/ryoku/shell/ryogami/daemon`
   (536 KB, vendor included) and built to `.run/bin/ryogami`.
-- **`ryogami/wall-ui/` is NOT copied** (114 files). The picker shell brings Wallhaven/Steam
+- **`ryogami/wall-ui/` is NOT copied** (114 files). The picker shell brings Wallhaven/a game launcher
   browser services (outbound) and upstream's `pkill -f "quickshell .*<qml>"` launch path; it
   needs its own pruned step. Its `ui` verb is refused instead (below).
 

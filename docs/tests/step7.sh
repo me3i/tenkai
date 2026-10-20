@@ -8,7 +8,7 @@
 #  - removing an item drops its icon
 #  - no outbound, clean stop, no strays, verify-untouched at both ends
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
@@ -58,7 +58,7 @@ export WAYLAND_DISPLAY="$WDISP"
 BSIG="$(sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$MEI/docs/baseline/env.txt" | head -1)"
 [ "$SIG" != "$BSIG" ] && ok "nested Hyprland signature differs from the live baseline" || { bad "nested signature equals the baseline"; "$MEI/mei" stop; exit 1; }
 H() {
-  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null

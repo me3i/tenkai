@@ -7,7 +7,7 @@
 # visible OSD (the popups themselves) is on the live checklist, because
 # flashing one needs a real brightness or volume change.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"

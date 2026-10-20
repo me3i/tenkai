@@ -911,7 +911,7 @@ func TestRehydrateReloadCoverAsset(t *testing.T) {
 	}
 
 	// foreign absolute path that does not resolve on this box: dropped.
-	bm = map[string]any{"reloadCover": map[string]any{"path": "/home/someone-else/.local/share/ryoku/reload-cover/x.gif", "kind": "animated"}}
+	bm = map[string]any{"reloadCover": map[string]any{"path": "/home/testuser/.local/share/ryoku/reload-cover/x.gif", "kind": "animated"}}
 	rehydrateBrandAssets(riceDir, "cov", bm)
 	if _, ok := bm["reloadCover"]; ok {
 		t.Fatalf("dangling absolute cover not dropped: %v", bm)

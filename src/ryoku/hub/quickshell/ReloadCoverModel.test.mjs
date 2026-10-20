@@ -48,9 +48,9 @@ test("filters include lower and uppercase media suffixes", () => {
 
 test("renderer source uses the materialized path unless shell dir is nonempty", () => {
     const materialized = "file:///config/quickshell/reload-cover/ReloadMedia.qml";
-    assert.equal(Model.rendererSource(null, "/config", "/home/nero"), materialized);
-    assert.equal(Model.rendererSource(undefined, "/config", "/home/nero"), materialized);
-    assert.equal(Model.rendererSource("", "/config", "/home/nero"), materialized);
-    assert.equal(Model.rendererSource("/work/ryoku/shell", "/config", "/home/nero"),
+    assert.equal(Model.rendererSource(null, "/config", "/home/testuser"), materialized);
+    assert.equal(Model.rendererSource(undefined, "/config", "/home/testuser"), materialized);
+    assert.equal(Model.rendererSource("", "/config", "/home/testuser"), materialized);
+    assert.equal(Model.rendererSource("/work/ryoku/shell", "/config", "/home/testuser"),
         "file:///work/ryoku/shell/quickshell/reload-cover/ReloadMedia.qml");
 });

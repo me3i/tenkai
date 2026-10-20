@@ -2,13 +2,13 @@
 # Test-only control-sidebar / quick-settings acceptance for the nested session.
 # Lives in docs/tests (versioned). Assumes ./mei run already started the session.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"
 export XDG_RUNTIME_DIR="$MEI/.r"
 export WAYLAND_DISPLAY=wayland-1
 SIG=""
 H() {
-  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null

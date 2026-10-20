@@ -4,7 +4,7 @@
 #   step4.sh          -> run, checks, stop, verify-untouched
 #   KEEP=1 step4.sh   -> run, checks, leave the session up
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"
 RT="$MEI/.r"                 # short symlink to .run/rt (108-byte socket limit)
 RTP=/run/user/1000/pipewire-0
@@ -62,7 +62,7 @@ done
 [ -n "$SIG" ] && ok "nested Hyprland instance ($SIG)" || { bad "no nested instance"; "$MEI/mei" stop; exit 1; }
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 H() {
-  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null

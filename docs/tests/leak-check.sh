@@ -6,7 +6,7 @@
 # compositor and no live process is signalled. The monitor is pointed at a
 # temporary pidfile, never at the real session.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 LIVE_RT="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 LIVE_WL="${WAYLAND_DISPLAY:-wayland-1}"

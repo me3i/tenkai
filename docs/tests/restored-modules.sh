@@ -6,7 +6,7 @@
 # Each harness starts and stops its own nested session and runs
 # verify-untouched itself. The live session is never touched.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"
 STAMP="$(date +%H%M%S)"
 LOG="$RUN/logs/restored-modules-$STAMP.log"

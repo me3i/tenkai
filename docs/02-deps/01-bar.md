@@ -5,7 +5,7 @@ widgets on the Mei keep list: workspaces, clock/date, audio indicator,
 brightness, network, battery, system tray, notifications indicator.
 
 Scope of evidence: read-only trace of the pinned upstream checkout at
-`/home/mei/projects/mei/upstream` (Ryoku v0.75.5-beta.20, commit 98a0368).
+`$HOME/projects/mei/upstream` (Ryoku v0.75.5-beta.20, commit 98a0368).
 Every path below is repo-root-relative; the shell lives under
 `ryoku/shell/quickshell/shell/`. All labels are `[READ]` (I opened the file at
 the cited line) or `[UNVERIFIED]` (an inference not directly proven by a read).

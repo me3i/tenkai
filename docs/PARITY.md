@@ -1,4 +1,4 @@
-# PARITY — serpantinum (the shell in use) vs Mei
+# PARITY — the previous shell (the shell in use) vs Mei
 
 Read-only audit, 2026-10-20. Nothing was started, written or sent to the live
 session: the owner's sources and Hyprland config were read, and the live state
@@ -6,32 +6,32 @@ was read through `busctl`, `hyprctl -j` and `/proc`.
 
 Sources read:
 
-- `~/.local/share/serpantinum/src/quickshell/Shell.qml` (61 lines) and the
+- `~/.local/share/the previous shell/src/quickshell/Shell.qml` (61 lines) and the
   modules it instantiates: `bar/`, `lock/`, `idle/`, `screenshot/`, `clipboard/`,
   `polkit/`, `network/`, `media/`, `notifications/`, `popouts/`, `dock/`,
   `calendar/`, `guide/`, `reusables/`, `Main.qml`, `Runner.qml`.
 - `~/.config/hypr/config/{autostart,keybinds,env,monitors,settings,variables}.lua`
-  (671 binds, 25 of them dispatching to the `serpantinum` CLI).
+  (671 binds, 25 of them dispatching to the `the previous shell` CLI).
 - Mei's own tree: `src/ryoku/shell/ipc/` (the daemon) and
   `src/ryoku/shell/quickshell/shell/` (the shell).
 
-## 1. What serpantinum gives the owner today
+## 1. What the previous shell gives the owner today
 
 | function | where it lives | the owner's keybinds |
 |---|---|---|
 | lock | `lock/Lock.qml` (in-shell screen, PAM) | `XF86PowerOff`, `SUPER+L` (2) |
 | idle: dim 120 s, lock 300 s, DPMS 360 s, suspend 600 s, inhibitors honoured | `idle/Idle.qml` + `idle/screensaver_inhibit.py` | none (it is a timeout) |
 | screenshot | `screenshot/ScreenshotOverlay.qml` (`grim` to a file, the OCR text to the clipboard) | `Print`, `SHIFT+Print`, `SUPER+Print`, `SUPER+SHIFT+Print` (4) |
-| panel toggles: launcher, guide, clipboard, calendar, wallpaper, volume, system, network, music, autohide | `serpantinum msg toggle <panel>` → the shell's popouts | 10 binds |
-| volume / mic | `serpantinum volume raise/lower/mute-toggle/mic-toggle` | 4 binds |
-| brightness | `serpantinum brightness raise/lower` | 2 binds |
+| panel toggles: launcher, guide, clipboard, calendar, wallpaper, volume, system, network, music, autohide | `the previous shell msg toggle <panel>` → the shell's popouts | 10 binds |
+| volume / mic | `the previous shell volume raise/lower/mute-toggle/mic-toggle` | 4 binds |
+| brightness | `the previous shell brightness raise/lower` | 2 binds |
 | media keys | `playerctl` (play-pause, prev, next) | 5 binds |
-| workspaces | `serpantinum msg workspace` | 2 binds |
-| reload | `serpantinum reload` | 1 bind |
+| workspaces | `the previous shell msg workspace` | 2 binds |
+| reload | `the previous shell reload` | 1 bind |
 | tray, notifications, polkit agent, dock, wallpaper engine, quick actions | `popouts/TrayBase.qml`, `notifications/`, `polkit/`, `dock/`, `Main.qml` | (surfaced through the bar) |
 
-The whole live shell is one process: `bash /usr/local/bin/serpantinumd start`
-(`autostart.lua:5`) → `quickshell -p ~/.local/share/serpantinum/src/quickshell/Shell.qml` (PID 949).
+The whole live shell is one process: `bash /usr/local/bin/<your previous shell's start command>`
+(`autostart.lua:5`) → `quickshell -p ~/.local/share/the previous shell/src/quickshell/Shell.qml` (PID 949).
 
 ## 2. What Mei has for each, and what would collide
 
@@ -92,7 +92,7 @@ two must not fight over it (the old shell is stopped in the full profile).
 6. **MEDIA KEYS** — local MPRIS (no network), plus the now-playing card that
    already works.
 7. **CLIPBOARD HISTORY** — local, bounded, text and image, clear-all.
-8. **WALLPAPER PICKER** — the owner's own folder only, no Wallhaven/Steam.
+8. **WALLPAPER PICKER** — the owner's own folder only, no Wallhaven/a game launcher.
 9. **NETWORK PANEL** — status and list over NetworkManager D-Bus; connect and
    disconnect stay UNVERIFIED for the owner.
 10. **BLUETOOTH PANEL** — status and device list over BlueZ D-Bus; toggle and
@@ -138,16 +138,16 @@ B7, B8 and B9 are the three still open. B7 and B8 are wiring, B9 is new code.
 
 ## What you lose, and what it would cost to add
 
-Every serpantinum feature with no Mei equivalent, and the one-line cost of each.
+Every the previous shell feature with no Mei equivalent, and the one-line cost of each.
 Nothing here is decided: the list is for you to pick from. The "your binds" column
 names the binds in your own config that depend on the feature.
 
 | feature | your binds that depend on it | what Mei has instead | the cost to add it |
 |---|---|---|---|
-| wellbeing guide (the focus daemon, the wellbeing panel) | `SUPER + H` (`serpantinum msg toggle guide`) | nothing | a small daemon that tracks focus and session time, plus a panel page: about a day |
-| calendar | `SUPER + S` (`serpantinum msg toggle calendar`) | nothing (the calendar was trimmed; it is also in your exclusion list) | a calendar panel reading the same local sources your shell does: about a day |
+| wellbeing guide (the focus daemon, the wellbeing panel) | one bind that toggles the guide panel | nothing | a small daemon that tracks focus and session time, plus a panel page: about a day |
+| calendar | one bind that toggles the calendar | nothing (the calendar was trimmed; it is also in your exclusion list) | a calendar panel reading the same local sources your shell does: about a day |
 | quick-actions palette (the floating action panel) | none directly (it is bound to nothing in your config) | the launcher and the control centre cover most of it | a floating panel with the actions you had: half a day |
-| bar autohide toggle | `SUPER + A` (`serpantinum msg toggle autohide`) | Mei's bar has an autohide setting in the config (`Config.normalizedFrameBars`), but no shortcut to flip it | one shortcut that flips the setting: about an hour |
-| move a window to a workspace with `SUPER + SHIFT + number` | `SUPER + SHIFT + 1..0` | **nothing needed**: Hyprland can do this itself, with no shell at all. The dispatcher is in the binary (`movetoworkspace`, `moveWindowToWorkspace`); the classic form is `hyprctl dispatch movetoworkspace 2` | one line in your keybinds: `hl.dsp.exec_cmd("hyprctl dispatch movetoworkspace " .. ws)` — and the Lua form would be the same thing through `hl.dsp` |
-| image editor on `SHIFT + Print` | `SHIFT + Print` (and `SUPER + SHIFT + Print`) | Mei's `mei-screenshot` takes the picture (full screen or a dragged region), puts it in the clipboard and announces it | point the bind at an editor you already have (a one-line change), or a small editor surface: an hour |
+| bar autohide toggle | one bind that toggles the bar autohide | Mei's bar has an autohide setting in the config (`Config.normalizedFrameBars`), but no shortcut to flip it | one shortcut that flips the setting: about an hour |
+| move a window to a workspace with `SUPER + SHIFT + number` | one bind per number that moves the window | **nothing needed**: Hyprland can do this itself, with no shell at all. The dispatcher is in the binary (`movetoworkspace`, `moveWindowToWorkspace`); the classic form is `hyprctl dispatch movetoworkspace 2` | one line in your keybinds: `hl.dsp.exec_cmd("hyprctl dispatch movetoworkspace " .. ws)` — and the Lua form would be the same thing through `hl.dsp` |
+| image editor on `SHIFT + Print` | two print binds (one with a modifier) | Mei's `mei-screenshot` takes the picture (full screen or a dragged region), puts it in the clipboard and announces it | point the bind at an editor you already have (a one-line change), or a small editor surface: an hour |
 | idle timeouts (dim, lock, DPMS, suspend) | none (they are a timeout, not a bind) | **not built yet**: this is the one real gap | a state machine over Quickshell's idle-notify (the API is there: `IdleMonitor` with `isIdle` and `respectInhibitors`), four timeouts and four actions: about a day |

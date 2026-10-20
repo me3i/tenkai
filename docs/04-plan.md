@@ -327,7 +327,7 @@ against an unknown 0.3.x is the **top build risk** **[UNVERIFIED]**.
 ### Commands (project-local, capped, offline)
 
 ```bash
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 export GOTOOLCHAIN=local GOFLAGS=-mod=vendor \
        GOPATH=$MEI/.run/go GOCACHE=$MEI/.run/go/cache \
        CGO_ENABLED=0
@@ -493,7 +493,7 @@ and writes a `fonts.conf` that includes the system config plus the project face 
 <!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
 <fontconfig>
   <include>/etc/fonts/fonts.conf</include>
-  <dir>/home/mei/projects/mei/fonts</dir>
+  <dir>$HOME/projects/mei/fonts</dir>
 </fontconfig>
 ```
 

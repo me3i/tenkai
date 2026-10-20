@@ -241,7 +241,7 @@ widgets on the Mei keep list: workspaces, clock/date, audio indicator,
 brightness, network, battery, system tray, notifications indicator.
 
 Scope of evidence: read-only trace of the pinned upstream checkout at
-`/home/mei/projects/mei/upstream` (Ryoku v0.75.5-beta.20, commit 98a0368).
+`$HOME/projects/mei/upstream` (Ryoku v0.75.5-beta.20, commit 98a0368).
 Every path below is repo-root-relative; the shell lives under
 `ryoku/shell/quickshell/shell/`. All labels are `[READ]` (I opened the file at
 the cited line) or `[UNVERIFIED]` (an inference not directly proven by a read).
@@ -661,7 +661,7 @@ pollers off", not file deletion, wherever the widget still compiles. `[READ]`
 ## 02 — Launcher and control sidebar
 
 Source: Ryoku v0.75.5-beta.20 @ `98a0368`, read-only sparse checkout
-`/home/mei/projects/mei/upstream`. Everything below is cited to `file:line`.
+`$HOME/projects/mei/upstream`. Everything below is cited to `file:line`.
 Because this phase only *read* the tree (no build, no run), every claim is
 `[READ]` unless noted `[UNVERIFIED]` (an off-disk helper's internals, or a
 runtime behaviour a static read cannot prove). There are no `[TESTED]` claims in
@@ -1820,7 +1820,7 @@ it. Mei keeps the Hub **look and UI framework** but only the pages that edit
 config is removed, and the Hyprland write path is severed so Settings never
 writes or generates Hyprland config.
 
-- Upstream root (read-only): `/home/mei/projects/mei/upstream`. All paths below
+- Upstream root (read-only): `$HOME/projects/mei/upstream`. All paths below
   are relative to `upstream/ryoku/` unless a fuller path is given.
 - Labels: **[READ]** = read from source, not executed. **[UNVERIFIED]** =
   inferred, not proven by a run. **[TESTED]** = proven by an executed test; the
@@ -2358,7 +2358,7 @@ No file under `upstream/` was modified; this document is the only file written.
 
 Phase 2 dependency mapping for the Mei fork of Ryoku v0.75.5-beta.20 (commit `98a0368253d9628be72b853985878a5db90e1547`).
 Source is read-only. Every citation below was produced by `git grep -n`/`git show`/`sed` against
-`/home/mei/projects/mei/upstream` (on-disk `ryoku/{shell,hub,wm,ui,palette-bridge}` and off-disk
+`$HOME/projects/mei/upstream` (on-disk `ryoku/{shell,hub,wm,ui,palette-bridge}` and off-disk
 blobs at `HEAD`). Labels: **[READ]** = line verified in file contents; **[UNVERIFIED]** = quoted from
 docs/CHANGELOG or inferred, not re-read in source; **[TESTED]** = none (no build/run permitted).
 

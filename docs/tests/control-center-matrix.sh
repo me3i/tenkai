@@ -10,7 +10,7 @@
 # The owner's real config is never opened, and verify-untouched runs after
 # every scenario.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 CFG="$RUN/config/mei/shell.json"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"

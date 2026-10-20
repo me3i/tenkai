@@ -2,7 +2,7 @@
 
 Phase 2 dependency mapping for the Mei fork of Ryoku v0.75.5-beta.20 (commit `98a0368253d9628be72b853985878a5db90e1547`).
 Source is read-only. Every citation below was produced by `git grep -n`/`git show`/`sed` against
-`/home/mei/projects/mei/upstream` (on-disk `ryoku/{shell,hub,wm,ui,palette-bridge}` and off-disk
+`$HOME/projects/mei/upstream` (on-disk `ryoku/{shell,hub,wm,ui,palette-bridge}` and off-disk
 blobs at `HEAD`). Labels: **[READ]** = line verified in file contents; **[UNVERIFIED]** = quoted from
 docs/CHANGELOG or inferred, not re-read in source; **[TESTED]** = none (no build/run permitted).
 

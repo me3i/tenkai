@@ -301,7 +301,7 @@ run adds the wallpaper/launcher assertions). Final PASS log: `.run/logs/step5-02
 | bar recolours | **INVALID — see the correction below** | the old `B07165` -> `9C7EC5` measured the sumi rail, not the bar |
 | launcher recolours | **INVALID — see the correction below** | the old `E4D3CF` -> `DAD9E4` came from the same sumi run |
 | second wallpaper recolours again | **TESTED** | colors.json hash changes; bar + accent change |
-| matugen + right config path in log | **TESTED** | `matugen render: matugen -c /home/mei/projects/mei/.run/config/mei/matugen/config.toml json …` |
+| matugen + right config path in log | **TESTED** | `matugen render: matugen -c $HOME/projects/mei/.run/config/mei/matugen/config.toml json …` |
 | no outbound | **TESTED** | `ss -tunp`: ryogami, daemon and shell own no tcp/udp; `go list -deps` has no `net/http` |
 | no 47616 listener | **TESTED** | `ss -ltnp`; neither binary contains the port |
 | no strays after `./mei stop` | **TESTED** | comm-based check: no ryogami/matugen/mei-shell/project quickshell |
@@ -352,7 +352,7 @@ caught this. All later runs set the full fake environment.
 
 ### Exclusions reported (opt-in paths)
 
-- `ryogami/wall-ui` picker (114 files, Wallhaven/Steam outbound, pkill-by-name) — not copied;
+- `ryogami/wall-ui` picker (114 files, Wallhaven/a game launcher outbound, pkill-by-name) — not copied;
   `wallpaper ui` refuses and the bar's wallpaper surface request is dropped.
 - Live video and depth — forced off as above; restore the blocks in `config.go`/`apply.go`.
 - App theming fan-out (`apps.toml`, GTK blanking, cursor recolor, gsettings/kitty) — commented
@@ -374,7 +374,7 @@ made **before** the `Frame.qml` edit, so the committed step-5 tree had zero clea
 
 | # | Item | Result |
 |---|------|--------|
-| a | HOME guard, four binaries | TESTED: each refuses `HOME=/home/mei` with exit 1 before any file access; probe XDG dirs still empty afterwards; `HOME` unset also refuses |
+| a | HOME guard, four binaries | TESTED: each refuses `HOME=$HOME` with exit 1 before any file access; probe XDG dirs still empty afterwards; `HOME` unset also refuses |
 | b | `./mei wallpaper` | TESTED: both harness wallpaper changes go through it (SPIKE: palette + pixels changed both times) |
 | c | new-entry scan | TESTED: decoy `~/.cache/mei-probe-test` and `~/.cache/ryogami` -> FAIL listing the path; removal -> PASS |
 | d | re-run after `Frame.qml` | TESTED: two consecutive runs, `step5-041051.log` + `step5-041136.log`, both `RESULT: PASS`, 0 FAIL lines |
@@ -582,11 +582,11 @@ Phase 9 acceptance run**. It does not count toward the two clean runs.
 ### Safety incident (disclosed)
 
 `applyFont()` sent `pkill -USR1 -x kitty` on every daemon start. This matches **by process
-name**, so it could signal the owner's live kitty (pid 1912) — a process Mei did not start.
+name**, so it could signal the owner's live the kitty process — a process Mei did not start.
 SIGUSR1 only makes kitty reload its config; no file outside the project was written
 (`writeKittyFont` targeted `$XDG_CONFIG_HOME/kitty` = `.run/config/kitty` in tests).
 
-Verified after the run: live kitty PID **1912** (matches `docs/baseline/ps-full.txt:265`);
+Verified after the run: live the kitty process (matches `docs/baseline/ps-full.txt:265`);
 `~/.config/kitty/kitty.conf` sha256 **9ff508…4145** (matches
 `docs/baseline/config-hashes.sha256:10`); no `kitty.conf.mei-bak`, no `current-theme.conf`.
 
@@ -657,7 +657,7 @@ Fix: `H()` now refuses unless `$RT/hypr/$SIG/.socket.sock` exists and always pas
 `XDG_RUNTIME_DIR=$RT` + the nested signature; every `IPC`/`SH` client does the same. Item 1
 settles, counts only servers bound to `$RT`, and kills (TERM) any Mei `qs` on another runtime;
 the cold start does the same before launching anything. No live process is ever signalled:
-the filter is `qs -p /home/mei/projects/mei/...`, which cannot match the live shell.
+the filter is `qs -p $HOME/projects/mei/...`, which cannot match the live shell.
 
 ## Final Phase 9 run: harness failed, product unchanged (2026-10-20 13:21)
 
@@ -679,9 +679,9 @@ stale files and calls `bad` on failure (a failed screenshot can no longer vacuou
 Step5's second wallpaper is retried up to five times with a nudge and re-issue. The full pass
 was not re-run. To certify the harness: `bash docs/tests/phase9.sh` (~35-40 min).
 
-The final `./mei verify-untouched` **PASSed**; the owner's kitty PID 1912 and its config hash
+The final `./mei verify-untouched` **PASSed**; the owner's the kitty process and its config hash
 (`9ff50812...`) were unchanged. Its session-process diff listed only the owner's
-serpantinum/update-notifier processes, not Mei.
+the previous shell/update-notifier processes, not Mei.
 
 ## Brightness helper wired, failing honestly (2026-10-20)
 
@@ -728,8 +728,8 @@ Other follow-up evidence: standalone Phase 8 `RESULT: PASS` with S9a accepting
 5/5, bar focused/list followed each (`.run/logs/workspaces-134543.log`); hub
 `go test ./...` **170 PASS / 11 SKIP / 0 FAIL** (`.run/logs/hub-test-20261020-142100.log`);
 brightness 5% via the QML path and hub verb, restored to 27840 (phase9-core logs). Every test
-ended with `./mei verify-untouched: PASS`; kitty PID 1912 and hash
-`9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145` were unchanged, and the
+ended with `./mei verify-untouched: PASS`; the kitty process and hash
+`<the kitty config hash>` were unchanged, and the
 live D-Bus owners stayed 949.
 
 ## Phase 9 at 2183dd9: product 16/16, item 17 false positive; stopped (2026-10-20 14:30)
@@ -868,7 +868,7 @@ launcher acceptance 13/13 (`docs/tests/launcher-check.sh`, exit 0), leak self-te
 (`docs/tests/leak-check.sh`, exit 0 — it must run with the *host* `XDG_RUNTIME_DIR`;
 running it with the nested one exported makes the guard call the nested dir "live" and
 every nested case fails, which is a harness mistake, not a regression).
-`./mei verify-untouched`: PASS before and after. kitty 1505210, hash `9ff508…`, live
+`./mei verify-untouched`: PASS before and after. the kitty process, with its config hash unchanged, live
 D-Bus owners still 949.
 
 **Brightness note**: the panel read 18240 instead of 27840 after the session (exactly
@@ -890,7 +890,7 @@ CPU/RSS numbers.
 **How it was run:** `./mei live --profile overlay` from the owner's terminal. The
 claim table printed "No collision" and the run went ahead; the daemon logged
 "tray module off in shell.json; no StatusNotifierWatcher claimed", and after the
-stop the live shell still owned both D-Bus names (PID 949) with its bar, wallpaper
+stop the live shell still owned both D-Bus names with its bar, wallpaper
 and tray untouched.
 
 **Live numbers (the owner's 144 Hz panel, GPU):**
@@ -918,10 +918,10 @@ frames 150 ms apart.
    the shell registers `ryoku:launcher` with the live compositor over the
    global-shortcuts protocol, and `hyprctl globalshortcuts` lists all 13 names.
 2. **An app opened from Mei's search got Mei's fake HOME**
-   (`/home/mei/projects/mei/.run/home`), so any real app would have started with
+   (`$HOME/projects/mei/.run/home`), so any real app would have started with
    a blank profile. Only the terminal role went through `mei-app`. Now every
    launch does: `AppLaunch.qml` calls the new `mei-app run -- <program>` role,
-   and the live check shows `HOME=/home/mei`, `XDG_CONFIG_HOME=/home/mei/.config`
+   and the live check shows `HOME=$HOME`, `XDG_CONFIG_HOME=$HOME/.config`
    for a kitty opened from Mei's search. The nested path is unchanged
    (`launcher-check.sh`: "app HOME = fake home", 13/13).
 3. **The quick settings cannot open in overlay mode**: the control centre is
@@ -940,7 +940,7 @@ frames 150 ms apart.
    the session verbs), which the owner already put on the fix list.
 
 **Safety:** `./mei verify-untouched` PASS before, during and after; brightness
-27840 throughout (never written); kitty 1505210 with the unchanged hash
-`9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145`; both live
-D-Bus names still PID 949; no Mei process left running. The owner's own mouse
+27840 throughout (never written); the kitty process with its unchanged config hash
+`<the kitty config hash>`; both live
+both D-Bus names still with the live shell; no Mei process left running. The owner's own mouse
 pointer was moved once (to test the click-out) and returns to where they move it.

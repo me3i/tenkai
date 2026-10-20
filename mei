@@ -43,6 +43,14 @@
 #                           up, and only when no Mei process is left. --real-power
 #                           leaves MEI_STUB_POWER unset, so logout, reboot and
 #                           suspend are real; the default stays stubbed.
+#   scrub-check            grep the TRACKED tree for anything personal: the
+#                           built-in patterns plus the terms in
+#                           .local/scrub-terms.txt (not tracked). Prints every
+#                           hit and exits non-zero if there is one
+#   export-clean <dir>     copy the tracked, scrubbed files into <dir> for the
+#                           public repository. It refuses to copy anything if
+#                           the scrub check finds a hit. Git history is NOT
+#                           rewritten: see docs/PUBLISH-NOTES.md
 #   lock-selftest          check that the PAM setup can be used, without
 #                           locking anything: the helper exists, the PAM service
 #                           file is readable, and a real PAM round trip with a
@@ -74,13 +82,32 @@ LIVE_PROFILE_FILE="$RUN_DIR/live-profile"
 # The self-monitor is a test tool, not part of Mei: it lives in its own file so
 # that "is Mei running?" and "is every Mei process gone?" mean what they say.
 LIVE_TOOLS_FILE="$RUN_DIR/live-tools"
+
+# The previous shell lives in a local, untracked file: the public repository
+# must not name anyone's setup. A missing value is never guessed; the callers
+# say so and do nothing.
+local_conf() { # $1 = key -> the value, or nothing
+  local f="$MEI_DIR/.local/mei.local.env" key="$1" line
+  [ -f "$f" ] || return 1
+  line="$(grep -E "^${key}=" "$f" 2>/dev/null | tail -1 || true)"
+  [ -n "$line" ] || return 1
+  printf '%s' "${line#*=}" | sed 's/^"//; s/"$//; s/^\x27//; s/\x27$//'
+}
+local_prev_shell_name(){ local_conf MEI_PREV_SHELL_NAME; }
+local_prev_shell_start(){ local_conf MEI_PREV_SHELL_START; }
+local_prev_shell_stop(){ local_conf MEI_PREV_SHELL_STOP; }
 LIVE_BACKUP_DIR="$RUN_DIR/live-backup"
 
 die()  { printf 'mei: %s\n' "$*" >&2; exit 1; }
 note() { printf '%s\n' "$*"; }
 
 # Pattern of live-session processes Mei must never disturb.
-PROC_PATTERN='quickshell|serpantinum|Hyprland|hyprpaper|swww|swaybg|mpvpaper|hypridle|hyprlock|cliphist|clipman|copyq|wl-clipboard|wl-paste'
+# The live processes the baseline compares against. The previous shell's own
+# process name comes from the local config, so the public repository never names
+# anyone's setup; without it, only the generic names are watched.
+PREV_PROC="$(local_conf MEI_PREV_SHELL_PROC || true)"
+PROC_PATTERN="quickshell|Hyprland|hyprpaper|swww|swaybg|mpvpaper|hypridle|hyprlock|cliphist|clipman|copyq|wl-clipboard|wl-paste"
+[ -n "$PREV_PROC" ] && PROC_PATTERN="$PROC_PATTERN|$PREV_PROC"
 
 # Well-known session-bus names whose owner must not change while Mei runs. Only
 # these are compared (one line each); unique connection IDs (:1.NNN) and app-owned
@@ -1259,7 +1286,8 @@ cmd_start() {
     for n in org.freedesktop.Notifications org.kde.StatusNotifierWatcher; do
       owner="$(live_dbus_owner "$n")"
       if [ -n "$owner" ]; then
-        note "REFUSING: PID $owner still owns $n. Stop the old shell first, or use --fallback."
+        note "REFUSING: PID $owner still owns $n."
+        note "  Stop the previous shell first (its stop command is in .local/mei.local.env), or use --fallback."
         return 1
       fi
     done
@@ -1290,8 +1318,14 @@ cmd_start() {
   setsid python3 "$MEI_DIR/docs/tests/live-monitor.py" >> "$RUN_DIR/logs/live-monitor.out" 2>&1 &
   printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_TOOLS_FILE"
 
-  # 5. the fallback: if Mei does not come up, the old shell may take over, but
-  # never while any Mei process is alive.
+  # 5. the fallback: if Mei does not come up, the previous shell may take
+  # over, but never while any Mei process is alive. With no --fallback given,
+  # the previous shell's own start command (from the local config) is used; if
+  # that is not configured, there is no fallback and the log says so.
+  if [ -z "$fallback" ] && [ "$profile" = "full" ]; then
+    fallback="$(local_prev_shell_start || true)"
+    [ -n "$fallback" ] && note "no --fallback given; using the previous shell's start command from the local config"
+  fi
   if [ -n "$fallback" ]; then
     note "waiting up to 15 s for Mei to come up (fallback: $fallback)"
     i=0
@@ -1353,6 +1387,67 @@ cmd_lock_selftest() {
   return $rc
 }
 
+# cmd_scrub_check greps the TRACKED tree for anything personal: the built-in
+# patterns plus the terms in .local/scrub-terms.txt (which is not tracked, so
+# the public repository never carries them). It prints every hit and exits
+# non-zero if there is one.
+cmd_scrub_check() {
+  local terms_file="$MEI_DIR/.local/scrub-terms.txt"
+  # A personal home is a path that STARTS with /home/<name>: a relative
+  # ".run/home/..." is Mei's own tree, not the owner's home.
+  local -a pats=("serpantinum" "serpentinum" "(^|[[:space:]\"'\`(,=:;])/home/[A-Za-z0-9._-]+")
+  if [ -f "$terms_file" ]; then
+    local t
+    while read -r t; do
+      [ -n "$t" ] && pats+=("$t")
+    done < "$terms_file"
+  fi
+  local hits=0 f line
+  for f in $(git ls-files 2>/dev/null); do
+    [ -f "$f" ] || continue
+    for line in "${pats[@]}"; do
+      if grep -InE "$line" "$f" 2>/dev/null | head -5 | while IFS= read -r hit; do
+        case "$hit" in
+        *"/home/user"*|*"/home/<"*|*"/home/testuser"*|*"$MEI_DIR"*) continue ;;
+        # the check's own pattern definitions are not a finding
+        *'pats=('*|*'grep -rIil'*) continue ;;
+        esac
+        printf '  %s: %s\n' "$f" "$hit"
+      done | grep . ; then
+        hits=$((hits + 1))
+      fi
+    done
+  done
+  if [ "$hits" -gt 0 ]; then
+    note "SCRUB CHECK: FAIL ($hits file(s) carry something personal)"
+    return 1
+  fi
+  note "SCRUB CHECK: PASS (the tracked tree carries nothing personal)"
+  return 0
+}
+
+# cmd_export_clean copies the tracked, scrubbed files into a directory, for the
+# public repository. It refuses to copy anything if the scrub check finds a
+# hit, so a public tree can never carry the personal setup.
+cmd_export_clean() {
+  local dir="${1:-}"
+  [ -n "$dir" ] || die "usage: ./mei export-clean <dir>"
+  if ! cmd_scrub_check; then
+    die "refusing to export: the scrub check found something personal in the tracked tree"
+  fi
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  local f
+  while read -r f; do
+    [ -f "$f" ] || continue
+    mkdir -p "$dir/$(dirname -- "$f")"
+    cp -p "$f" "$dir/$f"
+  done < <(git ls-files)
+  note "exported the tracked tree to $dir"
+  note "check it yourself before publishing:  grep -rIil -e serpantinum -e serpentinum $dir"
+  return 0
+}
+
 cmd_live() {
   local profile=""
   while [ $# -gt 0 ]; do
@@ -1398,10 +1493,12 @@ cmd_live() {
     for n in org.freedesktop.Notifications org.kde.StatusNotifierWatcher; do
       owner="$(live_dbus_owner "$n")"
       if [ -n "$owner" ]; then
+        local prev_stop
+        prev_stop="$(local_prev_shell_stop || true)"
         die "refusing: PID $owner still owns $n.
-     Stop your current shell first:
-       serpantinumd stop
-     then run this again. (docs/LIVE-TEST.md has the full runbook.)"
+     Stop the previous shell first${prev_stop:+:
+       $prev_stop}
+     then run this again. (docs/LIVE-CHECKLIST.md has the full runbook.)"
       fi
     done
     echo "Mei --profile full will:"
@@ -1505,6 +1602,14 @@ cmd_live_stop() {
     rm -f "$LIVE_TOOLS_FILE"
   fi
   rm -f "$LIVE_PID_FILE" "$LIVE_PROFILE_FILE"
+  local prev_start prev_name
+  prev_start="$(local_prev_shell_start || true)"
+  prev_name="$(local_prev_shell_name || true)"
+  if [ -n "$prev_start" ]; then
+    note "to bring ${prev_name:-the previous shell} back: $prev_start"
+  else
+    note "the previous shell's start command is not in .local/mei.local.env; set MEI_PREV_SHELL_START there"
+  fi
   note "mei: live session stopped"
 }
 
@@ -1537,6 +1642,8 @@ case "${1:-help}" in
   stop)             shift; cmd_stop ;;
   live)             shift; cmd_live "$@" ;;
   lock-selftest)    shift; cmd_lock_selftest ;;
+  scrub-check)      shift; cmd_scrub_check ;;
+  export-clean)     shift; cmd_export_clean "$@" ;;
   start)            shift; cmd_start "$@" ;;
   live-stop)        shift; cmd_live_stop "$@" ;;
   live-status)      shift; cmd_live_status "$@" ;;

@@ -31,7 +31,7 @@
 set -uo pipefail
 
 PIDFILE="${1:?pidfile}"; STOP="${2:?stopfile}"; LOG="${3:?logfile}"
-NESTED_RT="${NESTED_RT:-/home/mei/projects/mei/.r}"
+NESTED_RT="${NESTED_RT:-$HOME/projects/mei/.r}"
 LIVE_RT="${LIVE_RT:-/run/user/$(id -u)}"
 LIVE_WL="${LIVE_WL:-wayland-1}"
 RUN_DIR="${NESTED_RT%/*}/.run"

@@ -20,7 +20,7 @@ import sys
 import time
 from datetime import datetime
 
-MEI = "/home/mei/projects/mei"
+MEI = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RUN = os.path.join(MEI, ".run")
 RT = os.path.join(MEI, ".r")
 HOST_XDG = os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid())

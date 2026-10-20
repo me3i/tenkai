@@ -10,7 +10,7 @@
 # (including qsbar's quickshell_widgets_v2 visibility cache) to
 # .run/backup-<stamp>, and restores them on exit.
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"; RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"

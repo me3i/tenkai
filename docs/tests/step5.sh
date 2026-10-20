@@ -8,7 +8,7 @@
 #    written to the real ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0},
 #    ~/.cache/ryoku or ~/.cache/matugen
 set -uo pipefail
-MEI=/home/mei/projects/mei
+MEI=$HOME/projects/mei
 RUN="$MEI/.run"
 RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
@@ -21,9 +21,9 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 
-REAL_DIRS=(/home/mei/.config/kitty /home/mei/.config/btop /home/mei/.config/qt6ct \
-           /home/mei/.config/gtk-3.0 /home/mei/.config/gtk-4.0 \
-           /home/mei/.cache/ryoku /home/mei/.cache/matugen)
+REAL_DIRS=($HOME/.config/kitty $HOME/.config/btop $HOME/.config/qt6ct \
+           $HOME/.config/gtk-3.0 $HOME/.config/gtk-4.0 \
+           $HOME/.cache/ryoku $HOME/.cache/matugen)
 hash_real() {
   for d in "${REAL_DIRS[@]}"; do
     if [ -e "$d" ]; then
@@ -47,7 +47,7 @@ if ss -ltnp 2>/dev/null | grep -q ':47616'; then bad "something listens on 47616
 
 echo; echo "=== GUARDS (HOME, then display) ==="
 # The real HOME must be refused, before the display is even considered.
-if out=$(HOME=/home/mei "$RUN/bin/ryogami" daemon 2>&1); then
+if out=$(HOME=$HOME "$RUN/bin/ryogami" daemon 2>&1); then
   bad "HOME guard did not refuse the real HOME"
 elif grep -q "not Mei's fake home" <<<"$out"; then
   ok "HOME guard refuses the real HOME: $(echo "$out" | head -1)"
@@ -57,9 +57,9 @@ fi
 # Display guard, run with the fake HOME so the HOME guard cannot mask it.
 if out=$(HOME="$RUN/home" env -u MEI_HOST_WAYLAND_SOCKET "$RUN/bin/ryogami" daemon 2>&1); then bad "display guard did not refuse with the env unset"; else ok "display guard: $(echo "$out" | head -1)"; fi
 if out=$(HOME="$RUN/home" XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" MEI_HOST_WAYLAND_SOCKET="$HOST_XDG/$HOST_WL" "$RUN/bin/ryogami" daemon 2>&1); then bad "display guard allowed the live display"; else ok "display guard: $(echo "$out" | head -1)"; fi
-if out=$(HOME=/home/mei "$RUN/bin/mei-shell" daemon 2>&1); then bad "mei-shell accepted the real HOME"; else ok "mei-shell HOME guard: $(echo "$out" | head -1)"; fi
-if out=$(HOME=/home/mei "$RUN/bin/mei-hub" config get bar 2>&1); then bad "mei-hub accepted the real HOME"; else ok "mei-hub HOME guard: $(echo "$out" | head -1)"; fi
-if out=$(HOME=/home/mei "$RUN/bin/mei-wm-hyprland" caps 2>&1); then bad "mei-wm-hyprland accepted the real HOME"; else ok "mei-wm-hyprland HOME guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME=$HOME "$RUN/bin/mei-shell" daemon 2>&1); then bad "mei-shell accepted the real HOME"; else ok "mei-shell HOME guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME=$HOME "$RUN/bin/mei-hub" config get bar 2>&1); then bad "mei-hub accepted the real HOME"; else ok "mei-hub HOME guard: $(echo "$out" | head -1)"; fi
+if out=$(HOME=$HOME "$RUN/bin/mei-wm-hyprland" caps 2>&1); then bad "mei-wm-hyprland accepted the real HOME"; else ok "mei-wm-hyprland HOME guard: $(echo "$out" | head -1)"; fi
 
 echo; echo "=== REAL-PATH HASHES BEFORE ==="
 hash_real | tee "$RUN/step5-real-before.txt"
@@ -96,7 +96,7 @@ export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
 H() {
-  local rt="${RT:-${MEI:-/home/mei/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null

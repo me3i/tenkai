@@ -17,7 +17,7 @@
   happen in `src/` and are recorded in `CHANGES.md`.
 
 Notes:
-- The clone was pre-seeded on this machine on 2026-10-19 09:42 (host `kms`), before this session
+- The clone was pre-seeded on this machine on 2026-10-19 09:42 (this machine), before this session
   began; an interrupted transfer left `.git/objects/pack/tmp_pack_*` behind. It was verified
   (`git log`, refs, remotes) and the working tree was checked out at the pinned commit.
 - If history is ever needed: `git -C upstream fetch --unshallow` (network required).
