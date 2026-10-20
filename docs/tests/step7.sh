@@ -179,8 +179,10 @@ S4="$RUN/shots/step7-04-two-icons.png"
 PINFO="$(magick "$S4" -fuzz 8% -fill black +opaque '#1F9E8F' -fill white \
   -opaque '#1F9E8F' -trim -format '%wx%h%X%Y' info: 2>/dev/null)"
 PBOX="${PINFO%%+*}"
-case "$PBOX" in
-  [0-9]*x[0-9]*) : ;;
+# A failed -trim prints "1x1-1-1" (negative offsets); require the +X+Y form so
+# that cannot pass as a real 14x14 box and poison the crop offsets below.
+case "$PINFO" in
+  [0-9]*x[0-9]*+[0-9]*+[0-9]*) : ;;
   *) bad "pixmap icon not visible on screen (bbox '${PINFO:-none}')"; PINFO=""; PBOX="" ;;
 esac
 if [ -n "$PBOX" ]; then
@@ -189,16 +191,20 @@ if [ -n "$PBOX" ]; then
 fi
 # the theme icon is the cell immediately left of the pixmap icon; measure its
 # ink there rather than from barX (the row anchor is the cluster centre).
-PX="$(echo "$PINFO" | cut -d+ -f2)"; PX="${PX:-0}"
-CROP4="$RUN/shots/step7-04-theme-crop.png"
-magick "$S4" -crop "20x18+$((PX - 26))+6" +repage "$CROP4" 2>/dev/null
-BG4="$(magick "$CROP4" -format '%[hex:p{1,1}]' info: 2>/dev/null)"
-TBOX="$(magick "$CROP4" -fuzz 10% -transparent "#$BG4" -trim -format '%wx%h' info: 2>/dev/null)"
-TW="${TBOX%x*}"; TH="${TBOX#*x}"
-note "theme glyph ink left of the pixmap: ${TBOX:-none} on #$BG4 (Adwaita legacy 'dialog-information')"
-if [ -n "${TBOX:-}" ] && [ "${TW:-0}" -ge 3 ] && [ "${TH:-0}" -ge 3 ] && [ "${TH:-0}" -le 18 ]; then
-  ok "the theme icon is drawn in the bar (ink ${TBOX})"
-else bad "theme icon not drawn / unexpected ink: ${TBOX:-none}"; fi
+if [ -n "$PINFO" ]; then
+  PX="$(echo "$PINFO" | cut -d+ -f2)"; PX="${PX:-0}"
+  CROP4="$RUN/shots/step7-04-theme-crop.png"
+  magick "$S4" -crop "20x18+$((PX - 26))+6" +repage "$CROP4" 2>/dev/null
+  BG4="$(magick "$CROP4" -format '%[hex:p{1,1}]' info: 2>/dev/null)"
+  TBOX="$(magick "$CROP4" -fuzz 10% -transparent "#$BG4" -trim -format '%wx%h' info: 2>/dev/null)"
+  TW="${TBOX%x*}"; TH="${TBOX#*x}"
+  note "theme glyph ink left of the pixmap: ${TBOX:-none} on #$BG4 (Adwaita legacy 'dialog-information')"
+  if [ -n "${TBOX:-}" ] && [ "${TW:-0}" -ge 3 ] && [ "${TH:-0}" -ge 3 ] && [ "${TH:-0}" -le 18 ]; then
+    ok "the theme icon is drawn in the bar (ink ${TBOX})"
+  else bad "theme icon not drawn / unexpected ink: ${TBOX:-none}"; fi
+else
+  note "theme icon crop skipped: the pixmap bbox gave no anchor (the pixmap check above already failed)"
+fi
 
 echo; echo "=== removal ==="
 kill_sni "$SNI2"

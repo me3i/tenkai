@@ -606,3 +606,23 @@ path, no `current-theme`, and no `pkill` command (the only `pkill` substring is 
 signal table entry `hangupkilled`).
 
 Next: cold start, then two consecutive clean runs on the same commit.
+
+## Phase 9 — tray item 6: stale widget cache, not the tray code (2026-10-20)
+
+Item 6 failed in three consecutive cold-start passes with "pixmap icon box unexpected:
+1x1-1-1", while a standalone step7 (after setting `qsbar.widgets.status=true`) passed with
+`14x14+122+13`. Root cause: qsbar persists group visibility in
+`$HOME/.cache/quickshell_widgets_v2`, and the cold start moved `.run/config/mei` and
+`.run/home/.cache/mei` but **not** that file. Its field +11 was `0`, so `Theme.modStatus`
+loaded false, the whole status group (tray + bell) stayed hidden, and the "theme glyph" check
+was measuring a neighbouring bar icon. A clean cache with no `shell.json` gives `modStatus`
+true, barX 94 and both icons drawn (pixmap teal block 197 px at the cell).
+
+Two defensive qsbar fixes were kept from the investigation: the tray strip's model now holds
+only pinned services (the old per-delegate `visible` binding read `modelData.service` before
+it existed and never recovered), and the status slot's visibility no longer depends on its own
+children's width (a circular gate that could keep the slot collapsed).
+
+Harness changes: cold start also moves `home/.cache/quickshell_widgets_v2`; step7 requires a
+`WxH+X+Y` bbox (a failed trim prints `1x1-1-1`, which previously passed the loose format check
+and poisoned the crop offsets), and skips the theme crop with a NOTE when there is no anchor.

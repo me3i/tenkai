@@ -6,7 +6,8 @@
 #
 # Every sub-harness starts and stops its own nested session and runs
 # verify-untouched itself. The cold start moves (never deletes)
-# .run/state, .run/cache, .run/config/mei and the fake-HOME cache/state to
+# .run/state, .run/cache, .run/config/mei and the fake-HOME cache/state
+# (including qsbar's quickshell_widgets_v2 visibility cache) to
 # .run/backup-<stamp>, and restores them on exit.
 set -uo pipefail
 MEI=/home/mei/projects/mei
@@ -30,7 +31,7 @@ if pgrep -f "^qs -p $MEI/src/ryoku/shell|^$RUN/bin/mei-shell daemon" >/dev/null 
   bad "a nested session is already running; refusing to cold-start over it"
   echo "RESULT: FAIL"; exit 1
 fi
-for d in state cache config/mei home/.cache/mei home/.local/state/mei; do
+for d in state cache config/mei home/.cache/mei home/.cache/quickshell_widgets_v2 home/.local/state/mei; do
   if [ -e "$RUN/$d" ]; then
     mkdir -p "$BK/$(dirname "$d")"
     mv "$RUN/$d" "$BK/$d"
@@ -42,7 +43,7 @@ restore() {
   [ "${KEEP:-0}" = 1 ] && return
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
   sleep 2
-  for d in state cache config/mei home/.cache/mei home/.local/state/mei; do
+  for d in state cache config/mei home/.cache/mei home/.cache/quickshell_widgets_v2 home/.local/state/mei; do
     rm -rf "$RUN/$d"
     if [ -e "$BK/$d" ]; then
       mkdir -p "$RUN/$(dirname "$d")"
