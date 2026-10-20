@@ -767,3 +767,35 @@ the compositor is still strict, and launcher descendants are unchanged. Evidence
 Per the owner's stop instruction there was **no fourth full pass** after this fix. The honest
 state is **product 16/16, item 17 FAIL at `2183dd9`, fixed and targeted-validated at
 `95874a6`, full harness not certified**. Do not call Phase 9 PASS and do not start Phase 10.
+
+## Phase 10A — measure only (2026-10-20, 15:02)
+
+Owner instruction: measure only, no product changes, no installs, `/proc`+`ps` only, same
+isolation rules as every other nested run. One nested session, 120 s idle, then five 60 s
+windows: idle, launcher open, quick settings open, Settings hub open, one wallpaper set.
+Live Quickshell 949 read-only through `/proc`; nested Hyprland measured separately and never
+counted in the Mei total.
+
+Harness: `docs/tests/phase10a-measure.py` (committed). It starts `./mei run`, reads
+`/proc/<pid>/smaps_rollup` (RSS/PSS), `/proc/<pid>/status` (threads, context switches) and
+`/proc/<pid>/stat` (utime/stime) for every Mei process, and refuses to fall back to the live
+compositor (`nested_hyprctl` equivalent checks the nested socket first).
+
+**Discarded first run** (`.run/logs/phase10a-20261020-145352.log`): a Settings-hub `qs` from
+the earlier ad-hoc probe session was still alive and was counted as Mei idle memory (388 MB
+RSS), which also blocked the real hub from loading. Fixed in the harness two ways: every
+process must carry the current nested `HOME`, `XDG_RUNTIME_DIR` and Hyprland signature, and
+the run now **refuses to start** if any project Settings-hub process exists. The clean run is
+`.run/logs/phase10a-20261020-150253.log` (JSON beside it).
+
+Headline numbers (nested-only, per 60 s window) are in `docs/STATUS.md`. The one large
+finding is the **open launcher**: qs 19.43 s CPU / 60 s (32.4 %) and 776 voluntary context
+switches per second, against 1.4 s and 62/s at idle. Source: the main variant's horizon
+`FrameAnimation` + canvas repaint and the breathing colon, both gated on `root.visible`
+(`modules/launcher/variants/main/RestDashboard.qml:228`, `:275`). The Hyprland event socket
+now works in the nested session (`.socket2.sock` path is 84 bytes and `/proc/net/unix` shows a
+connected socket), so the 500 ms `hyprctl` poll fallback in `src/ryoku/wm/hyprland/watch.go`
+is **not** running here. Optimisation candidates are proposed in the report; **none applied**.
+
+Safety: `./mei verify-untouched: PASS` before and after; the live shell was never signalled or
+queried over IPC; no product file changed.
