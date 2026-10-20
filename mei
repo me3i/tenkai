@@ -934,6 +934,7 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
     printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
     printf 'layer-namespace\tryoku-osd\tOSD, only on a brightness/volume change\n'
+    printf 'layer-namespace\tryoku-widgets\tthe transparent desktop-widget layer (always mapped)\n'
     printf 'socket\t%s\tmei-shell control socket\n' "$rt/mei-shell.sock"
     ;;
   full)
@@ -1204,8 +1205,8 @@ cmd_live() {
   echo "Mei is live (profile: $profile)."
   echo "  shell pid:   $q"
   echo "  monitor:     $RUN_DIR/logs/live-monitor-*.log (CPU and RSS every 5 s)"
-  echo "  launcher:    hyprctl dispatch global ryoku:launcher"
-  echo "  quick settings: hyprctl dispatch global ryoku:quicksettings"
+  echo "  launcher:    hyprctl dispatch 'hl.dsp.global(\"ryoku:launcher\")'"
+  echo "  quick settings: hyprctl dispatch 'hl.dsp.global(\"ryoku:quicksettings\")'"
   echo "  fallback:    qs ipc --pid $q call shell openSurface \"\" launcher"
   echo "  stop:        ./mei live-stop"
   if [ "$profile" = "overlay" ]; then

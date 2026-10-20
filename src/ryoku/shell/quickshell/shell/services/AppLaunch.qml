@@ -22,7 +22,15 @@ Singleton {
             return;
         const argv = entry && entry.runInTerminal ? (target.command || []) : [];
         if (argv.length === 0) {
-            Spawn.run(target.command, entry ? entry.workingDirectory : "");
+            // Every launch goes through mei-app, not straight to Spawn: in a
+            // live run mei-app hands the app the owner's real HOME and XDG
+            // variables (Mei's own state stays in the project). Without the
+            // flag it is a pass-through, so the nested session is unchanged.
+            const cmd = ["mei-app", "run", "--"];
+            const direct = (target.command || []).map(String);
+            for (let i = 0; i < direct.length; i++)
+                cmd.push(direct[i]);
+            Spawn.run(cmd, entry ? entry.workingDirectory : "");
             return;
         }
         const command = ["mei-app", "terminal", "--"];

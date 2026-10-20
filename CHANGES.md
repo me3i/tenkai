@@ -22,12 +22,22 @@ entry points for trying Mei on the live desktop (runbook: `docs/LIVE-TEST.md`).
 The nested dev session is untouched: every guard below is off unless the live
 profile sets it.
 
-1. **The launcher's apps get the owner's real environment** (`mei-app`). Mei's
-   own state stays inside `~/projects/mei/.run`, but an app the launcher starts
-   must run in the owner's real environment, not Mei's confined one. `mei-app`
-   reads Mei's own `desktop.json` first (so the chosen terminal is still Mei's),
-   then re-exports `HOME` and the `XDG_*` variables from `MEI_APP_HOME` for the
-   child. Without that variable the behaviour is exactly as before.
+1. **The launcher's apps get the owner's real environment** (`mei-app` and
+   `AppLaunch.qml`). Mei's own state stays inside `~/projects/mei/.run`, but an
+   app the launcher starts must run in the owner's real environment, not Mei's
+   confined one. `mei-app` reads Mei's own `desktop.json` first (so the chosen
+   terminal is still Mei's), then re-exports `HOME` and the `XDG_*` variables
+   from `MEI_APP_HOME` for the child. Without that variable the behaviour is
+   exactly as before.
+   Every launch now goes through `mei-app`: the terminal role as before, and a
+   new `run` role (`mei-app run -- <program> [args...]`) for the app-search
+   path, which used to `Spawn.run` the desktop entry directly and therefore
+   handed the app Mei's fake HOME. That was measured live: a kitty opened from
+   Mei's search had `HOME=/home/mei/projects/mei/.run/home` (a blank profile
+   for any real app), and now has `HOME=/home/mei`,
+   `XDG_CONFIG_HOME=/home/mei/.config`. The nested session is unchanged: the
+   launcher's app still gets the fake home there
+   (`docs/tests/launcher-check.sh`: "app HOME = fake home").
 2. **No power action may end the owner's session by accident in the first
    live trial.** A live run is not a test run, so `MEI_TEST` is deliberately not
    set there. `MEI_STUB_POWER=1` (set by `./mei live`, both profiles) stubs

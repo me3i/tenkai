@@ -32,15 +32,25 @@ fi
 
 case "$role" in
 terminal) fallback="kitty" ;;
+run)
+	# A plain program launch: the program comes after "--", so there is no
+	# desktop-app store entry to look up and no fallback to invent.
+	fallback=""
+	;;
 *)
 	echo "mei-app: no default for role \"$role\"" >&2
 	exit 1
 	;;
 esac
 
+if [ "$role" = "run" ] && [ ${#inner[@]} -eq 0 ]; then
+	echo "mei-app: run needs a program: mei-app run -- <program> [arg...]" >&2
+	exit 2
+fi
+
 store="${XDG_CONFIG_HOME:-$HOME/.config}/mei/desktop.json"
 cmd=""
-if [ -r "$store" ] && command -v jq >/dev/null 2>&1; then
+if [ "$role" != "run" ] && [ -r "$store" ] && command -v jq >/dev/null 2>&1; then
 	cmd="$(jq -r --arg r "$role" '.desktop.apps[$r] // empty' "$store" 2>/dev/null || true)"
 fi
 [ -n "$cmd" ] || cmd="$fallback"
@@ -59,6 +69,12 @@ if [ -n "${MEI_APP_HOME:-}" ]; then
 	export XDG_RUNTIME_DIR="${MEI_APP_XDG_RUNTIME_DIR:-$XDG_RUNTIME_DIR}"
 	unset MEI_APP_HOME MEI_APP_XDG_CONFIG_HOME MEI_APP_XDG_CACHE_HOME \
 		MEI_APP_XDG_STATE_HOME MEI_APP_XDG_DATA_HOME MEI_APP_XDG_RUNTIME_DIR
+fi
+
+if [ "$role" = "run" ]; then
+	# A plain program: the launcher already resolved the whole command line,
+	# so there is no terminal to hand it to.
+	exec "${inner[@]}"
 fi
 
 if [ ${#inner[@]} -eq 0 ]; then

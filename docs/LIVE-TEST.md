@@ -118,9 +118,16 @@ to run. It writes `.run/logs/live-monitor-<stamp>.log` and `.csv` every 5 s.
 Hyprland config change is needed, and none is made):
 
 ```bash
-hyprctl dispatch global ryoku:launcher      # the launcher
-hyprctl dispatch global ryoku:quicksettings  # the quick settings
+hyprctl dispatch 'hl.dsp.global("ryoku:launcher")'      # the launcher
+hyprctl dispatch 'hl.dsp.global("ryoku:quicksettings")'  # the quick settings
 ```
+
+**Note the syntax.** Your Hyprland config is **Lua**, so the bare
+`hyprctl dispatch global ryoku:launcher` is a Lua syntax error there
+(`'\'' )' expected near 'ryoku'`) and does nothing. The explicit
+`hl.dsp.global("...")` form is the one that works — that is the same form the
+nested harness uses. (The *shortcut* itself is registered by Mei's shell over
+the global-shortcuts protocol, so no config bind is needed either way.)
 
 Why that works without touching your config: Mei's shell registers the
 shortcut names `ryoku:launcher` / `ryoku:quicksettings` with the compositor

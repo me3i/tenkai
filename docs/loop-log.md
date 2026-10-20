@@ -880,3 +880,67 @@ harness (hardware keys while the nested window had focus). Restored to 27840.
 **Still unverified**: the live 144 Hz GPU session. The nested numbers overstate the
 compositing part and understate the repaint part; the live trial must re-measure the
 launcher before the wave change is called a win.
+
+## Live trial, overlay stage (2026-10-20, 17:37–18:05)
+
+Owner instruction: run the overlay stage in the real session (the old shell keeps
+running), then report the feel, the differences from the nested window, and the
+CPU/RSS numbers.
+
+**How it was run:** `./mei live --profile overlay` from the owner's terminal. The
+claim table printed "No collision" and the run went ahead; the daemon logged
+"tray module off in shell.json; no StatusNotifierWatcher claimed", and after the
+stop the live shell still owned both D-Bus names (PID 949) with its bar, wallpaper
+and tray untouched.
+
+**Live numbers (the owner's 144 Hz panel, GPU):**
+
+| state | Mei CPU per 60 s | RSS | PSS |
+|---|---:|---:|---:|
+| idle | 0.3–0.6 s | 482,720 kB | 231,761 kB |
+| launcher open, Phase 10B fix | **16.47 s (27.4 % of a core)** | 510,552 kB | 269,059 kB |
+| launcher open, pre-Phase-10B file | **32.65 s (54.4 %)** | 507,460 kB | 266,132 kB |
+
+So the Phase 10B change **halves the live cost of an open launcher (-49.5 %)**,
+the same ratio the nested A/B measured (25.91 -> 13.45 s). The absolute live
+numbers sit above the nested ones because the panel is 144 Hz where the nested
+output was 60 Hz, so every animation runs 2.4x more often. The horizon line does
+animate on the live panel: about 4,800 pixels change in the wave band between
+frames 150 ms apart.
+
+**What the stage found (all fixed or recorded):**
+
+1. `docs/LIVE-TEST.md` and `./mei live` printed `hyprctl dispatch global
+   ryoku:launcher`, which is a **Lua syntax error** in the owner's config
+   (`')' expected near 'ryoku'`). The working form is
+   `hyprctl dispatch 'hl.dsp.global("ryoku:launcher")'`. Both the doc and the
+   script now print the explicit form. The shortcut itself needs no config bind:
+   the shell registers `ryoku:launcher` with the live compositor over the
+   global-shortcuts protocol, and `hyprctl globalshortcuts` lists all 13 names.
+2. **An app opened from Mei's search got Mei's fake HOME**
+   (`/home/mei/projects/mei/.run/home`), so any real app would have started with
+   a blank profile. Only the terminal role went through `mei-app`. Now every
+   launch does: `AppLaunch.qml` calls the new `mei-app run -- <program>` role,
+   and the live check shows `HOME=/home/mei`, `XDG_CONFIG_HOME=/home/mei/.config`
+   for a kitty opened from Mei's search. The nested path is unchanged
+   (`launcher-check.sh`: "app HOME = fake home", 13/13).
+3. **The quick settings cannot open in overlay mode**: the control centre is
+   hosted by the bar module (`modules/bar/framebars/menus/...`, and the bar
+   surface is gated by `Config.moduleOn("bar")`), and overlay mode turns the bar
+   off. The sidebar therefore needs the full stage, or its own surface.
+4. **The launcher is modal in a way that touches the live session**: its scrim is
+   click-to-dismiss and it holds an exclusive keyboard grab, so while it is open
+   the owner's own clicks dismiss it and their keystrokes land in Mei's search
+   box. That is what kept closing it during the first attempts; the live numbers
+   above were taken with the pointer away from the card.
+5. **Mei maps a transparent `ryoku-widgets` layer** even in overlay mode (the
+   desktop-widget layer). It is invisible and reserves no edge, but the claim
+   table now lists it.
+6. The **power buttons are dead** in this build (the daemon does not register
+   the session verbs), which the owner already put on the fix list.
+
+**Safety:** `./mei verify-untouched` PASS before, during and after; brightness
+27840 throughout (never written); kitty 1505210 with the unchanged hash
+`9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145`; both live
+D-Bus names still PID 949; no Mei process left running. The owner's own mouse
+pointer was moved once (to test the click-out) and returns to where they move it.
