@@ -83,6 +83,48 @@ func parseDisabledComponents(b []byte) map[string]bool {
 	return out
 }
 
+// moduleDisabled reports whether a shell.json `modules` flag is explicitly
+// false. It is the daemon half of the same switchboard services/Config.qml
+// reads; a missing file or key means ON, so older configs keep every module.
+// Unlike componentDisabled it is also consulted for surfaces and the tray,
+// which were never per-process components.
+func moduleDisabled(name string) bool {
+	if name == "" {
+		return false
+	}
+	dir := ryokuConfigDir()
+	if dir == "" {
+		return false
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "shell.json"))
+	if err != nil {
+		return false
+	}
+	var doc struct {
+		Modules map[string]bool `json:"modules"`
+	}
+	if json.Unmarshal(b, &doc) != nil {
+		return false
+	}
+	on, ok := doc.Modules[name]
+	return ok && !on
+}
+
+// surfaceModule maps a surface command to the shell.json module that owns it.
+func surfaceModule(cmd string) string {
+	switch cmd {
+	case "launcher", "menu app-launcher":
+		return "launcher"
+	case "quicksettings", "screenshot":
+		return "control_center"
+	case "wallpaper-menu":
+		return "wallpaper"
+	case "bar-toggle":
+		return "bar"
+	}
+	return ""
+}
+
 // componentDisabled reports whether a component is turned off via
 // performance.json's disabledComponents array. Disabled components never start,
 // at boot or on demand. shell is always on; a missing file disables nothing.
@@ -1056,6 +1098,10 @@ func (d *daemon) dispatch(line string) string {
 		return d.dockCLI(args)
 	}
 	if config, target, fn, ok := route(routeCmd); ok {
+		if moduleDisabled(surfaceModule(routeCmd)) {
+			// the module is off in shell.json; its keybind is a silent no-op.
+			return "ok"
+		}
 		if componentDisabled(config) {
 			// the user turned this component off; its keybind is a silent no-op
 			// rather than a failed ipc call to a process that will never start.

@@ -457,7 +457,26 @@ ShellRoot {
     // call -- a CustomShortcut press where the compositor bridges global
     // shortcuts, and the surfaceRequested bus a `ryoku-shell <id>` spawn drives
     // where that protocol is absent (niri) -- so a toggle is defined once.
+    // Which shell.json module owns a toggle id ("" = always available).
+    function surfaceModule(id) {
+        switch (id) {
+        case "launcher": return "launcher";
+        case "quicksettings": case "screenshot": return "control_center";
+        case "wallpaper-menu": return "wallpaper";
+        case "barToggle": return "bar";
+        }
+        return "";
+    }
+    // The same mapping for an IPC surface id ("quick-settings#capture", ...).
+    function surfaceModuleId(id) {
+        if (id === "launcher") return "launcher";
+        if (id.indexOf("quick-settings") === 0) return "control_center";
+        if (id.indexOf("wallpaper") === 0) return "wallpaper";
+        return "";
+    }
     function toggleSurface(id) {
+        const mod = surfaceModule(id);
+        if (mod && !Config.moduleOn(mod)) return;
         const st = ShellState.forActive();
         switch (id) {
         case "barToggle":
@@ -724,6 +743,8 @@ ShellRoot {
         // An empty monitor means "wherever focus is": the daemon sends "" when
         // its focused-output cache is cold.
         function openSurface(mon: string, id: string): void {
+            const mod = root.surfaceModuleId(id);
+            if (mod && !Config.moduleOn(mod)) return;
             if (mon && mon.length > 0)
                 ShellState.requestSurface(id, mon, undefined);
             else
@@ -745,7 +766,10 @@ ShellRoot {
         function voiceOff(mon: string): void { ShellState.requestSurface("voice-off", mon, undefined); }
         function voiceHide(): void { ShellState.closeSurface("voice", ""); }
         function pluginPopout(mon: string, id: string): void { ShellState.requestSurface("plugin:" + id, mon, undefined); }
-        function bar(mon: string, id: string): void { ShellState.requestSurface(id, mon, undefined); }
+        function bar(mon: string, id: string): void {
+            if (!Config.moduleOn("bar")) return;
+            ShellState.requestSurface(id, mon, undefined);
+        }
         function closeAllMenus(mon: string): void { ShellState.closeSurface("", mon); }
         function sessionConfirm(mon: string, action: string): void { ShellState.askSessionAction(action, mon); }
     }

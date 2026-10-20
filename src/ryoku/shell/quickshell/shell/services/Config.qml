@@ -39,6 +39,20 @@ Singleton {
     // style. Each owns its own bar, popouts and settings. Default qsbar.
     property alias barStyle: adapter.barStyle
 
+    // modules: the one switchboard for Mei's components. A missing key reads as
+    // ON, so an older shell.json keeps working. Read here by the shell (surface
+    // loaders, toggleSurface) and by the daemon (tray, surface commands, hub);
+    // docs/MODULES.md lists every read site.
+    property alias modules: adapter.modules
+    function moduleOn(name) { return !modules || modules[name] !== false }
+
+    // theme: the reference theme block (theme selection, matugen mode and the
+    // motion selection). The daemon already round-trips this structure in
+    // shell.json; the shell now reads its motion half too. Defaults mirror
+    // settings.go's defaultSettings so a shell.json without the block behaves
+    // exactly like upstream (Default theme, dark scheme, shipped timing).
+    property alias theme: adapter.theme
+
     // obi: per-widget visibility for the Obi bar style, edited in Bar Studio.
     // A map of widgetId -> bool; an absent key reads as shown, so the bar is
     // full by default and only an explicit false hides a widget. Each folder
@@ -191,6 +205,20 @@ Singleton {
             property string screenShader: ""
             property var frameBars: FrameBars.defaultConfig()
             property string barStyle: "qsbar"
+            property var modules: ({
+                "bar": true,
+                "launcher": true,
+                "control_center": true,
+                "notifications": true,
+                "tray": true,
+                "wallpaper": true,
+                "settings": true
+            })
+            property var theme: ({
+                "theme": "Default",
+                "matugen": ({ "preference": "Darkness", "scheme_type": "TonalSpot", "mode": "Dark", "contrast": 0 }),
+                "motion": ({ "scale": 1, "reduce": false })
+            })
             property string launcherTarget: "studio"
             property var obi: ({})
             property var nacre: NacreConfig.defaultConfig()

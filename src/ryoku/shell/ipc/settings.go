@@ -103,6 +103,10 @@ var (
 // the custom-CSS file, and the app-launcher menu.
 type settings struct {
 	General       generalSettings       `json:"general"`
+	// Modules is Mei's switchboard: one explicit enable flag per shell module.
+	// A missing key means ON (moduleEnabled), so an older shell.json keeps every
+	// module. Read by the daemon (moduleDisabled) and by the QML (Config.modules).
+	Modules       map[string]bool       `json:"modules"`
 	Theme         themeSettings         `json:"theme"`
 	Bars          barsSettings          `json:"bars"`
 	Menus         menusSettings         `json:"menus"`
@@ -269,6 +273,10 @@ func defaultSettings() *settings {
 		return menuConfig{Position: pos, MinimumWidth: width, Widgets: widgets}
 	}
 	return &settings{
+		Modules: map[string]bool{
+			"bar": true, "launcher": true, "control_center": true,
+			"notifications": true, "tray": true, "wallpaper": true, "settings": true,
+		},
 		General: generalSettings{
 			ClockFormat24H:       false,
 			WeatherLocationQuery: locationQuery{Type: "Coordinates", Lat: 0, Lon: 0, Name: "", Country: ""},
