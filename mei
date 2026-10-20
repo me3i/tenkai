@@ -583,9 +583,17 @@ note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY"
 mkdir -p "\$XDG_CONFIG_HOME/mei/matugen"
 cp -f "\$MEI_DIR/src/ryoku/shell/matugen/config.toml" "\$XDG_CONFIG_HOME/mei/matugen/config.toml"
 
-note "starting ryogami (stills only); live display guard = \$MEI_HOST_WAYLAND_SOCKET"
-"\$RUN/bin/ryogami" daemon >> "\$log/ryogami.log" 2>&1 &
-RPID=\$!; record "\$RPID" ryogami
+# Module switchboard: wallpaper=false starts no ryogami at all, so the nested
+# bus and process list have no wallpaper daemon to prove against.
+WALL_ON=\$(jq -r 'if .modules.wallpaper == null then true else .modules.wallpaper end' "\$XDG_CONFIG_HOME/mei/shell.json" 2>/dev/null || echo true)
+if [ "\$WALL_ON" != "false" ]; then
+  note "starting ryogami (stills only); live display guard = \$MEI_HOST_WAYLAND_SOCKET"
+  "\$RUN/bin/ryogami" daemon >> "\$log/ryogami.log" 2>&1 &
+  RPID=\$!; record "\$RPID" ryogami
+else
+  note "wallpaper module off: ryogami not started"
+  RPID=""
+fi
 
 note "starting mei-shell daemon"
 "\$RUN/bin/mei-shell" daemon >> "\$log/daemon.log" 2>&1 &
@@ -595,8 +603,10 @@ wait "\$HYPPID"
 note "Hyprland exited; terminating daemon"
 kill -TERM "\$DPID" 2>/dev/null || true
 wait "\$DPID" 2>/dev/null || true
-kill -TERM "\$RPID" 2>/dev/null || true
-wait "\$RPID" 2>/dev/null || true
+if [ -n "\$RPID" ]; then
+  kill -TERM "\$RPID" 2>/dev/null || true
+  wait "\$RPID" 2>/dev/null || true
+fi
 note "session done"
 SESSION
   sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__HOST_WAYLAND__|$1|g; s|__BASELINE_SIG__|${2:-}|g" "$RUN_DIR/session.sh"
