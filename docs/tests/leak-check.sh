@@ -21,10 +21,10 @@ fail=0
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 cleanup() {
-  for p in ${BROKEN_PID:-} ${GOOD_PID:-} ${PARENT_PID:-} ${DESC_QS:-} ${DESC_ROOT:-} ${GOOD_DESC_QS:-} ${GOOD_DESC_ROOT:-}; do
+  for p in ${BROKEN_PID:-} ${GOOD_PID:-} ${PARENT_PID:-} ${DESC_QS:-} ${DESC_ROOT:-} ${GOOD_DESC_QS:-} ${GOOD_DESC_ROOT:-} ${COMP_CHILD:-} ${COMP_ROOT:-} ${QS_COMP_CHILD:-} ${QS_COMP_ROOT:-}; do
     [ -n "$p" ] && kill -TERM "$p" 2>/dev/null || true
   done
-  for f in broken good parent desc good-desc; do
+  for f in broken good parent desc good-desc comp-probe qs-comp; do
     [ -f "$TMP/$f.log" ] && cp "$TMP/$f.log" "$RUN/logs/leak-check-$STAMP-$f.log"
   done
   rm -rf "$TMP"
@@ -133,6 +133,50 @@ else
   sed 's/^/  | /' "$TMP/good-desc.log"
 fi
 kill -TERM "$GOOD_DESC_QS" "$GOOD_DESC_ROOT" 2>/dev/null; wait "$GOOD_DESC_ROOT" 2>/dev/null; GOOD_DESC_QS=""; GOOD_DESC_ROOT=""
+
+# 6. A non-Mei compositor startup probe (Hyprland runs `sh -c lspci ...`)
+#    inherits the host display before the nested display is set. It must not
+#    be a false positive.
+cp /bin/sleep "$TMP/lspci"
+env XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$LIVE_RT/$LIVE_WL" \
+  bash -c "XDG_RUNTIME_DIR='$RT' WAYLAND_DISPLAY='$LIVE_RT/$LIVE_WL' '$TMP/lspci' 6 & wait" &
+COMP_ROOT=$!
+sleep 0.3
+COMP_CHILD="$(pgrep -P "$COMP_ROOT" 2>/dev/null | head -1)"
+printf '%s\t%s\thyprland-nested\n' "$COMP_ROOT" "$COMP_ROOT" > "$TMP/comp-probe.pids"
+run_monitor "$TMP/comp-probe.pids" "$TMP/comp-probe.stop" "$TMP/comp-probe.log" &
+MONPID=$!
+sleep 1
+touch "$TMP/comp-probe.stop"
+wait "$MONPID"; CPRC=$?
+if [ "$CPRC" = 0 ] && grep -q 'COMPOSITOR-HOSTDISPLAY.*name=lspci' "$TMP/comp-probe.log"; then
+  ok "compositor startup probe with host display passes (pid ${COMP_CHILD:-?}, no false positive)"
+else
+  bad "guard flagged or missed a compositor startup probe (rc=$CPRC)"
+  sed 's/^/  | /' "$TMP/comp-probe.log"
+fi
+kill -TERM "$COMP_CHILD" "$COMP_ROOT" 2>/dev/null; wait "$COMP_ROOT" 2>/dev/null; COMP_CHILD=""; COMP_ROOT=""
+
+# 7. The compositor allowance must not hide a Mei component: qs below the
+#    compositor with the host display still fails.
+env XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$LIVE_RT/$LIVE_WL" \
+  bash -c "XDG_RUNTIME_DIR='$RT' WAYLAND_DISPLAY='$LIVE_RT/$LIVE_WL' '$TMP/qs' 6 & wait" &
+QS_COMP_ROOT=$!
+sleep 0.3
+QS_COMP_CHILD="$(pgrep -P "$QS_COMP_ROOT" 2>/dev/null | head -1)"
+printf '%s\t%s\thyprland-nested\n' "$QS_COMP_ROOT" "$QS_COMP_ROOT" > "$TMP/qs-comp.pids"
+run_monitor "$TMP/qs-comp.pids" "$TMP/qs-comp.stop" "$TMP/qs-comp.log" &
+MONPID=$!
+sleep 1
+touch "$TMP/qs-comp.stop"
+wait "$MONPID"; QCRC=$?
+if [ "$QCRC" != 0 ] && grep -q 'name=qs .*WAYLAND_DISPLAY points into the live runtime' "$TMP/qs-comp.log"; then
+  ok "Mei qs below the compositor with the host display still fails (pid ${QS_COMP_CHILD:-?}, rc=$QCRC)"
+else
+  bad "compositor allowance hid a Mei qs with the host display (rc=$QCRC)"
+  sed 's/^/  | /' "$TMP/qs-comp.log"
+fi
+kill -TERM "$QS_COMP_CHILD" "$QS_COMP_ROOT" 2>/dev/null; wait "$QS_COMP_ROOT" 2>/dev/null; QS_COMP_CHILD=""; QS_COMP_ROOT=""
 
 echo "leak self-test log: $LOG"
 exit "$fail"

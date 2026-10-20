@@ -21,8 +21,11 @@
 # launcher's own dbus-daemon and session.sh wrapper are launch infrastructure
 # (not Mei UI/daemon processes) and are logged as INFRA; their runtime is not
 # treated as a leak because they carry the host environment into the session.
-# Every other descendant, including qs, mei-shell, ryogami, mei-hub and
-# mei-wm-hyprland, is checked strictly on every scan.
+# The compositor's non-Mei startup probes (Hyprland runs `sh -c lspci ...` and
+# similar before it sets the nested display) are logged as COMPOSITOR-HOSTDISPLAY
+# and allowed the host display path, but not a live runtime. Every Mei component
+# descendant, including qs, mei-shell, ryogami, mei-hub and mei-wm-hyprland, is
+# checked strictly on every scan, even if it appears below the compositor.
 #
 # Exit 0 only if the stop file appears with no violation; exit 1 otherwise.
 set -uo pipefail
@@ -32,6 +35,7 @@ NESTED_RT="${NESTED_RT:-/home/mei/projects/mei/.r}"
 LIVE_RT="${LIVE_RT:-/run/user/$(id -u)}"
 LIVE_WL="${LIVE_WL:-wayland-1}"
 RUN_DIR="${NESTED_RT%/*}/.run"
+MEI_DIR="${RUN_DIR%/.run}"
 : > "$LOG"
 
 live_shell="$(busctl --user list --no-legend 2>/dev/null | awk '$1=="org.freedesktop.Notifications"{print $2; exit}')"
@@ -46,8 +50,10 @@ declare -A PARENT_OF=()
 declare -A COMM_OF=()
 declare -A CHECK=()
 declare -A ROOT_KIND=()
+declare -A SCOPE_KIND=()
 declare -A announced=()
 declare -A seen_infra=()
+declare -A seen_comp_probe=()
 LAUNCHER_ROOTS=""
 COMPOSITOR_ROOTS=""
 viol=0
@@ -117,9 +123,21 @@ is_launch_infra() { # $1 pid: launcher's D-Bus/session wrapper, not Mei UI
   return 1
 }
 
+is_mei_component() { # $1 pid: qs / daemon / ryogami / hub / wm watcher
+  local pid="$1" cmd
+  case "${COMM_OF[$pid]:-}" in
+    qs|mei-shell|mei-shell-daemon|mei-hub|ryogami|mei-wm-hyprland) return 0 ;;
+  esac
+  cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)"
+  case "$cmd" in
+    *"$RUN_DIR/bin/"*|*"$MEI_DIR/src/"*) return 0 ;;
+  esac
+  return 1
+}
+
 build_scope() {
   local pid name
-  CHECK=(); ROOT_KIND=(); LAUNCHER_ROOTS=""; COMPOSITOR_ROOTS=""
+  CHECK=(); ROOT_KIND=(); SCOPE_KIND=(); LAUNCHER_ROOTS=""; COMPOSITOR_ROOTS=""
   if [ -r "$PIDFILE" ]; then
     while IFS=$'\t' read -r pid pgid name; do
       case "$pid" in ''|*[!0-9]*) continue ;; esac
@@ -133,9 +151,21 @@ build_scope() {
   fi
   load_table
   for pid in "${!PARENT_OF[@]}"; do
-    for name in $LAUNCHER_ROOTS $COMPOSITOR_ROOTS; do
+    # Check the compositor tree first: every compositor child is also a
+    # launcher descendant, but its non-Mei startup probes need the compositor
+    # display allowance. Mei components stay strict via is_mei_component.
+    for name in $COMPOSITOR_ROOTS; do
       if is_descendant "$pid" "$name"; then
         CHECK[$pid]="${COMM_OF[$pid]:-?}"
+        SCOPE_KIND[$pid]=compositor-desc
+        break
+      fi
+    done
+    [ -n "${SCOPE_KIND[$pid]:-}" ] && continue
+    for name in $LAUNCHER_ROOTS; do
+      if is_descendant "$pid" "$name"; then
+        CHECK[$pid]="${COMM_OF[$pid]:-?}"
+        SCOPE_KIND[$pid]=launcher-desc
         break
       fi
     done
@@ -156,9 +186,11 @@ build_scope() {
 check_pid() { # $1 pid, $2 name
   local pid="$1" name="$2" kind ppid
   [ -d "/proc/$pid" ] || return
-  kind="${ROOT_KIND[$pid]:-}"
+  kind="${ROOT_KIND[$pid]:-${SCOPE_KIND[$pid]:-}}"
   if [ "$name" = "nested-launcher" ] || [ "$kind" = "launcher" ]; then return; fi
-  [ -n "$kind" ] || { if is_launch_infra "$pid"; then kind=infra; fi; }
+  if [ "$kind" != "compositor" ] && [ "$kind" != "compositor-desc" ] && is_launch_infra "$pid"; then
+    kind=infra
+  fi
 
   read_env "$pid" || return
   # A daemon recorded at the instant it is exec'd can briefly expose an
@@ -200,8 +232,17 @@ check_pid() { # $1 pid, $2 name
   # process allowed that path: it opens the live display as a client.
   case "$EWL" in
     "$LIVE_RT"/*)
-      [ "$kind" = "compositor" ] || \
+      if [ "$kind" = "compositor" ]; then
+        :
+      elif [ "$kind" = "compositor-desc" ] && ! is_mei_component "$pid"; then
+        if [ -z "${seen_comp_probe[$pid]:-}" ]; then
+          printf 'COMPOSITOR-HOSTDISPLAY pid=%s name=%s (non-Mei compositor startup probe)\n' \
+            "$pid" "$name" >> "$LOG"
+          seen_comp_probe[$pid]=1
+        fi
+      else
         v "$pid" "$name" "WAYLAND_DISPLAY points into the live runtime ($EWL)"
+      fi
       ;;
   esac
   for lp in $LIVE_PIDS; do
