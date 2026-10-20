@@ -79,7 +79,9 @@ hub_focused() { H -j activewindow 2>/dev/null | jq -r '.class // ""'; }
 shot() { grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
 vkbd() { "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
 hubs() { for p in $(pgrep -f "hub/quickshell" 2>/dev/null); do [ "$(cat /proc/$p/comm 2>/dev/null)" = qs ] && { echo "$p"; return; }; done; }
-sec() { sed -n 's/^ *section = "\(.*\)"/\1/p' "$RUN/config/mei/hub.toml" 2>/dev/null; }
+# A fresh hub opens on its default page (global) and writes no section key
+# until the user navigates; absence therefore means global, not "did not open".
+sec() { local s; s="$(sed -n 's/^ *section = "\(.*\)"/\1/p' "$RUN/config/mei/hub.toml" 2>/dev/null)"; printf '%s' "${s:-global}"; }
 
 MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"
 [ -n "$MON" ] && H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1 && ok "nested output enlarged (monitor $MON)" || bad "could not enlarge nested output"

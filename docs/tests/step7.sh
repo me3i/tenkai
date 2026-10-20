@@ -166,6 +166,12 @@ S2="$(tray_state)"
 echo "$S2" | jq -c '.items[1] | {service,iconPath,iconName}' 2>/dev/null | sed 's/^/  /'
 P2="$(echo "$S2" | jq -r '.items[1].iconPath // ""')"
 if [ -n "$P2" ] && [ -f "$P2" ]; then ok "the ARGB pixmap was converted and stored: $P2"; else bad "pixmap item produced no icon file"; fi
+# the bar pins a new service and paints it a beat after the daemon sees it
+for _ in $(seq 1 20); do
+  [ "$(tray_state | jq -r '.items[1].pinned // false' 2>/dev/null)" = "true" ] && break
+  sleep 0.2
+done
+sleep 1.2
 shot 04-two-icons
 # The second item ships a solid 24x24 #1F9E8F ARGB pixmap, so its on-screen
 # extent is the drawn icon box itself (the theme glyph above only gives its ink).
@@ -173,8 +179,14 @@ S4="$RUN/shots/step7-04-two-icons.png"
 PINFO="$(magick "$S4" -fuzz 8% -fill black +opaque '#1F9E8F' -fill white \
   -opaque '#1F9E8F' -trim -format '%wx%h%X%Y' info: 2>/dev/null)"
 PBOX="${PINFO%%+*}"
-[ "$PBOX" = "14x14" ] && ok "a 24px tray pixmap is drawn in the bar's 14x14 icon box ($PINFO)" \
-  || bad "pixmap icon box unexpected: ${PINFO:-none}"
+case "$PBOX" in
+  [0-9]*x[0-9]*) : ;;
+  *) bad "pixmap icon not visible on screen (bbox '${PINFO:-none}')"; PINFO=""; PBOX="" ;;
+esac
+if [ -n "$PBOX" ]; then
+  [ "$PBOX" = "14x14" ] && ok "a 24px tray pixmap is drawn in the bar's 14x14 icon box ($PINFO)" \
+    || bad "pixmap icon box unexpected: ${PINFO:-none}"
+fi
 # the theme icon is the cell immediately left of the pixmap icon; measure its
 # ink there rather than from barX (the row anchor is the cluster centre).
 PX="$(echo "$PINFO" | cut -d+ -f2)"; PX="${PX:-0}"
