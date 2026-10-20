@@ -242,12 +242,18 @@ ShellRoot {
             }
 
             // The frame bar (Phase 2): reads its own reveal from this slice.
-            Frame {
-                modelData: perScreen.modelData
-                // park the record island flush beside this monitor's dock band
-                dockLaneEdge: dockLoader.item ? dockLoader.item.edge : ""
-                dockLaneSize: dockLoader.item ? dockLoader.item.bandSize : 0
-                dockLaneCenter: dockLoader.item ? dockLoader.item.bandCenter : 0
+            // MEI: gated, so bar=false creates no bar window at all (not just a
+            // hidden one). LazyLoader is the pattern the other toggle surfaces
+            // here already use.
+            LazyLoader {
+                activeAsync: Config.moduleOn("bar")
+                Frame {
+                    modelData: perScreen.modelData
+                    // park the record island flush beside this monitor's dock band
+                    dockLaneEdge: dockLoader.item ? dockLoader.item.edge : ""
+                    dockLaneSize: dockLoader.item ? dockLoader.item.bandSize : 0
+                    dockLaneCenter: dockLoader.item ? dockLoader.item.bandCenter : 0
+                }
             }
 
             // The dock: a resident per-monitor surface on the edge opposite the
