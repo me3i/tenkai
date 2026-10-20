@@ -15,6 +15,12 @@ import (
 // SessionActions singleton carries the same guard; this one is defence in depth.
 func testStubbed() bool { return os.Getenv("MEI_TEST") == "1" }
 
+// shutdownStubbed reports the live trial's one remaining stub: the power
+// actions are real in a live run (MEI_TEST is not set there), but shutdown
+// stays stubbed for the first trial so a stray confirmation cannot power the
+// machine off. The QML singleton carries the same guard.
+func shutdownStubbed() bool { return os.Getenv("MEI_STUB_SHUTDOWN") == "1" }
+
 // session.go runs the session power actions the confirmation dialog triggers.
 // Reboot and shutdown are system-level, so they go through systemctl. Logout
 // ends the session by asking the compositor to exit, through the wm seam.
@@ -61,6 +67,10 @@ func (d *daemon) startSession() {
 func runSessionAction(action string) {
 	if testStubbed() {
 		log.Printf("mei-shell: [mei-stub] suppressed session %s (MEI_TEST=1)", action)
+		return
+	}
+	if action == "shutdown" && shutdownStubbed() {
+		log.Printf("mei-shell: [mei-stub] suppressed session shutdown (MEI_STUB_SHUTDOWN=1)")
 		return
 	}
 	argv, ok := sessionActionArgv(action)

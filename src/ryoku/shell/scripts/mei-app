@@ -45,6 +45,22 @@ if [ -r "$store" ] && command -v jq >/dev/null 2>&1; then
 fi
 [ -n "$cmd" ] || cmd="$fallback"
 
+# Live trial: an app the launcher starts must run in the owner's real
+# environment, not Mei's confined one. MEI_APP_HOME carries the real HOME (and
+# the real XDG_* follow from it); Mei's own state stays inside the project.
+# The lookup above already read Mei's own desktop.json, so the chosen terminal
+# is still the one Mei stored.
+if [ -n "${MEI_APP_HOME:-}" ]; then
+	export HOME="$MEI_APP_HOME"
+	export XDG_CONFIG_HOME="${MEI_APP_XDG_CONFIG_HOME:-$HOME/.config}"
+	export XDG_CACHE_HOME="${MEI_APP_XDG_CACHE_HOME:-$HOME/.cache}"
+	export XDG_STATE_HOME="${MEI_APP_XDG_STATE_HOME:-$HOME/.local/state}"
+	export XDG_DATA_HOME="${MEI_APP_XDG_DATA_HOME:-$HOME/.local/share}"
+	export XDG_RUNTIME_DIR="${MEI_APP_XDG_RUNTIME_DIR:-$XDG_RUNTIME_DIR}"
+	unset MEI_APP_HOME MEI_APP_XDG_CONFIG_HOME MEI_APP_XDG_CACHE_HOME \
+		MEI_APP_XDG_STATE_HOME MEI_APP_XDG_DATA_HOME MEI_APP_XDG_RUNTIME_DIR
+fi
+
 if [ ${#inner[@]} -eq 0 ]; then
 	exec sh -c "$cmd"
 fi

@@ -98,6 +98,14 @@ func daemonLive(sock string) bool {
 // Wayland socket through MEI_HOST_WAYLAND_SOCKET. Unset means we cannot prove
 // isolation, so the daemon fails closed instead of painting the owner's desktop.
 func guardDisplay() error {
+	// The live trial's explicit override. MEI_ALLOW_LIVE_DISPLAY is set by
+	// exactly one caller, `./mei live --profile full`, which is the owner's
+	// own hand on the switch: without it ryogami still refuses to paint a
+	// display it cannot prove is not the live one.
+	if os.Getenv("MEI_ALLOW_LIVE_DISPLAY") == "1" {
+		fmt.Fprintln(os.Stderr, "ryogami: MEI_ALLOW_LIVE_DISPLAY=1 -> the live-display guard is BYPASSED (live trial)")
+		return nil
+	}
 	host := strings.TrimSpace(os.Getenv("MEI_HOST_WAYLAND_SOCKET"))
 	if host == "" {
 		return fmt.Errorf("MEI_HOST_WAYLAND_SOCKET is unset: refusing to start (cannot prove this is not the live session)")

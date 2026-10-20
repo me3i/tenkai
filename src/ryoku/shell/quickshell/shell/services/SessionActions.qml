@@ -19,10 +19,19 @@ Singleton {
     // it only logs. session.go keeps the same guard as defence in depth.
     readonly property bool testMode: Quickshell.env("MEI_TEST") === "1"
 
+    // A live run is not a test run: the power actions are real there, because
+    // MEI_TEST is deliberately not set. The first live trial still keeps
+    // shutdown stubbed, so a stray confirmation cannot power the machine off.
+    readonly property bool shutdownStubbed: Quickshell.env("MEI_STUB_SHUTDOWN") === "1"
+
     // action is one of "logout" | "reboot" | "shutdown"; the daemon validates it.
     function run(action) {
         if (testMode) {
             console.log("[mei-stub] suppressed session." + action + " (MEI_TEST=1)");
+            return;
+        }
+        if (action === "shutdown" && root.shutdownStubbed) {
+            console.log("[mei-stub] suppressed session.shutdown (MEI_STUB_SHUTDOWN=1)");
             return;
         }
         ctl.queued += "call session." + action + " {}\n";

@@ -22,6 +22,21 @@
 #                           ignored. Other process diffs are informational unless --strict.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       start / stop the nested session, or run it under the full harness
+#   live --profile overlay|full
+#                           join the OWNER's real session for the live trial.
+#                           overlay: Mei runs beside the current shell with only
+#                             the launcher, control centre and Settings (no D-Bus
+#                             name, no screen edge, no wallpaper). It prints what
+#                             it will claim and checks that the live shell owns
+#                             none of it.
+#                           full: replaces the current shell. Refuses while the
+#                             old shell still owns the notification or tray name,
+#                             prints what it will do and waits for YES.
+#                           Never started by the harness: the owner runs it.
+#   live-stop              stop only Mei's own live pids and their descendants
+#                           (walked through /proc parent links) and restore what
+#                           the live run changed.
+#   live-status            show the live session, its profile and its monitor log
 #   wallpaper <path|next|prev|random>
 #                           change the nested session's wallpaper through the ryogami CLI with
 #                           Mei's confined HOME/XDG env. Use this, never the binary directly:
@@ -40,6 +55,9 @@ DOCS_DIR="$MEI_DIR/docs"
 BASE_DIR="$DOCS_DIR/baseline"
 BASE_FILE="$DOCS_DIR/baseline.txt"
 PID_FILE="$RUN_DIR/pids"
+LIVE_PID_FILE="$RUN_DIR/live-pids"
+LIVE_PROFILE_FILE="$RUN_DIR/live-profile"
+LIVE_BACKUP_DIR="$RUN_DIR/live-backup"
 
 die()  { printf 'mei: %s\n' "$*" >&2; exit 1; }
 note() { printf '%s\n' "$*"; }
@@ -833,6 +851,433 @@ cmd_test() {
   cmd_verify_untouched || note "FAIL  live config changed during the test — investigate immediately"
 }
 
+# ---------------------------------------------------------------------------
+# LIVE TRIAL — owner-run. `./mei live` joins the owner's real session so Mei
+# can be tried on the live display. It is never started by the harness, it
+# never dispatches anything in the live compositor, and it claims only what
+# the chosen profile lists (printed before anything starts).
+#
+#   ./mei live --profile overlay   Mei runs beside the live shell: launcher,
+#                                  control centre and Settings only. No D-Bus
+#                                  names, no screen edge, no wallpaper.
+#   ./mei live --profile full      Mei replaces the live shell. Refuses while
+#                                  the old shell still owns the notification
+#                                  or tray names, prints what it will do and
+#                                  waits for YES.
+#   ./mei live-stop                stop only Mei's own recorded pids and their
+#                                  descendants, and restore what it changed.
+#   ./mei live-status              what is running, in which profile.
+# ---------------------------------------------------------------------------
+
+live_ppid() { # $1 = pid -> ppid (parsed after the comm, so a name with spaces is safe)
+  local s rest
+  s="$(cat "/proc/$1/stat" 2>/dev/null || true)"
+  [ -n "$s" ] || return 1
+  rest="${s##*) }"
+  printf '%s' "$rest" | awk '{print $2}'
+}
+
+live_descendants() { # $1 = root pid -> every descendant, deepest first
+  local root="$1" p ppid child
+  local -a map=() order=() kids=()
+  for p in /proc/[0-9]*; do
+    p="${p##*/}"
+    ppid="$(live_ppid "$p" 2>/dev/null || true)"
+    [ -n "$ppid" ] || continue
+    map+=("$p:$ppid")
+  done
+  # depth-first over the parent links, children before parents
+  local -a stack=("$root") seen=()
+  while [ ${#stack[@]} -gt 0 ]; do
+    p="${stack[${#stack[@]}-1]}"
+    stack=("${stack[@]:0:${#stack[@]}-1}")
+    kids=()
+    local entry
+    for entry in "${map[@]}"; do
+      child="${entry%%:*}"
+      [ "${entry##*:}" = "$p" ] && kids+=("$child")
+    done
+    local k
+    for k in "${kids[@]}"; do
+      local dup=0 s
+      for s in "${seen[@]}"; do [ "$s" = "$k" ] && dup=1; done
+      [ "$dup" = 1 ] && continue
+      seen+=("$k")
+      stack+=("$k")
+      order+=("$k")
+    done
+  done
+  # reverse: deepest first
+  local i
+  for (( i=${#order[@]}-1; i>=0; i-- )); do printf '%s\n' "${order[$i]}"; done
+}
+
+live_any_alive() { # $1 = pidfile
+  [ -f "$1" ] || return 1
+  local p
+  while read -r p _; do
+    [ -n "${p:-}" ] && [ -d "/proc/$p" ] && return 0
+  done < "$1"
+  return 1
+}
+
+live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
+  local profile="$1" rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  case "$profile" in
+  overlay)
+    # The names the shell registers with the compositor over the global-shortcuts
+    # protocol (shell.qml's CustomShortcut list). They are names only: the
+    # surfaces they open are gated by the module flags.
+    for sc in barToggle clipboard compress install launcher overview quicksettings screenshot stash visualizer visualizer-overlay visualizer-place wallpaper-menu; do
+      printf 'global-shortcut\tryoku:%s\tshortcut name registered by the shell\n' "$sc"
+    done
+    printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-osd\tOSD, only on a brightness/volume change\n'
+    printf 'socket\t%s\tmei-shell control socket\n' "$rt/mei-shell.sock"
+    ;;
+  full)
+    for sc in barToggle clipboard compress install launcher overview quicksettings screenshot stash visualizer visualizer-overlay visualizer-place wallpaper-menu; do
+      printf 'global-shortcut\tryoku:%s\tshortcut name registered by the shell\n' "$sc"
+    done
+    printf 'dbus-name\torg.freedesktop.Notifications\tnotification server\n'
+    printf 'dbus-name\torg.kde.StatusNotifierWatcher\ttray watcher\n'
+    printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-osd\tOSD surface\n'
+    printf 'layer-namespace\tryoku-frame\tthe bar (top edge)\n'
+    printf 'layer-namespace\tryoku-tray\tthe tray (edge panel)\n'
+    printf 'layer-namespace\tryoku-notifications\tnotification column (edge)\n'
+    printf 'layer-namespace\twallpaper-bg\tthe wallpaper\n'
+    printf 'socket\t%s\tmei-shell control socket\n' "$rt/mei-shell.sock"
+    printf 'socket\t%s\tryogami socket\n' "$rt/ryogami.sock"
+    ;;
+  esac
+}
+
+live_layer_namespaces() { # the namespaces the live compositor currently has
+  # The shape of `hyprctl -j layers` has changed between Hyprland versions, so
+  # this walks the whole tree and takes every dict that carries a namespace.
+  hyprctl -j layers 2>/dev/null | python3 -c "
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+def walk(node):
+    if isinstance(node, dict):
+        if node.get('namespace'):
+            print('%s\t%s' % (node['namespace'], node.get('pid', '?')))
+        for v in node.values():
+            walk(v)
+    elif isinstance(node, list):
+        for v in node:
+            walk(v)
+walk(d)
+" 2>/dev/null || true
+}
+
+live_dbus_owner() { # $1 = well-known name -> owning pid (or empty)
+  busctl --user list --no-pager 2>/dev/null | awk -v n="$1" '$1==n {print $2; exit}'
+}
+
+live_shortcut_owner() { # $1 = shortcut name -> "yes" if the live session has it
+  hyprctl globalshortcuts 2>/dev/null | grep -q "^$1 " && echo yes || echo ""
+}
+
+live_print_claims() { # $1 = profile, $2 = abort-any | abort-unexpected
+  local profile="$1" mode="${2:-abort-any}" kind name note owner collide=0
+  echo "=== what Mei will claim (profile: $profile) ==="
+  printf '%-16s %-34s %-26s %s\n' KIND NAME LIVE-SESSION-OWNS NOTES
+  while IFS=$'\t' read -r kind name note; do
+    owner="free"
+    case "$kind" in
+    dbus-name)     owner="$(live_dbus_owner "$name")" ;;
+    layer-namespace)
+      owner="$(live_layer_namespaces | awk -F'\t' -v n="$name" '$1==n {print $2; exit}')" ;;
+    socket)        [ -e "$name" ] && owner="present" ;;
+    global-shortcut) owner="$(live_shortcut_owner "$name")" ;;
+    esac
+    if [ -n "$owner" ] && [ "$owner" != "free" ]; then
+      # In the full profile these collisions are the point: the old shell must
+      # be stopped first, and the caller checks the two D-Bus names by hand.
+      case "$kind:$name" in
+      dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher) ;;
+      layer-namespace:wallpaper-bg|layer-namespace:ryoku-frame|layer-namespace:ryoku-tray|layer-namespace:ryoku-notifications) ;;
+      *) collide=1 ;;
+      esac
+      printf '%-16s %-34s %-26s %s\n' "$kind" "$name" "OWNED BY PID $owner" "$note"
+    else
+      printf '%-16s %-34s %-26s %s\n' "$kind" "$name" "free" "$note"
+    fi
+  done < <(live_claims "$profile")
+  echo
+  if [ "$collide" = 1 ]; then
+    echo "COLLISION: something above is already owned by the live session."
+  else
+    echo "No collision: every name, socket and layer namespace above is free."
+  fi
+  return $collide
+}
+
+live_write_modules() { # $1 = profile -> the module flags for this run
+  local profile="$1" f
+  mkdir -p "$RUN_DIR/config/mei" "$LIVE_BACKUP_DIR"
+  for f in shell.json visualizer.json keypresses.json; do
+    [ -f "$RUN_DIR/config/mei/$f" ] && cp -f "$RUN_DIR/config/mei/$f" "$LIVE_BACKUP_DIR/$f"
+  done
+  local modules='{"bar":true,"control_center":true,"launcher":true,"notifications":true,"settings":true,"tray":true,"wallpaper":true}'
+  if [ "$profile" = "overlay" ]; then
+    # Only the launcher, the control centre and Settings. No bar, no
+    # notifications, no tray, no wallpaper: none of those may touch the live
+    # session while the old shell is still running.
+    modules='{"bar":false,"control_center":true,"launcher":true,"notifications":false,"settings":true,"tray":false,"wallpaper":false}'
+  fi
+  if [ -f "$RUN_DIR/config/mei/shell.json" ]; then
+    python3 - "$RUN_DIR/config/mei/shell.json" "$modules" <<'PY'
+import json,sys
+path, mods = sys.argv[1], json.loads(sys.argv[2])
+d = json.load(open(path))
+d["modules"] = mods
+json.dump(d, open(path + ".tmp", "w"), indent=2)
+import os; os.replace(path + ".tmp", path)
+PY
+  else
+    printf '{\n  "modules": %s\n}\n' "$modules" > "$RUN_DIR/config/mei/shell.json"
+  fi
+  if [ "$profile" = "overlay" ]; then
+    # The visualiser is not a module flag: it is its own config. Off in
+    # overlay mode, because it paints a full-screen layer on the desktop.
+    printf '{\n    "enabled": false\n}\n' > "$RUN_DIR/config/mei/visualizer.json"
+  fi
+  echo "module flags for $profile: $modules"
+}
+
+write_live_session() { # $1 = profile, $2 = wayland display, $3 = signature, $4 = runtime dir
+  local profile="$1" wl="$2" sig="$3" rt="$4" bus
+  bus="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$rt/bus}"
+  local ryogami='  # wallpaper module is off in this profile: ryogami is not started'
+  if [ "$profile" = "full" ]; then
+    ryogami='export MEI_ALLOW_LIVE_DISPLAY=1
+"$RUN/bin/ryogami" daemon >> "$log/live-ryogami.log" 2>&1 &
+RPID=$!; record "$RPID" ryogami'
+  fi
+  cat > "$RUN_DIR/live-session.sh" <<SESSION
+#!/usr/bin/env bash
+set -uo pipefail
+MEI_DIR="__MEI_DIR__"
+RUN="\$MEI_DIR/.run"
+# Mei's own state stays inside the project: HOME and every XDG_* that Mei
+# writes to point at .run. The launcher's apps are handed the owner's real
+# environment through MEI_APP_HOME (mei-app re-exports it for the child).
+export HOME="\$RUN/home"
+export XDG_CONFIG_HOME="\$RUN/config"
+export XDG_CACHE_HOME="\$HOME/.cache"
+export XDG_STATE_HOME="\$RUN/state"
+export XDG_DATA_HOME="\$RUN/data"
+export XDG_DATA_DIRS="__REAL_DATA_DIRS__"
+export XDG_RUNTIME_DIR="$rt"
+export WAYLAND_DISPLAY="$wl"
+export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+export DBUS_SESSION_BUS_ADDRESS="$bus"
+export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
+export PATH="\$RUN/bin:\$PATH"
+export QML2_IMPORT_PATH="\$RUN/qml"
+export QML_IMPORT_PATH="\$RUN/qml"
+export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
+export MEI_APP_HOME="__REAL_HOME__"
+export MEI_APP_XDG_RUNTIME_DIR="$rt"
+# A live run is not a test run: MEI_TEST is deliberately NOT set, so the
+# power actions are real. Only shutdown stays stubbed for the first trial.
+export MEI_STUB_SHUTDOWN=1
+export QSG_RENDER_LOOP=threaded
+export QT_QPA_PLATFORM=wayland
+unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
+
+log="\$RUN/logs"; pidfile="\$RUN/live-pids"
+note() { printf '%s\n' "\$*" >> "\$log/live-session.log"; }
+record() { local p="\$1" n="\$2" pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\t%s\t%s\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
+
+note "starting Mei live session (profile __PROFILE__)"
+__RYOGAMI__
+"\$RUN/bin/mei-shell" daemon >> "\$log/live-daemon.log" 2>&1 &
+DPID=\$!; record "\$DPID" mei-shell-daemon
+note "daemon pid \$DPID"
+trap 'kill -TERM \$DPID 2>/dev/null; [ -n "\${RPID:-}" ] && kill -TERM \$RPID 2>/dev/null; exit 0' TERM INT
+wait "\$DPID"
+note "daemon exited; live session done"
+SESSION
+  # The account's home, not $HOME: the live run may be started from a shell
+  # whose HOME is already Mei's confined one.
+  local real_home
+  real_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
+  [ -n "$real_home" ] || real_home="$HOME"
+  sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__PROFILE__|$profile|g; s|__RYOGAMI__|$ryogami|g; s|__REAL_HOME__|$real_home|g; s|__REAL_DATA_DIRS__|$real_home/.local/share:$real_home/.local/share/flatpak/exports/share:/usr/local/share:/usr/share|g" "$RUN_DIR/live-session.sh"
+  chmod +x "$RUN_DIR/live-session.sh"
+}
+
+cmd_live() {
+  local profile=""
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --profile) profile="${2:-}"; shift 2 || true ;;
+      -h|--help) usage; return 0 ;;
+      *) die "usage: ./mei live --profile overlay|full" ;;
+    esac
+  done
+  case "$profile" in overlay|full) ;; *) die "usage: ./mei live --profile overlay|full" ;; esac
+
+  # 0. Mei must not already be running.
+  if live_any_alive "$LIVE_PID_FILE"; then
+    die "Mei is already running (live pids in $LIVE_PID_FILE): run './mei live-stop' first"
+  fi
+  if live_any_alive "$PID_FILE"; then
+    die "a nested Mei session is running: run './mei stop' first"
+  fi
+
+  # 1. the live session we are joining
+  local wl="${WAYLAND_DISPLAY:-}" sig="${HYPRLAND_INSTANCE_SIGNATURE:-}" rt="${XDG_RUNTIME_DIR:-}"
+  [ -n "$wl" ] || die "no WAYLAND_DISPLAY in this shell: run './mei live' from a terminal in your live session"
+  [ -n "$rt" ] || rt="/run/user/$(id -u)"
+  [ -e "$rt/$wl" ] || die "the live wayland socket $rt/$wl is missing: this is not your live session"
+  [ -n "$sig" ] || die "no HYPRLAND_INSTANCE_SIGNATURE in this shell: run './mei live' from a terminal in your live session"
+  note "joining the live session: display=$wl signature=$sig runtime=$rt"
+
+  # 2. what we will claim, and whether the live shell already owns it
+  echo
+  if [ "$profile" = "overlay" ]; then
+    if ! live_print_claims "$profile" abort-any; then
+      die "refusing to start: Mei would claim something your live shell already owns"
+    fi
+  else
+    if ! live_print_claims "$profile" abort-unexpected; then
+      die "refusing to start: Mei would claim something your live shell already owns"
+    fi
+  fi
+
+  # 3. full profile: the old shell must be gone, and the owner must agree
+  if [ "$profile" = "full" ]; then
+    local n owner
+    for n in org.freedesktop.Notifications org.kde.StatusNotifierWatcher; do
+      owner="$(live_dbus_owner "$n")"
+      if [ -n "$owner" ]; then
+        die "refusing: PID $owner still owns $n.
+     Stop your current shell first:
+       serpantinumd stop
+     then run this again. (docs/LIVE-TEST.md has the full runbook.)"
+      fi
+    done
+    echo "Mei --profile full will:"
+    echo "  * take org.freedesktop.Notifications and org.kde.StatusNotifierWatcher on the live bus"
+    echo "  * draw the wallpaper, the bar, the tray and the notification column on your display"
+    echo "  * start ryogami with the live-display guard explicitly overridden"
+    echo "  * keep every file it writes inside $RUN_DIR"
+    echo "  * leave your Hyprland config untouched"
+    printf 'Type YES to continue: '
+    local answer=""
+    read -r answer || true
+    [ "$answer" = "YES" ] || die "aborted (answer was '${answer}')"
+  fi
+
+  # 4. module flags and the session script
+  live_write_modules "$profile"
+  write_live_session "$profile" "$wl" "$sig" "$rt"
+  : > "$LIVE_PID_FILE"
+  : > "$RUN_DIR/logs/live-session.log"
+  setsid bash "$RUN_DIR/live-session.sh" >> "$RUN_DIR/logs/live-session.log" 2>&1 &
+  local launcher=$!
+  printf '%s\t%s\t%s\n' "$launcher" "$launcher" "live-launcher" >> "$LIVE_PID_FILE"
+
+  # 5. wait for the shell to come up, then the self-monitor
+  local q="" i=0
+  while [ $i -lt 120 ]; do
+    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $MEI_DIR/src/ryoku/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
+    [ -n "$q" ] && break
+    i=$((i + 1)); sleep 0.5
+  done
+  [ -n "$q" ] || die "the Mei shell did not come up (see $RUN_DIR/logs/live-daemon.log)"
+  setsid python3 "$MEI_DIR/docs/tests/live-monitor.py" >> "$RUN_DIR/logs/live-monitor.out" 2>&1 &
+  printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_PID_FILE"
+  echo "$profile" > "$LIVE_PROFILE_FILE"
+
+  echo
+  echo "Mei is live (profile: $profile)."
+  echo "  shell pid:   $q"
+  echo "  monitor:     $RUN_DIR/logs/live-monitor-*.log (CPU and RSS every 5 s)"
+  echo "  launcher:    hyprctl dispatch global ryoku:launcher"
+  echo "  quick settings: hyprctl dispatch global ryoku:quicksettings"
+  echo "  fallback:    qs ipc --pid $q call shell openSurface \"\" launcher"
+  echo "  stop:        ./mei live-stop"
+  if [ "$profile" = "overlay" ]; then
+    echo
+    echo "Your current shell keeps running: Mei has taken no D-Bus name, no screen"
+    echo "edge and no wallpaper in this profile."
+  fi
+}
+
+cmd_live_stop() {
+  if [ ! -f "$LIVE_PID_FILE" ]; then note "mei: no live session recorded ($LIVE_PID_FILE)"; return 0; fi
+  local -a roots=() victims=()
+  local p
+  while read -r p _; do
+    [ -n "${p:-}" ] && roots+=("$p")
+  done < "$LIVE_PID_FILE"
+  # descendants first, by /proc parent links: no pgrep, no killall, no names
+  for p in "${roots[@]}"; do
+    while read -r d; do [ -n "$d" ] && victims+=("$d"); done < <(live_descendants "$p")
+  done
+  for p in "${roots[@]}"; do victims+=("$p"); done
+  local i
+  for (( i=${#victims[@]}-1; i>=0; i-- )); do
+    p="${victims[$i]}"
+    [ -d "/proc/$p" ] || continue
+    local c; c="$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null || true)"
+    note "TERM  pid=$p  ${c:0:90}"
+    kill -TERM "$p" 2>/dev/null || true
+  done
+  local waited=0
+  while [ $waited -lt 12 ]; do
+    local alive=0
+    for p in "${victims[@]}"; do [ -d "/proc/$p" ] && alive=1; done
+    [ "$alive" = 0 ] && break
+    sleep 1; waited=$((waited + 1))
+  done
+  for p in "${victims[@]}"; do
+    [ -d "/proc/$p" ] || continue
+    local c; c="$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null || true)"
+    note "KILL  pid=$p  ${c:0:90}"
+    kill -KILL "$p" 2>/dev/null || true
+  done
+  # restore what the live run changed
+  if [ -d "$LIVE_BACKUP_DIR" ]; then
+    local f
+    for f in "$LIVE_BACKUP_DIR"/*.json; do
+      [ -f "$f" ] || continue
+      cp -f "$f" "$RUN_DIR/config/mei/$(basename "$f")"
+      note "restored $(basename "$f")"
+    done
+  fi
+  local rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  for s in "$rt/mei-shell.sock" "$rt/ryogami.sock" "$rt/mei-hub.lock"; do
+    [ -e "$s" ] && { rm -f "$s"; note "removed $s"; }
+  done
+  rm -f "$LIVE_PID_FILE" "$LIVE_PROFILE_FILE"
+  note "mei: live session stopped"
+}
+
+cmd_live_status() {
+  if ! live_any_alive "$LIVE_PID_FILE"; then note "mei: no live session running"; return 0; fi
+  note "profile: $(cat "$LIVE_PROFILE_FILE" 2>/dev/null || echo '?')"
+  local p
+  while read -r p _ name; do
+    [ -n "${p:-}" ] || continue
+    if [ -d "/proc/$p" ]; then
+      note "  alive pid=$p  $name  $(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | cut -c1-80)"
+    else
+      note "  gone  pid=$p  $name"
+    fi
+  done < "$LIVE_PID_FILE"
+  note "monitor logs: $(ls -1t "$RUN_DIR"/logs/live-monitor-*.log 2>/dev/null | head -1)"
+}
+
 usage() {
   local last
   last="$(grep -n '^set -euo pipefail$' "${BASH_SOURCE[0]}" | cut -d: -f1)"
@@ -845,6 +1290,9 @@ case "${1:-help}" in
   status)           shift; cmd_status ;;
   run)              shift; cmd_run ;;
   stop)             shift; cmd_stop ;;
+  live)             shift; cmd_live "$@" ;;
+  live-stop)        shift; cmd_live_stop "$@" ;;
+  live-status)      shift; cmd_live_status "$@" ;;
   wallpaper)        shift; cmd_wallpaper "$@" ;;
   test)             shift; cmd_test ;;
   help|--help|-h)   usage ;;

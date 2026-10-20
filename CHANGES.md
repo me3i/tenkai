@@ -15,6 +15,34 @@ else in the baseline was re-captured, so the leak-detection reference stays as
 strict as it was: kitty is not part of the compared session-process set and its
 connection ids are ignored by the D-Bus watch filter.
 
+## Live-trial additions (2026-10-20)
+
+`./mei live --profile overlay|full` and `./mei live-stop` are the owner's own
+entry points for trying Mei on the live desktop (runbook: `docs/LIVE-TEST.md`).
+The nested dev session is untouched: every guard below is off unless the live
+profile sets it.
+
+1. **The launcher's apps get the owner's real environment** (`mei-app`). Mei's
+   own state stays inside `~/projects/mei/.run`, but an app the launcher starts
+   must run in the owner's real environment, not Mei's confined one. `mei-app`
+   reads Mei's own `desktop.json` first (so the chosen terminal is still Mei's),
+   then re-exports `HOME` and the `XDG_*` variables from `MEI_APP_HOME` for the
+   child. Without that variable the behaviour is exactly as before.
+2. **Power actions are real in a live run; only shutdown stays stubbed.** A
+   live run is not a test run, so `MEI_TEST` is deliberately not set there and
+   logout and reboot are real. `MEI_STUB_SHUTDOWN=1` (set only by the live
+   profile) keeps **shutdown** stubbed for the first trial, in both the QML
+   path (`SessionActions.qml`) and the daemon (`session.go`, defence in depth).
+3. **The ryogami live-display guard has one explicit override.**
+   `MEI_ALLOW_LIVE_DISPLAY=1` is set by exactly one caller, `./mei live
+   --profile full`, and it is the owner's own hand on the switch: every other
+   path still refuses to start when it cannot prove the display is not the live
+   one, and the override says so loudly in the log.
+4. **`./mei live-stop` walks /proc parent links** to find the descendants of the
+   pids the live run recorded, and stops only those. No `pgrep`, no `killall`,
+   no name matching. It also restores the config files the live run changed
+   and removes the sockets it created.
+
 ## Phase 10B — two visual/behaviour changes (2026-10-20)
 
 1. **Visualiser idle wave now defaults to off** (upstream deviation, visible).
