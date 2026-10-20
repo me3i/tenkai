@@ -515,6 +515,11 @@ prepare_nested_home() {
   if [ -f "$MEI_DIR/src/ryoku/shell/scripts/mei-app" ]; then
     ln -sfn "$MEI_DIR/src/ryoku/shell/scripts/mei-app" "$RUN_DIR/bin/mei-app"
   fi
+  # Screenshot helper: a local grim/slurp capture into the user's Pictures
+  # folder. No upload, no share service, no network call.
+  if [ -f "$MEI_DIR/src/ryoku/shell/scripts/mei-screenshot" ]; then
+    ln -sfn "$MEI_DIR/src/ryoku/shell/scripts/mei-screenshot" "$RUN_DIR/bin/mei-screenshot"
+  fi
   # Brightness helper (mei-shell's `brightness` verb execs it by this upstream
   # name; the script itself is copied from upstream and kept verbatim except
   # for honest error reporting). Symlinked, so the session always uses source.
