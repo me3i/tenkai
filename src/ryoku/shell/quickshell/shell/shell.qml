@@ -81,6 +81,11 @@ ShellRoot {
         services: [ShellState, ScreenTime, Keypresses, KeyboardLayout, Idle]
     }
 
+    // Mei's session lock: the compositor's own lock (ext-session-lock-v1). It
+    // lives at the root and not per screen: the protocol wants one surface
+    // for every output, and the lock object makes them itself.
+    SessionLock {}
+
     // The control centre's own surface host. It is built only when the bar is
     // off: the bar style instantiates the same panel, so a session with the bar
     // on keeps exactly one control centre, hosted by the bar as before. With
@@ -296,15 +301,6 @@ ShellRoot {
 
             // The dock's right-click context menu: a full-screen overlay on the
             // monitor that owns the open menu (the thin dock strip cannot host it).
-            // Mei's own lock: a full-screen cover with a clock and a
-            // password field, checked against PAM by the daemon. It is the
-            // shell's lock, not the compositor's session lock, so it can never
-            // lock the owner's session by itself.
-            LockScreen {
-                id: lockScreen
-                screen: perScreen.modelData
-            }
-
             LazyLoader {
                 id: dockMenuLoader
                 property bool open: Dock.menuOpen && Dock.menuScreen === perScreen.modelData.name

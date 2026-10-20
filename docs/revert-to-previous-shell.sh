@@ -54,4 +54,11 @@ then log out and back in (or restart the compositor).
 
 If the screen is blank: Ctrl+Alt+F3 gives you a TTY. Log in, then:
     bash ~/projects/mei/docs/revert-to-previous-shell.sh
+
+If the screen is blank because the lock is up and the shell died with it, the
+compositor is still holding the lock. Clear it with the compositor's own
+command:
+    hyprctl dispatch 'hl.clear_crashed_lockscreen()'
+(the answer is the line it prints; "session is locked with a client" means the
+shell is still running and has to be stopped first.)
 NOTE

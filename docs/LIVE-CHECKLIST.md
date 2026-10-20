@@ -55,7 +55,7 @@ must be free now that your old shell is stopped.
 
 | # | do | must happen | if it fails | rollback |
 |---|---|---|---|---|
-| 1 | **the lock, first** — open a **second terminal** first, then trigger the lock (`hyprctl dispatch 'hl.dsp.global("ryoku:lock")'`) | Mei's lock screen covers the desktop with a clock and a password field. The bar and the launcher must be unreachable. A wrong password is refused; the right one unlocks. **Never try this without the second terminal open** | if the lock cannot be unlocked, `Ctrl+Alt+F3` → log in → `<your previous shell's start command>` (your old shell) | the TTY is the escape; it always is. Mei's lock is its own surface, so it can never lock the session itself |
+| 1 | **the lock, first** — open a **second terminal** first, then trigger the lock (`hyprctl dispatch 'hl.dsp.global("ryoku:lock")'`) | Mei asks the compositor to lock the session: the lock covers every output with a clock and a password field, the bar and the launcher must be unreachable, and a key press must not reach any window. A wrong password is refused; the right one unlocks. **Never try this without the second terminal open** | if the lock cannot be unlocked, `Ctrl+Alt+F3` → log in → `hyprctl dispatch 'hl.clear_crashed_lockscreen()'` → then `<your previous shell's start command>` (your old shell) | the TTY is the escape; it always is. The session stays locked on purpose if the shell dies, and that one command clears it |
 | 2 | leave the desktop alone for 3 minutes | the screen dims, then locks, then the display sleeps — with Mei's own timeouts, and an app playing video must hold it off | if the screen sleeps while you are typing, the idle timers are wrong: report the times you saw | TTY |
 | 3 | open the launcher (your SUPER + D) and search for `a browser` | it opens with your real profile, as in stage 1 | as in stage 1 | close it |
 | 4 | the **bar**: watch it for a minute at 144 Hz | the workspace cells match Hyprland, the clock is right, the widgets are readable, and nothing flickers. The pill/motion animation must be smooth | a stutter in the bar is a different problem from the launcher's wave: say which | `./mei live-stop`, then `<your previous shell's start command>` |
@@ -85,15 +85,16 @@ Then:
 
 ## The lock, in detail
 
-Mei's lock is **the shell's own surface**, not the compositor's session lock.
-That is a deliberate trade, and it is worth knowing exactly what it means:
+Mei's lock **is the compositor's session lock** (Hyprland's ext-session-lock-v1):
+the shell asks the compositor to lock the session and gives it a surface with
+the clock and the password field. What that means:
 
-| | Mei's lock | the compositor's session lock (Hyprland's ext-session-lock-v1) |
-|---|---|---|
-| what it covers | Mei's own surfaces: the bar, the launcher, the quick settings | the whole session, every output |
-| how it unlocks | the account password, checked against PAM | the lock client asks the compositor to unlock |
-| if the lock client crashes | the lock surface dies with the shell, so the desktop is **not** locked (you are never locked out) | the session **stays locked by design**: Hyprland's `CSessionLockManager::clientLocked` only releases the lock on an unlock request, never because the client died |
-| who uses it here | Mei | nothing in Mei: the binary implements the protocol (`CExtSessionLockManagerV1`), but Mei does not ask for it |
+| | Mei's lock |
+|---|---|
+| what it covers | the whole session, every output: no other client can draw over it and no key press reaches a window |
+| how it unlocks | the account password, checked against PAM by the daemon, and then the shell tells the compositor to unlock |
+| if the lock client crashes | the session **stays locked by design**. Hyprland keeps the lock until it is told otherwise (`CSessionLockManager::clientLocked`), because a lock that opens by itself is not a lock. The recovery is below, and it is one command |
+| what the compositor says | `active secure`: the compositor confirms the lock and calls it secure |
 
 **The PAM service the live lock uses** and the files it reads:
 
@@ -126,12 +127,37 @@ stage.
 a TTY, log in as `mei`, and run
 
 ```bash
-bash ~/projects/mei/docs/revert-to-the previous shell.sh
+bash ~/projects/mei/docs/revert-to-previous-shell.sh
 ```
 
 which stops Mei and starts <your previous shell> again. Ctrl+Alt+F2 returns to the
 graphical session. Your data is never at risk: Mei writes only inside
 `~/projects/mei/.run`.
+
+**If the lock screen is there but nothing moves** (the shell died while the
+lock was up, so the compositor is still holding a lock whose client is gone):
+the compositor's own function clears that, and it is the only thing that can:
+
+```bash
+hyprctl dispatch 'hl.clear_crashed_lockscreen()'
+```
+
+The answer is the line the function prints. Two answers matter:
+
+- `hl.clear_crashed_lockscreen: session is not locked` — there was no crashed
+  lock to clear, so the session is already usable: go back with Ctrl+Alt+F2;
+- `session is locked with a client, refusing to unlock` — the shell is still
+  alive and still holds the lock. Kill it from the TTY and run the command
+  again:
+
+  ```bash
+  pkill -f 'qs -p .*quickshell/shell'
+  hyprctl dispatch 'hl.clear_crashed_lockscreen()'
+  ```
+
+The command always ends with `hl.dispatch: expected a dispatcher` on the line
+after the answer. That is the dispatch complaining about the function's return
+value; the answer above it is the one to read.
 
 ---
 

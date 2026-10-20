@@ -21,6 +21,25 @@ Singleton {
     property string error: ""
     property bool busy: false
 
+    // The compositor's own lock state (ext-session-lock-v1): whether the
+    // session is locked, and whether the compositor calls the lock secure.
+    // They are the compositor's answer, not Mei's wish.
+    property bool protocolLocked: false
+    property bool protocolSecure: false
+
+    // Emitted when the shell releases the lock, so the protocol object can
+    // tell the compositor the session may be used again.
+    signal unlocked
+
+    // reportProtocol tells the daemon what the compositor answered, so the
+    // state of the session lock can be read without looking at a screen.
+    function reportProtocol(isLocked, isSecure) {
+        root.protocolLocked = isLocked === true;
+        root.protocolSecure = isSecure === true;
+        send("lock-protocol " + (root.protocolLocked ? "active" : "released")
+            + " " + (root.protocolSecure ? "secure" : "plain") + "\n");
+    }
+
     // lock asks the daemon first whether the PAM setup can be used at all. If
     // it cannot, the lock does NOT engage: a lock that cannot be opened would
     // be a way to lose the session, so a broken setup shows a notification
@@ -36,6 +55,7 @@ Singleton {
     function unlock() {
         root.locked = false;
         root.error = "";
+        root.unlocked();
     }
 
     // verify asks the daemon to check the password against PAM.

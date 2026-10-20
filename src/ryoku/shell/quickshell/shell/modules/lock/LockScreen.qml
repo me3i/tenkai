@@ -6,27 +6,25 @@ import Quickshell
 import Quickshell.Wayland
 import shell.services
 
-// Mei's lock screen: a full-screen cover with a clock and a password field.
+// Mei's lock screen: the content of the compositor's session lock.
 //
-// It is the shell's own lock, not the compositor's session lock: it covers
-// Mei's surfaces and asks for the account password, which the daemon checks
-// against PAM. Nothing here can lock the session itself, so a mistake in this
-// file can never lock the owner out of their machine.
+// The lock itself belongs to the compositor (ext-session-lock-v1): it covers
+// every output and nothing else can be drawn over it, so a crash of the shell
+// leaves the session locked instead of open. This file is only what the user
+// sees on top of it: a clock, the date and the password field.
 //
-// While it is up the keyboard is exclusive, so the bar and the launcher under
-// it cannot be reached.
-PanelWindow {
+// The password is Mei's own: the daemon checks it against PAM. The lock does
+// not engage at all when that check cannot pass, because a lock that cannot
+// be opened is a way to lose the session.
+//
+// The compositor gives the surface the keyboard, so while it is up the key
+// presses cannot reach anything else.
+Item {
     id: win
 
-    required property var screen
-
-    color: "#0b0b0f"
-    anchors { top: true; bottom: true; left: true; right: true }
-    exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "ryoku-lock"
-    WlrLayershell.keyboardFocus: Lock.locked ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
-    visible: Lock.locked
+    // The surface around this content is the compositor's session lock
+    // surface; it fills the output.
+    anchors.fill: parent
 
     // The clock: a big time and the date, so the screen reads as a lock screen
     // and not as an error.
@@ -36,8 +34,19 @@ PanelWindow {
     Timer {
         interval: 1000
         repeat: true
-        running: win.visible
+        running: true
         onTriggered: win.updateClock()
+    }
+
+    // The password field holds the focus for as long as the lock is up: the
+    // shell's own surfaces may ask for it, and a key press that lands
+    // somewhere else is a key press the owner cannot see.
+    Timer {
+        interval: 2000
+        repeat: true
+        running: true
+        onTriggered: if (pw.activeFocus === false)
+            pw.forceActiveFocus()
     }
 
     function updateClock() {
@@ -51,16 +60,12 @@ PanelWindow {
         win.dateText = days[now.getDay()] + ", " + months[now.getMonth()] + " " + now.getDate();
     }
 
-    Component.onCompleted: win.updateClock()
-    onVisibleChanged: if (visible) {
+    Component.onCompleted: {
         win.updateClock();
         pw.text = "";
-        win.focus = true;
-        pw.forceActiveFocus();
-        // A window that has only just been mapped cannot hold the item focus
+        // A surface that has only just been mapped cannot hold the item focus
         // yet, so the field is focused again on the next tick.
         Qt.callLater(function() {
-            win.focus = true;
             pw.forceActiveFocus();
         });
     }
@@ -95,7 +100,7 @@ PanelWindow {
             placeholderTextColor: "#6a6a74"
             selectByMouse: true
             activeFocusOnTab: true
-            // The field holds the focus as soon as the window is mapped, so a
+            // The field holds the focus as soon as the surface is mapped, so a
             // keypress cannot land somewhere else while the lock is up.
             focus: true
             onAccepted: win.tryUnlock()

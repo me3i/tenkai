@@ -9,8 +9,8 @@ is the last line.
 |---|---|---|
 | 0. input safety | **TESTED (nested)** | `docs/tests/tools/nested-input.sh` is the only way a nested test sends a key or a pointer event: it resolves the display under Mei's nested runtime, refuses the live socket (by path and by name), prints the resolved socket path and exits 3 on a refusal. `docs/tests/input-guard-selftest.sh` proves both ways with a stub tool and never connects to a compositor. Every harness caller goes through it: `idle-module.sh`, `lock-module.sh`, `launcher-check.sh`, `terminal-check.sh`, `step4.sh`. |
 | 1. idle + the ScreenSaver service | **TESTED (nested)** | `docs/tests/idle-module.sh` passes end to end: the ScreenSaver name is offered on the nested bus and the live bus is untouched, a fake client's Inhibit holds the idle off and the release resumes it, the dim and the exact restore work against the harness seam (`MEI_BRIGHTNESS_FAKE`), the display goes to sleep on idle and wakes on activity, the suspend is stubbed, and the idle locks the screen (a wrong password is refused). The slot refusal has its own test: `src/ryoku/shell/ipc/screensaver_test.go` proves it both ways (a stand-in owner keeps the slot, a free slot is taken). |
-| 2. the real session lock (ext-session-lock-v1) | **NOT STARTED** | the surface lock is still in place and is **not a secure lock**. Quickshell ships `WlSessionLock` and Hyprland's binary carries the protocol. Two findings from the idle pass, read out of the binary and not guessed: the strings `hl.clear_crashed_lockscreen` and "session is locked with a client, refusing to unlock" are in it, so there is a way to clear a crashed lock and the compositor refuses to unlock a session that has a lock client. |
-| 3. the network and Bluetooth hosts | **NOT STARTED** | the panels are still bar-hosted. The pattern is the control centre's own host (`modules/controlcenter/ControlCenterHost.qml`). |
+| 1. the real session lock (ext-session-lock-v1) | **TESTED (nested)** | `docs/tests/session-lock-module.sh`: the compositor confirms the lock and calls it **secure**, the old surface lock is gone, a wrong password is refused and the lock stays, the right one releases it, locking twice keeps one lock, a broken PAM setup refuses to engage, and the crash case keeps the session locked until the compositor's own `hl.clear_crashed_lockscreen()` clears it. `docs/tests/lock-module.sh` passes with the protocol lock too. |
+| 2. the network and Bluetooth hosts | **NOT STARTED** | the panels are still bar-hosted. The pattern is the control centre's own host (`modules/controlcenter/ControlCenterHost.qml`). |
 | 4. certify (a full cold-start `phase9.sh`) | **NOT RUN** | the last full run was 16/17 with item 7's harness defect fixed and re-validated; the restored-component suites pass (`docs/tests/restored-modules.sh`, now with the idle suite in it). |
 | 5. live readiness (the checklist and the switch-over guide) | **PARTLY DONE** | `docs/LIVE-CHECKLIST.md` has the lock in detail, the TTY recovery and the one-page switch-over guide; it still needs the idle items, the new panel hosts and the final "every remaining difference" list. |
 
@@ -52,6 +52,25 @@ be reached by name at all, and a refusal is loud (exit 3) instead of silent.
   set, which only the **full** live profile does; it takes the name with
   DoNotQueue, so it never fights another agent for it.
 
+## What the session lock pass settled (worth keeping)
+
+- Quickshell 0.3.2 does ship `WlSessionLock` and `WlSessionLockSurface` (they
+  are in the plugin's types, not in a module of their own).
+- `WlSessionLock`'s **default property is its surface**: anything else declared
+  inside the lock object is taken for the surface, and the lock refuses to
+  engage ("WlSessionLock.surface does not create a WlSessionLockSurface"). The
+  lock object is therefore wrapped in an `Item`.
+- The compositor writes the lock state back into the `locked` property, which
+  breaks a QML binding: the shell's state has to be pushed into it
+  imperatively, or the lock never engages.
+- The root of the surface component has to be the `WlSessionLockSurface`
+  itself.
+- Hyprland 0.56.2 has the protocol (`CExtSessionLockManagerV1`), keeps the
+  session locked when the lock client dies, and answers
+  `hl.clear_crashed_lockscreen: session is not locked` when there is no
+  crashed lock to clear. The recovery is
+  `hyprctl dispatch 'hl.clear_crashed_lockscreen()'`.
+
 ## Still unverified (for the live checklist, not for the code)
 
 - The compositor's **own** idle inhibitors (a video player, a call, Firefox)
@@ -62,6 +81,10 @@ be reached by name at all, and a refusal is loud (exit 3) instead of silent.
   proven.
 - The idle dim, lock, DPMS and suspend on the owner's real session, with the
   real backlight and the real timers.
+- The lock's **accepted** path with the owner's own password (the nested
+  harness uses the verifier seam; the refusal path is a real PAM round trip).
+- The lock on **more than one output**: the nested session has a single
+  output, so the second screen of the owner's session is a live check.
 
 ## Part 2 (distribution) — not started
 
@@ -72,14 +95,17 @@ export.
 
 ## Where to resume
 
-**Item 2, the real session lock.** Replace the shell's own surface lock with
-ext-session-lock-v1 through Quickshell's `WlSessionLock`, keep the PAM
-refusal-to-engage check, and prove in a nested session that all outputs are
-covered, the prompt and the clock show, a wrong password is refused, the right
-one unlocks (the verifier seam), locking twice is safe, and the keybinds do
-not reach the windows while the lock is up. Then the crash case: kill the lock
-client in a throwaway nested session, record what the compositor does, and use
-the binary's own `hl.clear_crashed_lockscreen` for the recovery. The exact TTY
-recovery steps go into `docs/LIVE-CHECKLIST.md` and into the revert script's
-output. If it cannot pass in six iterations, keep the surface lock, mark it
-BLOCKED, and say plainly that it is not a secure lock.
+**Item 2, the network and Bluetooth hosts.** Hosts that do not live in the
+bar (the control centre's own host is the pattern:
+`modules/controlcenter/ControlCenterHost.qml`), reusing the QML that is
+already there, with the module flags `network_panel` and `bluetooth_panel`,
+talking to NetworkManager and BlueZ over D-Bus. The read paths have to be
+TESTED nested; connect, disconnect, toggle and pair only if a fake NM and a
+fake BlueZ can be built on the private bus, otherwise UNVERIFIED. The real
+connections and the real adapter are never touched. If a host cannot be made
+to work in six iterations, disable its flag cleanly, mark it BLOCKED and put
+the terminal fallback (`nmtui`, `bluetoothctl`) in the docs.
+
+After that: the certification run (one full cold-start `phase9.sh`, the idle
+measurement table, zero outbound at idle, `./mei baseline --force`) and the
+live readiness pass over `docs/LIVE-CHECKLIST.md`.

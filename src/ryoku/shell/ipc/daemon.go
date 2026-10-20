@@ -149,63 +149,65 @@ type suspendRequest struct {
 }
 
 type daemon struct {
-	mu           sync.Mutex
-	sup          map[string]bool      // components that already have a supervisor goroutine
-	proc         map[string]*exec.Cmd // current live process per component
-	paintSig     chan struct{}        // coalescing wake for the palette/border worker
-	stageSig     chan struct{}        // coalescing wake for the unified stage worker
-	stageForce   atomic.Bool          // a pending forced regenerate (effect/quality change, refresh, re-cut)
-	stageGen     atomic.Bool          // a pending enable: reuse an existing cut, else generate
-	stageBusy    atomic.Bool          // a cut/inpaint is in flight (for the status/topic)
-	ledsSig      chan struct{}        // coalescing wake for the OpenRGB worker
-	widgetSig    chan struct{}        // coalescing wake for the widget-occupancy gate
-	quit         chan struct{}
-	closed       bool
-	ln           net.Listener
-	lock         *os.File    // exclusive single-daemon guard, held until exit
-	lockQuiesced atomic.Bool // rejects new lock launches during generation cutover
-	failMu       sync.Mutex
-	lastFail     map[string]string // component -> last line it died with
-	voiceMu      sync.Mutex        // serializes voice (Super+`) toggles
-	voiceOn      bool              // dictation active; guarded by voiceMu
-	voiceStop    chan struct{}     // reaps the live voxtype state stream; nil when none
-	prompter     *prompter         // GNOME keyring system prompter (nil when unavailable)
-	wmc          *wm.Client        // sole path to the compositor
-	wmMu         sync.Mutex        // guards the compositor state the wm watcher keeps warm
-	activeMon    string            // focused output, kept warm by watchWindowManager
-	wmOutputs    []wm.Output
-	wmWorkspaces []wm.Workspace
-	wmWindows    []wm.Window
-	wmKbdLayout  string   // active xkb layout, kept warm by watchWindowManager
-	wmKbdList    []string // configured layouts, in switch order
-	wmOverview   bool     // the compositor's native overview is open (niri)
-	wmReady      bool
-	wmVersions   map[string]int // frame kind -> publishes since daemon start
-	wmTopic      *stateTopic
-	gateMu       sync.Mutex               // guards gateWant / gateWake
-	gateWant     map[string]bool          // component -> may run now (absent = yes)
-	gateWake     map[string]chan struct{} // wakes a parked supervisor when its gate opens
-	parkMu       sync.Mutex               // guards hiddenSince
-	hiddenSince  map[string]time.Time     // parkable palette -> when it last went hidden (absent = shown)
-	topicsMu     sync.Mutex               // guards topics
-	topics       map[string]*stateTopic   // subsystem name -> pub/sub state topic
-	callsMu      sync.Mutex               // guards calls
-	calls        map[string]callFunc      // "topic.method" -> control handler
-	clip         *clipState               // clipboard history state (nil until started)
-	tray         *trayState               // system tray watcher/host state (nil until started)
-	ryoWallMu    sync.Mutex               // guards ryoWall
-	ryoWall      ryogamiFrame             // last wallpaper frame seen from ryogami; feeds the stage worker
-	polkit       *polkitAgent             // PolicyKit1 authentication agent (nil when unavailable)
-	settings     *settingsStore           // shell.json store (nil until startSettings)
-	pp           *powerProfilesState      // power-profiles-daemon bus state
-	keypress     *keypressManager         // evdev key stream while the overlay is enabled
-	sun          *sunState                // latest weather sunrise/sunset window
-	sleepMu      sync.RWMutex
-	sleep        *sleepCycle // coordinated login1 suspend transaction; guarded by sleepMu
-	music        *musicState // the last reported track, and the player it came from
-	dimSteps     int         // how many brightness steps the idle dim took, for the exact restore
-	suspendReqMu sync.Mutex
-	suspendReq   map[string]*suspendRequest
+	mu             sync.Mutex
+	sup            map[string]bool      // components that already have a supervisor goroutine
+	proc           map[string]*exec.Cmd // current live process per component
+	paintSig       chan struct{}        // coalescing wake for the palette/border worker
+	stageSig       chan struct{}        // coalescing wake for the unified stage worker
+	stageForce     atomic.Bool          // a pending forced regenerate (effect/quality change, refresh, re-cut)
+	stageGen       atomic.Bool          // a pending enable: reuse an existing cut, else generate
+	stageBusy      atomic.Bool          // a cut/inpaint is in flight (for the status/topic)
+	ledsSig        chan struct{}        // coalescing wake for the OpenRGB worker
+	widgetSig      chan struct{}        // coalescing wake for the widget-occupancy gate
+	quit           chan struct{}
+	closed         bool
+	ln             net.Listener
+	lock           *os.File    // exclusive single-daemon guard, held until exit
+	lockQuiesced   atomic.Bool // rejects new lock launches during generation cutover
+	failMu         sync.Mutex
+	lastFail       map[string]string // component -> last line it died with
+	voiceMu        sync.Mutex        // serializes voice (Super+`) toggles
+	voiceOn        bool              // dictation active; guarded by voiceMu
+	voiceStop      chan struct{}     // reaps the live voxtype state stream; nil when none
+	prompter       *prompter         // GNOME keyring system prompter (nil when unavailable)
+	wmc            *wm.Client        // sole path to the compositor
+	wmMu           sync.Mutex        // guards the compositor state the wm watcher keeps warm
+	activeMon      string            // focused output, kept warm by watchWindowManager
+	wmOutputs      []wm.Output
+	wmWorkspaces   []wm.Workspace
+	wmWindows      []wm.Window
+	wmKbdLayout    string   // active xkb layout, kept warm by watchWindowManager
+	wmKbdList      []string // configured layouts, in switch order
+	wmOverview     bool     // the compositor's native overview is open (niri)
+	wmReady        bool
+	wmVersions     map[string]int // frame kind -> publishes since daemon start
+	wmTopic        *stateTopic
+	gateMu         sync.Mutex               // guards gateWant / gateWake
+	gateWant       map[string]bool          // component -> may run now (absent = yes)
+	gateWake       map[string]chan struct{} // wakes a parked supervisor when its gate opens
+	parkMu         sync.Mutex               // guards hiddenSince
+	hiddenSince    map[string]time.Time     // parkable palette -> when it last went hidden (absent = shown)
+	topicsMu       sync.Mutex               // guards topics
+	topics         map[string]*stateTopic   // subsystem name -> pub/sub state topic
+	callsMu        sync.Mutex               // guards calls
+	calls          map[string]callFunc      // "topic.method" -> control handler
+	clip           *clipState               // clipboard history state (nil until started)
+	tray           *trayState               // system tray watcher/host state (nil until started)
+	ryoWallMu      sync.Mutex               // guards ryoWall
+	ryoWall        ryogamiFrame             // last wallpaper frame seen from ryogami; feeds the stage worker
+	polkit         *polkitAgent             // PolicyKit1 authentication agent (nil when unavailable)
+	settings       *settingsStore           // shell.json store (nil until startSettings)
+	pp             *powerProfilesState      // power-profiles-daemon bus state
+	keypress       *keypressManager         // evdev key stream while the overlay is enabled
+	sun            *sunState                // latest weather sunrise/sunset window
+	sleepMu        sync.RWMutex
+	sleep          *sleepCycle // coordinated login1 suspend transaction; guarded by sleepMu
+	music          *musicState // the last reported track, and the player it came from
+	dimSteps       int         // how many brightness steps the idle dim took, for the exact restore
+	protocolLock   atomic.Bool // the compositor's session lock is active
+	protocolSecure atomic.Bool // and the compositor calls it secure
+	suspendReqMu   sync.Mutex
+	suspendReq     map[string]*suspendRequest
 }
 
 func (d *daemon) currentSleepCycle() *sleepCycle {
@@ -1024,6 +1026,39 @@ func (d *daemon) handle(conn net.Conn) {
 	if strings.HasPrefix(cmd, "lock-verify") {
 		secret, _ := r.ReadString('\n')
 		fmt.Fprintln(conn, d.lockVerify(strings.TrimRight(secret, "\r\n")))
+		return
+	}
+	// The compositor's own session lock (ext-session-lock-v1): the shell
+	// reports what the compositor answered, and the state can be read back
+	// without looking at a screen.
+	if strings.HasPrefix(cmd, "lock-protocol") {
+		fields := strings.Fields(cmd)
+		if len(fields) > 1 && fields[1] == "status" {
+			state := "released"
+			if d.protocolLock.Load() {
+				state = "active"
+			}
+			kind := "plain"
+			if d.protocolSecure.Load() {
+				kind = "secure"
+			}
+			fmt.Fprintln(conn, state+" "+kind)
+			return
+		}
+		active := len(fields) > 1 && fields[1] == "active"
+		secure := len(fields) > 2 && fields[2] == "secure"
+		d.protocolLock.Store(active)
+		d.protocolSecure.Store(secure)
+		state := "released"
+		if active {
+			state = "active"
+		}
+		kind := "plain"
+		if secure {
+			kind = "secure"
+		}
+		log.Printf("mei-shell: the session lock is %s (%s)", state, kind)
+		fmt.Fprintln(conn, "ok")
 		return
 	}
 	// The lock's readiness check: it answers whether the PAM setup can be
