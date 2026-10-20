@@ -1060,10 +1060,15 @@ write_live_session() { # $1 = profile, $2 = wayland display, $3 = signature, $4 
   local profile="$1" wl="$2" sig="$3" rt="$4" bus
   bus="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$rt/bus}"
   local ryogami='  # wallpaper module is off in this profile: ryogami is not started'
+  local polkit='  # the polkit agent is off in this profile: only the full profile registers one'
   if [ "$profile" = "full" ]; then
     ryogami='export MEI_ALLOW_LIVE_DISPLAY=1
 "$RUN/bin/ryogami" daemon >> "$log/live-ryogami.log" 2>&1 &
 RPID=$!; record "$RPID" ryogami'
+    # The agent registers only if the session's polkit slot is free; the daemon
+    # fails closed when another agent holds it, so a second agent can never
+    # appear.
+    polkit='export MEI_POLKIT_AGENT=1'
   fi
   cat > "$RUN_DIR/live-session.sh" <<SESSION
 #!/usr/bin/env bash
@@ -1105,6 +1110,7 @@ record() { local p="\$1" n="\$2" pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | t
 
 note "starting Mei live session (profile __PROFILE__)"
 __RYOGAMI__
+__POLKIT__
 "\$RUN/bin/mei-shell" daemon >> "\$log/live-daemon.log" 2>&1 &
 DPID=\$!; record "\$DPID" mei-shell-daemon
 note "daemon pid \$DPID"
@@ -1117,7 +1123,7 @@ SESSION
   local real_home
   real_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
   [ -n "$real_home" ] || real_home="$HOME"
-  sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__PROFILE__|$profile|g; s|__RYOGAMI__|$ryogami|g; s|__REAL_HOME__|$real_home|g; s|__REAL_DATA_DIRS__|$real_home/.local/share:$real_home/.local/share/flatpak/exports/share:/usr/local/share:/usr/share|g" "$RUN_DIR/live-session.sh"
+  sed -i "s|__MEI_DIR__|$MEI_DIR|g; s|__PROFILE__|$profile|g; s|__RYOGAMI__|$ryogami|g; s|__POLKIT__|$polkit|g; s|__REAL_HOME__|$real_home|g; s|__REAL_DATA_DIRS__|$real_home/.local/share:$real_home/.local/share/flatpak/exports/share:/usr/local/share:/usr/share|g" "$RUN_DIR/live-session.sh"
   chmod +x "$RUN_DIR/live-session.sh"
 }
 
