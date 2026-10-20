@@ -119,6 +119,25 @@ one in the tree, and it is the only look Mei took. The rest of the greeter
 (SDDM's own components, the input form, the fingerprint hint) is a login
 screen, not a session lock.
 
+## What the orbital theme depends on, and what it animates
+
+Checked in the upstream tree, not guessed:
+
+| what it needs | what it is | in Mei's lock? |
+|---|---|---|
+| `SddmComponents 2.0` | the greeter's own components (the action buttons, the text sizes) | no — a greeter's parts |
+| `Qt5Compat.GraphicalEffects` | one `OpacityMask` for the circular reveal | no — the reveal is the greeter's |
+| `Qt.labs.folderlistmodel` | finding the bundled font | no — the font is not bundled |
+| the Outfit font | the typeface | no — upstream ships it without a licence file, so the system font is used |
+| the `i18n` reader (an `XMLHttpRequest` over `file://`) | the translated strings | no — the lock has three strings of its own |
+| the `sddm` object | the greeter's session API (users, fingerprint, power) | no |
+| a 16 ms timer | the smooth second hand | **yes** — and only while the lock is up: the clock lives in the lock's surface |
+| the windup, the boom, the sparks | the greeter's entry animation | no — a lock should not flash at you |
+| the needle cursor's pulse | the input's cursor | **yes** |
+| the hint's fade | the input's hint | **yes** |
+| the UNLOCK label's hover | the input's button | **yes** |
+| the circular reveal (`OpacityMask`) | the greeter's wipe-in | no |
+
 ## Where to resume
 
 **Item 2, the network and Bluetooth hosts.** Hosts that do not live in the

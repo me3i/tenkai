@@ -16,6 +16,12 @@ the bundled Outfit font is not redistributed because upstream ships it without
 a licence file, so the system font is used instead. The clock only runs while
 the lock is up: it is part of the lock's surface and stops with it.
 
+The input is upstream's own as well: the column at the bottom right with the
+password's stars, the needle cursor that pulses, the hint that fades once
+there is something to type over, and the UNLOCK label that brightens on
+hover. (Upstream draws the minutes and the seconds in the greeter's layer,
+but they belong to the clock's pill, so they are drawn with it.)
+
 The lock's logic is untouched: it is still the compositor's own session lock
 (ext-session-lock-v1), the password is still checked against PAM by the daemon,
 and a broken PAM setup still refuses the lock instead of covering the screen.
