@@ -82,7 +82,7 @@ fi
 hub_geom() { H -j clients 2>/dev/null | jq -r '.[] | select(.class=="org.quickshell") | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' | head -1; }
 hub_focused() { H -j activewindow 2>/dev/null | jq -r '.class // ""'; }
 shot() { grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
-vkbd() { "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
+vkbd() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
 hubs() { for p in $(pgrep -f "hub/quickshell" 2>/dev/null); do [ "$(cat /proc/$p/comm 2>/dev/null)" = qs ] && { echo "$p"; return; }; done; }
 # A fresh hub opens on its default page (global) and writes no section key
 # until the user navigates; absence therefore means global, not "did not open".

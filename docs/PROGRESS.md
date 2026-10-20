@@ -7,11 +7,33 @@ is the last line.
 
 | item | state | evidence / what is missing |
 |---|---|---|
+| 0. input safety | **TESTED (nested)** | `docs/tests/tools/nested-input.sh` is the only way a nested test sends a key or a pointer event: it resolves the display under Mei's nested runtime, refuses the live socket (by path and by name), prints the resolved socket path and exits 3 on a refusal. `docs/tests/input-guard-selftest.sh` proves both ways with a stub tool and never connects to a compositor. Every harness caller goes through it: `idle-module.sh`, `lock-module.sh`, `launcher-check.sh`, `terminal-check.sh`, `step4.sh`. |
 | 1. idle + the ScreenSaver service | **TESTED (nested)** | `docs/tests/idle-module.sh` passes end to end: the ScreenSaver name is offered on the nested bus and the live bus is untouched, a fake client's Inhibit holds the idle off and the release resumes it, the dim and the exact restore work against the harness seam (`MEI_BRIGHTNESS_FAKE`), the display goes to sleep on idle and wakes on activity, the suspend is stubbed, and the idle locks the screen (a wrong password is refused). The slot refusal has its own test: `src/ryoku/shell/ipc/screensaver_test.go` proves it both ways (a stand-in owner keeps the slot, a free slot is taken). |
 | 2. the real session lock (ext-session-lock-v1) | **NOT STARTED** | the surface lock is still in place and is **not a secure lock**. Quickshell ships `WlSessionLock` and Hyprland's binary carries the protocol. Two findings from the idle pass, read out of the binary and not guessed: the strings `hl.clear_crashed_lockscreen` and "session is locked with a client, refusing to unlock" are in it, so there is a way to clear a crashed lock and the compositor refuses to unlock a session that has a lock client. |
 | 3. the network and Bluetooth hosts | **NOT STARTED** | the panels are still bar-hosted. The pattern is the control centre's own host (`modules/controlcenter/ControlCenterHost.qml`). |
 | 4. certify (a full cold-start `phase9.sh`) | **NOT RUN** | the last full run was 16/17 with item 7's harness defect fixed and re-validated; the restored-component suites pass (`docs/tests/restored-modules.sh`, now with the idle suite in it). |
 | 5. live readiness (the checklist and the switch-over guide) | **PARTLY DONE** | `docs/LIVE-CHECKLIST.md` has the lock in detail, the TTY recovery and the one-page switch-over guide; it still needs the idle items, the new panel hosts and the final "every remaining difference" list. |
+
+## The keystroke incident (what actually reached the live session)
+
+A virtual keyboard in the harness inherited the caller's `WAYLAND_DISPLAY`, so
+the keys it sent went to the owner's live session. It was disclosed and fixed,
+but the earlier runs sent more than the first disclosure said:
+
+- the lock test ran 11 times before the fix (8 in the earlier session, 2 from
+  an earlier day, 1 in this session). Each run typed `abc`+Enter twice: once
+  for the wrong password and once for the verifier seam.
+- the idle test ran 4 times before the fix. Each run typed `a` once, and
+  `abc`+Enter once.
+
+So roughly thirty short sequences reached the live session. What they can do
+depends on what had the focus there: in a shell, `abc`+Enter runs an empty
+command; in a text field, it leaves `abc` behind. The owner checked their own
+terminals and history, which is the right way to close this out.
+
+The guard now makes that class of mistake impossible: every synthetic input in
+a nested test resolves under Mei's nested runtime, so the live socket cannot
+be reached by name at all, and a refusal is loud (exit 3) instead of silent.
 
 ## What the idle pass settled (worth keeping)
 

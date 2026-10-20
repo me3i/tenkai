@@ -41,7 +41,7 @@ cfg_with(){ # $1=dim $2=lock $3=dpms $4=suspend
 fake_val(){ tr -d '[:space:]' < "$FAKE" 2>/dev/null; }
 # The virtual keyboard must reach the nested session. Without the nested
 # runtime and display it would type into the owner's live session.
-key(){ XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" "$1" >/dev/null 2>&1; }
+key(){ "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$1" >/dev/null 2>&1; }
 
 start(){
   mkdir -p "$RUN/config/mei" "$RUN/state"

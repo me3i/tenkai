@@ -58,10 +58,28 @@ echo; echo "=== B: a wrong password is refused, the lock stays ==="
 # The lock is waited for first: typing before the surface has the focus
 # sends the keys nowhere.
 wait_lock >/dev/null
-for k in 45 21 52; do XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
-XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
-sleep 2
-if grep -q "lock verification refused" "$RUN/logs/daemon.log" 2>/dev/null; then
+# The lock is raised again before typing: after the launcher was refused the
+# keyboard focus may sit elsewhere, and the keys would go nowhere.
+lock_now
+wait_lock >/dev/null
+sleep 1
+# The keys have to land in the password field, and the field takes the focus
+# a moment after the surface appears. The input is repeated until the daemon
+# answers: the check stays the same (the refusal has to be logged), only the
+# sending is patient.
+refused=0
+for attempt in 1 2 3; do
+  for k in 45 21 52; do "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.2; done
+  "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
+  for _ in $(seq 1 10); do
+    grep -q "lock verification refused" "$RUN/logs/daemon.log" 2>/dev/null && { refused=1; break; }
+    sleep 0.5
+  done
+  [ "$refused" = 1 ] && break
+  lock_now
+  wait_lock >/dev/null
+done
+if [ "$refused" = 1 ]; then
   ok "the daemon refused the wrong password"
 else
   bad "the daemon did not log a refusal"
@@ -89,10 +107,18 @@ echo; echo "=== D: the right password unlocks (with the harness's verifier) ==="
 start "MEI_LOCK_VERIFY_CMD=/bin/true" || exit 1
 lock_now
 n4="$(wait_lock)"; [ "${n4:-0}" -ge 1 ] && ok "the lock is up" || bad "the lock did not appear"
-for k in 30 48 46; do XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
-XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
-sleep 3
-n5="$(ns_count ryoku-lock)"; [ "${n5:-1}" = "0" ] && ok "the lock released after the accepted password" || bad "the lock stayed up (layers=$n5)"
+unlocked=0
+for attempt in 1 2 3; do
+  for k in 30 48 46; do "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.2; done
+  "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
+  for _ in $(seq 1 10); do
+    n5="$(ns_count ryoku-lock)"
+    [ "${n5:-1}" = "0" ] && { unlocked=1; break; }
+    sleep 0.5
+  done
+  [ "$unlocked" = 1 ] && break
+done
+[ "$unlocked" = 1 ] && ok "the lock released after the accepted password" || bad "the lock stayed up (layers=${n5:-?})"
 H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
 l2="$(ns_count launcher)"; [ "${l2:-0}" = "1" ] && ok "the launcher opens again after the unlock" || bad "the launcher did not open after the unlock (layers=$l2)"
 stop

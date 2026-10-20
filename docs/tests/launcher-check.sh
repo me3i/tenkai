@@ -13,7 +13,7 @@ H() {
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-VK="$RUN/tools/vkbd/vkbd"
+VK="$MEI/docs/tests/tools/nested-input.sh $RUN/tools/vkbd/vkbd"
 fail=0
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
