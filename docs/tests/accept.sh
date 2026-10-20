@@ -94,7 +94,7 @@ run_gate(){ # id, name, command
 list_only(){
   printf '%-4s %-62s %s\n' "id" "gate" "command"
   for g in "${GATES[@]}"; do
-    IFS='|' read -r id name cmd <<< "$g"
+    IFS='|' read -r id name cmd evidence <<< "$g"
     printf '%-4s %-62s %s\n' "$id" "$name" "$cmd"
   done
   printf '\n(human gates, UNVERIFIED by design)\n'
@@ -136,14 +136,14 @@ printf 'the log of this run: %s\n' "$OUT"
 printf '\n'
 
 for g in "${GATES[@]}"; do
-  IFS='|' read -r id name cmd <<< "$g"
+  IFS='|' read -r id name cmd evidence <<< "$g"
   run_gate "$id" "$name" "$cmd"
 done
 
 printf '\n================ the table ================\n'
 printf '%-4s %-62s %s\n' "id" "gate" "state"
 for g in "${GATES[@]}"; do
-  IFS='|' read -r id name cmd <<< "$g"
+  IFS='|' read -r id name cmd evidence <<< "$g"
   case " $FAILED_IDS " in *" $id "*) printf '%-4s %-62s FAIL\n' "$id" "$name" ;; *) printf '%-4s %-62s PASS\n' "$id" "$name" ;; esac
 done
 for h in "${HUMAN[@]}"; do printf '%-4s %-62s UNVERIFIED\n' "${h%%|*}" "${h#*|}"; done
