@@ -9,7 +9,7 @@
 # connects to the live compositor. A process is a violation when:
 #   - its XDG_RUNTIME_DIR is the live runtime (the old b915e0a leak), or
 #   - its runtime is unset/unexpected (fail closed), or
-#   - it names a WAYLAND_DISPLAY that has no socket under the nested runtime, or
+#   - it names an absolute WAYLAND_DISPLAY inside the live runtime, or
 #   - its direct parent is a live session process (live shell / live Hyprland).
 #
 # Two harness processes are exempt by name: `nested-launcher` is the setsid /
@@ -64,12 +64,17 @@ while [ ! -e "$STOP" ]; do
       elif [ "$rt" != "$NESTED_RT" ]; then
         v "$pid" "$name" "unexpected XDG_RUNTIME_DIR ($rt)"
       fi
-      # The nested compositor must open the live display to show its window;
-      # its absolute WAYLAND_DISPLAY is the host connection, not a leak. Its
-      # XDG_RUNTIME_DIR is still required to be nested above.
-      if [ "$name" != "hyprland-nested" ] && [ -n "$wl" ] && [ "$rt" = "$NESTED_RT" ] && [ ! -e "$NESTED_RT/$wl" ]; then
-        v "$pid" "$name" "WAYLAND_DISPLAY=$wl has no socket under the nested runtime"
-      fi
+      # A relative WAYLAND_DISPLAY is resolved under XDG_RUNTIME_DIR, which is
+      # already required to be nested above; it can be briefly absent while the
+      # nested compositor starts/stops. Only an absolute path into the live
+      # runtime is evidence of the live display. The nested compositor is the
+      # one process allowed that path: it opens the live display as a client.
+      case "$wl" in
+        "$LIVE_RT"/*)
+          [ "$name" = "hyprland-nested" ] || \
+            v "$pid" "$name" "WAYLAND_DISPLAY points into the live runtime ($wl)"
+          ;;
+      esac
       for lp in $LIVE_PIDS; do
         [ -n "$lp" ] && [ "$ppid" = "$lp" ] && v "$pid" "$name" "is a child of live PID $lp"
       done
