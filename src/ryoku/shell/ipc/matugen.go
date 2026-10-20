@@ -88,10 +88,12 @@ var matugenSchemes = map[string]bool{
 }
 
 // defaultMatugenKnobs backs a missing or partial matugen.json so a run still
-// produces a valid argv. They mirror the shipped matugen.json.
+// produces a valid argv. Dark is the shipped default: the theme selection
+// (Default) follows the wallpaper, but the scheme must stay dark unless the
+// user picks Light. "smart" let a bright wallpaper turn the whole shell light.
 func defaultMatugenKnobs() matugenKnobs {
 	return matugenKnobs{
-		Mode:           "smart",
+		Mode:           "dark",
 		Contrast:       0,
 		Prefer:         "saturation",
 		SchemeType:     matugenSchemeType,
