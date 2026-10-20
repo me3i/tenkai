@@ -1,0 +1,59 @@
+#!/usr/bin/env bash
+# mei-app: launch the user's chosen app for a role, or Mei's default.
+#
+#	mei-app terminal              open the terminal
+#	mei-app terminal -- htop      run htop inside it
+#
+# Ported from Ryoku's ryoku-app, trimmed to the role the shell uses
+# (AppLaunch.qml launches every Terminal=true desktop entry through it).
+# The choice lives in ~/.config/mei/desktop.json under desktop.apps.terminal
+# (the Settings app writes it); the fallback is kitty, so an unconfigured
+# desktop still opens a terminal.
+set -euo pipefail
+
+# A Quickshell that has crashed once leaves the memfd of the config it came
+# back from in the environment. Quickshell reads that variable before parsing
+# arguments, so a terminal opened from the launcher would draw a second
+# desktop instead of the app. Drop the handle once, here.
+unset __QUICKSHELL_CRASH_INFO_FD __QUICKSHELL_CRASH_DUMP_PID \
+	__QUICKSHELL_CRASH_DUMP_FD __QUICKSHELL_CRASH_LOG_FD \
+	__QUICKSHELL_CRASH_SIGNAL
+
+role="${1:-}"
+[ -n "$role" ] || { echo "usage: mei-app <role> [-- <program> [arg...]]" >&2; exit 2; }
+shift
+
+inner=()
+if [ "${1:-}" = "--" ]; then
+	shift
+	inner=("$@")
+	[ ${#inner[@]} -gt 0 ] || { echo "mei-app: -- needs a program to run" >&2; exit 2; }
+fi
+
+case "$role" in
+terminal) fallback="kitty" ;;
+*)
+	echo "mei-app: no default for role \"$role\"" >&2
+	exit 1
+	;;
+esac
+
+store="${XDG_CONFIG_HOME:-$HOME/.config}/mei/desktop.json"
+cmd=""
+if [ -r "$store" ] && command -v jq >/dev/null 2>&1; then
+	cmd="$(jq -r --arg r "$role" '.desktop.apps[$r] // empty' "$store" 2>/dev/null || true)"
+fi
+[ -n "$cmd" ] || cmd="$fallback"
+
+if [ ${#inner[@]} -eq 0 ]; then
+	exec sh -c "$cmd"
+fi
+
+# Handing a program over is per-emulator: kitty and foot take trailing argv.
+read -r -a argv <<<"$cmd"
+case "${argv[0]##*/}" in
+kitty | foot) ;;
+wezterm) argv+=(start --) ;;
+*) argv+=(-e) ;;
+esac
+exec "${argv[@]}" "${inner[@]}"

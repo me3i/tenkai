@@ -5,7 +5,8 @@ import Ryoku.Ui.Singletons
 
 // One launcher for XDG desktop entries. Quickshell parses Terminal=true into
 // runInTerminal but spawns no terminal for it, so a TUI (btop, yazi, nvim) got no
-// tty and died at once; ryoku-app owns which terminal the user picked.
+// tty and died at once; mei-app owns which terminal the user picked (ported
+// from Ryoku's ryoku-app, trimmed to the terminal role).
 //
 // Launching goes through Spawn rather than DesktopEntry.execute(): execute()
 // hands the child the desktop's whole environment, and a Quickshell app that
@@ -24,7 +25,7 @@ Singleton {
             Spawn.run(target.command, entry ? entry.workingDirectory : "");
             return;
         }
-        const command = ["ryoku-app", "terminal", "--"];
+        const command = ["mei-app", "terminal", "--"];
         for (let i = 0; i < argv.length; i++)
             command.push(String(argv[i]));
         Spawn.run(command);

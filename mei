@@ -490,6 +490,11 @@ prepare_nested_home() {
   # through a short symlink for the child's XDG_RUNTIME_DIR; all bytes still
   # land under .run/rt.
   ln -sfn "$RUN_DIR/rt" "$MEI_DIR/.r"
+  # Role launcher (AppLaunch.qml runs every Terminal=true entry through it).
+  # Symlinked, so the session always uses the source script.
+  if [ -f "$MEI_DIR/src/ryoku/shell/scripts/mei-app" ]; then
+    ln -sfn "$MEI_DIR/src/ryoku/shell/scripts/mei-app" "$RUN_DIR/bin/mei-app"
+  fi
   mkdir -p "$RUN_DIR/home/.config/fontconfig" "$RUN_DIR/home/Pictures"
   if [ ! -f "$RUN_DIR/home/.config/fontconfig/fonts.conf" ]; then
     cat > "$RUN_DIR/home/.config/fontconfig/fonts.conf" <<EOF
@@ -643,7 +648,9 @@ cmd_run() {
   # Clean runtime previous runs left behind. Only reached when no session is
   # running (checked below), so this never touches a live instance.
   rm -rf "$RUN_DIR/rt/hypr" "$RUN_DIR/rt/quickshell"
-  rm -f "$RUN_DIR/rt/mei-shell.sock" "$RUN_DIR/rt/mei-shell.sock.lock" "$RUN_DIR"/rt/wayland-* 2>/dev/null || true
+  rm -f "$RUN_DIR/rt/mei-shell.sock" "$RUN_DIR/rt/mei-shell.sock.lock" \
+        "$RUN_DIR/rt/ryogami.sock" "$RUN_DIR/rt/mei-hub.lock" \
+        "$RUN_DIR"/rt/wayland-* 2>/dev/null || true
   : > "$PID_FILE"
   : > "$RUN_DIR/logs/session.log"
   : > "$RUN_DIR/logs/hyprland.log"
