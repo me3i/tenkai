@@ -13,7 +13,7 @@ Updated 2026-10-20. One page. **TESTED** = a nested run with a log under `.run/l
 | Wallpaper + matugen | TESTED nested | `3092464`, `3973514` | stills only, guarded |
 | Notifications | TESTED nested | `a3d4886` | one `NotificationServer`, no cache file |
 | System tray | TESTED nested | `93c216a` | one watcher host; auto-pin + right-click menu |
-| Module toggles (Phase 8) | TESTED nested (one clean run + two pending) | — | schema in `docs/MODULES.md`; see loop-log |
+| Module toggles (Phase 8) | TESTED nested | `ae65a66`..`d344260` | two clean runs: `.run/logs/phase8-final1.log`, `phase8-final2.log` (50 TESTED, 0 FAIL each); schema in `docs/MODULES.md` |
 | Full acceptance pass (Phase 9) | NOT RUN | — | cold start x2 |
 | Measurements (Phase 10) | NO NUMBERS | — | do not call Mei lightweight yet |
 | Live trial | NOT RUN | — | owner-run, needs a terminal |

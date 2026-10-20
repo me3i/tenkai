@@ -549,3 +549,20 @@ Anti-bloat note: no plugin framework, no second config file, no extra process. T
 is two functions (`moduleOn`, `moduleDisabled`) plus the loaders that already existed. The one
 new schema field (`modules`) also round-trips through the daemon/Hub settings store so a Settings
 save cannot drop it.
+
+### Phase 8 final evidence
+
+Two consecutive clean runs on the committed tree `728ca8f`: `.run/logs/phase8-final1.log`
+and `phase8-final2.log`, **50 TESTED / 0 FAIL** each, `RESULT: PASS`.
+
+| Check | Before | After |
+|---|---|---|
+| `verify-untouched` | PASS | PASS (after every one of the 11 scenarios) |
+| live `org.freedesktop.Notifications` owner | 949 (live quickshell) | 949 |
+| live `org.kde.StatusNotifierWatcher` owner | 949 (live quickshell) | 949 |
+| `find ~ -maxdepth 4 -iname '*ryoku*' -o -iname '*ryogami*'` outside the project | empty | empty |
+
+Decisions recorded: the owner's preference is the shipped look — orange `Default` theme and
+their own wallpaper set. An intermediate change to force `matugen.mode` to dark was reverted;
+the shipped schema already defaults to `Default` + `Dark` + `{1,false}` and nothing in this
+step alters defaults, wallpapers or colours.
