@@ -481,6 +481,12 @@ func (d *daemon) bootstrap() {
 		d.startTray()
 	}
 	d.startMusic()
+	// The session power verbs (logout, reboot, suspend, shutdown). They were
+	// left out of the bootstrap when the session module was trimmed, so the
+	// sidebar's power buttons had no verb to call and were dead. The actions
+	// themselves stay guarded: MEI_TEST (a nested test session) and
+	// MEI_STUB_POWER (the first live trial) suppress every one of them.
+	d.startSession()
 	d.startNetwork()
 	d.startNightlight()
 	go d.paintWorker()

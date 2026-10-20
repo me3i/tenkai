@@ -35,6 +35,11 @@ func powerStubbed() bool { return os.Getenv("MEI_STUB_POWER") == "1" }
 var sessionActions = map[string][]string{
 	"reboot":   {"systemctl", "reboot"},
 	"shutdown": {"systemctl", "poweroff"},
+	// Suspend is a power action like the others: the same systemctl path, the
+	// same stubs. The coordinated sleep transaction in sleepwake.go is a
+	// different thing (it suspends only after a compositor-secure lock) and is
+	// not what a power button means.
+	"suspend": {"systemctl", "suspend"},
 }
 
 // sessionActionArgv returns the argv for a session power action, or false for an

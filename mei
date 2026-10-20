@@ -566,7 +566,11 @@ export QML_IMPORT_PATH="\$RUN/qml"
 export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
 # Test-mode stub: suppresses session power actions (QML SessionActions + the
 # mei-shell daemon). Nested tests only; a real run does not set this.
-export MEI_TEST=1
+# The test stub can be turned off only to prove the MEI_STUB_POWER guard; the
+# power actions are stubbed in every nested session either way, so a test that
+# loses MEI_TEST still cannot reboot the owner's machine.
+export MEI_TEST="\${MEI_TEST-1}"
+export MEI_STUB_POWER="\${MEI_STUB_POWER:-1}"
 export QSG_RENDER_LOOP=threaded
 # A nested surface must never fall back to the host X server: with no Wayland
 # socket, Qt exits instead of painting a stray window on the live desktop.

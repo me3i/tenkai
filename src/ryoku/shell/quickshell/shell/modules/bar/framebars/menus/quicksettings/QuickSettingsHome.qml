@@ -106,6 +106,14 @@ Item {
                         onActivated: SessionActions.run("reboot")
                     }
                     Menus.QsHoldButton {
+                        icon: "bedtime"
+                        tip: I18n.tr("Click to suspend")
+                        tipBelow: true
+                        tipAlign: "right"
+                        // Mei: routed through SessionActions (test-mode stub).
+                        onActivated: SessionActions.run("suspend")
+                    }
+                    Menus.QsHoldButton {
                         icon: "power_settings_new"
                         tip: I18n.tr("Click to shut down")
                         tipBelow: true
