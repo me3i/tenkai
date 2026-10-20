@@ -626,3 +626,18 @@ children's width (a circular gate that could keep the slot collapsed).
 Harness changes: cold start also moves `home/.cache/quickshell_widgets_v2`; step7 requires a
 `WxH+X+Y` bbox (a failed trim prints `1x1-1-1`, which previously passed the loose format check
 and poisoned the crop offsets), and skips the theme crop with a NOTE when there is no anchor.
+
+## Owner directives: sharp corners, workspace 1 only (2026-10-20)
+
+Upstream comparison (`./upstream`) found no shape drift in the shell: every qsbar radius
+(`v2NotchFrameRadius 14`, `panelRadius 6`, `panelButtonRadius 6`, `pillRadius 12`,
+`tileRadius 10`, `barCornerRadius 6`) and the hub's `radius 0` / `radiusChip 0` are
+byte-identical to upstream. The only difference was ours: the nested test compositor used
+`decoration.rounding = 6` while upstream `hyprland/modules/decoration.lua` ships
+`rounding = 0, rounding_power = 4`. The generator now matches upstream; no QML, bar style or
+hub surface was touched, and the owner's live `~/.config/hypr` (rounding 12/8) is untouched.
+
+Core item 2 no longer focuses workspaces 2/3: the acceptance pass now stays on workspace 1,
+per the owner's directive, so no test surface or window can appear on another workspace. The
+bar's per-workspace sync is checked on the single workspace the pass uses; multi-workspace
+focus sync is no longer exercised and must be reported as reduced coverage.

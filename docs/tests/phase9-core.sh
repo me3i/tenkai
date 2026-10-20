@@ -95,7 +95,10 @@ for _ in $(seq 1 40); do H layers 2>/dev/null | grep -q 'namespace: ryoku-frame'
 H layers | grep -q 'namespace: ryoku-frame' && ok "bar layer present (ryoku-frame)" || bad "no bar layer"
 for _ in $(seq 1 60); do case "$(IPC layout)" in \{*) break;; esac; sleep 0.5; done
 case "$(IPC layout)" in \{*) ok "qsbar IPC live";; *) bad "qsbar IPC never appeared";; esac
-for ws in 1 2 3; do
+# Owner directive: this pass runs on workspace 1 only. Do not focus or create
+# workspaces 2/3 here, so no test surface or window ever appears elsewhere.
+# The bar's per-workspace sync is consequently checked on workspace 1 only.
+for ws in 1; do
   # Lua-config instances: the classic `workspace N` dispatcher is accepted but
   # does nothing here; hl.dsp.focus is the form the nested config uses.
   H dispatch "hl.dsp.focus({ workspace = $ws })" >/dev/null 2>&1; sleep 0.9
