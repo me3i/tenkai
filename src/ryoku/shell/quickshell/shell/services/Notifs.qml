@@ -35,7 +35,7 @@ Singleton {
     property var popupExpireAt: ({})
 
     // Raw server-tracked notifications (the rail's has-notifs dot reads this).
-    readonly property var tracked: server.trackedNotifications.values
+    readonly property var tracked: server ? server.trackedNotifications.values : []
 
     // Panel list: flat, newest-first, transient excluded. A notification whose
     // remove_expired has elapsed has already left `tracked` (historyReaper calls
@@ -227,6 +227,14 @@ Singleton {
         });
     }
 
+    // MEI: the server is created only while the notifications module is on.
+    // A Loader, not an `enabled` flag: NotificationServer has no enable property
+    // and merely instantiating it claims org.freedesktop.Notifications.
+    readonly property alias server: serverLoader.item
+    Loader {
+        id: serverLoader
+        active: Config.moduleOn("notifications")
+        sourceComponent: Component {
     NotificationServer {
         id: server
         keepOnReload: true
@@ -255,6 +263,8 @@ Singleton {
             if (!root.dnd)
                 root.addPopup(n);
             root.scheduleHistoryReap();
+        }
+    }
         }
     }
 }
