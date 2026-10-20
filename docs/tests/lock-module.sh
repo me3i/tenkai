@@ -19,16 +19,17 @@ fail=0
 ok(){ echo "TESTED      $*"; }
 bad(){ echo "FAIL        $*"; fail=1; }
 
-SIG=""; QS=""
+SIG=""; QS=""; WD=""
 H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
 ns_count(){ H -j layers | jq "[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace==\"$1\")] | length" 2>/dev/null; }
 start(){ # $@ = extra env
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" env "$@" ./mei run ) >/dev/null 2>&1
-  SIG=""; QS=""
+  SIG=""; QS=""; WD=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
     QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
-    [ -n "$SIG" ] && [ -n "$QS" ] && break
+    WD="$(ls "$RT"/wayland-* 2>/dev/null | head -1 | xargs -r basename)"
+    [ -n "$SIG" ] && [ -n "$QS" ] && [ -n "$WD" ] && break
     sleep 0.3
   done
   [ -n "$SIG" ] && [ -n "$QS" ] || { bad "the nested session did not come up"; return 1; }
@@ -54,8 +55,11 @@ l="$(ns_count launcher)"; [ "${l:-0}" = "0" ] && ok "the launcher refuses to ope
 
 echo; echo "=== B: a wrong password is refused, the lock stays ==="
 # The lock surface holds the keyboard, so the virtual keyboard types into it.
-for k in 45 21 52; do "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
-"$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
+# The lock is waited for first: typing before the surface has the focus
+# sends the keys nowhere.
+wait_lock >/dev/null
+for k in 45 21 52; do XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
+XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
 sleep 2
 if grep -q "lock verification refused" "$RUN/logs/daemon.log" 2>/dev/null; then
   ok "the daemon refused the wrong password"
@@ -85,8 +89,8 @@ echo; echo "=== D: the right password unlocks (with the harness's verifier) ==="
 start "MEI_LOCK_VERIFY_CMD=/bin/true" || exit 1
 lock_now
 n4="$(wait_lock)"; [ "${n4:-0}" -ge 1 ] && ok "the lock is up" || bad "the lock did not appear"
-for k in 30 48 46; do "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
-"$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
+for k in 30 48 46; do XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
+XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
 sleep 3
 n5="$(ns_count ryoku-lock)"; [ "${n5:-1}" = "0" ] && ok "the lock released after the accepted password" || bad "the lock stayed up (layers=$n5)"
 H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
