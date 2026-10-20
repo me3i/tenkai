@@ -695,3 +695,39 @@ success silently; the hub verb surfaces it. Verified on the host: 27840 -> 32640
 27840 restore; helper with a failing `brightnessctl` exits 1 with a message. `docs/01-audit.md`,
 `docs/02-deps.md` and `CHANGES.md` record the `brightnessctl` dependency and the udev/`video`
 group write access; no udev or group change was made.
+
+## Phase 9 follow-up runs: product green, new leak monitor needed three fixes (2026-10-20 13:47–14:20)
+
+Three cold-start Phase 9 attempts at HEAD, all stopped/recorded rather than papered over:
+
+1. `13:47` `.run/logs/phase9-20261020-134723.log` — the 16 product items all passed except
+   item 9's S9a case: the newly shipped helper now exits 1 when its `brightnessctl` is the
+   fake exit-127 stub, and S9a only accepted `exec`/`not found`, not `exit status 1`. The new
+   item 17 monitor flagged the harness `nested-launcher` (live env by design) and
+   `hyprland-nested` (opens the live display as a client): 37 violations, no UI leak.
+2. `14:00` `.run/logs/phase9-20261020-140057.log` — after fixing S9a and the launcher/
+   compositor exemptions, all 16 product items passed. Item 17 flagged
+   `mei-shell-daemon WAYLAND_DISPLAY=wayland-1` at a session boundary: the runtime was
+   nested, only the relative display socket was briefly absent. Not live use.
+3. `14:11` `.run/logs/phase9-20261020-141101.log` — after restricting the display check to an
+   absolute live-runtime path, all 16 product items passed. Item 17 flagged one
+   `mei-shell-daemon` sample with an empty `/proc/<pid>/environ` during a restart; again no
+   live runtime, a startup read race.
+
+The monitor now retries an empty environ twice, skips zombies, exempts only
+`nested-launcher`/`hyprland-nested`, and flags an absolute `WAYLAND_DISPLAY` into the live
+runtime. Its self-test (deliberate live-runtime launch fails; nested passes; live parent fails)
+passes, and three short real-session runs pass (`.run/logs/leak-check-142041.log`,
+`.run/logs/leak-real-142044.log`, `-142051.log`, `-142056.log`). The full Phase 9 harness has
+**not** been re-run after this last fix; three full attempts already exceed the owner's
+"once" instruction, so the honest state is **product items PASS, HEAD harness UNVERIFIED**.
+Do not call Phase 9 PASS or start Phase 10 until one clean `bash docs/tests/phase9.sh`.
+
+Other follow-up evidence: standalone Phase 8 `RESULT: PASS` with S9a accepting
+`ryoku-shell: brightness: exit status 1` (`.run/logs/phase8-141827.log`); five-workspace test
+5/5, bar focused/list followed each (`.run/logs/workspaces-134543.log`); hub
+`go test ./...` **170 PASS / 11 SKIP / 0 FAIL** (`.run/logs/hub-test-20261020-142100.log`);
+brightness 5% via the QML path and hub verb, restored to 27840 (phase9-core logs). Every test
+ended with `./mei verify-untouched: PASS`; kitty PID 1912 and hash
+`9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145` were unchanged, and the
+live D-Bus owners stayed 949.
