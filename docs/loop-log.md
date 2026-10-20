@@ -731,3 +731,39 @@ brightness 5% via the QML path and hub verb, restored to 27840 (phase9-core logs
 ended with `./mei verify-untouched: PASS`; kitty PID 1912 and hash
 `9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145` were unchanged, and the
 live D-Bus owners stayed 949.
+
+## Phase 9 at 2183dd9: product 16/16, item 17 false positive; stopped (2026-10-20 14:30)
+
+The one requested full cold-start pass at `2183dd9` completed with all **16 product items
+TESTED** and **0 product FAILs** (`.run/logs/phase9-20261020-143011.log`). Item 7 passed and
+`grim` never hung. Item 17 failed with three violations:
+
+```
+pid=985472 name=sh   WAYLAND_DISPLAY=/run/user/1000/wayland-1
+pid=985476 name=lspci WAYLAND_DISPLAY=/run/user/1000/wayland-1
+pid=985477 name=grep  WAYLAND_DISPLAY=/run/user/1000/wayland-1
+```
+
+The process-tree capture (`.run/logs/transient-tree-20261020-144025.log`) shows the parent is
+the **nested Hyprland**, not a Mei process:
+`Hyprland -> sh -c lspci -vnn | grep ... -> lspci / grep`. These are compositor startup
+probes that inherit Hyprland's host display path before `session.sh` switches to the nested
+display. They are not UI and do not use the live runtime; the monitor's absolute-display
+check was too broad. This is a harness defect, not a product regression.
+
+Fix `95874a6`: descendants of the recorded compositor that are **not** Mei components may
+carry the host display and are logged once as `COMPOSITOR-HOSTDISPLAY`; their runtime is still
+checked. A Mei component (`qs`, `mei-shell`, `ryogami`, `mei-hub`, `mei-wm-hyprland`) under
+the compositor is still strict, and launcher descendants are unchanged. Evidence:
+
+- self-test **7/7** (`.run/logs/leak-check-144358.log`): live-runtime qs fails; nested qs
+  passes; descendant qs live runtime fails; compositor `lspci` probe passes; qs under the
+  compositor with host display fails.
+- three real nested sessions with the monitor started **before** `mei run` (same startup
+  order as Phase 9): `.run/logs/leak-prestart-144418-1.log`, `-2.log`, `-3.log`; all `rc=0`,
+  qs tracked, and run 1 captured `sh`/`lspci`/`grep` as `COMPOSITOR-HOSTDISPLAY`.
+- `./mei verify-untouched: PASS` before and after.
+
+Per the owner's stop instruction there was **no fourth full pass** after this fix. The honest
+state is **product 16/16, item 17 FAIL at `2183dd9`, fixed and targeted-validated at
+`95874a6`, full harness not certified**. Do not call Phase 9 PASS and do not start Phase 10.
