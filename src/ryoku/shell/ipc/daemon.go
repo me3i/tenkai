@@ -487,6 +487,12 @@ func (d *daemon) bootstrap() {
 	// themselves stay guarded: MEI_TEST (a nested test session) and
 	// MEI_STUB_POWER (the first live trial) suppress every one of them.
 	d.startSession()
+	// The OSD feed: the daemon watches the panel's backlight and republishes
+	// every change, which is what the shell's OSD windows (volume, mic,
+	// brightness) read. The surfaces were always in the shell; the feed was
+	// left out of the bootstrap when the module was trimmed, so they could
+	// never fire.
+	d.startOsd()
 	d.startNetwork()
 	d.startNightlight()
 	go d.paintWorker()
