@@ -10,7 +10,16 @@ Item {
 
     implicitWidth: trayRow.implicitWidth
     implicitHeight: 28
-    visible: trayRow.implicitWidth > 0
+    // MEI: the Repeater is fed from this array, refreshed in onItemsChanged.
+    // Binding the model straight at the services singleton resolved to an empty
+    // array in the bar instance and never re-fired (measured n=1, row width 0).
+    property var trayModel: []
+    // MEI: no `visible` gate. Upstream used `visible: trayRow.implicitWidth > 0`,
+    // which is circular: the bar collapses an empty slot (width 0, opacity 0),
+    // so the row measured 0 even after an item arrived, the widget stayed
+    // invisible, and the whole status cluster (tray + bell) stayed collapsed.
+    // With no gate the widget is 0-wide while empty and draws as soon as a
+    // pinned item exists.
 
     function toggleHide(item) {
         root.trayToggleHide(item)
@@ -22,7 +31,7 @@ Item {
         spacing: root.v2IconClusterSpacing
 
         Repeater {
-            model: Tray.items
+            model: rootMod.trayModel
 
             delegate: Item {
                 id: trayDelegate
@@ -54,8 +63,22 @@ Item {
                     onClicked: (e) => {
                         if (e.button === Qt.LeftButton)
                             Tray.activate(modelData.service)
-                        else if (e.button === Qt.RightButton)
-                            rootMod.toggleHide(modelData)
+                        else if (e.button === Qt.RightButton) {
+                            // MEI: right click opens the item's own menu, the
+                            // call the tray panel makes. Upstream toggled
+                            // pin/unpin here, which left an item that publishes
+                            // a dbusmenu with no way to open it from the bar;
+                            // pin/unpin stays available on the panel row.
+                            if (modelData.menu != null) {
+                                var gp = ma.mapToItem(null, ma.width / 2, 0)
+                                root.openTrayMenu(modelData.service, gp.x,
+                                                  root.trayDisplayName(modelData),
+                                                  modelData.iconPath ? "file://" + modelData.iconPath
+                                                                     : (modelData.iconName ? Icons.path(modelData.iconName, true) : ""))
+                            } else {
+                                rootMod.toggleHide(modelData)
+                            }
+                        }
                     }
                 }
             }
@@ -127,4 +150,29 @@ Item {
             }
         }
     }
+    // MEI: pin a service the first time it appears, so its icon is drawn
+    // without a trip through the panel (Theme.trayAutoPin), then re-measure the
+    // anchor once the slot has expanded.
+    Connections {
+        target: Tray
+        function onItemsChanged() {
+            root.trayAutoPin()
+            rootMod.trayModel = (Tray.items || []).slice()
+            Qt.callLater(publishAnchor)
+        }
+    }
+
+    // MEI: publish this row's screen-x centre for the themed tray menu and the
+    // qsbar test IPC. The width changes when an icon appears/disappears, which
+    // is exactly when the anchor moves.
+    function publishAnchor() {
+        if (!visible) return
+        root.trayAnchorX = mapToItem(null, width / 2, 0).x
+    }
+    onWidthChanged: publishAnchor()
+    onVisibleChanged: publishAnchor()
+    Component.onCompleted: Qt.callLater(function() {
+        rootMod.trayModel = (Tray.items || []).slice()
+        publishAnchor()
+    })
 }

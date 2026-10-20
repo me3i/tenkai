@@ -445,3 +445,55 @@ Corrections carried into this step:
 UNVERIFIED (owner only): popup motion, card appearance, icon rendering inside the card, palette
 taste, 144 Hz smoothness. Screenshots: `.run/shots/step6-03-normal-popup.png` ...
 `step6-12-actions.png`.
+
+## Step 7 — system tray (2026-10-20)
+
+Scope: system tray only. Nested Hyprland, fake HOME, private bus; no real session, no network.
+The bar draws the icons, the themed menu is `panels/TrayMenu.qml`, and `ipc/tray.go` is the only
+`org.kde.StatusNotifierWatcher` host.
+
+| Item | Result |
+|---|---|
+| one host | TESTED: no QML file names `org.kde.StatusNotifierWatcher`; `tray.go` declares it; the daemon exposes the `tray.*` verbs |
+| live bus before / after | TESTED: owner pid 949 before and after; the nested bus address differs |
+| nested owner | TESTED: the nested watcher is owned by Mei's daemon pid (e.g. 195313), which differs from 949 |
+| item appears | TESTED: tray count 1; icon auto-pinned; theme icon resolved `dialog-information` |
+| icon size | TESTED: the 24 px ARGB pixmap is drawn in a `14x14` box (`14x14+122+13`); the theme glyph's ink is `7x11`; widget `sourceSize` 14 |
+| left click | TESTED: SNI `Activate` reached the item (`Activate 0 0`) |
+| right click menu | TESTED: the themed `TrayMenu` opened (header + rows), dbusmenu `GetLayout` was read |
+| menu entry | TESTED: `trayMenuEvent 1` -> item received `MenuEvent 1`; the disabled row stayed disabled |
+| tray panel | TESTED: opens |
+| second item | TESTED: count 2, ARGB pixmap converted and cached under the fake HOME |
+| item removal | TESTED: 2 -> 1, then 1 -> 0; the emptied tray shows nothing |
+| icon resolution | read-only: item themed path -> theme name -> nearest-24px ARGB->RGBA pixmap -> generic executable fallback; no theme writes |
+| outbound | TESTED: daemon and shell pids own no tcp/udp socket |
+| clean stop | TESTED: both test clients exited, no stray ryogami / matugen / mei-shell / project quickshell, no nested control socket |
+| verify-untouched | TESTED: PASS before and after each run |
+| two clean runs | TESTED: `.run/logs/step7-final1.log`, `step7-final2.log`, `RESULT: PASS`, 32 TESTED, 0 FAIL each |
+
+Two upstream defects surfaced while making the tray visible, and were fixed rather than worked
+around:
+
+| Defect | Detail |
+|---|---|
+| menus never loaded | `refreshMenu()` used `Store(&revision, &layout)`, but `GetLayout` returns ONE body argument (the struct). Every call failed with `dbus.Store: length mismatch` and the item's menu stayed nil. Proven with a throwaway Go probe against the test client, now decodes the struct and logs failures. |
+| status cluster stuck collapsed | `TrayWidget.visible` was `trayRow.implicitWidth > 0`. An empty bar collapses that slot (`width: 0`, `opacity: 0`), so the row measured 0 forever after the first item arrived. The widget now has no `visible` gate (0-wide while empty) and its Repeater is fed from `trayModel`, refreshed in `onItemsChanged`, because binding the model straight at the services singleton resolved empty in the bar instance. |
+
+Harness note: the nested output came up at `devicePixelRatio 2` (980x508 physical = 490x254
+logical). qsbar's narrow stage hides low-priority slots there, which collapsed the status
+cluster and hid the tray before any icon could appear. The nested compositor now pins
+`scale = 1` (`hl.monitor`, documented form), so the test bar is 980 logical px. This is test
+scaffolding in `.run/hypr/nested.lua`; the owner's config is untouched.
+
+Deviations from upstream, to review:
+
+| Area | Upstream | Mei |
+|---|---|---|
+| default pinning | `trayPinned: []`; every icon sits behind the "more" toggle until pinned by hand | each service is auto-pinned once; an explicit unpin is remembered for the session |
+| right click | toggles pin/unpin | opens the item's own dbusmenu when it publishes one; pin/unpin stays on the panel row |
+
+UNVERIFIED (owner only): tray icon legibility on the real wallpaper — the Adwaita legacy
+`dialog-information` glyph is a pale lightbulb on the light bar, and only the owner can judge it;
+real apps with submenus; 144 Hz smoothness. Screenshots: `.run/shots/step7-01-tray-icon.png`,
+`step7-02-tray-menu.png`, `step7-03-tray-panel.png`, `step7-04-two-icons.png`,
+`step7-05-after-one-removed.png`, `step7-06-after-both-removed.png`.

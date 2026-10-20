@@ -455,6 +455,18 @@ hl.config({
     },
 })
 
+-- The nested output inherits the host window size, and with scale "auto" it
+-- came up at devicePixelRatio 2 (980x508 physical = 490x254 logical). qsbar
+-- hides low-priority slots on a narrow stage, which collapsed the status
+-- cluster (tray + bell). Pin scale 1 so the bar gets the full 980 logical px.
+-- Documented form: hl.monitor, from Hyprland's own hyprland.lua.
+hl.monitor({
+    output   = "",
+    mode     = "preferred",
+    position = "auto",
+    scale    = 1,
+})
+
 -- A few binds so the owner can drive the nested instance only.
 -- hyprctl here resolves the nested signature from this compositor's env.
 hl.bind("SUPER + Q", hl.dsp.exec_cmd("hyprctl dispatch exit"))

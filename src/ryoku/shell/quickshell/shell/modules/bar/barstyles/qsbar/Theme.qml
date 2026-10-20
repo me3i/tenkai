@@ -3413,6 +3413,29 @@ Item {
     property bool trayVisible: false
     onTrayVisibleChanged: popupOpened("trayVisible")
     property var trayPinned: []
+    // MEI: screen x of the tray icon row's centre, published by TrayWidget.
+    // trayBarX/trayCaretBarX are bar-local caret values, so the themed menu and
+    // the qsbar test IPC need their own mapped anchor.
+    property real trayAnchorX: 0
+    // MEI: a tray item's icon shows in the bar by default. Upstream starts
+    // trayPinned empty, which hides every icon behind the "more" toggle, so a
+    // fresh session shows no tray at all and the keep-list tray is invisible.
+    // Each service is auto-pinned once; an explicit unpin afterwards is not
+    // undone, because trayAutoPinned never forgets a service it has seen.
+    property var trayAutoPinned: ({})
+    function trayAutoPin() {
+        var its = Tray.items || []
+        var seen = Object.assign({}, trayAutoPinned)
+        var add = []
+        for (var i = 0; i < its.length; i++) {
+            var s = its[i].service
+            if (!s || seen[s]) continue
+            seen[s] = true
+            if (trayPinned.indexOf(s) < 0) add.push(s)
+        }
+        trayAutoPinned = seen
+        if (add.length > 0) trayPinned = trayPinned.concat(add)
+    }
     property real trayBarX: 10
     property real trayCaretBarX: trayBarX
 

@@ -315,6 +315,58 @@ Item {
                 flyout: theme.notifVisible
             })
         }
+
+        // Tray surface: the same entry points the widget's click handlers and
+        // the tray panel use, so a keybind or the nested harness drives the real
+        // path. trayMenu() is a right click; trayActivate() is a left click.
+        function trayState(): string {
+            const its = Services.Tray.items || []
+            return JSON.stringify({
+                count: its.length,
+                pinned: theme.trayPinned,
+                barX: theme.trayAnchorX,
+                panelVisible: theme.trayVisible,
+                menuVisible: theme.trayMenuVisible,
+                menuService: theme.trayMenuService,
+                items: its.map(it => ({
+                    service: it.service,
+                    id: it.id,
+                    title: it.title,
+                    iconPath: it.iconPath || "",
+                    iconName: it.iconName || "",
+                    status: it.status,
+                    pinned: theme.trayPinned.indexOf(it.service) >= 0,
+                    hasMenu: it.menu != null
+                }))
+            })
+        }
+        function trayActivate(index: int): string {
+            const its = Services.Tray.items || []
+            if (index < 0 || index >= its.length) return "err no item"
+            Services.Tray.activate(its[index].service)
+            return "ok activate " + its[index].service
+        }
+        function trayMenu(index: int): string {
+            const its = Services.Tray.items || []
+            if (index < 0 || index >= its.length) return "err no item"
+            const it = its[index]
+            if (it.menu == null) return "err no menu"
+            theme.openTrayMenu(it.service, theme.trayAnchorX,
+                               theme.trayDisplayName(it),
+                               it.iconPath ? "file://" + it.iconPath
+                                           : (it.iconName ? Services.Icons.path(it.iconName, true) : ""))
+            return "ok menu " + it.service
+        }
+        function trayMenuClose(): void { theme.trayMenuVisible = false }
+        function trayMenuEvent(id: int): void { Services.Tray.menuEvent(theme.trayMenuService, id) }
+        function trayPanel(open: bool): void { theme.trayVisible = open }
+        // Reachable only on purpose: pin/unpin is the panel row's action.
+        function trayTogglePin(index: int): string {
+            const its = Services.Tray.items || []
+            if (index < 0 || index >= its.length) return "err no item"
+            theme.trayToggleHide(its[index])
+            return "ok pin " + theme.trayPinned.length
+        }
     }
 
     // Theme.openBarSettings() (the contract-4 root API) requests the panel; the

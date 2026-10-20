@@ -414,12 +414,20 @@ func (t *trayState) refreshMenu(it *trayItem) {
 	if mp == "" {
 		return
 	}
-	var revision uint32
-	var layout any
-	if err := t.conn.Object(bus, mp).Call(menuIface+".GetLayout", 0, int32(0), int32(-1), []string{}).Store(&revision, &layout); err != nil {
+	// GetLayout's reply is ONE body argument: the struct (revision, layout).
+	// Store(&revision, &layout) asks for two and always failed with
+	// "dbus.Store: length mismatch", so every tray menu silently stayed empty
+	// (inherited from the reference). Decode the struct as a whole instead, and
+	// say so in the log when a menu cannot be read.
+	var reply struct {
+		Revision uint32
+		Layout   any
+	}
+	if err := t.conn.Object(bus, mp).Call(menuIface+".GetLayout", 0, int32(0), int32(-1), []string{}).Store(&reply); err != nil {
+		log.Printf("tray: menu %s %s: %v", bus, mp, err)
 		return
 	}
-	menu := parseMenuNode(layout)
+	menu := parseMenuNode(reply.Layout)
 	t.mu.Lock()
 	it.Menu = menu
 	t.mu.Unlock()

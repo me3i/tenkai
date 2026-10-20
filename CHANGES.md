@@ -3,6 +3,55 @@
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into
 `src/`; every modification is recorded here, newest first.
 
+## Phase 7 — step 7: system tray (qsbar)
+
+One watcher host (`src/ryoku/shell/ipc/tray.go`); the bar draws the icons and
+`panels/TrayMenu.qml` is the themed menu. Two upstream defects were fixed so the keep-list tray
+actually shows and works.
+
+### What changed
+
+| File | Change |
+|---|---|
+| `src/ryoku/shell/ipc/tray.go` | `refreshMenu()` decoded `GetLayout` as two body arguments, but the reply is ONE struct `(u(ia{sv}av))`; every call failed with `dbus.Store: length mismatch`, so no tray menu was ever loaded. It now decodes the struct and logs a failure. |
+| `.../qsbar/modules/TrayWidget.qml` | Repeater fed by `trayModel`, refreshed in `onItemsChanged` (the model bound straight at the services singleton resolved empty in the bar instance and never re-fired); removed the circular `visible: trayRow.implicitWidth > 0` gate; right-click opens the item's dbusmenu when it has one; publishes `trayAnchorX`; auto-pins new services |
+| `.../qsbar/Theme.qml` | `trayAutoPinned` / `trayAutoPin()` (pin each service once), `trayAnchorX` (screen x of the icon row) |
+| `.../qsbar/VariantRoot.qml` | qsbar IPC for tests/keybinds: `trayState`, `trayActivate`, `trayMenu`, `trayMenuClose`, `trayMenuEvent`, `trayPanel`, `trayTogglePin` |
+| `mei` (test compositor) | nested `hl.monitor` pins `scale = 1`; at dpr 2 the output is 490 logical px and qsbar's narrow stage keeps the status cluster collapsed, so the tray cannot render in the test |
+
+Icon precedence (daemon side) is unchanged and read-only: item themed path → theme name →
+nearest-24px ARGB→RGBA pixmap → generic executable fallback; no theme writes.
+
+Deliberate deviations from upstream, to review:
+
+| Area | Upstream | Mei |
+|---|---|---|
+| default pinning | `trayPinned: []`, every icon hidden behind the "more" toggle until pinned by hand | each service is auto-pinned once; an explicit unpin is remembered for the session |
+| right click | toggles pin/unpin | opens the item's own dbusmenu when it publishes one; pin/unpin stays on the panel row |
+
+Removing the `visible` gate is a bug fix, not a look change: the gate collapsed the whole status
+cluster (tray + bell) whenever the bar started without tray items.
+
+### Verification
+
+Two consecutive clean runs on this tree: `.run/logs/step7-final1.log` and `step7-final2.log`,
+both `RESULT: PASS`, 32 `TESTED`, 0 `FAIL`.
+
+| Test | Result |
+|---|---|
+| one watcher host | TESTED: no QML names it; `tray.go` declares it; daemon exposes the `tray.*` verbs |
+| live bus before / after | TESTED: owner pid 949 unchanged; nested bus address differs |
+| nested owner | TESTED: Mei's daemon pid, different from 949 |
+| icon appears / size | TESTED: auto-pinned; 24 px pixmap drawn in a `14x14` box (`14x14+122+13`); theme ink `7x11` |
+| left click | TESTED: SNI `Activate` delivered |
+| right click / menu entry | TESTED: themed menu opened; `MenuEvent 1` reached the item; disabled row stayed disabled |
+| panel, second item, removal | TESTED: panel opens; count 2 with a converted ARGB pixmap; 2 -> 1 -> 0 |
+| outbound / clean stop | TESTED: no tcp/udp sockets; clients exited; no strays; nested control socket gone |
+| verify-untouched | TESTED: PASS before and after every run |
+
+UNVERIFIED (owner only): tray glyph legibility on the real wallpaper, real apps with submenus,
+144 Hz smoothness. Screenshots in `.run/shots/step7-0*.png`.
+
 ## Phase 6 — step 6: notifications (one server, DND, actions)
 
 Exactly one `NotificationServer` in the shell. The qsbar flyout stopped being a second one: it
