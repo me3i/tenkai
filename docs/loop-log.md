@@ -566,3 +566,43 @@ Decisions recorded: the owner's preference is the shipped look — orange `Defau
 their own wallpaper set. An intermediate change to force `matugen.mode` to dark was reverted;
 the shipped schema already defaults to `Default` + `Dark` + `{1,false}` and nothing in this
 step alters defaults, wallpapers or colours.
+
+## Phase 9 — pass #1 declared INVALID (2026-10-20)
+
+`bash docs/tests/phase9.sh` (log `.run/logs/phase9-20261020-091408.log`) is **invalid as a
+Phase 9 acceptance run**. It does not count toward the two clean runs.
+
+| Why | Evidence |
+|---|---|
+| Ran on the **pre-fix binary**: the daemon still contained the kitty font push and a by-name `pkill` | `.run/bin/mei-shell` from `5028ddb`; source fixed after the run |
+| Item 8 was **vacuous**: `mesh()` omitted `HOME="$RUN/home"`, so the fake-home guard refused every hub request; the hub never opened, yet page screenshots were graded (they were the wallpaper) and "rendered content" passed | `phase9-item8-20261020-091408.log:37-47`; reproduced guard refusal manually |
+| Item 8 was **FAIL** anyway (`Mei Settings did not open`, motion toggle) | same log |
+| Item 9 (phase 8 suite) was terminated mid-run because the pass was already invalid | `p9-full1.out` |
+
+### Safety incident (disclosed)
+
+`applyFont()` sent `pkill -USR1 -x kitty` on every daemon start. This matches **by process
+name**, so it could signal the owner's live kitty (pid 1912) — a process Mei did not start.
+SIGUSR1 only makes kitty reload its config; no file outside the project was written
+(`writeKittyFont` targeted `$XDG_CONFIG_HOME/kitty` = `.run/config/kitty` in tests).
+
+Verified after the run: live kitty PID **1912** (matches `docs/baseline/ps-full.txt:265`);
+`~/.config/kitty/kitty.conf` sha256 **9ff508…4145** (matches
+`docs/baseline/config-hashes.sha256:10`); no `kitty.conf.mei-bak`, no `current-theme.conf`.
+
+### Fixes before restarting Phase 9
+
+| Area | Change |
+|---|---|
+| daemon | removed `writeKittyFont()`, its call, the signal and the kitty comments — Mei does not theme or configure kitty |
+| hub | removed kitty from the import/rice paths (`scanKitty`, layer write, `knownApps`, `kittyThemePath`) so no `~/.config/kitty` writer remains in `mei-hub` |
+| ryogami `video.Stop()` | removed the `pkill -x ryogami-live` / `pkill -f mpvpaper` orphan sweeps; only tracked process groups are killed |
+| media browsers (3 QML panels) | `pkill -s "$worker"` → `kill -TERM/-KILL -- "-$worker"` (recorded group only) |
+| niri (unbuilt provider) | cheatsheet toggle no longer pkills `qs -c keys` |
+| step4 harness | `mesh()` sets the fake `HOME`; hub-dependent checks fail instead of passing vacuously; content is measured on a crop of the hub window; `BREAK_HUB=1` proves the gate can fail |
+
+Binary check after rebuild: `mei-shell`, `ryogami`, `mei-hub` contain **no** `kitty/current…`
+path, no `current-theme`, and no `pkill` command (the only `pkill` substring is the Go runtime
+signal table entry `hangupkilled`).
+
+Next: cold start, then two consecutive clean runs on the same commit.

@@ -481,20 +481,6 @@ func scanHyprland(source string) (scanApp, bool) {
 	}, true
 }
 
-func scanKitty(source string) (scanApp, bool) {
-	path, ok := findConfig(source, "kitty", "kitty.conf")
-	if !ok {
-		return scanApp{}, false
-	}
-	b, _ := os.ReadFile(path)
-	items := confSettingItems(string(b), "#")
-	return scanApp{
-		ID: "kitty", Name: "kitty", Present: true, Path: filepath.Dir(path),
-		Tier: "layer", Summary: fmt.Sprintf("%d settings", len(items)),
-		Items: items, Conflicts: []scanConflict{},
-	}, true
-}
-
 func scanFish(source string) (scanApp, bool) {
 	path, ok := findConfig(source, "fish", "config.fish")
 	if !ok {
@@ -569,20 +555,6 @@ func scanGeneric(source string) []scanApp {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
-}
-
-// confSettingItems turns a line-oriented config (kitty) into one setting item
-// per non-comment, non-blank line.
-func confSettingItems(src, comment string) []scanItem {
-	items := []scanItem{}
-	for _, line := range strings.Split(src, "\n") {
-		t := strings.TrimSpace(line)
-		if t == "" || strings.HasPrefix(t, comment) {
-			continue
-		}
-		items = append(items, scanItem{Kind: "setting", Raw: t, Ingestable: false})
-	}
-	return items
 }
 
 func listRegularFiles(dir string) []string {

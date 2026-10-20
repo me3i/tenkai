@@ -59,7 +59,7 @@ func TestApplyRyokuThemeUsesRyokuFrameBarLook(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("PATH", "")
 
-	shellPath := filepath.Join(dir, "config", "ryoku", "shell.json")
+	shellPath := filepath.Join(dir, "config", "mei", "shell.json")
 	if err := os.MkdirAll(filepath.Dir(shellPath), 0o755); err != nil {
 		t.Fatal(err)
 	}

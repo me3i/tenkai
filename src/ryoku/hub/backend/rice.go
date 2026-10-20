@@ -1019,7 +1019,6 @@ func riceTouches(r Rice, dir string) []riceTouch {
 	if r.Color.Mode == "fixed" {
 		touches = append(touches,
 			riceTouch{homeRel(filepath.Join(ryokuCacheDir(), "colors.json")), "output", "refresh", "Colour palette (ryoku cache)", true},
-			riceTouch{homeRel(kittyThemePath()), "output", "terminal", "kitty colours", true},
 		)
 	}
 	if r.Color.ThemeApps == nil || *r.Color.ThemeApps {

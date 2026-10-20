@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"io"
 	"os"
@@ -226,10 +225,9 @@ func (p *videoPlayer) removeLocked(cmd *exec.Cmd) bool {
 	return false
 }
 
-// Stop invalidates any in-flight transcode, kills every spawned player (whole
-// process group) and, mirroring how process.go clears stale wall-ui, pkills
-// orphans: livewall from a crashed daemon, mpvpaper from releases that shipped
-// it (an orphan's surface stacks above ours, hiding every later wallpaper).
+// Stop invalidates any in-flight transcode and kills every player this daemon
+// spawned (whole process group). It never sweeps for processes by name: Mei
+// signals only the PIDs it started.
 func (p *videoPlayer) Stop() {
 	p.mu.Lock()
 	p.gen++
@@ -250,10 +248,6 @@ func (p *videoPlayer) Stop() {
 		_ = log.Close()
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	_ = exec.CommandContext(ctx, "pkill", "-x", liveDaemon).Run()
-	_ = exec.CommandContext(ctx, "pkill", "-f", "mpvpaper").Run()
 }
 
 func (p *videoPlayer) Playing() bool {

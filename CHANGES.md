@@ -1,3 +1,22 @@
+## Phase 9 — safety pass: no by-name signals, no kitty theming
+
+Mei never signals a process it did not start, and it does not theme or configure kitty.
+The daemon's kitty font include and its `pkill -USR1 -x kitty` are gone (not guarded: removed),
+so no kitty file or signal exists in the binary. The same audit removed the remaining by-name
+kills from ryogami and the media-browser panels. The Settings harness now sets the fake `HOME`
+(item 8 previously passed vacuously because the daemon guard refused every request) and fails
+closed when the hub does not open; `BREAK_HUB=1` proves that gate can fail.
+
+| File | Change |
+|---|---|
+| `ipc/matugen.go` | removed `writeKittyFont()`, its `applyFont` call and the by-name signal; comments no longer claim kitty theming |
+| `hub/backend/{import,import_apply,import_parse,rice,schemes}.go` | removed the kitty branches/`kittyThemePath` from theme import and rice capture; no hub path writes `~/.config/kitty` |
+| `ryogami/daemon/video.go` | `Stop()` no longer sweeps `pkill -x ryogami-live` / `pkill -f mpvpaper`; only tracked groups are killed |
+| qsbar `MediaBrowser*.qml` | worker cleanup uses `kill -- -$worker` on the recorded group instead of `pkill -s` |
+| `wm/niri/config_binds.go` | cheatsheet toggle no longer kills `qs -c keys` by name (provider is unbuilt/out of scope) |
+| `docs/tests/step4.sh` | fake `HOME` for `mei-shell`, hub-gated checks, hub-window crop, `BREAK_HUB` fault injection |
+| `hub/backend/schemes_test.go` | stale `ryoku` config path → `mei` |
+
 # CHANGES.md — modifications vs upstream Ryoku
 
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into

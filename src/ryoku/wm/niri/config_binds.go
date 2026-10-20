@@ -145,7 +145,7 @@ func defaultBinds() map[string]niriBind {
 
 		// Shell
 		"shell.launcher":          {action: spawnArgs("ryoku-shell", "launcher")},
-		"shell.cheatsheet":        {action: spawnSh("pkill -x -f 'qs -c keys' 2>/dev/null || " + qmlEnv + " flock -n -o /tmp/mei-keys.lock qs -c keys")},
+		"shell.cheatsheet":        {action: spawnSh(qmlEnv + " flock -n -o /tmp/mei-keys.lock qs -c keys")},
 		"shell.lock":              {action: spawnArgs("ryoku-shell", "lock")},
 		"shell.quicksettings":     {action: spawnArgs("ryoku-shell", "quicksettings")},
 		"shell.wallpaper":         {action: spawnArgs("ryogami", "wallpaper", "ui")},

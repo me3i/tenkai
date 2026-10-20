@@ -165,7 +165,7 @@ PanelWindow {
     function cancellableCommand(body, argv0, args) {
         return ["bash", "-c",
             "body=$1; shift; setsid bash -c \"$body\" worker \"$@\" & worker=$!; " +
-            "cleanup() { pkill -TERM -s \"$worker\" 2>/dev/null || true; sleep 0.2; pkill -KILL -s \"$worker\" 2>/dev/null || true; }; " +
+            "cleanup() { kill -TERM -- \"-\"$worker\" 2>/dev/null || true; sleep 0.2; kill -KILL -- \"-\"$worker\" 2>/dev/null || true; }; " +
             "trap 'cleanup; exit 143' TERM INT; wait \"$worker\"",
             argv0 || "manager", body].concat(args || [])
     }

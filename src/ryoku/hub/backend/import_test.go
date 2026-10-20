@@ -51,12 +51,6 @@ general {
 }
 `
 
-const fxKitty = `# kitty
-font_family JetBrains Mono
-font_size 12
-background_opacity 0.9
-`
-
 const fxFish = `# fish
 set -gx EDITOR nvim
 alias ll 'ls -la'
@@ -89,7 +83,6 @@ func importHome(t *testing.T) string {
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
 	mustWrite(t, filepath.Join(home, ".config", "hypr", "modules", "binds.lua"), fxBinds)
 	mustWrite(t, filepath.Join(home, ".config", "hypr", "user.lua"), "-- user overrides\n")
-	mustWrite(t, filepath.Join(home, ".config", "kitty", "user.conf"), "# kitty user\n")
 	return home
 }
 
@@ -98,7 +91,6 @@ func importSource(t *testing.T) string {
 	t.Helper()
 	src := t.TempDir()
 	mustWrite(t, filepath.Join(src, "hypr", "hyprland.conf"), fxHypr)
-	mustWrite(t, filepath.Join(src, "kitty", "kitty.conf"), fxKitty)
 	mustWrite(t, filepath.Join(src, "fish", "config.fish"), fxFish)
 	mustWrite(t, filepath.Join(src, "fastfetch", "config.jsonc"), fxFastfetch)
 	return src
@@ -127,13 +119,13 @@ func TestScanResultModel(t *testing.T) {
 	src := importSource(t)
 	r := scanSource(src)
 
-	for _, id := range []string{"hyprland", "kitty", "fish", "fastfetch"} {
+	for _, id := range []string{"hyprland", "fish", "fastfetch"} {
 		if findApp(r, id) == nil {
 			t.Fatalf("app %q not detected", id)
 		}
 	}
-	if len(r.Apps) != 4 {
-		t.Fatalf("got %d apps, want 4 (no generic): %+v", len(r.Apps), r.Apps)
+	if len(r.Apps) != 3 {
+		t.Fatalf("got %d apps, want 3 (no generic): %+v", len(r.Apps), r.Apps)
 	}
 
 	h := findApp(r, "hyprland")
@@ -193,9 +185,6 @@ func TestScanResultModel(t *testing.T) {
 		t.Error("non-ingestable bind missing from items")
 	}
 
-	if k := findApp(r, "kitty"); k.Tier != "layer" || len(k.Items) != 3 {
-		t.Errorf("kitty: tier=%q items=%d, want layer/3", k.Tier, len(k.Items))
-	}
 	if f := findApp(r, "fish"); f.Tier != "layer" {
 		t.Errorf("fish tier = %q, want layer", f.Tier)
 	}
@@ -218,7 +207,6 @@ func TestScanIdempotent(t *testing.T) {
 func allApps() map[string]appDecision {
 	return map[string]appDecision{
 		"hyprland":  {Include: true},
-		"kitty":     {Include: true},
 		"fish":      {Include: true},
 		"fastfetch": {Include: true},
 	}
@@ -296,12 +284,6 @@ func TestApplyIngestsAndUnbinds(t *testing.T) {
 	}
 	if !luaContentOK(ul) {
 		t.Errorf("generated user.lua is not valid Lua:\n%s", u)
-	}
-
-	// the layer includes got the imported config in a marked block.
-	kitty, _ := os.ReadFile(filepath.Join(configHome(), "kitty", "user.conf"))
-	if !strings.Contains(string(kitty), "font_family JetBrains Mono") || !strings.Contains(string(kitty), "# >>> ryoku-import ") {
-		t.Errorf("kitty/user.conf missing imported block:\n%s", kitty)
 	}
 }
 

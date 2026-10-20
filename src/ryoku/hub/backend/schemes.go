@@ -163,8 +163,6 @@ func applyScheme(mode string) error {
 		return fmt.Errorf("unknown scheme %q (want follow|light|dark)", mode)
 	}
 	reloadDesktop()
-	// MEI: signalling kitty (a process Mei did not start) is disabled. Disabled,
-	// not deleted: _ = exec.Command("pkill", "-USR1", "-x", "kitty").Run()
 	return nil
 }
 
@@ -285,14 +283,6 @@ func ryokuCacheDir() string {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
 	return filepath.Join(base, "mei")
-}
-
-func kittyThemePath() string {
-	base := os.Getenv("XDG_CONFIG_HOME")
-	if base == "" {
-		base = filepath.Join(os.Getenv("HOME"), ".config")
-	}
-	return filepath.Join(base, "kitty", "current-theme.conf")
 }
 
 func cacheHome() string {

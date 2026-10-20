@@ -1267,10 +1267,9 @@ var (
 
 // matugenReload lands the desktop settings that follow a palette: the libadwaita
 // colour-scheme preference tracks light/dark, org.gnome accent-color tracks the
-// palette's primary, gtk-theme lands the variant for the mode, and SIGUSR1
-// reloads kitty (its kitty.conf includes current-theme.conf). The daemon is the
-// single writer of the three GTK-facing gsettings keys. Hyprland is reloaded by
-// the caller.
+// palette's primary, and gtk-theme lands the variant for the mode. The daemon is
+// the single writer of the three GTK-facing gsettings keys. Hyprland is reloaded
+// by the caller.
 //
 // What this does NOT do is repaint an already-open GTK app. Measured on a bare
 // Wayland session: a running GTK 3 or GTK 4 app picks up neither a rewritten
@@ -1281,13 +1280,12 @@ var (
 // needs to follow along.
 func matugenReload(mode string) {
 	// MEI: the toolkit fan-out is OFF -- no gsettings/libadwaita accent writes,
-	// no gtk-theme flip, no kitty SIGUSR1, no KDE colours. The only thing left is
-	// the in-shell repaint. Disabled, not deleted: upstream's body is kept below.
+	// no gtk-theme flip, no KDE colours. The only thing left is the in-shell
+	// repaint. Disabled, not deleted: upstream's body is kept below.
 	//   scheme := "prefer-dark"; if mode == "light" { scheme = "prefer-light" }
 	//   _ = runCommand("gsettings", "set", "org.gnome.desktop.interface", "color-scheme", scheme)
 	//   applyGnomeAccent(); applyKdeColors()
 	//   if name := resolveGtkTheme(mode); name != "" { matugenNudgeGtk(name) }
-	//   _ = runCommand("pkill", "-USR1", "-x", "kitty")
 	_ = mode
 	nudgePalette()
 }
@@ -1609,9 +1607,9 @@ func fontSig(frame []byte) string {
 }
 
 // applyFont pushes the chosen fonts to the toolkits without a logout: gsettings
-// font-name / monospace-font-name are read live by running GTK apps, the qt6ct
-// general font is rewritten for Qt's next launch, and the terminal font lands in
-// a kitty include reloaded via SIGUSR1. Empty keys resolve to the shipped faces.
+// font-name / monospace-font-name are read live by running GTK apps and the
+// qt6ct general font is rewritten for Qt's next launch. Empty keys resolve to
+// the shipped faces.
 func applyFont(frame []byte) {
 	family, mono, size := fontChoice(frame)
 	sz := strconv.Itoa(size)
@@ -1619,8 +1617,6 @@ func applyFont(frame []byte) {
 	_ = runCommand("gsettings", "set", "org.gnome.desktop.interface", "document-font-name", family+" "+sz)
 	_ = runCommand("gsettings", "set", "org.gnome.desktop.interface", "monospace-font-name", mono+" "+sz)
 	writeQt6ctFont(family, size)
-	writeKittyFont(mono, size)
-	_ = runCommand("pkill", "-USR1", "-x", "kitty")
 }
 
 // fontChoice resolves the system font (family), the monospace face that follows
@@ -1667,18 +1663,6 @@ func writeQt6ctFont(family string, size int) {
 		_ = os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
 		return
 	}
-}
-
-// writeKittyFont lands the mono face + size in a daemon-owned kitty include, so a
-// SIGUSR1 reload retypes the terminal without touching the shipped kitty.conf
-// (which carries `include current-font.conf`).
-func writeKittyFont(mono string, size int) {
-	dir := filepath.Join(matugenConfigHome(), "kitty")
-	if _, err := os.Stat(dir); err != nil {
-		return
-	}
-	body := "font_family " + mono + "\nfont_size " + strconv.Itoa(size) + "\n"
-	_ = os.WriteFile(filepath.Join(dir, "current-font.conf"), []byte(body), 0o644)
 }
 
 // watchSunMode retints the desktop when the day/night edge crosses while the

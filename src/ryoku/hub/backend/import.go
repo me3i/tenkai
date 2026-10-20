@@ -212,14 +212,11 @@ func readDecisions(arg string) (decisions, error) {
 
 // knownApps are the apps with a first-class parser or layer target, in the order
 // they appear in the review UI. Anything else the user brought is a generic drop.
-var knownApps = map[string]bool{"hypr": true, "kitty": true, "fish": true, "fastfetch": true}
+var knownApps = map[string]bool{"hypr": true, "fish": true, "fastfetch": true}
 
 func scanSource(source string) scanResult {
 	res := scanResult{Source: source, Apps: []scanApp{}}
 	if a, ok := scanHyprland(source); ok {
-		res.Apps = append(res.Apps, a)
-	}
-	if a, ok := scanKitty(source); ok {
 		res.Apps = append(res.Apps, a)
 	}
 	if a, ok := scanFish(source); ok {

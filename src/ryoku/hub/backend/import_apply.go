@@ -67,7 +67,7 @@ func applyImport(dec decisions) (applyResult, error) {
 			var userLua []string
 			for _, kb := range plan.keep {
 				if kb.Ingestable {
-				ingBinds = append(ingBinds, Keybind{Keys: kb.Combo, Action: kb.Action, Value: kb.Value})
+					ingBinds = append(ingBinds, Keybind{Keys: kb.Combo, Action: kb.Action, Value: kb.Value})
 					binds++
 					continue
 				}
@@ -102,12 +102,6 @@ func applyImport(dec decisions) (applyResult, error) {
 	}
 
 	// --- layer tiers: append each app's config into its user-include ----------
-	if included(dec, "kitty") {
-		if p, ok := findConfig(dec.Source, "kitty", "kitty.conf"); ok {
-			body := headerComment("#", ts, dec.Source) + ensureTrailingNL(readFileOr(p))
-			writes = append(writes, layerWrite("kitty", "user.conf", "#", ts, body))
-		}
-	}
 	if included(dec, "fish") {
 		if p, ok := findConfig(dec.Source, "fish", "config.fish"); ok {
 			body := headerComment("#", ts, dec.Source) + fishBody(filepath.Dir(p), p)

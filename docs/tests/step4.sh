@@ -65,7 +65,17 @@ H() { hyprctl "$@" 2>/dev/null; }
 WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
 note "nested WAYLAND_DISPLAY=$WDISP"
-mesh() { XDG_RUNTIME_DIR="$RT" "$RUN/bin/mei-shell" "$@"; }
+# The daemon refuses to run outside Mei's fake home; without HOME here every
+# hub/settings request in this harness is rejected by the guard.
+# BREAK_HUB=1 deliberately drops HOME so the "does the hub open" gate can be
+# proven to fail (a harness that cannot fail is not a test).
+if [ "${BREAK_HUB:-0}" = 1 ]; then
+  mesh() { XDG_RUNTIME_DIR="$RT" "$RUN/bin/mei-shell" "$@"; }
+else
+  mesh() { HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" XDG_RUNTIME_DIR="$RT" "$RUN/bin/mei-shell" "$@"; }
+fi
+hub_geom() { H -j clients 2>/dev/null | jq -r '.[] | select(.class=="org.quickshell") | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' | head -1; }
+hub_focused() { H -j activewindow 2>/dev/null | jq -r '.class // ""'; }
 shot() { grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
 vkbd() { "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
 hubs() { for p in $(pgrep -f "hub/quickshell" 2>/dev/null); do [ "$(cat /proc/$p/comm 2>/dev/null)" = qs ] && { echo "$p"; return; }; done; }
@@ -99,7 +109,12 @@ echo; echo "=== SETTINGS APP (mei-hub) ==="
 mesh hub open >/dev/null 2>&1
 HUB=""
 for _ in $(seq 1 60); do HUB="$(hubs)"; [ -n "$HUB" ] && break; sleep 0.5; done
-[ -n "$HUB" ] && ok "Mei Settings opened (hub pid $HUB) via 'mei-shell hub open' (the rail button's exact command)" || bad "Mei Settings did not open"
+HUB_OK=0
+if [ -n "$HUB" ]; then
+  HUB_OK=1; ok "Mei Settings opened (hub pid $HUB) via 'mei-shell hub open' (the rail button's exact command)"
+else
+  bad "Mei Settings did not open -- every hub check below will fail, not pass silently"
+fi
 sleep 4
 shot hub-open
 [ -e "$RT/mei-hub.lock" ] && ok "hub lock is \$XDG_RUNTIME_DIR/mei-hub.lock" || note "mei-hub.lock not seen (flock -o may unlink on exit)"
@@ -111,61 +126,95 @@ echo "    $AKEYS"
   && ok "rail carries exactly the 5 kept sections (global/desktop/bar-studio/launcher/animations)" \
   || bad "rail sections are not the expected 5: $AKEYS"
 for s in global desktop bar-studio launcher animations; do
-  mesh hub open "$s" >/dev/null 2>&1; sleep 2.2
-  got="$(sec)"
-  [ "$got" = "$s" ] && ok "page '$s' opened (nav section=$got)" || bad "page '$s' did not open (section=$got)"
-  shot "hub-page-$s"
+  if [ "$HUB_OK" = 1 ]; then
+    mesh hub open "$s" >/dev/null 2>&1
+    got=""
+    for _ in $(seq 1 24); do got="$(sec)"; [ "$got" = "$s" ] && break; sleep 0.5; done
+    [ "$got" = "$s" ] && ok "page '$s' opened (nav section=$got)" || bad "page '$s' did not open (section=$got)"
+    shot "hub-page-$s"
+  else
+    bad "page '$s' not tested: hub never opened"
+  fi
 done
 # each kept page must actually render content (a broken page would be blank)
 for s in global desktop bar-studio launcher animations; do
+  if [ "$HUB_OK" != 1 ]; then bad "page '$s' content not tested: hub never opened"; continue; fi
   f="$RUN/shots/step4-hub-page-$s.png"
-  sd="$(identify -format '%[fx:standard_deviation]' "$f" 2>/dev/null)"
-  awk -v v="${sd:-0}" 'BEGIN{exit !(v>0.03)}' && ok "page '$s' rendered content (std=$sd)" || bad "page '$s' looks blank (std=$sd)"
+  geom="$(hub_geom)"
+  if [ -z "$geom" ]; then bad "page '$s': no hub window to measure"; continue; fi
+  read -r off sz <<< "$geom"
+  crop="$RUN/shots/step4-hub-crop-$s.png"
+  convert "$f" -crop "${sz}+${off/,/+}" +repage "$crop" 2>/dev/null
+  sd="$(identify -format '%[fx:standard_deviation]' "$crop" 2>/dev/null)"
+  awk -v v="${sd:-0}" 'BEGIN{exit !(v>0.02)}' && ok "page '$s' rendered hub content (crop std=$sd)" || bad "page '$s' hub area looks blank (std=$sd)"
 done
 
 # a disabled section must be refused
-mesh hub open displays >/dev/null 2>&1; sleep 2
-got="$(sec)"
-[ "$got" != "displays" ] && ok "disabled section 'displays' refused (section stayed '$got')" || bad "disabled section 'displays' opened"
-mesh hub open windowmanager >/dev/null 2>&1; sleep 2
-got="$(sec)"
-[ "$got" != "windowmanager" ] && ok "disabled section 'windowmanager' refused (section stayed '$got')" || bad "disabled section 'windowmanager' opened"
+for dead in displays windowmanager; do
+  if [ "$HUB_OK" != 1 ]; then bad "disabled section '$dead' not tested: hub never opened"; continue; fi
+  mesh hub open "$dead" >/dev/null 2>&1; sleep 2
+  got="$(sec)"
+  [ "$got" != "$dead" ] && ok "disabled section '$dead' refused (section stayed '$got')" || bad "disabled section '$dead' opened"
+done
 
 # ============================ MOTION (UI) ===================================
 echo; echo "=== MOTION: change by UI, restart, confirm it stuck, reset by UI ==="
-mesh hub open animations >/dev/null 2>&1; sleep 3
-note "motion before: $(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
-# focused window is the hub; keyboard drives real controls (Sw/Btn are activeFocusOnTab)
-vkbd 15; sleep 0.4; vkbd 15; sleep 0.4; vkbd 57   # Tab Tab Space -> Reduce motion switch
-sleep 1.2
-MOT_AFTER="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
-note "motion after UI toggle: $MOT_AFTER"
-echo "$MOT_AFTER" | grep -q '"reduce":true' && ok "UI toggle changed theme.motion.reduce (live, via the Motion page switch)" || bad "UI toggle did not change theme.motion.reduce"
-shot hub-motion-changed
+MOT_PROVEN=0
+MOT_AFTER=""
+if [ "$HUB_OK" = 1 ]; then
+  mesh hub open animations >/dev/null 2>&1; sleep 3
+  note "motion before: $(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+  if [ "$(hub_focused)" = "org.quickshell" ]; then
+    # focused window is the hub; keyboard drives real controls (Sw/Btn are activeFocusOnTab)
+    vkbd 15; sleep 0.4; vkbd 15; sleep 0.4; vkbd 57   # Tab Tab Space -> Reduce motion switch
+    sleep 1.2
+    MOT_AFTER="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+    note "motion after UI toggle: $MOT_AFTER"
+    echo "$MOT_AFTER" | grep -q '"reduce":true' && { ok "UI toggle changed theme.motion.reduce (live, via the Motion page switch)"; MOT_PROVEN=1; } || bad "UI toggle did not change theme.motion.reduce"
+    shot hub-motion-changed
+  else
+    bad "hub is not focused (active='$(hub_focused)'), cannot drive the Motion switch"
+  fi
+else
+  bad "motion UI not tested: hub never opened"
+fi
 
 MOT_SET="$MOT_AFTER"
-echo; note "--- restarting Mei (stop + run) to prove persistence ---"
-"$MEI/mei" stop >/dev/null 2>&1; sleep 3
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run >/dev/null 2>&1
-for _ in $(seq 1 60); do QS="$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"; [ -n "$QS" ] && break; sleep 0.5; done
-SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-export HYPRLAND_INSTANCE_SIGNATURE="$SIG"
-MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"; H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1
-sleep 2
-mesh hub open animations >/dev/null 2>&1
-HUB=""; for _ in $(seq 1 60); do HUB="$(hubs)"; [ -n "$HUB" ] && break; sleep 0.5; done
-sleep 5
-MOT_RESTART="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
-[ "$MOT_RESTART" = "$MOT_SET" ] && ok "motion value survived a full Mei restart: $MOT_RESTART" || bad "motion value did NOT survive (before=$MOT_SET after=$MOT_RESTART)"
-shot hub-motion-restart-stuck
+if [ "$MOT_PROVEN" = 1 ]; then
+  echo; note "--- restarting Mei (stop + run) to prove persistence ---"
+  "$MEI/mei" stop >/dev/null 2>&1; sleep 3
+  XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run >/dev/null 2>&1
+  for _ in $(seq 1 60); do QS="$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"; [ -n "$QS" ] && break; sleep 0.5; done
+  SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
+  export HYPRLAND_INSTANCE_SIGNATURE="$SIG"
+  MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"; H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1
+  sleep 2
+  mesh hub open animations >/dev/null 2>&1
+  HUB=""; for _ in $(seq 1 60); do HUB="$(hubs)"; [ -n "$HUB" ] && break; sleep 0.5; done
+  [ -n "$HUB" ] || bad "hub did not reopen after the restart"
+  sleep 5
+  MOT_RESTART="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+  [ "$MOT_RESTART" = "$MOT_SET" ] && ok "motion value survived a full Mei restart: $MOT_RESTART" || bad "motion value did NOT survive (before=$MOT_SET after=$MOT_RESTART)"
+  shot hub-motion-restart-stuck
+else
+  bad "motion persistence not tested: the UI toggle was never proven"
+fi
 
 echo; note "--- RESET TO DEFAULTS by UI ---"
-vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 57   # Tab x3 -> RESET, Space
-sleep 1.5
-MOT_RESET="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
-echo "$MOT_RESET" | grep -q '"scale":1' && echo "$MOT_RESET" | grep -q '"reduce":false' \
-  && ok "RESET restored theme.motion defaults: $MOT_RESET" || bad "RESET did not restore defaults: $MOT_RESET"
-shot hub-motion-after-reset
+if [ "$MOT_PROVEN" = 1 ] && [ -n "$HUB" ]; then
+  if [ "$(hub_focused)" = "org.quickshell" ]; then
+    vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 57   # Tab x3 -> RESET, Space
+    sleep 1.5
+    MOT_RESET="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+    echo "$MOT_RESET" | grep -q '"scale":1' && echo "$MOT_RESET" | grep -q '"reduce":false' \
+      && ok "RESET restored theme.motion defaults: $MOT_RESET" || bad "RESET did not restore defaults: $MOT_RESET"
+    shot hub-motion-after-reset
+  else
+    bad "RESET not tested: hub is not focused"
+  fi
+else
+  bad "RESET not tested: the motion UI flow never ran"
+fi
 
 # ============================ HYPR SEVERANCE ================================
 echo; echo "=== HYPR WRITER SEVERED ==="
@@ -180,7 +229,11 @@ note "what Settings wrote (must be under \$XDG_CONFIG_HOME/mei only):"; ls -1 "$
 # ============================ HYGIENE =======================================
 echo; echo "=== HYGIENE ==="
 pgrep -af hyprctl 2>/dev/null | grep -v pgrep | grep -q . && bad "a hyprctl is running" || ok "no hyprctl spawned by Settings"
-ss -tunp 2>/dev/null | grep -qE "pid=$HUB," && bad "hub owns tcp/udp sockets" || ok "hub has no tcp/udp sockets (zero outbound)"
+if [ -n "$HUB" ]; then
+  ss -tunp 2>/dev/null | grep -qE "pid=$HUB," && bad "hub owns tcp/udp sockets" || ok "hub has no tcp/udp sockets (zero outbound)"
+else
+  bad "socket check not tested: hub never opened"
+fi
 bad_pat='is not a type|is not installed|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Failed to load|Cannot read property|Non-existent|Unable to determine'
 NOISE='ryoku-cmd|ryostage|ryoku-eq|xdg-desktop-portal|RealtimeKit|pipewire|PulseAudio|pa_context|org.freedesktop.portal'
 if grep -rhiE "$bad_pat" "$RUN/logs/session.log" "$RUN/logs/daemon.log" "$RT"/quickshell/by-id/*/log.log 2>/dev/null | grep -vE "$NOISE" | grep -q .; then
