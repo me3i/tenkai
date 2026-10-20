@@ -291,7 +291,7 @@ EXTRA_PATH="$RUN/deps/bin:" start || { exit 1; }
 bar_up && ok "S9a bar renders with a failing brightnessctl" || bad "S9a bar missing"
 r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1 )"
 case "$r" in
-  *brightness:*exec*|err\ brightness:*|*brightness:*not\ found*)
+  *brightness:*exec*|err\ brightness:*|*brightness:*not\ found*|*brightness:*exit\ status*)
     ok "S9a brightness verb degrades to an error string ($r)" ;;
   *) bad "S9a brightness verb returned '$r'" ;;
 esac
