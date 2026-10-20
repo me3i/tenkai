@@ -58,11 +58,11 @@ hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURC
 -- --- media keys (your playerctl binds) ----------------------------------------
 -- Mei reads the same MPRIS sessions playerctl does, and drives them itself.
 
-hl.bind("XF86AudioPause", hl.dsp.exec_cmd("mei-shell music.track play-pause"), { locked = true })
-hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("mei-shell music.track play-pause"), { locked = true })
-hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("mei-shell music.track previous"), { locked = true })
-hl.bind("XF86AudioNext", hl.dsp.exec_cmd("mei-shell music.track next"), { locked = true })
-hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("mei-shell music.track play-pause"), { locked = true })
+hl.bind("XF86AudioPause", hl.dsp.exec_cmd("mei-shell media playpause"), { locked = true })
+hl.bind("XF86AudioPlay", hl.dsp.exec_cmd("mei-shell media playpause"), { locked = true })
+hl.bind("XF86AudioPrev", hl.dsp.exec_cmd("mei-shell media previous"), { locked = true })
+hl.bind("XF86AudioNext", hl.dsp.exec_cmd("mei-shell media next"), { locked = true })
+hl.bind(mainMod .. " + SPACE", hl.dsp.exec_cmd("mei-shell media playpause"), { locked = true })
 
 -- --- reload (your SUPER + R) ---------------------------------------------------
 
