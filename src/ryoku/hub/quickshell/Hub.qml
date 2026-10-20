@@ -539,7 +539,7 @@ Rectangle {
         "frameBars.menus.quick-settings.minWidth": 410,
         "weatherLocation": "", "weatherUnit": "auto", "formatLocale": "",
         "enabled": true, "bars": 64, "thickness": 0.58, "bloom": 0.6,
-        "reflection": 0.1, "idleWave": true, "style": "bars", "shape": "rounded",
+        "reflection": 0.1, "idleWave": false, "style": "bars", "shape": "rounded",
         "mirror": false, "segments": 10, "fps": 30,
         "adaptive": true, "smoothing": 0.5, "gain": 1.0, "peaks": false,
         "spin": 0, "x": 0, "y": 0.58, "w": 1, "h": 0.42, "grow": "up", "angle": 0, "tiltX": 0, "tiltY": 0,
@@ -867,7 +867,9 @@ Rectangle {
             property real thickness: 0.58
             property real bloom: 0.6
             property real reflection: 0.1
-            property bool idleWave: true
+            // Off by default, like the shell's own default: on a silent desktop
+            // the idle rest drew a permanent hairline across the screen.
+            property bool idleWave: false
             property string style: "bars"
             property string shape: "rounded"
             property string color: ""

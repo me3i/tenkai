@@ -37,7 +37,7 @@ QtObject {
     readonly property real thickness: item.val("thickness", 0.58)
     readonly property real bloom:    item.val("bloom", 0.6)
     readonly property real reflection: item.val("reflection", 0.1)
-    readonly property bool idleWave: item.val("idleWave", true)
+    readonly property bool idleWave: item.val("idleWave", false)
     readonly property bool mirror:   item.val("mirror", false)
     readonly property int segments:  item.val("segments", 10)
     readonly property real gain:     item.val("gain", 1.0)

@@ -346,7 +346,13 @@ Singleton {
             property real thickness: 0.58
             property real bloom: 0.6
             property real reflection: 0.1
-            property bool idleWave: true
+            // Off by default: the idle rest is a near-flat level, so a silent
+            // desktop drew a permanent hairline across the screen (it looked
+            // like a stray workspace line). With it off, the field's own fade
+            // clears the picture on silence, which is what fade was built for;
+            // Settings still offers the switch ("Idle wave") for anyone who
+            // wants the slow wave.
+            property bool idleWave: false
             property string style: "bars"
             property string shape: "rounded"
             property string color: ""
