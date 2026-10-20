@@ -493,6 +493,17 @@ func (d *daemon) bootstrap() {
 	// left out of the bootstrap when the module was trimmed, so they could
 	// never fire.
 	d.startOsd()
+	// The clipboard history: the daemon watches the selection, keeps a bounded
+	// local history under Mei's own state and publishes it. The surface was
+	// always in the shell; the topic was left out of the bootstrap when the
+	// module was trimmed, so the surface had nothing to show.
+	d.startClipboard()
+	// The polkit prompt: the daemon always publishes the topic, and registers
+	// the D-Bus agent only when MEI_POLKIT_AGENT=1 (the live full profile
+	// sets it; dev mode and the overlay profile do not). The registration
+	// fails closed: if the session's polkit slot is already held by another
+	// agent, the existing agent keeps working and Mei does not fight it.
+	d.startPolkit()
 	d.startNetwork()
 	d.startNightlight()
 	go d.paintWorker()
