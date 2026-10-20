@@ -33,6 +33,9 @@ H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/de
 D(){ H dispatch "hl.dsp.global(\"ryoku:$1\")" >/dev/null 2>&1; }
 bar_up(){ H layers | grep -q 'namespace: ryoku-frame'; }
 cc_layers(){ H -j layers | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="ryoku-control")] | length' 2>/dev/null; }
+# The panel's first build takes a moment (the QML is compiled when the host is
+# built), so the check polls for the surface instead of assuming a fixed wait.
+wait_cc(){ local i=0 n=0; while [ $i -lt 40 ]; do n="$(cc_layers)"; [ "${n:-0}" != "0" ] && { echo "$n"; return 0; }; i=$((i+1)); sleep 0.5; done; echo "${n:-0}"; return 1; }
 
 set_mods(){ # $1 = overrides
   jq --argjson m "$1" \
@@ -61,8 +64,8 @@ echo; echo "=== A: bar OFF, control_center ON ==="
 set_mods '{"bar":false}'
 start || exit 1
 bar_up && bad "A: a bar layer exists with the bar module off" || ok "A: no bar layer (the bar module is off)"
-D quicksettings; sleep 2.5
-n="$(cc_layers)"; [ "${n:-0}" -ge 1 ] && ok "A: the control centre opened without the bar (ryoku-control layers=$n)" || bad "A: the control centre did not open (layers=$n)"
+D quicksettings
+n="$(wait_cc)"; [ "${n:-0}" -ge 1 ] && ok "A: the control centre opened without the bar (ryoku-control layers=$n)" || bad "A: the control centre did not open (layers=$n)"
 SL="$RUN/state/mei/surfaces/shell.log"; [ -f "$SL" ] || SL="$RUN/home/.local/state/mei/surfaces/shell.log"
 if grep -E "TypeError|ReferenceError" "$SL" 2>/dev/null | grep -q "controlcenter"; then
   bad "A: the panel logged QML type errors without the bar"

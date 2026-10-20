@@ -36,6 +36,9 @@ start(){ # $@ = extra env
 }
 stop(){ ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1; sleep 2; }
 lock_now(){ H dispatch 'hl.dsp.global("ryoku:lock")' >/dev/null 2>&1; sleep 2; }
+# The lock first asks the daemon whether the PAM setup is usable, so the
+# surface can appear a moment later: the checks poll for it.
+wait_lock(){ local i=0 n=0; while [ $i -lt 40 ]; do n="$(ns_count ryoku-lock)"; [ "${n:-0}" != "0" ] && { echo "$n"; return 0; }; i=$((i+1)); sleep 0.5; done; echo "${n:-0}"; return 1; }
 
 echo "lock module: $(date -Is)"
 
@@ -43,7 +46,7 @@ echo; echo "=== A: the lock covers the screen and the other surfaces refuse ==="
 start || exit 1
 H globalshortcuts 2>/dev/null | grep -q "ryoku:lock" && ok "the ryoku:lock shortcut is registered" || bad "ryoku:lock was never registered"
 lock_now
-n="$(ns_count ryoku-lock)"; [ "${n:-0}" -ge 1 ] && ok "the lock screen is up (ryoku-lock layers=$n)" || bad "the lock screen did not appear (layers=$n)"
+n="$(wait_lock)"; [ "${n:-0}" -ge 1 ] && ok "the lock screen is up (ryoku-lock layers=$n)" || bad "the lock screen did not appear (layers=$n)"
 lock_now
 n2="$(ns_count ryoku-lock)"; [ "${n2:-1}" = "1" ] && ok "locking twice is safe (one layer, still $n2)" || bad "locking twice made $n2 layers"
 H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
@@ -81,7 +84,7 @@ stop
 echo; echo "=== D: the right password unlocks (with the harness's verifier) ==="
 start "MEI_LOCK_VERIFY_CMD=/bin/true" || exit 1
 lock_now
-n4="$(ns_count ryoku-lock)"; [ "${n4:-0}" -ge 1 ] && ok "the lock is up" || bad "the lock did not appear"
+n4="$(wait_lock)"; [ "${n4:-0}" -ge 1 ] && ok "the lock is up" || bad "the lock did not appear"
 for k in 30 48 46; do "$RUN/tools/vkbd/vkbd" $k >/dev/null 2>&1; sleep 0.15; done
 "$RUN/tools/vkbd/vkbd" 28 >/dev/null 2>&1
 sleep 3

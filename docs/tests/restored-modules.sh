@@ -30,6 +30,10 @@ echo "restored modules: $(date -Is)"
 for entry in "${TESTS[@]}"; do
   name="${entry%%|*}"; script="${entry##*|}"
   printf '\n========== %s (%s) ==========\n' "$name" "$script"
+  # A test that failed halfway can leave a nested session behind, and the next
+  # test's "./mei run" would then refuse to start. Every test starts clean.
+  ( cd "$MEI" && ./mei stop ) >/dev/null 2>&1
+  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" ./mei live-stop ) >/dev/null 2>&1
   if bash "$MEI/$script" >/tmp/opencode/rm-$$.log 2>&1; then
     grep -E "TESTED|PASS|FAIL" /tmp/opencode/rm-$$.log | tail -4 | sed 's/^/  /'
     RESULT[$name]="PASS"

@@ -30,11 +30,7 @@ Singleton {
             return;
         root.error = "";
         root.busy = true;
-        sock.queued = "lock-selfcheck\n";
-        if (sock.connected)
-            sock.flushQueued();
-        else
-            sock.connected = true;
+        send("lock-selfcheck\n");
     }
 
     function unlock() {
@@ -48,11 +44,17 @@ Singleton {
             return;
         root.busy = true;
         root.error = "";
-        sock.queued = "lock-verify\n" + password + "\n";
-        if (sock.connected)
-            sock.flushQueued();
-        else
-            sock.connected = true;
+        send("lock-verify\n" + password + "\n");
+    }
+
+    // The daemon closes the connection after every command, so a request must
+    // go out on a FRESH connection: writing into a socket the daemon has
+    // already closed is silently lost, and the lock would look like a
+    // password that never arrived.
+    function send(line) {
+        sock.queued = line;
+        sock.connected = false;
+        sock.connected = true;
     }
 
     Socket {
@@ -80,7 +82,6 @@ Singleton {
                     reply = null;
                 }
                 root.busy = false;
-                sock.reopen();
                 if (reply && reply.selfcheck) {
                     // The readiness answer: lock only if the setup works.
                     if (reply.ok) {
@@ -107,15 +108,9 @@ Singleton {
             }
         }
 
+        // The daemon closes the connection after every command. The socket
+        // therefore reconnects on demand: the next request sets connected
+        // again and the queued line is flushed when the connection is up.
         onConnectionStateChanged: if (connected) flushQueued()
-
-        // The daemon closes the connection after every command, so the socket
-        // must be reopened for the next one: a request written into a socket
-        // the daemon has already closed is lost, and the lock would look like
-        // a refused password that never arrived.
-        function reopen() {
-            if (connected)
-                connected = false;
-        }
     }
 }
