@@ -1,3 +1,18 @@
+## Baseline PID update (kitty restart, 2026-10-20)
+
+The owner restarted their terminal during Phase 10A, so the live kitty is a new
+process (1505210, parent = live Hyprland 846) instead of the recorded 1912. The
+kitty **config hash is unchanged** (`9ff5081253d6d4be73d5bf69767675cc868b54e442a34971e5b6299ff0964145`,
+the watched `~/.config/kitty` tree), the live D-Bus owners (`Notifications`,
+`StatusNotifierWatcher`) are still PID 949, and `./mei verify-untouched` passes.
+
+Only the kitty lines in `docs/baseline/ps-full.txt` and the two kitty connection
+ids in `docs/baseline/dbus-names.txt` were updated (1912/1924/1926/1927 ->
+1505210/1505223/1505225/1505235, `:1.29`/`:1.30` -> `:1.1815`/`:1.1816`). Nothing
+else in the baseline was re-captured, so the leak-detection reference stays as
+strict as it was: kitty is not part of the compared session-process set and its
+connection ids are ignored by the D-Bus watch filter.
+
 # CHANGES.md — modifications vs upstream Ryoku
 
 Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstream files into

@@ -1,4 +1,3 @@
-NAME                                          PID PROCESS         USER CONNECTION    UNIT              SESSION DESCRIPTION
 :1.0                                          793 systemd         mei  :1.0          user@1000.service -       -
 :1.1                                          801 dbus-broker-lau mei  :1.1          user@1000.service -       -
 :1.10                                         887 gvfsd           mei  :1.10         user@1000.service -       -
@@ -7,6 +6,8 @@ NAME                                          PID PROCESS         USER CONNECTIO
 :1.14                                         949 quickshell      mei  :1.14         session-1.scope   1       -
 :1.16                                         956 xdg-desktop-por mei  :1.16         user@1000.service -       -
 :1.17                                         967 xdg-permission- mei  :1.17         user@1000.service -       -
+:1.1815                                      1505210 kitty           mei  :1.1815       session-1.scope   1       -
+:1.1816                                      1505210 kitty           mei  :1.1816       session-1.scope   1       -
 :1.19                                         998 xdg-desktop-por mei  :1.19         user@1000.service -       -
 :1.2                                          808 gnome-keyring-d mei  :1.2          user@1000.service -       -
 :1.20                                         998 xdg-desktop-por mei  :1.20         user@1000.service -       -
@@ -17,13 +18,12 @@ NAME                                          PID PROCESS         USER CONNECTIO
 :1.25                                        1020 xdg-desktop-por mei  :1.25         user@1000.service -       -
 :1.27                                         949 quickshell      mei  :1.27         session-1.scope   1       -
 :1.28                                        1141 python3         mei  :1.28         session-1.scope   1       -
-:1.29                                        1912 kitty           mei  :1.29         session-1.scope   1       -
-:1.30                                        1912 kitty           mei  :1.30         session-1.scope   1       -
 :1.4                                          804 pipewire        mei  :1.4          user@1000.service -       -
 :1.5                                          807 pipewire-pulse  mei  :1.5          user@1000.service -       -
 :1.6                                          805 wireplumber     mei  :1.6          user@1000.service -       -
 :1.8                                          805 wireplumber     mei  :1.8          user@1000.service -       -
 :1.9                                          846 Hyprland        mei  :1.9          session-1.scope   1       -
+NAME                                          PID PROCESS         USER CONNECTION    UNIT              SESSION DESCRIPTION
 ca.desrt.dconf                                896 dconf-service   mei  :1.12         user@1000.service -       -
 org.a11y.Bus                                 1010 at-spi-bus-laun mei  :1.21         user@1000.service -       -
 org.freedesktop.DBus                          793 systemd         mei  -             user@1000.service -       -
