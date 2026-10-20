@@ -15,6 +15,53 @@ else in the baseline was re-captured, so the leak-detection reference stays as
 strict as it was: kitty is not part of the compared session-process set and its
 connection ids are ignored by the D-Bus watch filter.
 
+## The daily-driver components (2026-10-20, Phase 11 prep)
+
+The parity audit (docs/PARITY.md) compared the owner's shell with Mei. Several
+components existed in the tree but were never started, so the owner would have
+lost them on the switch-over. They are restored now, each with its own commit
+and its own nested test.
+
+1. **The control centre no longer depends on the bar module.** The panel is
+   the bar style's own ControlCenter, reused as it is; the shell gives it its
+   own Theme instance and its own surface host, built only when the bar is
+   off. With the bar on, the bar hosts it exactly as before.
+2. **The session verbs exist**, so the power menu is no longer dead:
+   logout, reboot, suspend and shutdown are registered in the daemon, with
+   the sidebar's buttons and the confirmation dialog wired to them. Every
+   action is suppressed by MEI_TEST (a test session) and by MEI_STUB_POWER
+   (the first live trial), and every nested session exports MEI_STUB_POWER=1
+   so a test can never reboot the owner's machine. Suspend joins the others.
+3. **The OSD feed runs again**: the daemon watches the panel's backlight and
+   republishes every change, which is what the shell's OSD windows read. They
+   were always in the shell; the feed was not.
+4. **The clipboard history runs again**: the daemon watches the selection and
+   keeps a bounded local history under Mei's own state, with copy, delete,
+   clear and star.
+5. **The polkit prompt works again**, and the D-Bus agent stays off unless
+   MEI_POLKIT_AGENT=1, which only the full live profile sets. The
+   registration fails closed when the session's polkit slot is already held,
+   so a second agent cannot appear.
+6. **The media keys have a verb to call**: media.playpause, media.next,
+   media.previous, media.stop, media.play and media.pause drive the MPRIS
+   player over the session bus (local), acting on the player the now-playing
+   card is showing.
+7. **A local screenshot helper** (scripts/mei-screenshot): grim for the full
+   screen, slurp for a dragged region, the PNG into the caller's Pictures
+   folder, the clipboard and a notification. No upload, no share service, no
+   network call of any kind.
+8. **Mei's own lock** (modules/lock): a full-screen cover with a clock and a
+   password field, checked against PAM by scripts/mei-lock-verify. The
+   password travels on the control socket's own line and into the helper's
+   standard input, never through argv, the environment, a file or a log. The
+   daemon's login1 session lock is unreachable now and refuses if reached, so
+   Mei cannot lock the owner out of their machine. Lock is not a power
+   action, so MEI_STUB_POWER does not stub it.
+9. **The launcher's apps get the owner's real HOME**: every launch goes
+   through mei-app, which re-exports HOME and the XDG variables from
+   MEI_APP_HOME. Before this, an app opened from the app search inherited
+   Mei's confined home and would have started with a blank profile.
+
 ## Live-trial additions (2026-10-20)
 
 `./mei live --profile overlay|full` and `./mei live-stop` are the owner's own
