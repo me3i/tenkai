@@ -90,6 +90,20 @@ H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
 l2="$(ns_count launcher)"; [ "${l2:-0}" = "1" ] && ok "the launcher opens again after the unlock" || bad "the launcher did not open after the unlock (layers=$l2)"
 stop
 
+echo; echo "=== E: with an unusable PAM service the lock must NOT engage ==="
+# The service name resolves to a file in the system PAM directory, so a name
+# with no file behind it is exactly the "the setup is broken" case.
+start "MEI_LOCK_PAM_SERVICE=mei-no-such-service" || exit 1
+lock_now
+n6="$(ns_count ryoku-lock)"; [ "${n6:-1}" = "0" ] && ok "the lock refused to engage (no ryoku-lock layer)" || bad "the lock engaged although the PAM setup is broken"
+SHELLLOG2="$RUN/state/mei/surfaces/shell.log"; [ -f "$SHELLLOG2" ] || SHELLLOG2="$RUN/home/.local/state/mei/surfaces/shell.log"
+if grep -qiE "mei-lock-selfcheck|no-such-service|PAM service file is missing" "$RUN/logs/daemon.log" 2>/dev/null; then
+  ok "the daemon reported why the lock was refused"
+else
+  echo "NOTE        the daemon's refusal is in its own log"
+fi
+stop
+
 ( cd "$MEI" && ./mei verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" || bad "verify-untouched FAILED"
 [ "$fail" = 0 ] && echo "LOCK MODULE: PASS" || echo "LOCK MODULE: FAIL"
 echo "log: $LOG"

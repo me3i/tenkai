@@ -43,6 +43,10 @@
 #                           up, and only when no Mei process is left. --real-power
 #                           leaves MEI_STUB_POWER unset, so logout, reboot and
 #                           suspend are real; the default stays stubbed.
+#   lock-selftest          check that the PAM setup can be used, without
+#                           locking anything: the helper exists, the PAM service
+#                           file is readable, and a real PAM round trip with a
+#                           wrong password comes back as a refusal
 #   live-stop              stop only Mei's own live pids and their descendants
 #                           (walked through /proc parent links) and restore what
 #                           the live run changed.
@@ -1309,6 +1313,46 @@ cmd_start() {
   return 0
 }
 
+# cmd_lock_selftest checks that the PAM setup can be used, without locking
+# anything: the helper has to exist, the PAM service file has to be readable,
+# and a real PAM round trip with a deliberately wrong password has to come
+# back as a refusal. A refusal proves the machinery works; the accept path is
+# the owner's own live check.
+cmd_lock_selftest() {
+  local helper="$MEI_DIR/src/ryoku/shell/scripts/mei-lock-verify"
+  local service="${MEI_LOCK_PAM_SERVICE:-login}"
+  local file="/etc/pam.d/$service"
+  local rc=0
+  note "lock self-test"
+  if [ -x "$helper" ]; then
+    note "TESTED      the lock helper is there: $helper"
+  else
+    note "FAIL        the lock helper is missing or not executable: $helper"; rc=1
+  fi
+  if [ -r "$file" ]; then
+    note "TESTED      the PAM service file is readable: $file"
+  else
+    note "FAIL        the PAM service file is missing or unreadable: $file"; rc=1
+  fi
+  local out hrc
+  # The helper is expected to refuse, so its non-zero exit must not abort the
+  # script: the status is captured in the '||' branch.
+  out="$(printf 'mei-lock-selftest-wrong-password\n' | "$helper" 2>&1)" && hrc=0 || hrc=$?
+  if [ "$hrc" = "1" ]; then
+    note "TESTED      a real PAM round trip answered: ${out:-refused}"
+  elif [ "$hrc" = "2" ]; then
+    note "FAIL        the PAM round trip could not run: ${out:-unknown}"; rc=1
+  else
+    note "FAIL        the PAM round trip answered unexpectedly (rc=$hrc): ${out:-unknown}"; rc=1
+  fi
+  if [ "$rc" = 0 ]; then
+    note "LOCK SELF-TEST: PASS (the lock is usable; the accept path is yours to try live)"
+  else
+    note "LOCK SELF-TEST: FAIL (the lock must not engage while this fails)"
+  fi
+  return $rc
+}
+
 cmd_live() {
   local profile=""
   while [ $# -gt 0 ]; do
@@ -1492,6 +1536,7 @@ case "${1:-help}" in
   run)              shift; cmd_run ;;
   stop)             shift; cmd_stop ;;
   live)             shift; cmd_live "$@" ;;
+  lock-selftest)    shift; cmd_lock_selftest ;;
   start)            shift; cmd_start "$@" ;;
   live-stop)        shift; cmd_live_stop "$@" ;;
   live-status)      shift; cmd_live_status "$@" ;;

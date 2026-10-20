@@ -21,9 +21,20 @@ Singleton {
     property string error: ""
     property bool busy: false
 
+    // lock asks the daemon first whether the PAM setup can be used at all. If
+    // it cannot, the lock does NOT engage: a lock that cannot be opened would
+    // be a way to lose the session, so a broken setup shows a notification
+    // instead.
     function lock() {
+        if (root.locked || root.busy)
+            return;
         root.error = "";
-        root.locked = true;
+        root.busy = true;
+        sock.queued = "lock-selfcheck\n";
+        if (sock.connected)
+            sock.flushQueued();
+        else
+            sock.connected = true;
     }
 
     function unlock() {
@@ -69,6 +80,23 @@ Singleton {
                     reply = null;
                 }
                 root.busy = false;
+                sock.reopen();
+                if (reply && reply.selfcheck) {
+                    // The readiness answer: lock only if the setup works.
+                    if (reply.ok) {
+                        root.locked = true;
+                        root.error = "";
+                    } else {
+                        root.locked = false;
+                        root.error = (reply && reply.reason) ? reply.reason
+                            : "the PAM setup is not usable";
+                        Quickshell.execDetached([
+                            "notify-send", "-a", "Mei",
+                            "The lock is not available: " + root.error
+                        ]);
+                    }
+                    return;
+                }
                 if (reply && reply.ok) {
                     root.locked = false;
                     root.error = "";
@@ -80,5 +108,14 @@ Singleton {
         }
 
         onConnectionStateChanged: if (connected) flushQueued()
+
+        // The daemon closes the connection after every command, so the socket
+        // must be reopened for the next one: a request written into a socket
+        // the daemon has already closed is lost, and the lock would look like
+        // a refused password that never arrived.
+        function reopen() {
+            if (connected)
+                connected = false;
+        }
     }
 }

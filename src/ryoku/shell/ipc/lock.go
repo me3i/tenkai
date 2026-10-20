@@ -53,6 +53,44 @@ func (d *daemon) lockVerify(password string) string {
 	return string(reply)
 }
 
+// lockSelfcheck answers whether the PAM setup can be used at all, without
+// locking anything: the helper has to exist, the PAM service file has to be
+// readable, and a real PAM round trip with a deliberately wrong password has to
+// come back as a refusal (not as a setup failure). A refusal proves the
+// machinery works; the accept path is the owner's live check.
+func lockSelfcheck() (bool, string) {
+	helper := lockHelperPath()
+	if helper == "" {
+		return false, "MEI_SHELL_DIR is not set, so the lock helper cannot be found"
+	}
+	if _, err := os.Stat(helper); err != nil {
+		return false, "the lock helper is missing: " + helper
+	}
+	service := os.Getenv("MEI_LOCK_PAM_SERVICE")
+	if service == "" {
+		service = "login"
+	}
+	// The service name is a name, not a path: libpam falls back to
+	// /etc/pam.d/other for an unknown one, and the service file must live in
+	// the system PAM directory (root only). So the check is on the file the
+	// name resolves to.
+	path := filepath.Join("/etc/pam.d", service)
+	if _, err := os.Stat(path); err != nil {
+		return false, "the PAM service file is missing: " + path
+	}
+	ok, reason := verifyPamPassword("mei-lock-selfcheck-wrong-password")
+	if ok {
+		// The service accepted a password that is not the account's: the
+		// service is unusable as a lock.
+		return false, "the PAM service accepted a wrong password"
+	}
+	if reason == "the check timed out" || reason == "the lock helper is missing" ||
+		reason == "the lock helper is not available" {
+		return false, reason
+	}
+	return true, ""
+}
+
 // verifyLockPassword runs the PAM helper with the password on its standard
 // input. It returns whether the password was accepted and, when it was not, a
 // short reason that is safe to show.
@@ -68,6 +106,12 @@ func verifyLockPassword(password string) (bool, string) {
 		}
 		return true, ""
 	}
+	return verifyPamPassword(password)
+}
+
+// verifyPamPassword is the PAM path without the harness seam: the readiness
+// check must always talk to the real PAM, or a broken setup would look fine.
+func verifyPamPassword(password string) (bool, string) {
 	helper := lockHelperPath()
 	if helper == "" {
 		return false, "the lock helper is not available"
