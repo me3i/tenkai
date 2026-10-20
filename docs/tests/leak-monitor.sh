@@ -12,6 +12,12 @@
 #   - it names a WAYLAND_DISPLAY that has no socket under the nested runtime, or
 #   - its direct parent is a live session process (live shell / live Hyprland).
 #
+# Two harness processes are exempt by name: `nested-launcher` is the setsid /
+# systemd-run parent that inherits the live environment only to start the
+# nested session, and `hyprland-nested` is the nested compositor, which opens
+# the live display as a Wayland client by design. Both still appear in the
+# pidfile; every UI/daemon process is checked strictly.
+#
 # Exit 0 only if the stop file appears with no violation; exit 1 otherwise.
 set -uo pipefail
 
@@ -48,6 +54,9 @@ while [ ! -e "$STOP" ]; do
       rt="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p' | head -1)"
       wl="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null | sed -n 's/^WAYLAND_DISPLAY=//p' | head -1)"
       ppid="$(awk '{print $4}' "/proc/$pid/stat" 2>/dev/null)"
+      # The launcher is the harness parent (setsid/systemd-run); it inherits
+      # the live environment only to spawn the nested session. It is not UI.
+      if [ "$name" = "nested-launcher" ]; then continue; fi
       if [ "$rt" = "$LIVE_RT" ]; then
         v "$pid" "$name" "uses the live XDG_RUNTIME_DIR ($rt)"
       elif [ -z "$rt" ]; then
@@ -55,7 +64,10 @@ while [ ! -e "$STOP" ]; do
       elif [ "$rt" != "$NESTED_RT" ]; then
         v "$pid" "$name" "unexpected XDG_RUNTIME_DIR ($rt)"
       fi
-      if [ -n "$wl" ] && [ "$rt" = "$NESTED_RT" ] && [ ! -e "$NESTED_RT/$wl" ]; then
+      # The nested compositor must open the live display to show its window;
+      # its absolute WAYLAND_DISPLAY is the host connection, not a leak. Its
+      # XDG_RUNTIME_DIR is still required to be nested above.
+      if [ "$name" != "hyprland-nested" ] && [ -n "$wl" ] && [ "$rt" = "$NESTED_RT" ] && [ ! -e "$NESTED_RT/$wl" ]; then
         v "$pid" "$name" "WAYLAND_DISPLAY=$wl has no socket under the nested runtime"
       fi
       for lp in $LIVE_PIDS; do
