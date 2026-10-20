@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net"
 	"os"
 	"os/exec"
@@ -201,6 +202,7 @@ type daemon struct {
 	sun          *sunState                // latest weather sunrise/sunset window
 	sleepMu      sync.RWMutex
 	sleep        *sleepCycle // coordinated login1 suspend transaction; guarded by sleepMu
+	music        *musicState // the last reported track, and the player it came from
 	suspendReqMu sync.Mutex
 	suspendReq   map[string]*suspendRequest
 }
@@ -481,6 +483,12 @@ func (d *daemon) bootstrap() {
 		d.startTray()
 	}
 	d.startMusic()
+	// The media keys: the shell reads MPRIS but the daemon had no verb to drive
+	// the player, so the keybinds had nothing to call. These act on the
+	// session bus (local, no network) and on the player the now-playing card is
+	// showing.
+	d.startMedia()
+
 	// The session power verbs (logout, reboot, suspend, shutdown). They were
 	// left out of the bootstrap when the session module was trimmed, so the
 	// sidebar's power buttons had no verb to call and were dead. The actions
@@ -1006,6 +1014,13 @@ func (d *daemon) handle(conn net.Conn) {
 		fmt.Fprintln(conn, d.keyringRespond(cmd, strings.TrimRight(secret, "\r\n")))
 		return
 	}
+	// The lock's password rides the same way the keyring secret does: on a
+	// line of its own, so it never reaches a command line.
+	if strings.HasPrefix(cmd, "lock-verify") {
+		secret, _ := r.ReadString('\n')
+		fmt.Fprintln(conn, d.lockVerify(strings.TrimRight(secret, "\r\n")))
+		return
+	}
 	// Typed subsystem state rides the same socket: a long-lived subscription
 	// stream, or a request/response control call. Both outlive the one-shot
 	// command deadline, which they clear for themselves.
@@ -1039,6 +1054,7 @@ var surfaceCommands = map[string]string{
 	// CustomShortcut press runs in-process.
 	"bar-toggle":         "barToggle",
 	"launcher":           "launcher",
+	"lock":               "lock",
 	"overview":           "overview",
 	"visualizer":         "visualizer",
 	"visualizer-overlay": "visualizer-overlay",
@@ -1197,7 +1213,20 @@ func (d *daemon) dispatch(line string) string {
 		if len(args) != 0 {
 			return "err lock: expected no arguments, status, or session <id>"
 		}
-		return lockSession()
+		// SAFETY: login1's session lock would lock the owner's whole session,
+		// which a test session must never be able to do. It is stubbed in a
+		// test session and in the first live trial; Mei's own lock is the
+		// shell's surface, not this.
+		if testStubbed() {
+			log.Printf("mei-shell: [mei-stub] suppressed lock (MEI_TEST=1)")
+			return "ok"
+		}
+		if powerStubbed() {
+			log.Printf("mei-shell: [mei-stub] suppressed lock (MEI_STUB_POWER=1)")
+			return "ok"
+		}
+		return "err lock: Mei's own lock is the shell's surface; the session lock is not used"
+		// return lockSession()
 	case "unlock-prepare":
 		if len(args) != 2 || args[0] != "session" {
 			return "err unlock-prepare: expected session <id>"

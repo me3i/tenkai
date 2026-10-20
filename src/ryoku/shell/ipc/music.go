@@ -108,6 +108,9 @@ type musicState struct {
 	gen   int
 	key   string
 	frame musicFrame
+	// player is the MPRIS bus name of the player the shell last reported, so
+	// a media key acts on the app the now-playing card is showing.
+	player string
 }
 
 // startMusic registers the music topic and the track push, and publishes the
@@ -117,6 +120,7 @@ func (d *daemon) startMusic() {
 		topic: d.registerTopic("music"),
 		dir:   musicCacheDir(),
 	}
+	d.music = s
 	s.publish()
 
 	d.registerCall("music.track", func(raw json.RawMessage) (any, error) {
@@ -150,6 +154,7 @@ func (s *musicState) setTrack(t musicTrack) {
 	s.gen++
 	gen := s.gen
 	s.key = key
+	s.player = strings.TrimSpace(t.Player)
 	empty := strings.TrimSpace(t.Title) == ""
 	s.frame = musicFrame{
 		Key:          key,

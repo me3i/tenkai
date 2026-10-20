@@ -20,6 +20,7 @@ import "modules/desktop"
 import "modules/visualizer"
 import "modules/bar"
 import "modules/controlcenter"
+import "modules/lock"
 import "modules/dock"
 import "modules/launcher"
 import "modules/overview"
@@ -295,6 +296,15 @@ ShellRoot {
 
             // The dock's right-click context menu: a full-screen overlay on the
             // monitor that owns the open menu (the thin dock strip cannot host it).
+            // Mei's own lock: a full-screen cover with a clock and a
+            // password field, checked against PAM by the daemon. It is the
+            // shell's lock, not the compositor's session lock, so it can never
+            // lock the owner's session by itself.
+            LockScreen {
+                id: lockScreen
+                screen: perScreen.modelData
+            }
+
             LazyLoader {
                 id: dockMenuLoader
                 property bool open: Dock.menuOpen && Dock.menuScreen === perScreen.modelData.name
@@ -503,6 +513,9 @@ ShellRoot {
         return "";
     }
     function toggleSurface(id) {
+        // While the lock is up, the other surfaces are unreachable.
+        if (Lock.locked)
+            return;
         const mod = surfaceModule(id);
         if (mod && !Config.moduleOn(mod)) return;
         const st = ShellState.forActive();
@@ -593,6 +606,11 @@ ShellRoot {
         name: "launcher"
         description: I18n.tr("Toggle the app launcher on the active monitor")
         onPressed: root.toggleSurface("launcher")
+    }
+    CustomShortcut {
+        name: "lock"
+        description: I18n.tr("Lock the Mei shell")
+        onPressed: Lock.lock()
     }
     CustomShortcut {
         name: "overview"
@@ -771,6 +789,9 @@ ShellRoot {
         // An empty monitor means "wherever focus is": the daemon sends "" when
         // its focused-output cache is cold.
         function openSurface(mon: string, id: string): void {
+            // The lock refuses every other surface, including the launcher's.
+            if (Lock.locked && id !== "lock")
+                return;
             const mod = root.surfaceModuleId(id);
             if (mod && !Config.moduleOn(mod)) return;
             if (mon && mon.length > 0)
@@ -800,6 +821,7 @@ ShellRoot {
         }
         function closeAllMenus(mon: string): void { ShellState.closeSurface("", mon); }
         function sessionConfirm(mon: string, action: string): void { ShellState.askSessionAction(action, mon); }
+        function lock(mon: string): void { Lock.lock(); }
         function clearSurfaceTrace(): void { root.surfaceTrace = "" }
         function lastSurface(): string { return root.surfaceTrace }
     }
