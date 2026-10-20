@@ -21,8 +21,11 @@ fail=0
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 cleanup() {
-  for p in ${BROKEN_PID:-} ${GOOD_PID:-} ${PARENT_PID:-}; do
+  for p in ${BROKEN_PID:-} ${GOOD_PID:-} ${PARENT_PID:-} ${DESC_QS:-} ${DESC_ROOT:-} ${GOOD_DESC_QS:-} ${GOOD_DESC_ROOT:-}; do
     [ -n "$p" ] && kill -TERM "$p" 2>/dev/null || true
+  done
+  for f in broken good parent desc good-desc; do
+    [ -f "$TMP/$f.log" ] && cp "$TMP/$f.log" "$RUN/logs/leak-check-$STAMP-$f.log"
   done
   rm -rf "$TMP"
 }
@@ -86,6 +89,50 @@ else
   sed 's/^/  | /' "$TMP/parent.log"
 fi
 kill -TERM "$PARENT_PID" 2>/dev/null; wait "$PARENT_PID" 2>/dev/null; PARENT_PID=""
+
+# 4. Descendant coverage: qs is not in the pidfile, but it is a child of the
+#    recorded nested-launcher. A live-runtime qs must fail the guard.
+cp /bin/sleep "$TMP/qs"
+env -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$RT" \
+  bash -c "XDG_RUNTIME_DIR='$LIVE_RT' WAYLAND_DISPLAY='$LIVE_WL' '$TMP/qs' 6 & wait" &
+DESC_ROOT=$!
+sleep 0.3
+DESC_QS="$(pgrep -P "$DESC_ROOT" 2>/dev/null | head -1)"
+printf '%s\t%s\tnested-launcher\n' "$DESC_ROOT" "$DESC_ROOT" > "$TMP/desc.pids"
+run_monitor "$TMP/desc.pids" "$TMP/desc.stop" "$TMP/desc.log" &
+MONPID=$!
+sleep 1
+touch "$TMP/desc.stop"
+wait "$MONPID"; DRC=$?
+if [ "$DRC" != 0 ] && grep -q 'name=qs .*uses the live XDG_RUNTIME_DIR' "$TMP/desc.log"; then
+  ok "descendant qs with the live runtime fails the guard (pid ${DESC_QS:-?}, rc=$DRC)"
+else
+  bad "guard did not fail a descendant qs with the live runtime (rc=$DRC)"
+  sed 's/^/  | /' "$TMP/desc.log"
+fi
+kill -TERM "$DESC_QS" "$DESC_ROOT" 2>/dev/null; wait "$DESC_ROOT" 2>/dev/null; DESC_QS=""; DESC_ROOT=""
+
+# 5. Descendant false-positive guard: the same qs shape on the nested runtime
+#    must pass, proving the guard actually walks descendants instead of
+#    ignoring them.
+env -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$RT" \
+  bash -c "XDG_RUNTIME_DIR='$RT' '$TMP/qs' 6 & wait" &
+GOOD_DESC_ROOT=$!
+sleep 0.3
+GOOD_DESC_QS="$(pgrep -P "$GOOD_DESC_ROOT" 2>/dev/null | head -1)"
+printf '%s\t%s\tnested-launcher\n' "$GOOD_DESC_ROOT" "$GOOD_DESC_ROOT" > "$TMP/good-desc.pids"
+run_monitor "$TMP/good-desc.pids" "$TMP/good-desc.stop" "$TMP/good-desc.log" &
+MONPID=$!
+sleep 1
+touch "$TMP/good-desc.stop"
+wait "$MONPID"; GDRC=$?
+if [ "$GDRC" = 0 ] && grep -q 'name=qs' "$TMP/good-desc.log"; then
+  ok "descendant nested-runtime qs passes (pid ${GOOD_DESC_QS:-?}, no false positive)"
+else
+  bad "guard flagged or missed a descendant nested-runtime qs (rc=$GDRC)"
+  sed 's/^/  | /' "$TMP/good-desc.log"
+fi
+kill -TERM "$GOOD_DESC_QS" "$GOOD_DESC_ROOT" 2>/dev/null; wait "$GOOD_DESC_ROOT" 2>/dev/null; GOOD_DESC_QS=""; GOOD_DESC_ROOT=""
 
 echo "leak self-test log: $LOG"
 exit "$fail"
