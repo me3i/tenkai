@@ -1241,6 +1241,9 @@ func (d *daemon) dispatch(line string) string {
 		}
 		return d.brightness(args[0])
 	case "hub":
+		if moduleDisabled("settings") {
+			return "ok settings module off"
+		}
 		switch len(args) {
 		case 1:
 			return d.hub(args[0], "")
