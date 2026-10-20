@@ -225,11 +225,33 @@ Item {
 
                 // Gentle drift, only while the palette is shown, so an idle
                 // launcher triggers no repaints.
+                //
+                // The ridge travels at most ~7 px/s (amp 5 * the 1/900 per ms
+                // phase rate), so repainting on every display frame redraws the
+                // whole strip to move the line by less than a tenth of a
+                // pixel. That repaint is the launcher's whole per-frame cost:
+                // the canvas is CPU-rasterised (Qt paints it on the CPU and
+                // uploads a texture), so the waste is CPU and battery on every
+                // machine, not only in a nested session.
+                //
+                // Repaint only when the picture would have moved by a visible
+                // step. The canvas then advances in <=0.35 px steps, the same
+                // picture on screen, at ~24 repaints/s instead of one per
+                // display frame (144/s on a 144 Hz panel).
                 FrameAnimation {
+                    id: drift
                     running: root.visible && LauncherConfig.horizonMode !== "off"
+                    property real lastPaintPhase: -1
+                    // 0.35 px of ridge travel: a third of a pixel, under the
+                    // perceptual threshold for a 1 px antialiased line.
+                    readonly property real phaseStep: 0.35 / (7.5 * Math.max(0.5, root.s))
                     onTriggered: {
-                        wave.phase = Date.now() / 900;
-                        wave.requestPaint();
+                        const p = Date.now() / 900;
+                        wave.phase = p;
+                        if (lastPaintPhase < 0 || Math.abs(p - lastPaintPhase) >= phaseStep) {
+                            lastPaintPhase = p;
+                            wave.requestPaint();
+                        }
                     }
                 }
             }
