@@ -91,6 +91,12 @@ mei_alive(){
 # makes the next gate fail for the wrong reason.
 settle(){
   local i=0
+  # A gate that leaves its own idle config behind would lock the next gate's
+  # session (the idle module's lock threshold is one second there), and the
+  # bar would never appear. Every gate starts from a neutral one.
+  mkdir -p "$RUN/config/mei"
+  printf '{"enabled": true, "dim": 9999, "lock": 9999, "dpms": 9999, "suspend": 9999, "dimPercent": 40}\n' \
+    > "$RUN/config/mei/idle.json.new" 2>/dev/null && mv "$RUN/config/mei/idle.json.new" "$RUN/config/mei/idle.json" 2>/dev/null
   while [ $i -lt 45 ]; do
     mei_alive || return 0
     sleep 1
