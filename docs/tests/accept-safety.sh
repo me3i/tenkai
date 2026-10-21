@@ -33,8 +33,12 @@ s3) # no Mei process holds the live runtime or the live display
   ;;
 
 s4) # no process is ever signalled by name
+  # The gate's own files carry the words it looks for (that is the proof it
+  # can fail), and a comment may name them; a real call is what is forbidden.
   hits="$(grep -rnE '\b(pkill|killall|pidof)\b' --include='*.sh' --include='mei' \
-            --include='*.py' docs mei 2>/dev/null | grep -vE 'pidof\)|no pkill' | head -5)"
+            --include='*.py' docs mei 2>/dev/null \
+            | grep -vE 'docs/tests/accept(-safety)?\.sh:' \
+            | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' | head -5)"
   [ -z "$hits" ] || fail "a script signals a process by name: $hits"
   if [ -n "$extra" ]; then
     grep -qE '\b(pkill|killall|pidof)\b' "$extra" || fail "the proof file was not caught"

@@ -53,10 +53,13 @@ out="$(WAYLAND_DISPLAY="$LIVE_RT/$LIVE_NAME" "$GUARD" "$STUB" 2>&1)"; rc=$?
 case "$out" in *"live runtime"*) ok "the refusal says why: the live runtime" ;;
 *) bad "the refusal does not name the live runtime: $out" ;;
 esac
-out="$(NESTED_INPUT_DISPLAY="$LIVE_NAME" "$GUARD" "$STUB" 2>&1)"; rc=$?
+# A stand-in name with no socket behind it must be refused: the guard never
+# reaches for a display it cannot prove is the nested one. (A live name with a
+# nested socket of the same name is the nested one, and that is right.)
+out="$(NESTED_INPUT_DISPLAY="wayland-no-such-display" "$GUARD" "$STUB" 2>&1)"; rc=$?
 case "$rc:$out" in
-3:*REFUSED*) ok "the live display name is refused too, when it has no nested socket (exit 3)" ;;
-*) bad "the guard accepted the live display name (exit $rc): $out" ;;
+3:*REFUSED*) ok "a display with no nested socket behind it is refused (exit 3)" ;;
+*) bad "the guard accepted a display with no nested socket (exit $rc): $out" ;;
 esac
 
 echo

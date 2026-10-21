@@ -158,6 +158,30 @@ panels are not built, and `nmtui` and `bluetoothctl` are the fallback. That
 is written into `docs/LIVE-CHECKLIST.md`, together with the list of every
 remaining difference from your previous shell.
 
+## The gate's first run, and what it found (2026-10-21)
+
+The gate is built (`./mei accept`, `docs/tests/accept.sh`, and the checks
+behind it in `docs/tests/accept-safety.sh`) and the first full run found six
+failures. Five were harness defects of the gate itself, and one was a stale
+check in the idle test:
+
+- the gate list was read with three fields instead of four, so every gate ran
+  `bash <helper> <gate> | <the log file>` and bash tried to execute the log
+  (fixed);
+- the input guard's self-test expected a plain live display name to be
+  refused, but when a nested session is running that name *is* the nested
+  display, so the self-test now uses a stand-in name with no socket behind it
+  (fixed);
+- the S4 check flagged its own proof strings and a comment that names the
+  forbidden commands (fixed);
+- the gates did not wait for the previous gate's session to be gone, so the
+  next one failed with "no shell process" (fixed: the gate settles first);
+- the idle test still looked for the old lock *layer*, which the protocol lock
+  does not have (fixed: it asks the compositor, like the other lock tests);
+- the idle test's wrong password was typed once, and the field takes the
+  focus a moment after the surface appears (fixed: the input is retried, the
+  same way the lock test does it).
+
 ## Where to resume
 
 **Item 2, the network and Bluetooth hosts.** Hosts that do not live in the

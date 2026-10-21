@@ -24,6 +24,9 @@ bad(){ echo "FAIL        $*"; fail=1; }
 SIG=""; QS=""; WD=""
 H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
 ns_count(){ H -j layers | jq "[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace==\"$1\")] | length" 2>/dev/null; }
+# The session lock is the compositor's own now: its answer, as the shell
+# reported it to the daemon, is what the check looks at.
+proto_state(){ printf 'lock-protocol status\n' | timeout 6 socat - "UNIX-CONNECT:$RT/mei-shell.sock" 2>/dev/null | head -1 | tr -d '\r'; }
 NADDR(){ cat "$RUN/bus" 2>/dev/null; }
 B(){ busctl --address="$(NADDR)" "$@" 2>&1; }
 GDBUS(){ gdbus call --address "$(NADDR)" --dest org.freedesktop.ScreenSaver \
@@ -148,19 +151,32 @@ grep -q "wm.act output.power on" "$DAEMON_LOG" 2>/dev/null \
 echo
 echo "=== F: the idle locks the screen, and a wrong password is refused ==="
 cfg_with 9999 1 9999 9999
-n=0
-for _ in $(seq 1 40); do n="$(ns_count ryoku-lock)"; [ "${n:-0}" != "0" ] && break; sleep 0.5; done
-[ "${n:-0}" -ge 1 ] && ok "the idle locked the screen (ryoku-lock layers=$n)" \
-  || bad "the idle did not lock the screen (layers=$n)"
-for k in 45 21 52; do key "$k"; sleep 0.15; done
-key 28
-sleep 3
-grep -q "lock verification refused" "$DAEMON_LOG" 2>/dev/null \
-  && ok "the daemon refused the wrong password" \
+n=""
+for _ in $(seq 1 40); do n="$(proto_state)"; case "${n:-}" in active*) break ;; esac; sleep 0.5; done
+case "${n:-}" in
+active*) ok "the idle locked the screen ($n)" ;;
+*) bad "the idle did not lock the screen ($n)" ;;
+esac
+# The keys have to land in the password field, and the field takes the focus a
+# moment after the surface appears: the input is repeated until the daemon
+# answers.
+refused=0
+for attempt in 1 2 3; do
+  for k in 45 21 52; do key "$k"; sleep 0.2; done
+  key 28
+  for _ in $(seq 1 10); do
+    grep -q "lock verification refused" "$DAEMON_LOG" 2>/dev/null && { refused=1; break; }
+    sleep 0.5
+  done
+  [ "$refused" = 1 ] && break
+done
+[ "$refused" = 1 ] && ok "the daemon refused the wrong password" \
   || bad "the daemon did not log a refusal"
-n2="$(ns_count ryoku-lock)"
-[ "${n2:-0}" -ge 1 ] && ok "the lock is still up after the wrong password" \
-  || bad "the lock closed on a wrong password"
+n2="$(proto_state)"
+case "${n2:-}" in
+active*) ok "the lock is still up after the wrong password ($n2)" ;;
+*) bad "the lock closed on a wrong password ($n2)" ;;
+esac
 
 stop
 echo

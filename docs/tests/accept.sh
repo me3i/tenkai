@@ -74,9 +74,37 @@ TODO=(
 )
 
 # ---------------------------------------------------------------- the runners
+# mei_alive asks whether a Mei shell is still running, by reading /proc (no
+# process is looked up by name, and nothing is signalled).
+mei_alive(){
+  local p
+  for p in /proc/[0-9]*; do
+    [ -r "$p/cmdline" ] || continue
+    if tr '\0' ' ' < "$p/cmdline" 2>/dev/null | grep -q "quickshell/shell/shell.qml"; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+# settle waits for the previous gate's session to be gone: a leftover session
+# makes the next gate fail for the wrong reason.
+settle(){
+  local i=0
+  while [ $i -lt 45 ]; do
+    mei_alive || return 0
+    sleep 1
+    i=$((i+1))
+  done
+  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+      WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei stop ) >/dev/null 2>&1
+  sleep 3
+}
+
 run_gate(){ # id, name, command
   local id="$1" name="$2" cmd="$3"
   local log="$LOGDIR/$id-$STAMP.log"
+  settle
   printf '\n--- %s: %s ---\n' "$id" "$name"
   if bash -c "$cmd" > "$log" 2>&1; then
     printf '%-4s %-62s PASS\n' "$id" "$name"
