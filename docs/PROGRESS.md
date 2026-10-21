@@ -197,6 +197,15 @@ instead of claiming a pass.
 The gate list is now complete: there is no TODO gate left, only the human
 gates, which are UNVERIFIED on purpose.
 
+## The third run: the idle config left behind (2026-10-21)
+
+The safety gates (S1-S8) all pass now. The functional gates F1, F2 and F3
+failed for one reason: the idle gate leaves its own config behind, and its
+lock threshold is one second there, so the next gate's session came up
+**already locked** (the bar never appeared, the launcher found no shell, the
+control centre could not open). The gate now writes a neutral idle config
+before every gate, so no gate inherits another's.
+
 ## Where to resume
 
 **Item 2, the network and Bluetooth hosts.** Hosts that do not live in the
