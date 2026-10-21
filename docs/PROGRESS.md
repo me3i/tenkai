@@ -182,6 +182,21 @@ check in the idle test:
   focus a moment after the surface appears (fixed: the input is retried, the
   same way the lock test does it).
 
+## The missing gates are wired (2026-10-21)
+
+The gates that had no check now wrap the harnesses that were already in the
+tree, unchanged: F4 notifications (step 6), F5 the tray (step 7), F6 the
+wallpaper and the palette (step 5), F7 the settings app (step 4), F12 the
+module matrix (Phase 8), and Q4 the idle table (the Phase 10A harness, which
+now compares against the recorded table in docs/STATUS.md and fails when a
+figure is more than 5 % over it). Q3 captures the reference set under
+.run/shots/clean-before/ and reports BASELINE-CAPTURED: it can only prove
+something once there is a second set to compare it with, and the gate says so
+instead of claiming a pass.
+
+The gate list is now complete: there is no TODO gate left, only the human
+gates, which are UNVERIFIED on purpose.
+
 ## Where to resume
 
 **Item 2, the network and Bluetooth hosts.** Hosts that do not live in the

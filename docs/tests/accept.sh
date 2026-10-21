@@ -36,6 +36,10 @@ GATES=(
 "F1|the bar and the workspaces|bash $MEI/docs/tests/workspaces.sh|$OUT"
 "F2|the launcher|bash $MEI/docs/tests/launcher-check.sh|$OUT"
 "F3|the control centre, and the audio and brightness steps|bash $MEI/docs/tests/control-center-matrix.sh|$OUT"
+"F4|the notifications|bash $MEI/docs/tests/step6.sh|$OUT"
+"F5|the system tray|bash $MEI/docs/tests/step7.sh|$OUT"
+"F6|the wallpaper and the palette|bash $MEI/docs/tests/step5.sh|$OUT"
+"F7|the settings app|bash $MEI/docs/tests/step4.sh|$OUT"
 "F8|the session lock|bash $MEI/docs/tests/lock-module.sh; bash $MEI/docs/tests/session-lock-module.sh; bash $MEI/docs/tests/lock-ui-outbound.sh|$OUT"
 "F9|the idle module and the ScreenSaver service|bash $MEI/docs/tests/idle-module.sh|$OUT"
 "F10|the power menu|bash $MEI/docs/tests/power-menu.sh|$OUT"
@@ -43,6 +47,9 @@ GATES=(
 "F13|mei start, the fallback and the preflight|bash $MEI/docs/tests/start-fallback.sh|$OUT"
 "Q1|the code is clean (qmllint, go vet, go build, go test, shellcheck)|bash $MEI/docs/tests/accept-safety.sh q1|$OUT"
 "Q2|no dead code, no personal strings, no ryoku names outside the allowed ones|bash $MEI/docs/tests/accept-safety.sh q2|$OUT"
+"F12|the module matrix (every module off, three at once)|bash $MEI/docs/tests/phase8.sh|$OUT"
+"Q3|the reference screenshots|bash $MEI/docs/tests/accept-q3.sh before|$OUT"
+"Q4|the idle measurement table|bash $MEI/docs/tests/accept-q4.sh|$OUT"
 "Q5|the documents are there and say what is true|bash $MEI/docs/tests/accept-safety.sh q5|$OUT"
 )
 
@@ -64,13 +71,6 @@ HUMAN=(
 # They are listed with what they would need, and they are NOT counted as
 # passed.
 TODO=(
-"F4|notifications|needs its own harness (one server, the popup, the actions, DND)"
-"F5|the tray|needs its own harness (the watcher, the pin, the menu)"
-"F6|the wallpaper and the palette|needs its own harness (the reveal, the recolour)"
-"F7|the settings app|needs its own harness (five pages, the reset, no Hyprland writes)"
-"F12|the module matrix|needs its own harness (every module off, three at once)"
-"Q3|the reference screenshots|needs the frozen set taken before the cleanup"
-"Q4|the idle measurement table|run with the Phase 10A harness"
 )
 
 # ---------------------------------------------------------------- the runners
@@ -107,8 +107,13 @@ run_gate(){ # id, name, command
   settle
   printf '\n--- %s: %s ---\n' "$id" "$name"
   if bash -c "$cmd" > "$log" 2>&1; then
-    printf '%-4s %-62s PASS\n' "$id" "$name"
-    RESULT_PASS=$((RESULT_PASS+1))
+    if grep -q "BASELINE-CAPTURED" "$log"; then
+      printf '%-4s %-62s BASELINE\n' "$id" "$name"
+      RESULT_BASELINE=$((RESULT_BASELINE+1))
+    else
+      printf '%-4s %-62s PASS\n' "$id" "$name"
+      RESULT_PASS=$((RESULT_PASS+1))
+    fi
   else
     printf '%-4s %-62s FAIL\n' "$id" "$name"
     printf '     evidence: %s\n' "$log"
@@ -153,6 +158,7 @@ prove_static(){
 # ---------------------------------------------------------------- the run
 RESULT_PASS=0
 RESULT_FAIL=0
+RESULT_BASELINE=0
 FAILED_IDS=""
 case "${1:-}" in
 --list) list_only; exit 0 ;;
@@ -176,8 +182,8 @@ for g in "${GATES[@]}"; do
 done
 for h in "${HUMAN[@]}"; do printf '%-4s %-62s UNVERIFIED\n' "${h%%|*}" "${h#*|}"; done
 for t in "${TODO[@]}"; do printf '%-4s %-62s TODO\n' "${t%%|*}" "${t#*|}"; done
-printf '\nPASS %d   FAIL %d   UNVERIFIED %d   TODO %d\n' \
-  "$RESULT_PASS" "$RESULT_FAIL" "${#HUMAN[@]}" "${#TODO[@]}"
+printf '\nPASS %d   FAIL %d   BASELINE %d   UNVERIFIED %d   TODO %d\n' \
+  "$RESULT_PASS" "$RESULT_FAIL" "$RESULT_BASELINE" "${#HUMAN[@]}" "${#TODO[@]}"
 [ -n "$FAILED_IDS" ] && printf 'failed:%s\n' "$FAILED_IDS"
 printf 'the evidence is in %s\n' "$LOGDIR"
 [ "$RESULT_FAIL" = 0 ] || exit 1
