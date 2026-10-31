@@ -297,3 +297,14 @@ live readiness pass over `docs/LIVE-CHECKLIST.md`.
 - Trap recorded: a backtick pair in an unquoted heredoc ran `./mei env-check` recursively and hung;
   no backtick now sits inside either session heredoc (grep-proved).
 - Resume: item 6 — R6, the fallback/revert commands read only from .local/mei.local.env.
+
+- Stage 1 item 6 (R6 — previous-shell commands only from .local) — DONE.
+- State: `./mei start --fallback`, `./mei live-stop`, the full-profile preflight, `./mei live-status`
+  and `docs/revert-to-previous-shell.sh` read MEI_PREV_SHELL_* exclusively through
+  local_conf()/conf() out of the untracked `.local/mei.local.env`; proved 5/5 (missing dir or file
+  -> nothing and rc 1, real file -> the value, commented template -> ignored). Zero tracked files
+  carry a start/stop command (grep over the tree), and the template the docs and the revert script
+  both promise now exists: `.local/mei.local.env.example`, force-added with commented placeholders.
+- Checks: bash -n 38/38; go vet x4 OK (project-local cache); env-check PASS; verify-untouched PASS;
+  scrub-check PASS. shellcheck is not installed (skipped, listed for install); no QML touched here.
+- Resume: Stage 1 COMPLETE — print the Stage-1 report and wait for "go Stage 2".
