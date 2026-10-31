@@ -94,6 +94,17 @@ LIVE_PROFILE_FILE="$RUN_DIR/live-profile"
 # that "is Mei running?" and "is every Mei process gone?" mean what they say.
 LIVE_TOOLS_FILE="$RUN_DIR/live-tools"
 
+# Builds stay inside the project (AGENTS.md: Go/C++ builds only inside the
+# project). `go` is invoked by this script's children (the acceptance gate runs
+# go vet/build/test), so both caches are pinned under .run and the live user's
+# ~/.cache/go-build is never written by anything Mei-related. GOPROXY=off and
+# GOTOOLCHAIN=local keep every build offline: no module or toolchain fetch.
+export GOCACHE="$RUN_DIR/go/cache"
+export GOPATH="$RUN_DIR/go"
+export GOFLAGS="${GOFLAGS:--mod=vendor}"
+export GOPROXY="${GOPROXY:-off}"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-local}"
+
 # The previous shell lives in a local, untracked file: the public repository
 # must not name anyone's setup. A missing value is never guessed; the callers
 # say so and do nothing.
