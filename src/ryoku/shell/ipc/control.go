@@ -215,7 +215,7 @@ func (d *daemon) menuClose() string {
 // hide, per edge or across all).
 //
 // ryoku: the shell exposes no setBar IPC function. Its bar reveal is a single
-// whole-bar toggle driven in-process by the global:ryoku:barToggle keybind
+// whole-bar toggle driven in-process by the global:mei:barToggle keybind
 // (CustomShortcut -> ShellState.barRevealed), with no per-edge reveal/hide
 // grammar. This CLI verb still emits setBar on the shell target, so it is a
 // no-op pending the retire phase (add a shell IPC fn there, or drop the verb).

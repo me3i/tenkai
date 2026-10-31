@@ -30,7 +30,7 @@ BK="$(mktemp -d)"; trap 'rm -rf "$BK"' EXIT
 
 SIG=""; QS=""
 H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
-D(){ H dispatch "hl.dsp.global(\"ryoku:$1\")" >/dev/null 2>&1; }
+D(){ H dispatch "hl.dsp.global(\"mei:$1\")" >/dev/null 2>&1; }
 bar_up(){ H layers | grep -q 'namespace: ryoku-frame'; }
 cc_layers(){ H -j layers | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="ryoku-control")] | length' 2>/dev/null; }
 # The panel's first build takes a moment (the QML is compiled when the host is

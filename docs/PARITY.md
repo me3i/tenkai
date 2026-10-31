@@ -61,7 +61,7 @@ The whole live shell is one process: `bash /usr/local/bin/<your previous shell's
 `ryoku-osd`. The live shell's: `wallpaper-bg`, `quickshell` (bar), `qs-floating-overlay`.
 
 **Global shortcuts:** the live session registers **none** over the protocol
-(`hyprctl globalshortcuts` says "none"), so Mei's 13 `ryoku:*` names collide with
+(`hyprctl globalshortcuts` says "none"), so Mei's 13 `mei:*` names collide with
 nothing.
 
 **Keyboard grabs:** Mei's launcher and control centre take an **exclusive**

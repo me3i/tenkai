@@ -55,19 +55,19 @@ MON=$(H -j monitors | jq -r '.[0].name' 2>/dev/null)
   ok "nested output enlarged to 1600x1000 (monitor $MON)" || note "could not enlarge nested output"
 
 for _ in $(seq 1 60); do
-  H globalshortcuts 2>/dev/null | grep -q 'ryoku:quicksettings' && break
+  H globalshortcuts 2>/dev/null | grep -q 'mei:quicksettings' && break
   sleep 0.5
 done
-H globalshortcuts 2>/dev/null | grep -q 'ryoku:quicksettings' \
-  && ok "global shortcut ryoku:quicksettings registered" \
-  || { bad "ryoku:quicksettings shortcut never registered"; exit 1; }
+H globalshortcuts 2>/dev/null | grep -q 'mei:quicksettings' \
+  && ok "global shortcut mei:quicksettings registered" \
+  || { bad "mei:quicksettings shortcut never registered"; exit 1; }
 sleep 1
 
 namespaces() { H -j layers | jq -r '[.[] | .levels[]? | .[]? | .namespace] | unique | join(",")' 2>/dev/null; }
 before_ns=$(namespaces)
 
 # open through the compositor global shortcut (same path as SUPER+ESCAPE)
-H dispatch global ryoku:quicksettings >/dev/null
+H dispatch global mei:quicksettings >/dev/null
 sleep 2
 grim -o WAYLAND-1 "$RUN/shots/qs-$(date +%H%M%S)-open.png" 2>/dev/null
 after_ns=$(namespaces)
@@ -75,7 +75,7 @@ note "layer namespaces before: $before_ns"
 note "layer namespaces after:  $after_ns"
 
 # close it again
-H dispatch global ryoku:quicksettings >/dev/null
+H dispatch global mei:quicksettings >/dev/null
 sleep 1.5
 grim -o WAYLAND-1 "$RUN/shots/qs-$(date +%H%M%S)-closed.png" 2>/dev/null
 

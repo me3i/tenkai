@@ -14,7 +14,7 @@ GlobalShortcut {
     signal shortcutPressed
     signal shortcutReleased
 
-    appid: "ryoku"
+    appid: "mei"
     onPressed: bridge.shortcutPressed()
     onReleased: bridge.shortcutReleased()
 }

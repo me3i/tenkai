@@ -44,12 +44,12 @@ ok "nested instance reachable ($SIG)"
 # Wait for Quickshell to register the shortcut; the qs process exists before
 # the QML (and its CustomShortcut) has finished loading.
 for _ in $(seq 1 60); do
-  H globalshortcuts 2>/dev/null | grep -q 'ryoku:launcher' && break
+  H globalshortcuts 2>/dev/null | grep -q 'mei:launcher' && break
   sleep 0.5
 done
-H globalshortcuts 2>/dev/null | grep -q 'ryoku:launcher' \
-  && ok "global shortcut ryoku:launcher registered" \
-  || { bad "ryoku:launcher shortcut never registered"; exit 1; }
+H globalshortcuts 2>/dev/null | grep -q 'mei:launcher' \
+  && ok "global shortcut mei:launcher registered" \
+  || { bad "mei:launcher shortcut never registered"; exit 1; }
 sleep 1
 
 # prove the launcher writes usage state from scratch in this run
@@ -57,14 +57,14 @@ rm -f "$RUN/state/mei/launcher-usage.json"
 
 # start from closed
 if [ "$(layers_launcher)" != "0" ]; then
-  H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null
+  H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
   for _ in $(seq 1 20); do [ "$(layers_launcher)" = "0" ] && break; sleep 0.25; done
 fi
 
 # open through the compositor global shortcut (same path as SUPER+SPACE).
 # The first open after a cold start compiles the launcher QML, which took ~5 s
 # on this box; poll instead of assuming a fixed delay.
-H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null
+H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
 n=0
 for _ in $(seq 1 40); do
   n=$(layers_launcher)
@@ -113,7 +113,7 @@ grep -q '"kitty"' "$RUN/state/mei/launcher-usage.json" 2>/dev/null \
   || bad "frecency missing under fake state home"
 
 # reopen and close with Esc
-H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null
+H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
 for _ in $(seq 1 40); do [ "$(layers_launcher)" = "1" ] && break; sleep 0.25; done
 sleep 2
 "$VK" 1

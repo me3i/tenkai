@@ -656,7 +656,7 @@ uncommenting the marked block.
   closure — the daemon refuses to exec `systemctl`/`wm.ActionSessionExit` when `MEI_TEST=1`.
 - `mei` (control script): the generated `session.sh` exports `export MEI_TEST=1` (nested tests
   only; a real run does not set it). The nested config adds
-  `bind = SUPER, ESCAPE, global, ryoku:quicksettings`. (The writer keeps an existing
+  `bind = SUPER, ESCAPE, global, mei:quicksettings`. (The writer keeps an existing
   `nested.conf`; it was regenerated so the new bind lands.)
 
 ### Kanji → English (CJK face not installed)
@@ -681,7 +681,7 @@ These would otherwise be dead (`ryoku-shell` was renamed to `mei-shell` and no s
 (`Frame.qml` lock likewise), so **every** reachable power action passes the test stub.
 
 Verification (nested; two consecutive clean runs, `.run/logs/qs-iter{3,4}.log`): sidebar opens on
-`ryoku:quicksettings` and closes; shows exactly clock/date, battery, audio out/in, brightness
+`mei:quicksettings` and closes; shows exactly clock/date, battery, audio out/in, brightness
 reading 23%, and a read-only Wi-Fi tile (real SSID); control centre opens via
 `qs ipc call qsbar settings bars` with English glosses; one shell instance; no tcp/udp sockets;
 no PipeWire connection (real audio untouched); brightness step 23%→28%→restored (trap); no QML
@@ -690,7 +690,7 @@ errors; `verify-untouched` PASS before and after. Details in `docs/loop-log.md`.
 ## Phase 6 — step 2: launcher (app search only)
 
 Manifest scope (`docs/04-plan.md` A11): `modules/launcher/shared` + `variants/main`. The
-launcher opens on the compositor global shortcut `ryoku:launcher` (bound to `SUPER+SPACE` in
+launcher opens on the compositor global shortcut `mei:launcher` (bound to `SUPER+SPACE` in
 the nested test config), searches real XDG `.desktop` entries and launches them. Network and
 off-list providers are **disabled, not deleted**.
 
@@ -719,7 +719,7 @@ off-list providers are **disabled, not deleted**.
 - `mei` (control script): `session.sh` exports a read-only `XDG_DATA_DIRS` pointing at the
   owner's real `~/.local/share` (+ flatpak export) and the system dirs, so the launcher lists
   the same `.desktop` files as the live session; writes still go to the fake `XDG_DATA_HOME`.
-  The nested config gains `bind = SUPER, SPACE, global, ryoku:launcher`.
+  The nested config gains `bind = SUPER, SPACE, global, mei:launcher`.
 - Test harness only (versioned in `docs/tests/`): `vkbd` (a `zwp_virtual_keyboard_v1` client)
   and `launcher-check.sh`, so real keystrokes drive the launcher search field in the nested
   session.

@@ -39,7 +39,7 @@ start(){ # $@ = extra env
   sleep 8
 }
 stop(){ ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1; sleep 2; }
-lock_now(){ H dispatch 'hl.dsp.global("ryoku:lock")' >/dev/null 2>&1; sleep 2; }
+lock_now(){ H dispatch 'hl.dsp.global("mei:lock")' >/dev/null 2>&1; sleep 2; }
 # The lock first asks the daemon whether the PAM setup is usable, so the
 # surface can appear a moment later: the checks poll for it.
 wait_lock(){ local i=0 n=""; while [ $i -lt 40 ]; do n="$(proto_state)"; case "${n:-}" in active*) { echo "$n"; return 0; } ;; esac; i=$((i+1)); sleep 0.5; done; echo "${n:-?}"; return 1; }
@@ -48,12 +48,12 @@ echo "lock module: $(date -Is)"
 
 echo; echo "=== A: the lock covers the screen and the other surfaces refuse ==="
 start || exit 1
-H globalshortcuts 2>/dev/null | grep -q "ryoku:lock" && ok "the ryoku:lock shortcut is registered" || bad "ryoku:lock was never registered"
+H globalshortcuts 2>/dev/null | grep -q "mei:lock" && ok "the mei:lock shortcut is registered" || bad "mei:lock was never registered"
 lock_now
 n="$(wait_lock)"; case "${n:-}" in active*) ok "the compositor confirmed the session lock ($n)" ;; *) bad "the lock did not appear ($n)" ;; esac
 lock_now
 n2="$(proto_state)"; [ "${n2:-$n}" = "${n:-$n2}" ] && ok "locking twice is safe (still $n2)" || bad "locking twice changed the lock ($n2)"
-H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
+H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 2
 l="$(ns_count launcher)"; [ "${l:-0}" = "0" ] && ok "the launcher refuses to open while locked" || bad "the launcher opened while locked (layers=$l)"
 
 echo; echo "=== B: a wrong password is refused, the lock stays ==="
@@ -122,7 +122,7 @@ for attempt in 1 2 3; do
   [ "$unlocked" = 1 ] && break
 done
 [ "$unlocked" = 1 ] && ok "the lock released after the accepted password" || bad "the lock stayed up ($n5)"
-H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
+H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 2
 l2="$(ns_count launcher)"; [ "${l2:-0}" = "1" ] && ok "the launcher opens again after the unlock" || bad "the launcher did not open after the unlock (layers=$l2)"
 stop
 

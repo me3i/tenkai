@@ -35,9 +35,9 @@ if [ ! -d "$RUN/shots/clean-before" ] || [ "$STATE" = "before" ]; then
   H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
   shot(){ XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" HYPRLAND_INSTANCE_SIGNATURE="$SIG" grim "$DIR/$1.png" 2>/dev/null; }
   shot bar
-  H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2; shot launcher
-  H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 1
-  H dispatch 'hl.dsp.global("ryoku:lock")' >/dev/null 2>&1; sleep 4; shot lock
+  H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 2; shot launcher
+  H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 1
+  H dispatch 'hl.dsp.global("mei:lock")' >/dev/null 2>&1; sleep 4; shot lock
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
   sleep 2
 fi

@@ -118,7 +118,7 @@ if [ "$(layers_launcher)" != "0" ]; then
   "$VK" 1 >/dev/null 2>&1
   for _ in $(seq 1 20); do [ "$(layers_launcher)" = "0" ] && break; sleep 0.25; done
 fi
-H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1
+H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1
 ln=0
 for _ in $(seq 1 40); do ln="$(layers_launcher)"; [ "$ln" = "1" ] && break; sleep 0.3; done
 if [ "$ln" != "1" ]; then

@@ -99,9 +99,9 @@ mesh hub open launcher >/dev/null 2>&1; sleep 3
 shot hub-generic-launcher
 note "check: HERO card has Show greeting + Solar line, no Show weather / Weather units"
 echo "=== UI: real launcher has no weather block ==="
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 2.5
 shot launcher-noweather
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 1
 
 mesh hub close >/dev/null 2>&1; sleep 2
 

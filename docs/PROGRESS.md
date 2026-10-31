@@ -228,7 +228,7 @@ live readiness pass over `docs/LIVE-CHECKLIST.md`.
   (`/usr/local/bin:/usr/bin:/bin`; `~/.local/bin` excluded); `mei_provision_bin` links Mei's own
   scripts and writes inert stubs for the 17 live-system helper names the kept code can exec
   (inventory `.run/env-inventory.tsv`).
-- Resume: item 2 (`env -i` scrub), then the `ryoku:*` → `mei:*` shortcut rename.
+- Resume: item 2 (`env -i` scrub), then the shortcut-namespace rename (item 3).
 
 - verify hardening (owner-approved 2026-10-31, after a real hard stop) — DONE.
 - State: the hard stop was live-cache churn (13 new lyric files under the watched `~/.cache/ryoku`) plus
@@ -250,4 +250,16 @@ live readiness pass over `docs/LIVE-CHECKLIST.md`.
   every MEI_* seam); RYOKU_*, QS_*, HYPRLAND_*, SYSTEMD_*, the live display and QT_QPA_PLATFORMTHEME
   are dropped by construction. Static proof: `bash -n` on the generated script; the live proof is
   `./mei env-check` (item 5), which runs the same prologue and prints the resulting names.
-- Resume: item 3 — rename the global shortcuts ryoku:* to mei:*.
+- Resume: item 3 — the shortcut-namespace rename (R3): Mei registers its own prefix now.
+
+- Stage 1 item 3 (global shortcut namespace, R3) — DONE.
+- State: `src/ryoku/wm/hyprland/qml/GlobalShortcutBridge.qml` registers `appid: "mei"`, so every
+  shortcut Mei registers is `mei:<name>` and cannot collide with the live shell's own names (it
+  currently registers 12 of them). All 81 shortcut references were renamed across 26 files: the
+  nested config binds, the live claims table, 15 test harnesses, keybinds-for-mei.lua, LIVE-TEST,
+  LIVE-CHECKLIST, CHANGES, loop-log, STATUS and PARITY. Proof: grepping the tracked tree for the
+  OLD shortcut prefix now returns only 5 non-shortcut hits (four upstream Go comment tags and
+  one JS object key), none of them a shortcut.
+  Checks: bash -n (13 touched scripts), qmllint on the touched QML, py-compile of phase10a-measure.py,
+  `go vet`+`go build` for the daemon with the project-local cache.
+- Resume: item 4 — enforce the project matugen -c config and Mei state dirs (R5) plus its check.

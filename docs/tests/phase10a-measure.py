@@ -361,8 +361,8 @@ def nested_h(*args):
 
 
 def dispatch_global(name):
-    r = nested_h("dispatch", 'hl.dsp.global("ryoku:%s")' % name)
-    log("dispatch ryoku:%s rc=%s %s" % (name, r.returncode, (r.stdout + r.stderr).strip()))
+    r = nested_h("dispatch", 'hl.dsp.global("mei:%s")' % name)
+    log("dispatch mei:%s rc=%s %s" % (name, r.returncode, (r.stdout + r.stderr).strip()))
     time.sleep(2.0)
 
 

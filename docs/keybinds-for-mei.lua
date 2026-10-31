@@ -7,8 +7,8 @@
 -- the compositor, hl.dsp.exec_cmd("...") for a command, and hl.dsp.focus for
 -- the compositor's own workspace focus.
 --
--- How it works: Mei's shell registers the shortcut names ryoku:launcher,
--- ryoku:quicksettings, ryoku:clipboard and ryoku:wallpaper-menu over the
+-- How it works: Mei's shell registers the shortcut names mei:launcher,
+-- mei:quicksettings, mei:clipboard and mei:wallpaper-menu over the
 -- global-shortcuts protocol, so they need no config bind of their own. A
 -- hyprctl dispatch of those names is what reaches Mei.
 
@@ -18,17 +18,17 @@ local mainMod = "SUPER"
 
 -- The launcher. Mei's shell registers the shortcut name with the compositor,
 -- so this needs no config bind of its own.
-hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"ryoku:launcher\")'"), { locked = true })
+hl.bind(mainMod .. " + D", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"mei:launcher\")'"), { locked = true })
 
 -- The control centre (the sidebar).
-hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"ryoku:quicksettings\")'"), { locked = true })
-hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"ryoku:quicksettings\")'"), { locked = true })
+hl.bind(mainMod .. " + B", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"mei:quicksettings\")'"), { locked = true })
+hl.bind(mainMod .. " + V", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"mei:quicksettings\")'"), { locked = true })
 
 -- The clipboard history.
-hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"ryoku:clipboard\")'"), { locked = true })
+hl.bind(mainMod .. " + C", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"mei:clipboard\")'"), { locked = true })
 
 -- The wallpaper menu.
-hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"ryoku:wallpaper-menu\")'"), { locked = true })
+hl.bind(mainMod .. " + P", hl.dsp.exec_cmd("hyprctl dispatch 'hl.dsp.global(\"mei:wallpaper-menu\")'"), { locked = true })
 
 -- --- screenshots ---------------------------------------------------------------
 -- Mei's helper is local: grim or slurp write a PNG into your Pictures folder,

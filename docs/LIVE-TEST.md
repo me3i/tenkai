@@ -50,7 +50,7 @@ hl.exec_cmd("<your previous shell's start command>")
 | layer surface `wallpaper-bg` (1920x1080) | your live shell | your wallpaper |
 | layer surface `quickshell` (the bar, at the top edge) | your live shell | your bar, at the top edge |
 | layer surface `qs-floating-overlay` (1920x1080) | your live shell | your full-screen transparent overlay |
-| global shortcuts over the protocol | **none** | `hyprctl globalshortcuts` says "none", so Mei's `ryoku:*` names are free |
+| global shortcuts over the protocol | **none** | `hyprctl globalshortcuts` says "none", so Mei's `mei:*` names are free |
 | 671 key binds | your Hyprland config | all of them dispatch to your own shell (`the previous shell ...`) |
 | your wallpaper | your live shell (it draws the layer itself) | no hyprpaper/swww is running |
 
@@ -118,19 +118,19 @@ to run. It writes `.run/logs/live-monitor-<stamp>.log` and `.csv` every 5 s.
 Hyprland config change is needed, and none is made):
 
 ```bash
-hyprctl dispatch 'hl.dsp.global("ryoku:launcher")'      # the launcher
-hyprctl dispatch 'hl.dsp.global("ryoku:quicksettings")'  # the quick settings
+hyprctl dispatch 'hl.dsp.global("mei:launcher")'      # the launcher
+hyprctl dispatch 'hl.dsp.global("mei:quicksettings")'  # the quick settings
 ```
 
 **Note the syntax.** Your Hyprland config is **Lua**, so the bare
-`hyprctl dispatch global ryoku:launcher` is a Lua syntax error there
+`hyprctl dispatch global mei:launcher` is a Lua syntax error there
 (`'\'' )' expected near 'ryoku'`) and does nothing. The explicit
 `hl.dsp.global("...")` form is the one that works — that is the same form the
 nested harness uses. (The *shortcut* itself is registered by Mei's shell over
 the global-shortcuts protocol, so no config bind is needed either way.)
 
 Why that works without touching your config: Mei's shell registers the
-shortcut names `ryoku:launcher` / `ryoku:quicksettings` with the compositor
+shortcut names `mei:launcher` / `mei:quicksettings` with the compositor
 over the **global-shortcuts protocol**, not through a config bind. That was
 verified in the nested session with the config bind removed: the dispatch still
 opened the launcher. The fallback, if the compositor ever refuses the dispatch:
@@ -144,7 +144,7 @@ qs ipc --pid <the shell pid printed by ./mei live> call shell openSurface "" lau
 - [ ] `./mei live --profile overlay` starts and prints "No collision".
 - [ ] Your own bar, tray, wallpaper and notifications are **still there and
       unchanged** — Mei is a guest here.
-- [ ] `hyprctl dispatch global ryoku:launcher` opens Mei's launcher over your
+- [ ] `hyprctl dispatch global mei:launcher` opens Mei's launcher over your
       desktop; Esc closes it.
 - [ ] The launcher opens a real app (kitty) **with your real profile**: the
       terminal shows your own home, your own PATH, your own dotfiles.

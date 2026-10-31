@@ -42,14 +42,14 @@ MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"
 sleep 3
 
 echo "=== real launcher, hub closed ==="
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 3
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 3
 n="$(H clients -j | jq '[.[] | select(.class != "")] | length' 2>/dev/null)"
 note "windows (launcher layers count via hyprctl clients): ${n:-?}"
 shot launcher-open
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1.5
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 1.5
 
 echo "=== bar strip only (weather slot) ==="
-H dispatch global ryoku:launcher >/dev/null 2>&1
+H dispatch global mei:launcher >/dev/null 2>&1
 sleep 2
 grim -o "${WDISP^^}" -g "0,0 1600x40" "$RUN/shots/step4b2-bar-strip.png" 2>/dev/null && echo "  shot: step4b2-bar-strip.png"
 H dispatch escape >/dev/null 2>&1; sleep 1

@@ -226,7 +226,7 @@ Symbols Rounded is used directly by the icon-font variants
 ## Control sidebar (Super+Escape) / quick settings
 
 **What Super+Escape actually opens.** `ryoku/hyprland/modules/binds.lua:61`
-binds `SUPER + Escape` to the global `ryoku:quicksettings` (declared
+binds `SUPER + Escape` to the global `mei:quicksettings` (declared
 `ryoku/wm/binds.go:160`, chord `SUPER + Escape`). The shell registers the
 matching in-process `CustomShortcut` `"quicksettings"`
 (`shell.qml:781-785`) whose handler is `toggleSurface("quicksettings")` →

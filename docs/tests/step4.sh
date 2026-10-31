@@ -95,18 +95,18 @@ sleep 2
 # ============================ AUDIO =========================================
 echo; echo "=== AUDIO (nested reaches real PipeWire via the symlink) ==="
 [ -L "$RUN/rt/pipewire-0" ] && ok "pipewire-0 symlink present in the nested runtime" || bad "pipewire-0 symlink missing"
-H dispatch global ryoku:quicksettings >/dev/null 2>&1; sleep 3
+H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 3
 shot audio-qspanel-readonly
 note "read-only: the bar/panel audio readout should show the real sink (vol=$VOL_BEFORE)"
-H dispatch global ryoku:quicksettings >/dev/null 2>&1; sleep 1
+H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 1
 if [ -n "${VOL_BEFORE:-}" ]; then
   wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- >/dev/null 2>&1 || true
   NOW="$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print $2}')"
   if [ -n "$NOW" ] && [ "$NOW" != "$VOL_BEFORE" ]; then
     ok "volume changed via the nested runtime: $VOL_BEFORE -> $NOW (<=5%), real sink"
-    H dispatch global ryoku:quicksettings >/dev/null 2>&1; sleep 3
+    H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 3
     shot audio-qspanel-changed
-    H dispatch global ryoku:quicksettings >/dev/null 2>&1; sleep 1
+    H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 1
   else bad "volume did not change via the nested runtime"; fi
   restore_audio
 fi

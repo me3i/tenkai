@@ -77,7 +77,7 @@ confirm the wordmark/spacing reads right in person.
 **Change set:** `CHANGES.md` → "Phase 6 — step 2: launcher". Catalog → `main` only; providers →
 `Apps` + local `Actions`; web/radio/weather/packages/script/snippets/find/calc/media/recent/
 windows disabled; RASHIN panel disabled; real read-only `XDG_DATA_DIRS`; nested
-`SUPER+SPACE → global ryoku:launcher`.
+`SUPER+SPACE → global mei:launcher`.
 
 ### Harness failures before the clean runs (launcher code unchanged)
 
@@ -95,7 +95,7 @@ and recorded, never relabelled.
 
 | Item | Result | Evidence |
 |---|---|---|
-| Opens on the bound key | **TESTED** | nested `bind = SUPER, SPACE, global, ryoku:launcher`; `hyprctl dispatch global ryoku:launcher` → 1 `launcher` layer (the same `ShellState.launcherOpen` transition the shortcut drives) |
+| Opens on the bound key | **TESTED** | nested `bind = SUPER, SPACE, global, mei:launcher`; `hyprctl dispatch global mei:launcher` → 1 `launcher` layer (the same `ShellState.launcherOpen` transition the shortcut drives) |
 | Lists real installed apps | **TESTED** | query `kitty` → `kitty` (Terminal emulator, `/usr/share/applications/kitty.desktop`); `.run/shots/launcher-202511-search.png` |
 | Lists owner-only apps | **TESTED** | query `sklauncher` → `SKLauncher` from `~/.local/share/applications` via the new read-only `XDG_DATA_DIRS`; `.run/shots/launcher-userdesktop.png` (searched only, not launched) |
 | Launch works, nested only | **TESTED** | Enter → kitty in nested clients; `/proc/<pid>/environ`: `HOME=.run/home`, `XDG_RUNTIME_DIR=.r`, `WAYLAND_DISPLAY=wayland-1`; `.run/shots/launcher-202516-launched.png` |
@@ -157,7 +157,7 @@ UNVERIFIED).
 
 | Acceptance item | Result | Evidence |
 |---|---|---|
-| Sidebar opens and closes on `ryoku:quicksettings` | **TESTED** | dispatched on the nested instance; `SUPER+ESCAPE` bound in the nested conf; `.run/shots/qs-212253-open.png`, `qs-212255-closed.png` |
+| Sidebar opens and closes on `mei:quicksettings` | **TESTED** | dispatched on the nested instance; `SUPER+ESCAPE` bound in the nested conf; `.run/shots/qs-212253-open.png`, `qs-212255-closed.png` |
 | Keep-list sections only | **TESTED** | panel shows clock/date, battery 72%, audio out+in, brightness 23%, read-only Wi-Fi tile; no Connect grid, media, calendar, system, power, surface switch — `.run/shots/qs-bigmon.png` |
 | Network is read-only | **TESTED** | Wi-Fi tile has no `onToggled`/`hasPage` (code); nothing toggles Wi-Fi/BT; `QuickSettingsHome.qml` |
 | Power actions stubbed in test mode | **TESTED** | `SessionActions.testMode` (MEI_TEST) + `session.go testStubbed()`; every reachable power path routed through it (`QuickSettingsHome`, `MenuQuickActions`, `Frame.qml`); the confirmed-dialog path already used `SessionActions.run` |
@@ -649,7 +649,7 @@ The third run failed with "shell instances: 2", and a Mei `qs` was seen briefly 
 
 1. Every harness defined `H() { hyprctl "$@"; }` (or set only the signature), so when the
    nested socket was momentarily absent, `hyprctl` fell back to the live instance. A
-   `dispatch global ryoku:quicksettings` then opened a panel in the owner's session.
+   `dispatch global mei:quicksettings` then opened a panel in the owner's session.
 2. Nothing rejected a Mei `qs` whose `XDG_RUNTIME_DIR` was not the nested runtime, and item 1
    counted it as a second shell.
 
@@ -911,11 +911,11 @@ frames 150 ms apart.
 **What the stage found (all fixed or recorded):**
 
 1. `docs/LIVE-TEST.md` and `./mei live` printed `hyprctl dispatch global
-   ryoku:launcher`, which is a **Lua syntax error** in the owner's config
+   mei:launcher`, which is a **Lua syntax error** in the owner's config
    (`')' expected near 'ryoku'`). The working form is
-   `hyprctl dispatch 'hl.dsp.global("ryoku:launcher")'`. Both the doc and the
+   `hyprctl dispatch 'hl.dsp.global("mei:launcher")'`. Both the doc and the
    script now print the explicit form. The shortcut itself needs no config bind:
-   the shell registers `ryoku:launcher` with the live compositor over the
+   the shell registers `mei:launcher` with the live compositor over the
    global-shortcuts protocol, and `hyprctl globalshortcuts` lists all 13 names.
 2. **An app opened from Mei's search got Mei's fake HOME**
    (`$HOME/projects/mei/.run/home`), so any real app would have started with
@@ -944,3 +944,7 @@ frames 150 ms apart.
 `<the kitty config hash>`; both live
 both D-Bus names still with the live shell; no Mei process left running. The owner's own mouse
 pointer was moved once (to test the click-out) and returns to where they move it.
+
+**2026-10-31 — shortcut namespace (Stage 1 item 3):** the shortcut names written in the records
+above now use their current spelling, because Mei registers its own prefix since this item; nothing
+else in those records changed, and the live shell keeps its own namespace untouched.

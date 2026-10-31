@@ -26,7 +26,7 @@ H() {
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-D() { H dispatch "hl.dsp.global(\"ryoku:$1\")" >/dev/null 2>&1; }
+D() { H dispatch "hl.dsp.global(\"mei:$1\")" >/dev/null 2>&1; }
 IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
 SH() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call shell "$@" 2>&1; }
 owner() { busctl --address="$BUS" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }

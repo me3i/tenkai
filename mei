@@ -773,8 +773,8 @@ hl.bind("SUPER + Q", hl.dsp.exec_cmd("hyprctl dispatch exit"))
 hl.bind("SUPER + 1", hl.dsp.focus({ workspace = 1 }))
 hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }))
 hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }))
-hl.bind("SUPER + SPACE", hl.dsp.global("ryoku:launcher"))
-hl.bind("SUPER + ESCAPE", hl.dsp.global("ryoku:quicksettings"))
+hl.bind("SUPER + SPACE", hl.dsp.global("mei:launcher"))
+hl.bind("SUPER + ESCAPE", hl.dsp.global("mei:quicksettings"))
 hl.bind("CTRL + RETURN", hl.dsp.exec_cmd("kitty"))
 LUA
 }
@@ -1270,7 +1270,7 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     # protocol (shell.qml's CustomShortcut list). They are names only: the
     # surfaces they open are gated by the module flags.
     for sc in barToggle clipboard compress install launcher overview quicksettings screenshot stash visualizer visualizer-overlay visualizer-place wallpaper-menu; do
-      printf 'global-shortcut\tryoku:%s\tshortcut name registered by the shell\n' "$sc"
+      printf 'global-shortcut\tmei:%s\tshortcut name registered by the shell\n' "$sc"
     done
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
     printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
@@ -1280,7 +1280,7 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     ;;
   full)
     for sc in barToggle clipboard compress install launcher overview quicksettings screenshot stash visualizer visualizer-overlay visualizer-place wallpaper-menu; do
-      printf 'global-shortcut\tryoku:%s\tshortcut name registered by the shell\n' "$sc"
+      printf 'global-shortcut\tmei:%s\tshortcut name registered by the shell\n' "$sc"
     done
     printf 'dbus-name\torg.freedesktop.Notifications\tnotification server\n'
     printf 'dbus-name\torg.kde.StatusNotifierWatcher\ttray watcher\n'
@@ -1837,8 +1837,8 @@ cmd_live() {
   echo "Mei is live (profile: $profile)."
   echo "  shell pid:   $q"
   echo "  monitor:     $RUN_DIR/logs/live-monitor-*.log (CPU and RSS every 5 s)"
-  echo "  launcher:    hyprctl dispatch 'hl.dsp.global(\"ryoku:launcher\")'"
-  echo "  quick settings: hyprctl dispatch 'hl.dsp.global(\"ryoku:quicksettings\")'"
+  echo "  launcher:    hyprctl dispatch 'hl.dsp.global(\"mei:launcher\")'"
+  echo "  quick settings: hyprctl dispatch 'hl.dsp.global(\"mei:quicksettings\")'"
   echo "  fallback:    qs ipc --pid $q call shell openSurface \"\" launcher"
   echo "  stop:        ./mei live-stop"
   if [ "$profile" = "overlay" ]; then

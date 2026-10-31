@@ -203,11 +203,11 @@ magick "$RUN/shots/step5-bar-after1.png" -crop 1180x36+0+0 +repage "$RUN/shots/s
 BAR1="$(sha256sum "$RUN/shots/step5-bar-after1-crop.png" | awk '{print $1}')"
 BARAVG1="$(magick "$RUN/shots/step5-bar-after1-crop.png" -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 note "bar strip mean colour / hash after set 1: ${BARAVG1} / ${BAR1:0:12}"
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 2.5
 snap step5-launcher-p1.png && note "shot: step5-launcher-p1.png"
 LACC1="$(magick "$RUN/shots/step5-launcher-p1.png" -crop 40x12+540+430 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 note "launcher accent dot under set 1: ${LACC1}"
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 1
 
 echo; echo "=== SET 2: purple still (recolour again) ==="
 "$MEI/mei" wallpaper "$RUN/wall/wall-3-purple.jpg" || bad "wallpaper set 2 failed"
@@ -231,11 +231,11 @@ BAR2="$(sha256sum "$RUN/shots/step5-bar-after2-crop.png" | awk '{print $1}')"
 BARAVG2="$(magick "$RUN/shots/step5-bar-after2-crop.png" -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 note "bar strip mean colour / hash after set 2: ${BARAVG2} / ${BAR2:0:12}"
 [ "$BAR1" != "$BAR2" ] && ok "bar strip pixels differ between the two palettes (${BARAVG1} -> ${BARAVG2})" || bad "bar strip did not recolour"
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 2.5
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 2.5
 snap step5-launcher-p2.png && note "shot: step5-launcher-p2.png"
 LACC2="$(magick "$RUN/shots/step5-launcher-p2.png" -crop 40x12+540+430 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 [ -n "$LACC1" ] && [ "$LACC1" != "$LACC2" ] && ok "launcher accent recoloured with the palette (${LACC1} -> ${LACC2})" || bad "launcher accent did not recolour (${LACC1:-?} -> ${LACC2:-?})"
-H dispatch global ryoku:launcher >/dev/null 2>&1; sleep 1
+H dispatch global mei:launcher >/dev/null 2>&1; sleep 1
 
 WAVG1="$(magick "$RUN/shots/step5-04-set1-settled.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"
 WAVG2="$(magick "$RUN/shots/step5-05-set2-settled.png" -crop 1600x900+0+60 +repage -resize 1x1 -format '%[hex:p{0,0}]' info: 2>/dev/null)"

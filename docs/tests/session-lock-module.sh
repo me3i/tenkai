@@ -53,7 +53,7 @@ start(){ # $@ = extra env
   sleep 7
 }
 stop(){ ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1; sleep 2; }
-lock_now(){ H dispatch 'hl.dsp.global("ryoku:lock")' >/dev/null 2>&1; }
+lock_now(){ H dispatch 'hl.dsp.global("mei:lock")' >/dev/null 2>&1; }
 # Wait until the compositor has confirmed the lock.
 wait_lock(){ local i=0 st=""; while [ $i -lt 40 ]; do st="$(proto_state)"; case "$st" in active*) { echo "$st"; return 0; } ;; esac; i=$((i+1)); sleep 0.5; done; echo "${st:-?}"; return 1; }
 wait_released(){ local i=0 st=""; while [ $i -lt 40 ]; do st="$(proto_state)"; case "$st" in released*) { echo "$st"; return 0; } ;; esac; i=$((i+1)); sleep 0.5; done; echo "${st:-?}"; return 1; }
@@ -76,7 +76,7 @@ esac
 layers="$(H -j layers | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="ryoku-lock")] | length' 2>/dev/null)"
 [ "${layers:-1}" = "0" ] && ok "the old surface lock is gone (no ryoku-lock layer)" \
   || bad "the old surface lock is still there (layers=$layers)"
-H dispatch 'hl.dsp.global("ryoku:launcher")' >/dev/null 2>&1; sleep 2
+H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 2
 l="$(H -j layers | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="launcher")] | length' 2>/dev/null)"
 [ "${l:-0}" = "0" ] && ok "the launcher refuses to open while locked" \
   || bad "the launcher opened while locked (layers=$l)"
