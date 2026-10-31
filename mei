@@ -120,6 +120,97 @@ DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]pipewire[.]'
 DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]pulseaudio[.]'
 DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]ReserveDevice1[.]'
 
+# R1 — PATH isolation. A Mei session's PATH is .run/bin first, then this fixed
+# system list. The caller's PATH is never inherited: the live session's PATH
+# holds ~/.local/bin and /usr/bin, and BOTH contain real live-desktop helpers
+# under the very names Mei's copied code still calls (90 ryoku*/ryogami* names
+# in /usr/bin). A nested process that resolved one of those would run the live
+# system's copy with Mei's environment and could write the owner's real config.
+MEI_SYSTEM_PATH="/usr/local/bin:/usr/bin:/bin"
+
+# Names Mei owns. Two kinds live here: binaries the Phase-6 build writes into
+# .run/bin (mei-shell, mei-hub, mei-wm-hyprland, ryogami) and scripts that are
+# symlinked straight from src/ (mei-app, mei-screenshot, mei-lock-verify and
+# ryoku-cmd-brightness, the one upstream helper Mei ships verbatim). These are
+# the only ryoku-family names allowed to resolve to a working program.
+MEI_OWNED_BINS="mei-shell mei-hub mei-wm-hyprland ryogami mei-app mei-screenshot mei-lock-verify ryoku-cmd-brightness"
+
+# Every ryoku-family program name the kept QML, Go and project scripts can
+# execute (exec.Command / Process command arrays / execDetached, vendor and
+# tests excluded, plus the two bare-name fallbacks that are used when
+# MEI_SHELL_DIR is empty: services/Equalizer.qml:21, modules/stage/…/StageBackend.qml:16).
+mei_family_names() {
+  { grep -rhoE 'exec\.Command(Context)?\([^)]*"[^"]+"' --exclude-dir=vendor --exclude='*_test.go' \
+        --include='*.go' "$MEI_DIR/src" 2>/dev/null | grep -oE '"[^"]+"'
+    grep -rhoE '(command:[[:space:]]*\[?[[:space:]]*|execDetached\([[:space:]]*)"[^"]+"' \
+        --include='*.qml' "$MEI_DIR/src" 2>/dev/null | grep -oE '"[^"]+"'
+    printf '%s\n' ryoku-eq ryostage
+  } | tr -d '"' | grep -E '^(ryoku|ryogami|ryostore|ryostage)[a-zA-Z0-9._+-]*$' | sort -u || true
+}
+
+# The family names Mei does NOT own: the live system's /usr/bin has a real
+# program for each one, so .run/bin must carry an inert stub for it instead.
+mei_shadow_names() {
+  local n owned
+  owned=" ${MEI_OWNED_BINS} "
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    case "$owned" in *" $n "*) continue ;; esac
+    printf '%s\n' "$n"
+  done < <(mei_family_names)
+}
+
+mei_write_stub() { # $1 = path in .run/bin — an inert stand-in for a live-system helper
+  cat > "$1" <<'STUB'
+#!/bin/sh
+# mei-stub: this name is a live-desktop helper that Mei does not ship.
+# The stub exists only so the name resolves inside .run/bin and can never
+# reach the live system's binary of the same name (R1). It runs nothing.
+# env-check treats this marker as the proof of ownership: any file under
+# .run/bin that matches the ryoku/ryogami family without it is a FAIL.
+echo "mei: ${0##*/} is not provided by Mei (live-system helper disabled)" >&2
+exit 127
+STUB
+  chmod 755 "$1"
+}
+
+mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inventory
+  mkdir -p "$RUN_DIR/bin"
+  local n src
+  # 1. Mei-owned scripts: always (re)linked to the source in the project, so a
+  #    stale copy can never sit in front of the source.
+  for n in mei-app mei-screenshot mei-lock-verify ryoku-cmd-brightness; do
+    src="$MEI_DIR/src/ryoku/shell/scripts/$n"
+    [ -f "$src" ] || continue
+    ln -sfn "$src" "$RUN_DIR/bin/$n"
+  done
+  # 2. Shadow stubs for every family name Mei does not own, so no nested
+  #    process can resolve a live helper by that name.
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    mei_write_stub "$RUN_DIR/bin/$n"
+  done < <(mei_shadow_names)
+  # 3. Defence against anything else that landed in .run/bin: a family-named
+  #    file that is neither Mei-owned nor one of our stubs is overwritten.
+  local f base
+  for f in "$RUN_DIR"/bin/*; do
+    [ -e "$f" ] || continue
+    base="${f##*/}"
+    case "$base" in ryoku*|ryogami*|ryostore*|ryostage*)
+      case " ${MEI_OWNED_BINS} " in *" $base "*) continue ;; esac
+      grep -q 'mei-stub: this name is a live-desktop helper' "$f" 2>/dev/null || mei_write_stub "$f"
+      ;; esac
+  done
+  # 4. The inventory the session's env-check reads: name<TAB>class (mei|shadow).
+  {
+    while IFS= read -r n; do [ -n "$n" ] && printf '%s\tmei\n' "$n"; done \
+      < <(printf '%s\n' $MEI_OWNED_BINS | sort -u)
+    while IFS= read -r n; do [ -n "$n" ] && printf '%s\tshadow\n' "$n"; done \
+      < <(mei_shadow_names)
+  } | sort -u > "$RUN_DIR/env-inventory.tsv"
+}
+
+
 session_bus() {
   local bus="${DBUS_SESSION_BUS_ADDRESS:-}"
   if [ -n "$bus" ]; then printf '%s' "$bus"; return 0; fi
@@ -570,6 +661,12 @@ prepare_nested_home() {
   if [ -f "$MEI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness" ]; then
     ln -sfn "$MEI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness" "$RUN_DIR/bin/ryoku-cmd-brightness"
   fi
+  # R1: complete .run/bin — Mei's own scripts linked, every live-system helper
+  # name the kept code calls shadowed by an inert stub, inventory written for
+  # `./mei env-check`. Without this, `command -v ryoku-*` inside the session
+  # would find the live system's binary in /usr/bin.
+  mei_provision_bin
+
   mkdir -p "$RUN_DIR/home/.config/fontconfig" "$RUN_DIR/home/Pictures"
   if [ ! -f "$RUN_DIR/home/.config/fontconfig/fonts.conf" ]; then
     cat > "$RUN_DIR/home/.config/fontconfig/fonts.conf" <<EOF
@@ -609,7 +706,9 @@ export XDG_DATA_HOME="\$RUN/data"
 export XDG_DATA_DIRS="$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
 export XDG_RUNTIME_DIR="\$MEI_DIR/.r"
 export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
-export PATH="\$RUN/bin:\$PATH"
+# R1: .run/bin first, then a fixed system list. The caller's PATH is NOT used:
+# the live session's PATH resolves the live system's ryoku*/ryogami* helpers.
+export PATH="\$RUN/bin:$MEI_SYSTEM_PATH"
 export QML2_IMPORT_PATH="\$RUN/qml"
 export QML_IMPORT_PATH="\$RUN/qml"
 export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
@@ -1115,6 +1214,10 @@ PY
 write_live_session() { # $1 = profile, $2 = display, $3 = signature, $4 = runtime dir, $5 = real power (1 = power actions are live)
   local profile="$1" wl="$2" sig="$3" rt="$4" real_power="${5:-0}" bus
   bus="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$rt/bus}"
+  # R1 for the live profiles too: .run/bin must carry Mei's scripts and the
+  # shadow stubs before this session gets a PATH that starts with it, or the
+  # live system's ryoku* helpers would resolve from /usr/bin.
+  mei_provision_bin
   # Every injected block is a SINGLE line: the substitution below is one sed
   # expression, and a newline in a value would break it (the full profile's
   # script was never substituted before this was noticed).
@@ -1155,7 +1258,9 @@ export WAYLAND_DISPLAY="$wl"
 export HYPRLAND_INSTANCE_SIGNATURE="$sig"
 export DBUS_SESSION_BUS_ADDRESS="$bus"
 export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
-export PATH="\$RUN/bin:\$PATH"
+# R1: .run/bin first, then a fixed system list. The caller's PATH is NOT used:
+# the live session's PATH resolves the live system's ryoku*/ryogami* helpers.
+export PATH="\$RUN/bin:$MEI_SYSTEM_PATH"
 export QML2_IMPORT_PATH="\$RUN/qml"
 export QML_IMPORT_PATH="\$RUN/qml"
 export MEI_SHELL_DIR="\$MEI_DIR/src/ryoku/shell"
