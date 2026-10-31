@@ -15,11 +15,22 @@
 #                           Watched trees: ~/.config/{quickshell,hypr} (live shell/compositor) plus
 #                           ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0} and ~/.cache/ryoku (exactly
 #                           what matugen / Ryoku theming would write, so any leak is caught).
-#                           Config-hash/symlink diffs are always fatal. A change of owner PID for a
-#                           watched well-known D-Bus name (Notifications, tray watcher, ScreenSaver,
-#                           secrets, pipewire/pulse, portals) is always fatal; connection IDs
+#                           Config-hash diffs are fatal, with one printed exception: churn under
+#                           ~/.cache/ryoku (the live desktop's OWN cache — lyrics, update status,
+#                           tray icons, its palette) is a counted WARN — owner decision 2026-10-31.
+#                           Any change under the watched ~/.config trees, and any changed path
+#                           outside both groups, stays fatal, and `./mei verify-prove` shows both
+#                           halves can fail.
+#                           A change of owner PID for a watched well-known D-Bus name
+#                           (Notifications, tray watcher, ScreenSaver, secrets, pipewire/pulse,
+#                           portals) is always fatal; the PID is resolved ON THE BUS
+#                           (GetNameOwner -> GetConnectionUnixProcessID), because busctl's own
+#                           column prints "-" across PID namespaces. Connection IDs
 #                           (:1.NNN) and app-owned names (steam, protonvpn, kitty, firefox, …) are
 #                           ignored. Other process diffs are informational unless --strict.
+#   verify-prove            prove the verify checks can still fail: doctored hash lists and a
+#                           doctored owner table go through the real functions; nothing live is
+#                           read. Exits non-zero if a check would accept what it must reject.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       start / stop the nested session, or run it under the full harness
 #   live --profile overlay|full
@@ -297,12 +308,36 @@ dbus_watch_filter() {
   awk -v re="$DBUS_WATCH_RE" '$1 ~ re { print $1 "\t" $2 }' | sort -u
 }
 
-capture_dbus_watched() {  # $1 = output file; live watched names -> NAME<TAB>PID
-  local bus=""
+# Owner PID for a well-known name, resolved THROUGH the bus: GetNameOwner gives
+# the unique name, GetConnectionUnixProcessID the pid behind it. busctl's own
+# PID column stats /proc and prints "-" as soon as the caller sits in another
+# PID namespace, which made this whole comparison vacuous there (owner decision,
+# 2026-10-31: resolve it properly instead of trusting the column). Same call
+# sequence as docs/tests/step6.sh, --user instead of an explicit address.
+#   $1 = session bus address, $2 = well-known name  ->  pid, or "-"
+dbus_owner_pid() {
+  local bus="$1" name="$2" c pid
+  c="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call org.freedesktop.DBus \
+        /org/freedesktop/DBus org.freedesktop.DBus GetNameOwner s "$name" 2>/dev/null \
+      | awk -F'"' '{print $2}')"
+  [ -n "$c" ] || { printf '%s' "-"; return 0; }
+  pid="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call org.freedesktop.DBus \
+        /org/freedesktop/DBus org.freedesktop.DBus GetConnectionUnixProcessID s "$c" 2>/dev/null \
+      | awk '{print $2}')"
+  printf '%s' "${pid:--}"
+}
+
+capture_dbus_watched() {  # $1 = output file; watched names -> NAME<TAB>owner PID (from the bus)
+  local bus="" name
   if bus="$(session_bus)"; then
-    DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager list 2>/dev/null \
-      | grep -v -E '^:[0-9.]+[[:space:]]+[0-9]+[[:space:]]+busctl ' \
-      | dbus_watch_filter > "$1" || true
+    : > "$1"
+    while IFS= read -r name; do
+      [ -n "$name" ] || continue
+      printf '%s\t%s\n' "$name" "$(dbus_owner_pid "$bus" "$name")" >> "$1"
+    done < <(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager list 2>/dev/null \
+               | grep -v -E '^:[0-9.]+[[:space:]]+[0-9]+[[:space:]]+busctl ' \
+               | dbus_watch_filter | cut -f1)
+    sort -u -o "$1" "$1"
   else
     echo "(session bus not reachable from this shell)" > "$1"
   fi
@@ -348,7 +383,9 @@ cmd_baseline() {
   capture_names    "$BASE_DIR/new-name-watch.txt"
   capture_procs    "$BASE_DIR/session-processes.txt"
   capture_dbus     "$BASE_DIR/dbus-names.txt"
-  dbus_watch_filter < "$BASE_DIR/dbus-names.txt" > "$BASE_DIR/dbus-watched.tsv"
+  # Owner PIDs resolved on the bus (a frozen busctl snapshot can only carry the
+  # name list; the pid has to be asked for while the owners are alive).
+  capture_dbus_watched "$BASE_DIR/dbus-watched.tsv"
   capture_qs_instances "$BASE_DIR/quickshell-instances.txt"
   ps -eo pid,ppid,user,args --sort=pid > "$BASE_DIR/ps-full.txt"
 
@@ -406,6 +443,45 @@ cmd_baseline() {
   note "baseline written: $BASE_FILE"
 }
 
+# ~/.cache/ryoku is the LIVE desktop's own cache tree: its lyric cache, its
+# update-status cache, its tray icons, and the palette its own matugen writes
+# when the owner changes wallpaper. Those files move with no Mei process
+# involved, so a hash change there cannot be attributed to Mei by hashes alone.
+# Owner decision 2026-10-31: churn under ~/.cache/ryoku is a printed, counted
+# WARN (added / edited / deleted are all listed). EVERY watched ~/.config tree
+# stays 100% fatal — that is where a theming leak actually lands (the
+# kitty/btop/qt6ct/gtk templates), and the fake-HOME guards stop leaks upstream
+# anyway; this is the backstop. Any changed path outside both groups is fatal
+# too. Proved able to fail by `./mei verify-prove`.
+CACHE_WATCH_DIR="$HOME/.cache/ryoku"
+
+hash_churn_classify() { # $1 baseline hashes, $2 current hashes -> 0 when no ~/.config file changed
+  local d="$RUN_DIR/churn.tmp" base="$1" cur="$2" other
+  rm -rf "$d"; mkdir -p "$d"
+  # sha256sum lines are: <64 hex><two spaces><path>
+  awk '{ print substr($0,67) "\t" substr($0,1,64) }' "$base" | sort > "$d/b"
+  awk '{ print substr($0,67) "\t" substr($0,1,64) }' "$cur"  | sort > "$d/c"
+  cut -f1 "$d/b" | sort > "$d/bp"
+  cut -f1 "$d/c" | sort > "$d/cp"
+  comm -23 "$d/bp" "$d/cp" > "$d/removed"
+  comm -13 "$d/bp" "$d/cp" > "$d/added"
+  join -t "$(printf '\t')" "$d/b" "$d/c" | awk -F'\t' '$2 != $3 { print $1 }' > "$d/modified"
+  { sed 's/^/added   /' "$d/added"
+    sed 's/^/edited  /' "$d/modified"
+    sed 's/^/deleted /' "$d/removed"
+  } > "$RUN_DIR/churn-changes.txt"
+  # fatal: any change at all under a watched ~/.config tree
+  if grep -q "^$HOME/\.config/" "$d/added" "$d/modified" "$d/removed" 2>/dev/null; then
+    rm -rf "$d"; return 1
+  fi
+  # fatal: any changed path that is not inside the live cache tree
+  other="$(sed 's/^[a-z]* *//' "$RUN_DIR/churn-changes.txt" | grep -v "^$CACHE_WATCH_DIR/" || true)"
+  if [ -n "$other" ]; then rm -rf "$d"; return 1; fi
+  # tolerated: every change is inside ~/.cache/ryoku (report says how many of each)
+  rm -rf "$d"
+  return 0
+}
+
 cmd_verify_untouched() {
   local strict=0
   [ "${1:-}" = "--strict" ] && strict=1
@@ -413,12 +489,21 @@ cmd_verify_untouched() {
   mkdir -p "$RUN_DIR"
   local tmp="$RUN_DIR/verify.tmp"
   rm -rf "$tmp"; mkdir -p "$tmp"
-  local rc=0
+  local rc=0 nadd=0 nedit=0 ndel=0
 
   capture_hashes "$tmp/config-hashes.sha256"
   if diff -u "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256" > "$tmp/hashes.diff" 2>&1; then
     note "OK    config hashes: all watched trees unchanged"
     note "      (~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/ryoku)"
+  elif hash_churn_classify "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256"; then
+    nadd="$(grep -c '^added' "$RUN_DIR/churn-changes.txt" || true)"
+    nedit="$(grep -c '^edited' "$RUN_DIR/churn-changes.txt" || true)"
+    ndel="$(grep -c '^deleted' "$RUN_DIR/churn-changes.txt" || true)"
+    note "WARN  config hashes: live-cache churn, not attributable to Mei here:"
+    note "      $nadd added / $nedit edited / $ndel deleted under $CACHE_WATCH_DIR"
+    note "      (the LIVE desktop's own cache: lyrics, update status, tray icons, its palette)."
+    note "      Every watched ~/.config tree is unchanged — that is the fatal set."
+    sed 's/^/      /' "$RUN_DIR/churn-changes.txt"
   else
     note "FAIL  config hashes differ from baseline — investigate NOW (Mei must never write these):"
     sed 's/^/      /' "$tmp/hashes.diff"
@@ -501,6 +586,55 @@ cmd_wallpaper() {
   XDG_DATA_HOME="$RUN_DIR/data" \
   XDG_RUNTIME_DIR="$MEI_DIR/.r" \
   "$RUN_DIR/bin/ryogami" wallpaper "$mode" "$arg"
+}
+
+# Prove that the two verify checks can still FAIL (every check must be shown
+# able to fail). Nothing live is read: doctored inputs are fed through the real
+# functions — hash_churn_classify on fake hash lists, compare_dbus_watched on
+# fake owner tables. Exits 0 only when every expectation holds.
+cmd_verify_prove() {
+  local d="$RUN_DIR/prove" f1=0 f2=0 h c
+  rm -rf "$d"; mkdir -p "$d"
+  h="$(printf 'a%.0s' {1..64})"; c="$(printf 'b%.0s' {1..64})"
+  note "prove: hash_churn_classify — expectations (0 = live-cache churn tolerated, 1 = must fail)"
+  # (1) a new file in the live cache tree (a tray icon) -> tolerated (0)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b1"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$CACHE_WATCH_DIR/tray/icon-new.png" > "$d/c1"
+  if hash_churn_classify "$d/b1" "$d/c1"; then note "prove: OK  new live-cache file tolerated (rc 0)"; else note "prove: FAIL a new live-cache file was rejected"; f1=1; fi
+  # (2) an EDITED watched config file -> must fail (1)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b2"
+  printf '%s  %s\n' "$c" "$HOME/.config/kitty/kitty.conf" > "$d/c2"
+  if hash_churn_classify "$d/b2" "$d/c2"; then note "prove: FAIL an edited config file passed"; f1=1; else note "prove: OK  edited config file rejected (rc 1)"; fi
+  # (3) a DELETED watched config file -> must fail (1)
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.config/btop/btop.conf" > "$d/b3"
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/c3"
+  if hash_churn_classify "$d/b3" "$d/c3"; then note "prove: FAIL a deleted config file passed"; f1=1; else note "prove: OK  deleted config file rejected (rc 1)"; fi
+  # (4) a NEW watched config file -> must fail (1)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b4"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.config/qt6ct/qt6ct.conf" > "$d/c4"
+  if hash_churn_classify "$d/b4" "$d/c4"; then note "prove: FAIL a new config file passed"; f1=1; else note "prove: OK  new config file rejected (rc 1)"; fi
+  # (5) a changed path outside BOTH groups -> must fail (1) (defensive)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b5"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.local/share/applications/x.desktop" > "$d/c5"
+  if hash_churn_classify "$d/b5" "$d/c5"; then note "prove: FAIL a path outside both groups passed"; f1=1; else note "prove: OK  path outside both groups rejected (rc 1)"; fi
+  # (6) a live-cache EDIT and DELETE (config untouched) -> tolerated (0), the wide exception as approved
+  printf '%s  %s\n%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$CACHE_WATCH_DIR/colors.json" "$h" "$CACHE_WATCH_DIR/tones.json" > "$d/b6"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$c" "$CACHE_WATCH_DIR/colors.json" > "$d/c6"
+  if hash_churn_classify "$d/b6" "$d/c6"; then note "prove: OK  live-cache edit+delete tolerated (rc 0)"; else note "prove: FAIL live-cache edit+delete was rejected"; f1=1; fi
+
+  note "prove: compare_dbus_watched — expectations (0 = same owner, 1 = changed owner)"
+  printf 'org.freedesktop.Notifications\t4447\n' > "$d/w1"
+  printf 'org.freedesktop.Notifications\t4447\n' > "$d/w2"
+  if compare_dbus_watched "$d/w1" "$d/w2"; then note "prove: OK  unchanged owner accepted (rc 0)"; else note "prove: FAIL unchanged owner rejected"; f2=1; fi
+  printf 'org.freedesktop.Notifications\t99999\n' > "$d/w3"
+  if compare_dbus_watched "$d/w1" "$d/w3"; then note "prove: FAIL a changed owner was accepted"; f2=1; else note "prove: OK  changed owner rejected (rc 1)"; fi
+
+  if [ "$f1" = 0 ] && [ "$f2" = 0 ]; then
+    note "verify-prove: PASS (both checks can fail)"
+    return 0
+  fi
+  note "verify-prove: FAIL (a check would not fail when it must)"
+  return 1
 }
 
 cmd_status() {
@@ -1750,6 +1884,7 @@ usage() {
 case "${1:-help}" in
   baseline)         shift; cmd_baseline "${1:-}" ;;
   verify-untouched) shift; cmd_verify_untouched "${1:-}" ;;
+  verify-prove)     shift; cmd_verify_prove ;;
   status)           shift; cmd_status ;;
   run)              shift; cmd_run ;;
   stop)             shift; cmd_stop ;;
