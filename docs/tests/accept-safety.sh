@@ -118,6 +118,11 @@ q1) # the code is clean
   else
     echo "note: shellcheck is not installed, so that part of the gate was not run"
   fi
+  # R5: no matugen spawn may omit Mei's -c config. The session's .run/bin shim
+  # enforces the same rule at runtime (it injects the config and refuses a path
+  # outside the project); this is the static half, and it is proved able to fail
+  # by handing it a doctored spawn (docs/tests/matugen-calls.sh <file>).
+  bash "$MEI/docs/tests/matugen-calls.sh" || fail "a matugen call does not carry Mei's -c config"
   ok "the code is clean"
   ;;
 

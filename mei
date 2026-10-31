@@ -154,12 +154,14 @@ DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]ReserveDevice1[.]'
 # system's copy with Mei's environment and could write the owner's real config.
 MEI_SYSTEM_PATH="/usr/local/bin:/usr/bin:/bin"
 
-# Names Mei owns. Two kinds live here: binaries the Phase-6 build writes into
-# .run/bin (mei-shell, mei-hub, mei-wm-hyprland, ryogami) and scripts that are
+# Names Mei owns. Three kinds live here: binaries the Phase-6 build writes into
+# .run/bin (mei-shell, mei-hub, mei-wm-hyprland, ryogami), scripts that are
 # symlinked straight from src/ (mei-app, mei-screenshot, mei-lock-verify and
-# ryoku-cmd-brightness, the one upstream helper Mei ships verbatim). These are
-# the only ryoku-family names allowed to resolve to a working program.
-MEI_OWNED_BINS="mei-shell mei-hub mei-wm-hyprland ryogami mei-app mei-screenshot mei-lock-verify ryoku-cmd-brightness"
+# ryoku-cmd-brightness, the one upstream helper Mei ships verbatim), and the
+# matugen shim this script writes (R5: only a matugen running with Mei's -c
+# config and Mei's state dirs may run). These are the only names allowed to
+# resolve to a working program inside .run/bin.
+MEI_OWNED_BINS="mei-shell mei-hub mei-wm-hyprland ryogami mei-app mei-screenshot mei-lock-verify ryoku-cmd-brightness matugen"
 
 # Every ryoku-family program name the kept QML, Go and project scripts can
 # execute (exec.Command / Process command arrays / execDetached, vendor and
@@ -200,6 +202,53 @@ STUB
   chmod 755 "$1"
 }
 
+mei_write_matugen_shim() { # $1 = path for .run/bin/matugen — R5 runtime enforcement
+  cat > "$1" <<'MATUGEN'
+#!/bin/sh
+# mei-matugen-shim — the only matugen a Mei session may run (R5).
+#
+# Enforced here, at runtime, for every caller (daemon, hub, QML, scripts, tests):
+#   1. Mei's own HOME and XDG state dirs must be in force, so a palette pass can
+#      only ever write inside the project (.run). Otherwise: refuse.
+#   2. The config must be Mei's: a caller that passes -c has to point INSIDE the
+#      project (a live ~/.config/matugen path is refused), and a caller that
+#      omits -c gets Mei's own config injected — no run can fall back to the
+#      default config location outside the project.
+# The real binary is a fixed absolute path; PATH is never searched for it.
+set -u
+me="$(readlink -f -- "$0" 2>/dev/null || printf '%s' "$0")"
+bindir="$(dirname -- "$me")"                 # <project>/.run/bin
+run="$(dirname -- "$bindir")"                # <project>/.run
+proj="$(dirname -- "$run")"                  # <project>
+REAL=/usr/bin/matugen
+die() { echo "mei: matugen shim: $*" >&2; exit 1; }
+
+[ -n "${HOME:-}" ] || die "HOME is unset"
+case "$HOME" in "$proj"/*) ;; *) die "HOME=$HOME is not the project's fake home" ;; esac
+for v in XDG_CONFIG_HOME XDG_CACHE_HOME XDG_STATE_HOME XDG_DATA_HOME; do
+  val="$(printenv "$v" 2>/dev/null || true)"
+  [ -n "$val" ] || die "$v is unset (Mei's state dirs must be set)"
+  case "$val" in "$proj"/*) ;; *) die "$v=$val is outside the project" ;; esac
+done
+
+have_c=0; cfgval=""; prev=""
+for a in "$@"; do
+  if [ "$prev" = "-c" ] || [ "$prev" = "--config" ]; then cfgval="$a"; have_c=1; fi
+  prev="$a"
+done
+if [ "$have_c" = 1 ]; then
+  rcfg="$(readlink -f -- "$cfgval" 2>/dev/null || printf '%s' "$cfgval")"
+  case "$rcfg" in "$proj"/*) ;; *) die "-c points outside the project: $cfgval" ;; esac
+  [ -f "$rcfg" ] || die "config does not exist: $rcfg"
+  exec "$REAL" "$@"
+fi
+mei_cfg="${XDG_CONFIG_HOME}/mei/matugen/config.toml"
+[ -f "$mei_cfg" ] || die "Mei's config is missing: $mei_cfg"
+exec "$REAL" -c "$mei_cfg" "$@"
+MATUGEN
+  chmod 755 "$1"
+}
+
 mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inventory
   mkdir -p "$RUN_DIR/bin"
   local n src
@@ -210,6 +259,9 @@ mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inve
     [ -f "$src" ] || continue
     ln -sfn "$src" "$RUN_DIR/bin/$n"
   done
+  # 1b. R5: matugen is shadowed by Mei's shim, so every palette run carries Mei's
+  #     -c config and Mei's state dirs, whatever the caller was written to do.
+  mei_write_matugen_shim "$RUN_DIR/bin/matugen"
   # 2. Shadow stubs for every family name Mei does not own, so no nested
   #    process can resolve a live helper by that name.
   while IFS= read -r n; do
