@@ -222,3 +222,24 @@ the terminal fallback (`nmtui`, `bluetoothctl`) in the docs.
 After that: the certification run (one full cold-start `phase9.sh`, the idle
 measurement table, zero outbound at idle, `./mei baseline --force`) and the
 live readiness pass over `docs/LIVE-CHECKLIST.md`.
+
+- Stage 1 item 1 (PATH isolation, R1) — DONE.
+- State: both generated session scripts set PATH to `.run/bin` plus a fixed system list
+  (`/usr/local/bin:/usr/bin:/bin`; `~/.local/bin` excluded); `mei_provision_bin` links Mei's own
+  scripts and writes inert stubs for the 17 live-system helper names the kept code can exec
+  (inventory `.run/env-inventory.tsv`).
+- Resume: item 2 (`env -i` scrub), then the `ryoku:*` → `mei:*` shortcut rename.
+
+- verify hardening (owner-approved 2026-10-31, after a real hard stop) — DONE.
+- State: the hard stop was live-cache churn (13 new lyric files under the watched `~/.cache/ryoku`) plus
+  a vacuous D-Bus owner check (`busctl` prints `-` across PID namespaces). Churn under `~/.cache/ryoku`
+  is now a counted WARN, every watched `~/.config` tree stays fatal, owner PIDs are resolved on the bus
+  (`GetNameOwner` → `GetConnectionUnixProcessID`), and `./mei verify-prove` passes 8/8 (proved able to
+  fail both ways). Baseline re-captured with real PIDs; `verify-untouched` PASS; `scrub-check` PASS.
+- Resume: Stage 1 item 2 (`env -i` scrub in the generated session script).
+
+- Go build hygiene (owner-approved 2026-10-31) — DONE.
+- State: `./mei` pins GOCACHE/GOPATH under `.run/go` with GOFLAGS=-mod=vendor, GOPROXY=off and
+  GOTOOLCHAIN=local, so nothing Mei-related writes `~/.cache/go-build` or fetches over the network;
+  the 186 MB cache my own Stage-0 run had created outside the project was deleted (2811 files, all mine).
+- Resume: Stage 1 item 2 (`env -i` scrub in the generated session script).
