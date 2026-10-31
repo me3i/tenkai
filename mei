@@ -836,6 +836,47 @@ set -uo pipefail
 MEI_DIR="__MEI_DIR__"
 BASELINE_SIG="__BASELINE_SIG__"
 RUN="\$MEI_DIR/.run"
+# --- R2: the environment is rebuilt from an explicit allow-list -------------
+# The live session exports RYOKU_*, QS_*, HYPRLAND_*, systemd and Qt theming
+# variables (RYOKU_POLKIT_AGENT=1 is exported by the live shell's unit today),
+# plus its own bus and its own display. None of that may reach a Mei session.
+# This first pass rebuilds the environment with 'env -i' from exactly the
+# values below and re-runs this same script with MEI_ENV_SCRUBBED=1; the second
+# pass starts from nothing and only sees what is named here.
+if [ "\${MEI_ENV_SCRUBBED:-0}" != "1" ]; then
+  _a=(env -i "MEI_ENV_SCRUBBED=1"
+      "HOME=\$RUN/home"
+      "XDG_CONFIG_HOME=\$RUN/config"
+      "XDG_CACHE_HOME=\$RUN/home/.cache"
+      "XDG_STATE_HOME=\$RUN/state"
+      "XDG_DATA_HOME=\$RUN/data"
+      "XDG_RUNTIME_DIR=\$MEI_DIR/.r"
+      "XDG_DATA_DIRS=$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
+      "FONTCONFIG_FILE=\$RUN/home/.config/fontconfig/fonts.conf"
+      "MEI_HOST_WAYLAND_SOCKET=__HOST_WAYLAND__"
+      "WAYLAND_DISPLAY=__HOST_WAYLAND__"
+      "PATH=\$RUN/bin:$MEI_SYSTEM_PATH"
+      "QML2_IMPORT_PATH=\$RUN/qml"
+      "QML_IMPORT_PATH=\$RUN/qml"
+      "MEI_SHELL_DIR=\$MEI_DIR/src/ryoku/shell"
+      "QT_QPA_PLATFORM=wayland"
+      "QT_AUTO_SCREEN_SCALE_FACTOR=1"
+      "QSG_RENDER_LOOP=threaded")
+  # Fixed pass-throughs, matched BY NAME: the locale, the terminal identity the
+  # tools expect, the private bus address dbus-run-session just created, and
+  # every MEI_* seam (MEI_TEST, MEI_STUB_POWER, MEI_BRIGHTNESS_FAKE,
+  # MEI_ALLOW_LIVE_DISPLAY, MEI_BUS_ADDRESS, ...). Values are copied verbatim;
+  # RYOKU_*, QS_*, HYPRLAND_*, SYSTEMD_*, WAYLAND_DISPLAY and
+  # QT_QPA_PLATFORMTHEME are not in the list, so they are dropped here.
+  for _n in \$(env | cut -d= -f1); do
+    case "\$_n" in
+      LANG|LC_*|TERM|USER|LOGNAME|SHELL|MALLOC_CONF|DBUS_SESSION_BUS_ADDRESS|MEI_*)
+        [ "\$_n" = "MEI_ENV_SCRUBBED" ] && continue
+        _a+=("\$_n=\$(printenv "\$_n")") ;;
+    esac
+  done
+  exec "\${_a[@]}" bash "\$0" "\$@"
+fi
 # The live Wayland socket, handed in by ./mei run. ryogami refuses to start when
 # its own socket resolves to this path, so it can never paint the owner's session.
 export MEI_HOST_WAYLAND_SOCKET="__HOST_WAYLAND__"

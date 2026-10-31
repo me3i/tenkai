@@ -243,3 +243,11 @@ live readiness pass over `docs/LIVE-CHECKLIST.md`.
   GOTOOLCHAIN=local, so nothing Mei-related writes `~/.cache/go-build` or fetches over the network;
   the 186 MB cache my own Stage-0 run had created outside the project was deleted (2811 files, all mine).
 - Resume: Stage 1 item 2 (`env -i` scrub in the generated session script).
+
+- Stage 1 item 2 (environment scrub, R2) — DONE.
+- State: the generated session script re-execs itself once under `env -i` with an explicit
+  allow-list (fake-HOME XDG set, .r runtime, fixed PATH/QML/Qt vars, private bus, locale/identity,
+  every MEI_* seam); RYOKU_*, QS_*, HYPRLAND_*, SYSTEMD_*, the live display and QT_QPA_PLATFORMTHEME
+  are dropped by construction. Static proof: `bash -n` on the generated script; the live proof is
+  `./mei env-check` (item 5), which runs the same prologue and prints the resulting names.
+- Resume: item 3 — rename the global shortcuts ryoku:* to mei:*.
