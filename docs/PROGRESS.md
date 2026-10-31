@@ -263,3 +263,23 @@ live readiness pass over `docs/LIVE-CHECKLIST.md`.
   Checks: bash -n (13 touched scripts), qmllint on the touched QML, py-compile of phase10a-measure.py,
   `go vet`+`go build` for the daemon with the project-local cache.
 - Resume: item 4 — enforce the project matugen -c config and Mei state dirs (R5) plus its check.
+
+- Stage 1 item 4 (matugen config + Mei state dirs, R5) — DONE.
+- State: `mei_write_matugen_shim` writes `.run/bin/matugen` (the session PATH resolves matugen there
+  first). The shim refuses HOME/XDG dirs outside the project, refuses a `-c` pointing outside it, and
+  INJECTS Mei's `config.toml` when a caller omits -c, so no matugen run can fall back to the live
+  default config. Static half: `docs/tests/matugen-calls.sh`, wired into gate q1; proved able to fail
+  (Go spawn without -c and shell spawn without -c both exit 1; with -c exits 0), and the shim proved
+  6/6 (inject, foreign -c, foreign HOME, missing config, unset state dir, valid -c).
+- Known product gap for Stage 2: `matugenArgs()` in `src/ryoku/shell/ipc/matugen.go` builds its argv
+  without `-c` (the shim supplies it); a one-line Go fix would let the static rule allow zero exceptions.
+- Resume: item 5 — `./mei env-check`.
+
+- verify attribution for owner changes (owner-approved 2026-10-31, third hard stop) — DONE.
+- State: the live `ryoku-idle` unit restarted six times in 1.5 s and re-took the watched
+  `org.freedesktop.ScreenSaver` name with a new pid (140663 -> 459484) while nothing of Mei ran.
+  verify now resolves the new pid against the systemd user manager read-only: a pid that IS a live
+  unit's MainPID is printed with the unit and WARNs; any unattributed change stays fatal.
+  `./mei verify-prove` is 10/10 (unattributed change rejected rc 1; live MainPID attributed, so the
+  WARN path is reachable); `verify-untouched` PASS with both WARNs named (`ryoku-idle.service`).
+- Resume: commit item 4 (matugen), then Stage 1 item 5 — `./mei env-check`.
