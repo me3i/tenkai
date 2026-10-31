@@ -23,14 +23,18 @@
 #                           halves can fail.
 #                           A change of owner PID for a watched well-known D-Bus name
 #                           (Notifications, tray watcher, ScreenSaver, secrets, pipewire/pulse,
-#                           portals) is always fatal; the PID is resolved ON THE BUS
-#                           (GetNameOwner -> GetConnectionUnixProcessID), because busctl's own
-#                           column prints "-" across PID namespaces. Connection IDs
-#                           (:1.NNN) and app-owned names (steam, protonvpn, kitty, firefox, …) are
-#                           ignored. Other process diffs are informational unless --strict.
-#   verify-prove            prove the verify checks can still fail: doctored hash lists and a
-#                           doctored owner table go through the real functions; nothing live is
-#                           read. Exits non-zero if a check would accept what it must reject.
+#                           portals) is resolved ON THE BUS (GetNameOwner ->
+#                           GetConnectionUnixProcessID), because busctl's own column prints "-"
+#                           across PID namespaces. A change whose new PID is the MainPID of a
+#                           live systemd user unit is external churn: printed with the unit and
+#                           WARN (owner decision 2026-10-31). Any change that cannot be
+#                           attributed that way is fatal. Connection IDs (:1.NNN) and app-owned
+#                           names (steam, protonvpn, kitty, firefox, …) are ignored. Other
+#                           process diffs are informational unless --strict.
+#   verify-prove            prove the verify checks can still fail: doctored hash lists and
+#                           doctored owner tables go through the real functions (the only live
+#                           query is the read-only systemd lookup the attribution itself uses).
+#                           Exits non-zero if a check would accept what it must reject.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       start / stop the nested session, or run it under the full harness
 #   live --profile overlay|full
@@ -372,6 +376,60 @@ compare_dbus_watched() {  # $1 = baseline NAME<TAB>PID, $2 = current NAME<TAB>PI
   return "$rc"
 }
 
+# Attribution for a CHANGED owner (owner decision 2026-10-31, second call of the
+# day): the live shell's own services restart on their own — ryoku-idle flapped
+# six times in 1.5 s and retook org.freedesktop.ScreenSaver with a new pid while
+# nothing of Mei ran. A change whose NEW pid is provably the MainPID of a live
+# systemd user unit is external churn: printed, attributed, WARN. Every other
+# change — a pid no unit claims, "-" because the name is unowned now, systemd
+# unreachable — stays FATAL, because that is the direction Mei must never be
+# wrong in (a Mei shell taking a name would never be a live unit's MainPID).
+live_unit_pids() { # -> "unit_id<TAB>mainpid", one line per live unit with a main process
+  local bus ids id path main
+  bus="$(session_bus || true)"; [ -n "$bus" ] || return 1
+  ids="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call \
+          org.freedesktop.systemd1 /org/freedesktop/systemd1 \
+          org.freedesktop.systemd1.Manager ListUnits 2>/dev/null \
+        | tr '"' '\n' | grep -E '\.service$' | sort -u || true)"
+  [ -n "$ids" ] || return 1
+  for id in $ids; do
+    path="/org/freedesktop/systemd1/unit/$(printf '%s' "$id" \
+      | sed -e 's/-/_2d/g' -e 's/\./_2e/g' -e 's/@/_40/g' -e 's/:/_3a/g')"
+    main="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call \
+             org.freedesktop.systemd1 "$path" org.freedesktop.DBus.Properties Get \
+             ss org.freedesktop.systemd1.Service MainPID 2>/dev/null | awk '{print $NF}')"
+    case "$main" in ''|0|-) continue ;; esac
+    printf '%s\t%s\n' "$id" "$main"
+  done
+}
+
+live_unit_for_pid() { # $1 = pid -> the live unit whose MainPID is it, or nothing
+  [ -n "${1:-}" ] && [ "$1" != "-" ] || return 1
+  # awk reads the whole stream (no early exit -> no SIGPIPE noise from the scan)
+  live_unit_pids | awk -F'\t' -v p="$1" '$2 == p { found = $1 } END { if (found != "") print found }'
+}
+
+# Prints one line per changed owner with its verdict; returns 0 only when EVERY
+# change is attributable to a live system unit (=> WARN), 1 if any is not (=> FAIL).
+dbus_owner_changes_check() { # $1 baseline NAME<TAB>PID, $2 current NAME<TAB>PID
+  local base="$1" cur="$2" name bpid cpid unit rc=0
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    bpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$base")"
+    cpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$cur")"
+    bpid="${bpid:--}"; cpid="${cpid:--}"
+    [ "$bpid" = "$cpid" ] && continue
+    unit="$(live_unit_for_pid "$cpid" || true)"
+    if [ -n "$unit" ]; then
+      printf '      EXTERNAL  %-44s %s -> %s  (%s)\n' "$name" "$bpid" "$cpid" "$unit"
+    else
+      printf '      UNATTRIB  %-44s %s -> %s  (no live system unit owns this pid)\n' "$name" "$bpid" "$cpid"
+      rc=1
+    fi
+  done < <(cut -f1 "$base" "$cur" | sort -u)
+  return "$rc"
+}
+
 capture_qs_instances() {  # $1 = output file
   if command -v qs >/dev/null 2>&1; then
     qs list > "$1" 2>&1 || true
@@ -500,7 +558,7 @@ cmd_verify_untouched() {
   mkdir -p "$RUN_DIR"
   local tmp="$RUN_DIR/verify.tmp"
   rm -rf "$tmp"; mkdir -p "$tmp"
-  local rc=0 nadd=0 nedit=0 ndel=0
+  local rc=0 nadd=0 nedit=0 ndel=0 owner_out=""
 
   capture_hashes "$tmp/config-hashes.sha256"
   if diff -u "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256" > "$tmp/hashes.diff" 2>&1; then
@@ -560,10 +618,17 @@ cmd_verify_untouched() {
   fi
   capture_dbus_watched "$tmp/dbus-watched.tsv"
   note "D-Bus well-known names Mei must not steal (owner PID must not change):"
+  owner_out=""
   if compare_dbus_watched "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv"; then
     note "OK    session bus: all watched names still owned by the same PID"
+  elif owner_out="$(dbus_owner_changes_check "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv")"; then
+    [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
+    note "WARN  every changed owner is a LIVE system unit's MainPID (attributed above): external"
+    note "      churn, like the live idle service restarting and re-taking its name."
   else
-    note "FAIL  a watched D-Bus name changed owner (a Mei shell must never take these):"
+    [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
+    note "FAIL  a watched D-Bus name changed owner and the new owner is NOT a live system unit"
+    note "      (a Mei shell must never take these):"
     rc=1
   fi
 
@@ -599,10 +664,12 @@ cmd_wallpaper() {
   "$RUN_DIR/bin/ryogami" wallpaper "$mode" "$arg"
 }
 
-# Prove that the two verify checks can still FAIL (every check must be shown
-# able to fail). Nothing live is read: doctored inputs are fed through the real
-# functions — hash_churn_classify on fake hash lists, compare_dbus_watched on
-# fake owner tables. Exits 0 only when every expectation holds.
+# Prove that the verify checks can still FAIL (every check must be shown
+# able to fail). Doctored inputs are fed through the real functions; no live
+# config is read, and the only live query is the read-only systemd user-manager
+# lookup the owner-change attribution itself uses. hash_churn_classify gets
+# fake hash lists, compare_dbus_watched and dbus_owner_changes_check get fake
+# owner tables. Exits 0 only when every expectation holds.
 cmd_verify_prove() {
   local d="$RUN_DIR/prove" f1=0 f2=0 h c
   rm -rf "$d"; mkdir -p "$d"
@@ -640,8 +707,25 @@ cmd_verify_prove() {
   printf 'org.freedesktop.Notifications\t99999\n' > "$d/w3"
   if compare_dbus_watched "$d/w1" "$d/w3"; then note "prove: FAIL a changed owner was accepted"; f2=1; else note "prove: OK  changed owner rejected (rc 1)"; fi
 
+  note "prove: dbus_owner_changes_check — expectations (0 = every change belongs to a live unit, 1 = unattributed)"
+  # (7) a changed owner no live unit claims -> FATAL (1); that is the direction
+  #     Mei can never be wrong in, so it must always be able to fail.
+  printf 'org.freedesktop.ScreenSaver\t140663\n' > "$d/a1"
+  printf 'org.freedesktop.ScreenSaver\t999999999\n' > "$d/a2"
+  if dbus_owner_changes_check "$d/a1" "$d/a2"; then note "prove: FAIL an unattributed owner change was accepted"; f2=1; else note "prove: OK  unattributed owner change rejected (rc 1)"; fi
+  # (8) a changed owner that IS a live unit's MainPID -> attributed (the WARN path)
+  local livepid=""
+  livepid="$(live_unit_pids | sed -n '1p' | cut -f2 || true)"
+  if [ -n "$livepid" ]; then
+    printf 'org.freedesktop.ScreenSaver\t1\n' > "$d/a3"
+    printf 'org.freedesktop.ScreenSaver\t%s\n' "$livepid" > "$d/a4"
+    if dbus_owner_changes_check "$d/a3" "$d/a4"; then note "prove: OK  a live unit's MainPID is attributed (WARN path reachable)"; else note "prove: FAIL a live unit pid was not attributed"; f2=1; fi
+  else
+    note "prove: note — no live unit pid discoverable here (systemd unreachable); owner changes stay fatal"
+  fi
+
   if [ "$f1" = 0 ] && [ "$f2" = 0 ]; then
-    note "verify-prove: PASS (both checks can fail)"
+    note "verify-prove: PASS (every check can fail)"
     return 0
   fi
   note "verify-prove: FAIL (a check would not fail when it must)"
