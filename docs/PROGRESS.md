@@ -283,3 +283,17 @@ live readiness pass over `docs/LIVE-CHECKLIST.md`.
   `./mei verify-prove` is 10/10 (unattributed change rejected rc 1; live MainPID attributed, so the
   WARN path is reachable); `verify-untouched` PASS with both WARNs named (`ryoku-idle.service`).
 - Resume: commit item 4 (matugen), then Stage 1 item 5 — `./mei env-check`.
+
+- Stage 1 item 5 (env-check, R2/R1) — DONE.
+- State: `./mei env-check` launches nothing (it runs only the session script's env -i scrub and its
+  --env-check print path): it prints the sanitised names (29, none forbidden) and the command -v
+  resolution of all 128 inventoried commands (mei | shadow | system) — 123 OK, 5 MISSING optional
+  helpers, 0 FAIL — plus `PATH=.run/bin:/usr/local/bin:/usr/bin:/bin`. Rules: a forbidden env name
+  or a resolution outside .run/bin/fixed list fails; shadow names must be our marked stubs.
+  `./mei env-check --prove` passes 4/4: a fake ryoku-* binary on a throwaway PATH is rejected (rc 1),
+  removed and the clean resolution passes, a synthetic forbidden name is rejected, allowed names pass.
+  It caught a real one first: ryogami resolved to the live /usr/bin until the four project binaries
+  were built into .run/bin (nice -n 10 -p 2, offline, project-local caches).
+- Trap recorded: a backtick pair in an unquoted heredoc ran `./mei env-check` recursively and hung;
+  no backtick now sits inside either session heredoc (grep-proved).
+- Resume: item 6 — R6, the fallback/revert commands read only from .local/mei.local.env.

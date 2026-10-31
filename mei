@@ -35,6 +35,14 @@
 #                           doctored owner tables go through the real functions (the only live
 #                           query is the read-only systemd lookup the attribution itself uses).
 #                           Exits non-zero if a check would accept what it must reject.
+#   env-check [--prove]     launch NOTHING: run the session script's own 'env -i' scrub and print
+#                           the resulting environment names plus the command -v resolution of every
+#                           inventoried command (mei | shadow | system). FAILs on a forbidden env
+#                           name (RYOKU_*, QS_*, HYPRLAND_*, SYSTEMD_*, RYOGAMI_*, the live Qt
+#                           theming hook, any XDG_* the session does not set itself) or on a
+#                           resolution outside .run/bin and the fixed system list. --prove injects
+#                           a fake ryoku-* binary on a throwaway PATH and requires the rules to
+#                           fail, then removes it and requires them to pass.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       start / stop the nested session, or run it under the full harness
 #   live --profile overlay|full
@@ -163,6 +171,24 @@ MEI_SYSTEM_PATH="/usr/local/bin:/usr/bin:/bin"
 # resolve to a working program inside .run/bin.
 MEI_OWNED_BINS="mei-shell mei-hub mei-wm-hyprland ryogami mei-app mei-screenshot mei-lock-verify ryoku-cmd-brightness matugen"
 
+# The external commands (besides the three classes above) that the kept QML, the
+# Go daemons, the project scripts and the session script itself spawn — the exact
+# union gathered in Stage 1 by grepping src/ for exec.Command / Process command
+# arrays / execDetached, by reading the four project scripts, and by reading the
+# session script. They are ordinary system tools: env-check requires each to
+# resolve inside .run/bin or the fixed system list, never to ~/.local/bin or
+# anywhere else the live session's PATH could lead. A name that is simply not
+# installed reports MISSING and does not fail the check (the call sites handle
+# their absence); a name that resolves somewhere disallowed always fails.
+MEI_SYSTEM_TOOLS="Hyprland bash basename brightnessctl busctl cat chmod chown cliphist comm
+  cp curl cut date dbus-daemon ddcutil df diff dirname env ffmpeg file find flock foot
+  fprintd-list git gsettings grep grim head hyprctl id jq kill kitty ln ls makoctl magick
+  mkdir modinfo modprobe nice nl notify-send nvidia-smi openrgb awk pacman pactl paste pgrep
+  pkg-config pkexec printf ps python3 qs quickshell rsvg-convert sed seq setsid sh snapper
+  sort strip systemctl tail timeout touch tr true uname uniq usermod virsh voxtype wc
+  wl-copy wl-paste wpctl xargs xdg-open yes zenity playerctl nmcli rfkill qmk_hid slurp
+  systemd-run fastfetch luac gpk python3 diff realpath readlink sha256sum sleep"
+
 # Every ryoku-family program name the kept QML, Go and project scripts can
 # execute (exec.Command / Process command arrays / execDetached, vendor and
 # tests excluded, plus the two bare-name fallbacks that are used when
@@ -279,12 +305,17 @@ mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inve
       grep -q 'mei-stub: this name is a live-desktop helper' "$f" 2>/dev/null || mei_write_stub "$f"
       ;; esac
   done
-  # 4. The inventory the session's env-check reads: name<TAB>class (mei|shadow).
+  # 4. The inventory the session's env-check reads: name<TAB>class
+  #    (mei = must resolve inside .run/bin as a real program,
+  #     shadow = must resolve inside .run/bin to one of our stubs,
+  #     system = .run/bin or the fixed system list only).
   {
     while IFS= read -r n; do [ -n "$n" ] && printf '%s\tmei\n' "$n"; done \
       < <(printf '%s\n' $MEI_OWNED_BINS | sort -u)
     while IFS= read -r n; do [ -n "$n" ] && printf '%s\tshadow\n' "$n"; done \
       < <(mei_shadow_names)
+    while IFS= read -r n; do [ -n "$n" ] && printf '%s\tsystem\n' "$n"; done \
+      < <(printf '%s\n' $MEI_SYSTEM_TOOLS | tr -s ' \n' '\n\n' | sort -u)
   } | sort -u > "$RUN_DIR/env-inventory.tsv"
 }
 
@@ -784,6 +815,180 @@ cmd_verify_prove() {
   return 1
 }
 
+# ---------------- Stage 1 item 5: env-check -------------------------------
+# env-check launches NOTHING. It runs the session script's own scrub path only
+# (stage 1 builds the env -i vector, re-execs itself with MEI_ENV_SCRUBBED=1,
+# sees --env-check and exits before Hyprland, the daemon or any socket), prints
+# the sanitised environment names and every command resolution, then judges them
+# here:
+#   * a FORBIDDEN env name in the sanitised environment -> FAIL: RYOKU_*,
+#     QS_*, HYPRLAND_*, SYSTEMD_*, RYOGAMI_*, the live Qt theming hook
+#     (QT_QPA_PLATFORMTHEME), QT_PLUGIN_PATH, and any XDG_* outside the six the
+#     session sets itself;
+#   * a resolution outside the allowed directories -> FAIL: the mei and shadow
+#     classes must resolve inside .run/bin (a shadow name must also be one of
+#     our marked stubs, never a foreign file), and a system tool may resolve
+#     inside .run/bin or the fixed system list — nowhere else;
+#   * MISSING is printed but does not fail (optional helpers).
+# `./mei env-check --prove` shows both rules failing on doctored input.
+
+env_names_clean_check() { # stdin: env names -> rc0 only when no forbidden name is present
+  local n rc=0
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    case "$n" in
+      XDG_CONFIG_HOME|XDG_CACHE_HOME|XDG_STATE_HOME|XDG_DATA_HOME|XDG_RUNTIME_DIR|XDG_DATA_DIRS) continue ;;
+      RYOKU_*|QS_*|HYPRLAND_*|SYSTEMD_*|RYOGAMI_*|XDG_*|QT_QPA_PLATFORMTHEME|QT_PLUGIN_PATH)
+        printf '  FORBIDDEN  %s\n' "$n"
+        rc=1
+        ;;
+    esac
+  done
+  return "$rc"
+}
+
+env_rules_apply() { # stdin: name<TAB>class<TAB>resolution -> rc1 when any resolution is disallowed
+  local n cls res rc=0
+  while IFS=$'\t' read -r n cls res; do
+    [ -n "$n" ] || continue
+    res="${res:-MISSING}"
+    if [ "$res" = "MISSING" ]; then
+      printf '  MISSING    %-26s class=%s\n' "$n" "$cls"
+      continue
+    fi
+    case "$res" in
+      /*) ;; # an absolute path: the directory decides
+      *)  # command -v printed a bare word: the shell's own builtin/keyword
+        if [ "$cls" = "system" ]; then
+          printf '  OK(builtin) %-25s %s\n' "$n" "$cls"
+          continue
+        fi
+        printf '  FAIL       %-26s class=%s resolves to the shell itself (%s), not a file in .run/bin\n' "$n" "$cls" "$res"
+        rc=1
+        continue
+        ;;
+    esac
+    case "$cls" in
+      mei)
+        case "$res" in
+          "$RUN_DIR/bin"/*) printf '  OK         %-26s %s\n' "$n" "$res" ;;
+          *) printf '  FAIL       %-26s Mei-owned name resolves outside .run/bin: %s\n' "$n" "$res"; rc=1 ;;
+        esac ;;
+      shadow)
+        case "$res" in
+          "$RUN_DIR/bin"/*)
+            if grep -q 'mei-stub: this name is a live-desktop helper' "$res" 2>/dev/null; then
+              printf '  OK         %-26s %s (our stub)\n' "$n" "$res"
+            else
+              printf '  FAIL       %-26s %s is inside .run/bin but is NOT a Mei stub\n' "$n" "$res"
+              rc=1
+            fi ;;
+          *) printf '  FAIL       %-26s shadow name resolves outside .run/bin: %s\n' "$n" "$res"; rc=1 ;;
+        esac ;;
+      system)
+        case "$res" in
+          "$RUN_DIR/bin"/*|/usr/local/bin/*|/usr/bin/*|/bin/*) printf '  OK         %-26s %s\n' "$n" "$res" ;;
+          *) printf '  FAIL       %-26s system tool resolves outside the fixed list: %s\n' "$n" "$res"; rc=1 ;;
+        esac ;;
+      *)
+        printf '  FAIL       %-26s unknown inventory class %s\n' "$n" "$cls"
+        rc=1
+        ;;
+    esac
+  done
+  return "$rc"
+}
+
+env_resolve_under() { # $1 = PATH value, $2 = name -> what command -v says under that PATH
+  ( PATH="$1"; command -v "$2" 2>/dev/null ) || true
+}
+
+env_check_prove() {
+  local d="$RUN_DIR/envcheck-proof"
+  local fake="$d/fakebin" f1=0 f2=0 n res tsv
+  rm -rf "$d"; mkdir -p "$fake"
+  mei_provision_bin
+  # PROOF 1 — a fake ryoku-* binary on a throwaway PATH must be caught (and is
+  # removed again immediately afterwards, so the clean case can be shown too).
+  n="$(mei_shadow_names | sed -n '1p')"
+  [ -n "$n" ] || { note "env-check-prove: FAIL (no shadow name to test with)"; return 1; }
+  printf '#!/bin/sh\nexit 0\n' > "$fake/$n"; chmod 755 "$fake/$n"
+  res="$(env_resolve_under "$fake:$RUN_DIR/bin:$MEI_SYSTEM_PATH" "$n")"
+  note "env-check-prove: fake '$n' injected on a throwaway PATH -> resolves to ${res:-MISSING}"
+  if printf '%s\tshadow\t%s\n' "$n" "${res:-MISSING}" | env_rules_apply >/dev/null; then
+    note "env-check-prove: FAIL (the injected fake was accepted)"; f1=1
+  else
+    note "env-check-prove: OK    injected fake rejected (rc 1)"
+  fi
+  rm -f "$fake/$n"
+  res="$(env_resolve_under "$RUN_DIR/bin:$MEI_SYSTEM_PATH" "$n")"
+  if printf '%s\tshadow\t%s\n' "$n" "${res:-MISSING}" | env_rules_apply >/dev/null; then
+    note "env-check-prove: OK    after removal the clean resolution is accepted (rc 0)"
+  else
+    note "env-check-prove: FAIL (the clean resolution was rejected)"; f1=1
+  fi
+  # PROOF 2 — the forbidden-name rule must catch a synthetic forbidden name.
+  if printf 'HOME\nRYOKU_SYNTHETIC_FLAG\n' | env_names_clean_check >/dev/null; then
+    note "env-check-prove: FAIL (a forbidden env name was accepted)"; f2=1
+  else
+    note "env-check-prove: OK    synthetic forbidden env name rejected (rc 1)"
+  fi
+  if printf 'HOME\nMEI_TEST\nLANG\nXDG_CONFIG_HOME\n' | env_names_clean_check >/dev/null; then
+    note "env-check-prove: OK    allowed env names accepted (rc 0)"
+  else
+    note "env-check-prove: FAIL (allowed env names were rejected)"; f2=1
+  fi
+  rm -rf "$d"
+  if [ "$f1" = 0 ] && [ "$f2" = 0 ]; then
+    note "env-check-prove: PASS (both rules can fail)"
+    return 0
+  fi
+  note "env-check-prove: FAIL (a rule would not fail when it must)"
+  return 1
+}
+
+cmd_env_check() {
+  if [ "${1:-}" = "--prove" ]; then
+    env_check_prove
+    return $?
+  fi
+  # Provision (stubs + shim + inventory) and generate the session script, then
+  # run ONLY its scrub+print path: no compositor, no daemon, no socket.
+  mei_provision_bin
+  write_session_script "/run/user/$(id -u)/env-check-no-display" "ENV-CHECK-NO-DISPLAY"
+  local out names pathv tsv rc=0
+  if ! out="$(bash "$RUN_DIR/session.sh" --env-check 2>"$RUN_DIR/env-check.err")"; then
+    note "env-check: the session script failed inside its --env-check path:"
+    sed 's/^/  /' "$RUN_DIR/env-check.err" | head -20
+    return 1
+  fi
+  names="$(printf '%s\n' "$out" | sed -n '/^envcheck:names-begin$/,/^envcheck:names-end$/p' | sed '1d;$d')"
+  pathv="$(printf '%s\n' "$out" | sed -n 's/^envcheck:path\t//p')"
+  tsv="$(printf '%s\n' "$out" | awk -F'\t' '$1 == "envcheck:resolve" { print $2 "\t" $3 "\t" $4 }')"
+
+  note "env-check: sanitised environment — $(printf '%s\n' "$names" | grep -c . || true) names"
+  printf '%s\n' "$names" | sed 's/^/  /'
+  note "env-check: session PATH = $pathv"
+  note "env-check: forbidden-name rule"
+  local forbidden=""
+  if forbidden="$(printf '%s\n' "$names" | env_names_clean_check)"; then
+    note "  OK    no forbidden env name survived the scrub"
+  else
+    printf '%s\n' "$forbidden"
+    note "  FAIL  a forbidden env name survived the scrub"
+    rc=1
+  fi
+  note "env-check: command -v resolution of every inventoried command"
+  if printf '%s\n' "$tsv" | env_rules_apply; then
+    note "  OK    every resolution is inside .run/bin or the fixed system list"
+  else
+    note "  FAIL  a command resolved somewhere Mei must never use"
+    rc=1
+  fi
+  if [ "$rc" = 0 ]; then note "env-check: PASS"; else note "env-check: FAIL"; fi
+  return "$rc"
+}
+
 cmd_status() {
   note "project:  $MEI_DIR"
   if [ -f "$BASE_FILE" ]; then note "baseline: $(sed -n 's/^Captured: //p' "$BASE_FILE")"; else note "baseline: MISSING"; fi
@@ -1050,6 +1255,26 @@ unset MEI_POLKIT_AGENT HYPRLAND_INSTANCE_SIGNATURE
 unset XDG_VIDEOS_DIR XDG_PICTURES_DIR XDG_DOCUMENTS_DIR XDG_DOWNLOAD_DIR \\
       XDG_MUSIC_DIR XDG_DESKTOP_DIR XDG_TEMPLATES_DIR XDG_PUBLICSHARE_DIR
 unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
+
+# Stage 1 item 5 (env-check): print the sanitised environment and the resolution
+# of every inventoried command, then exit 0. NOTHING is launched here — no
+# compositor, no daemon, no socket; this is the only path the env-check mode of
+# this script takes, and the rules that judge this output live in ./mei itself.
+if [ "\${1:-}" = "--env-check" ]; then
+  printf 'envcheck:names-begin\n'
+  env | cut -d= -f1 | sort
+  printf 'envcheck:names-end\n'
+  printf 'envcheck:path\t%s\n' "\$PATH"
+  if [ -f "\$RUN/env-inventory.tsv" ]; then
+    while IFS=\$'\t' read -r _n _c; do
+      [ -n "\$_n" ] || continue
+      _r="\$(command -v "\$_n" 2>/dev/null || true)"
+      printf 'envcheck:resolve\t%s\t%s\t%s\n' "\$_n" "\$_c" "\${_r:-MISSING}"
+    done < "\$RUN/env-inventory.tsv"
+  fi
+  printf 'envcheck:end\n'
+  exit 0
+fi
 
 log="\$RUN/logs"; pidfile="\$RUN/pids"
 # The private bus dbus-run-session gave us. Recorded so a harness on the host can
@@ -2084,6 +2309,7 @@ case "${1:-help}" in
   live-stop)        shift; cmd_live_stop "$@" ;;
   live-status)      shift; cmd_live_status "$@" ;;
   wallpaper)        shift; cmd_wallpaper "$@" ;;
+  env-check)        shift; cmd_env_check "${1:-}" ;;
   test)             shift; cmd_test ;;
   accept)           shift; cmd_accept "$@" ;;
   help|--help|-h)   usage ;;
