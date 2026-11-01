@@ -157,7 +157,7 @@ Rectangle {
     // Extra search vocabulary per section: the words a user actually types that
     // the labels never use. This is what lets the search reach a page with no
     // schema rows (Connections, Rashin) and cover synonyms the copy avoids
-    // (transparency->opacity, startup->autostart, screensaver->lockscreen).
+    // (transparency->opacity, startup->autostart, potato->performance).
     readonly property var sectionKeywords: ({
         "global": "language locale region formats format date time number currency text size font scale location city weather timezone international i18n l10n",
         "profile": "dashboard status overview telemetry hostname cpu gpu memory uptime specs",
@@ -289,7 +289,7 @@ Rectangle {
         "wifi": "connections wireless network", "internet": "connections network", "ethernet": "connections network", "bluetooth": "connections", "hotspot": "connections",
         "brightness": "backlight", "backlight": "brightness", "nightlight": "night comfort backlight", "warmth": "night comfort", "bluelight": "night comfort",
         "volume": "audio sound", "sound": "audio", "font": "typeface appearance", "typeface": "font appearance",
-        "screenshot": "recording capture", "screencast": "recording capture", "screensaver": "lockscreen lock", "lock": "lockscreen",
+        "screenshot": "recording capture", "screencast": "recording capture",
         "startup": "session", "boot": "session", "battery": "performance power", "powersaving": "performance power", "potato": "performance", "lag": "performance",
         "gap": "gaps spacing", "spacing": "gaps", "glass": "blur liquid", "liquid": "glass blur",
         "titlebar": "title bar", "titlebars": "title bar", "plugin": "plugins addon", "plugins": "plugin addon",

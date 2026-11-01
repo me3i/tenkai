@@ -3,6 +3,20 @@
 One line per item: what it is, where it stands, what is next. The resume point
 is the last line.
 
+## Lock + ScreenSaver removal (2026-11-01)
+
+The lock screen (the orbital clock) and the D-Bus `org.freedesktop.ScreenSaver`
+inhibitor service were removed at the owner's request. Commits:
+
+- `669b141` remove the lock screen and the D-Bus ScreenSaver service
+- `6a6ee88`, `df8070c` remove F8, the lock harnesses and the ScreenSaver sections
+- `dc346ea`, `461e1b0`, `9a62c46` remove the remaining call sites so both packages build
+- `ac85404` restore `fileExists`, a generic helper that lived in `lock.go`
+- `a4f7e60` drop `./mei lock-selftest` and the `mei-lock-verify` bin name
+
+What remains: dim, DPMS and suspend in `Idle.qml`; compositor-side inhibition
+through `respectInhibitors`. Mei still writes no Hyprland config.
+
 ## Items
 
 | item | state | evidence / what is missing |
@@ -54,6 +68,9 @@ be reached by name at all, and a refusal is loud (exit 3) instead of silent.
 
 ## What the session lock pass settled (worth keeping)
 
+> **Removed 2026-11-01: the lock screen is gone.** The notes below are kept as
+> history of that pass, not as current behaviour.
+
 - Quickshell 0.3.2 does ship `WlSessionLock` and `WlSessionLockSurface` (they
   are in the plugin's types, not in a module of their own).
 - `WlSessionLock`'s **default property is its surface**: anything else declared
@@ -95,6 +112,9 @@ export.
 
 ## The lock screen's look (2026-10-21)
 
+> **Removed 2026-11-01: the lock screen is gone.** The notes below are kept as
+> history of that pass, not as current behaviour.
+
 The lock screen is the **orbital dial** from Ryoku's own clockwork lockscreen
 theme, taken from upstream and adapted (`modules/lock/OrbitalClock.qml`): the
 dial with its two rings of ticks, the spotlight that follows the minute and
@@ -120,6 +140,9 @@ one in the tree, and it is the only look Mei took. The rest of the greeter
 screen, not a session lock.
 
 ## What the orbital theme depends on, and what it animates
+
+> **Removed 2026-11-01: the lock screen is gone.** The notes below are kept as
+> history of that pass, not as current behaviour.
 
 Checked in the upstream tree, not guessed:
 

@@ -1,5 +1,23 @@
 # CHANGES.md — modifications vs upstream Ryoku
 
+## The lock screen and the D-Bus ScreenSaver are gone (2026-11-01)
+
+Owner decision: the orbital clock's lock screen is removed, and with it the
+`org.freedesktop.ScreenSaver` inhibitor service (the lock screen is what needed
+that name; compositor-side inhibition through `respectInhibitors` is unaffected).
+
+Removed: `shell/modules/lock/` (the orbital clock), `services/Lock.qml`, the
+`lock` verb in `ipc/daemon.go`, `ipc/lock.go`, `ipc/screensaver.go` and their
+tests, `scripts/mei-lock-verify`, the Hub's `LockscreenPage.qml` + schema + its
+backend and the rice `Lock` asset, the orphan `lock-screen-symbolic` icon, and
+`./mei lock-selftest`. `Idle.qml` no longer locks on timeout: dim, DPMS and
+suspend are unchanged.
+
+Consequence: there is no lock screen in Mei, and an app that asks only through
+`org.freedesktop.ScreenSaver` can no longer hold the dim off.
+
+This supersedes "The lock screen's look (2026-10-21)" below.
+
 ## The lock screen's look (2026-10-21)
 
 The lock screen used a plain clock, a date and a white password field. It now

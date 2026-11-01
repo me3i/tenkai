@@ -37,8 +37,7 @@ is not the nested display.
 | F1 | the bar renders and the workspaces match Hyprland across all five | `docs/tests/workspaces.sh` |
 | F2 | the launcher opens, searches the real `.desktop` files read-only, launches and closes on Esc | `docs/tests/launcher-check.sh` |
 | F3 | the control centre opens on its own, the audio and the brightness answer in 5 % steps and are restored | `docs/tests/control-center-matrix.sh` |
-| F8 | the lock is the compositor's own (ext-session-lock-v1), covers every output, refuses a wrong password, releases on the right one, is safe to lock twice, blocks the keybinds, refuses to engage without a usable PAM setup, survives a crash with the compositor's own recovery, and reaches out to nothing | `docs/tests/lock-module.sh`, `docs/tests/session-lock-module.sh`, `docs/tests/lock-ui-outbound.sh` |
-| F9 | the idle module dims and restores exactly, locks, sleeps and wakes the display, stubs the suspend, and honours the inhibitors; the ScreenSaver service is claimed only in the full profile and only when the name is free | `docs/tests/idle-module.sh` and the Go test beside it |
+| F9 | the idle module (dim, DPMS off/wake, suspend stub) honours the compositor's inhibitors (`respectInhibitors`); there is no D-Bus ScreenSaver service — it was removed with the lock | `docs/tests/idle-module.sh` |
 | F10 | the power menu: the lock is real, the rest is stubbed under `MEI_TEST` and `MEI_STUB_POWER` | `docs/tests/power-menu.sh` |
 | F11 | the OSD, the clipboard, the screenshots (local, no upload), the media keys, the polkit agent (off by default, refusing when another agent exists) | `docs/tests/restored-modules.sh` |
 | F13 | `./mei start` is non-interactive and idempotent, `--fallback` runs only when no Mei process is left, `./mei live-stop` stops only its own tree, and the preflight collision check passes against the live baseline | `docs/tests/start-fallback.sh` |
