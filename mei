@@ -284,6 +284,14 @@ mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inve
   # 1b. R5: matugen is shadowed by Mei's shim, so every palette run carries Mei's
   #     -c config and Mei's state dirs, whatever the caller was written to do.
   mei_write_matugen_shim "$RUN_DIR/bin/matugen"
+  # 1c. The nested tests type through .run/tools/vkbd/vkbd (an evdev key code
+  #     in, a pressed key out). The source is versioned with the harnesses; the
+  #     link is what they call, and nested-input.sh pins every call to .r.
+  mkdir -p "$RUN_DIR/tools/vkbd"
+  if [ -f "$MEI_DIR/docs/tests/tools/vkbd.sh" ]; then
+    chmod 755 "$MEI_DIR/docs/tests/tools/vkbd.sh" 2>/dev/null || true
+    ln -sfn "$MEI_DIR/docs/tests/tools/vkbd.sh" "$RUN_DIR/tools/vkbd/vkbd"
+  fi
   # 2. Shadow stubs for every family name Mei does not own, so no nested
   #    process can resolve a live helper by that name.
   while IFS= read -r n; do
@@ -460,9 +468,15 @@ compare_dbus_watched() {  # $1 = baseline NAME<TAB>PID, $2 = current NAME<TAB>PI
 # six times in 1.5 s and retook org.freedesktop.ScreenSaver with a new pid while
 # nothing of Mei ran. A change whose NEW pid is provably the MainPID of a live
 # systemd user unit is external churn: printed, attributed, WARN. Every other
-# change — a pid no unit claims, "-" because the name is unowned now, systemd
-# unreachable — stays FATAL, because that is the direction Mei must never be
-# wrong in (a Mei shell taking a name would never be a live unit's MainPID).
+# change — a pid no unit claims or systemd unreachable — stays FATAL, because
+# that is the direction Mei must never be wrong in (a Mei shell taking a name
+# would never be a live unit's MainPID).
+#
+# Revised 2026-11-02: "-" (the name has NO owner now) used to be fatal too, and
+# that was wrong. A name nothing owns cannot be a name Mei took: holding a name
+# requires holding it, and the bus would report a pid. What "-" reports is a
+# provider between instances (a portal restart). It is LAPSED below — printed,
+# never fatal — while a name held by an unclaimed pid still fails hard.
 live_unit_pids() { # -> "unit_id<TAB>mainpid", one line per live unit with a main process
   local bus ids id path main
   bus="$(session_bus || true)"; [ -n "$bus" ] || return 1
@@ -530,6 +544,15 @@ dbus_owner_changes_check() { # $1 baseline NAME<TAB>PID, $2 current NAME<TAB>PID
     cpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$cur")"
     bpid="${bpid:--}"; cpid="${cpid:--}"
     [ "$bpid" = "$cpid" ] && continue
+    # A name with NO owner is not a Mei takeover: taking a name means holding
+    # it, and "-" means nothing holds it. It means the provider is between
+    # instances -- xdg-document-portal restarted and was unowned for a moment
+    # on 2026-11-02, which is live churn, not a violation. The other direction
+    # (a name held by a pid no unit claims) stays fatal below.
+    if [ "$cpid" = "-" ]; then
+      printf '      LAPSED    %-44s %s -> -  (unowned right now: the provider is restarting; Mei holds nothing)\n' "$name" "$bpid"
+      continue
+    fi
     unit="$(live_unit_for_pid "$cpid" || true)"
     if [ -n "$unit" ]; then
       printf '      EXTERNAL  %-44s %s -> %s  (%s)\n' "$name" "$bpid" "$cpid" "$unit"
