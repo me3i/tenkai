@@ -1550,7 +1550,10 @@ cmd_test() {
 
   echo
   note "--- verify-untouched AFTER first launch ---"
-  cmd_verify_untouched || note "FAIL  live config changed during the test — investigate immediately"
+  if ! cmd_verify_untouched; then
+    note "FAIL  live config changed during the test — investigate immediately"
+    return 1
+  fi
 }
 
 # ---------------------------------------------------------------------------
