@@ -59,7 +59,14 @@ start(){
   cfg_with 9999 9999 9999
   sleep 6
 }
-stop(){ ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1; sleep 2; }
+# stop also puts the thresholds back. They are the shell's config, not the
+# test's: leaving dpms at 1 s behind blacked out the next gate's screenshots.
+stop(){
+  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  sleep 2
+  printf '{"enabled": true, "dim": 9999, "dpms": 9999, "suspend": 9999, "dimPercent": 40}\n' \
+    > "$CFG.new" && mv "$CFG.new" "$CFG"
+}
 
 echo "idle module: $(date -Is)"
 panel_before="$(brightnessctl g 2>/dev/null)"

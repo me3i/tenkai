@@ -34,15 +34,18 @@ for entry in "${TESTS[@]}"; do
   # test's "./mei run" would then refuse to start. Every test starts clean.
   ( cd "$MEI" && ./mei stop ) >/dev/null 2>&1
   ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" ./mei live-stop ) >/dev/null 2>&1
-  if bash "$MEI/$script" >/tmp/opencode/rm-$$.log 2>&1; then
-    grep -E "TESTED|PASS|FAIL" /tmp/opencode/rm-$$.log | tail -4 | sed 's/^/  /'
+  # Each sub-test's log lives under the project, like everything else Mei
+  # writes. It used to go to /tmp/opencode, a directory this project does not
+  # own: when it disappeared every sub-test "failed" on the redirect alone.
+  sub_log="$RUN/logs/restored-${name// /-}-$STAMP.log"
+  if bash "$MEI/$script" >"$sub_log" 2>&1; then
+    grep -E "TESTED|PASS|FAIL" "$sub_log" | tail -4 | sed 's/^/  /'
     RESULT[$name]="PASS"
   else
-    grep -E "TESTED|PASS|FAIL" /tmp/opencode/rm-$$.log | tail -6 | sed 's/^/  /'
+    grep -E "TESTED|PASS|FAIL" "$sub_log" | tail -6 | sed 's/^/  /'
     RESULT[$name]="FAIL"
   fi
 done
-rm -f /tmp/opencode/rm-$$.log
 printf '\n========== summary ==========\n'
 for entry in "${TESTS[@]}"; do
   name="${entry%%|*}"
