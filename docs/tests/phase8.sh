@@ -76,10 +76,15 @@ set_mods() { # $1 = module overrides (all others true)
     "$BK/shell.json" > "$CFG.tmp" && mv "$CFG.tmp" "$CFG"
 }
 
-start() { # EXTRA_PATH optionally prefixes PATH (dependency scenarios)
+start() { # EXTRA_PATH optionally prefixes PATH, EXTRA_ENV adds VAR=VALUE (dependency scenarios)
   local old_sig="$SIG" old_qs="$QS" old_bus="$BUS" nqs
+  # EXTRA_ENV exists because PATH alone cannot stage a broken backend: mei
+  # gives every session a fixed PATH (.run/bin + the system list, R1) and never
+  # inherits the caller's, so a failing tool placed on EXTRA_PATH is invisible
+  # to the daemon. A product seam (MEI_*) does survive, and is how a nested test
+  # makes a backend fail without touching the owner's hardware.
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
-      PATH="${EXTRA_PATH:-}${PATH}" ./mei run ) >/dev/null 2>&1
+      env ${EXTRA_ENV:-} PATH="${EXTRA_PATH:-}${PATH}" ./mei run ) >/dev/null 2>&1
   SIG=""; QS=""
   for _ in $(seq 1 200); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
@@ -288,11 +293,21 @@ echo; echo "=== S9a: brightness backend unavailable ==="
 printf '#!/bin/sh\nexit 127\n' > "$RUN/deps/bin/brightnessctl"
 chmod +x "$RUN/deps/bin/brightnessctl"
 set_mods '{}'
-EXTRA_PATH="$RUN/deps/bin:" start || { exit 1; }
+# The daemon cannot see EXTRA_PATH (R1: a session's PATH is fixed), so the
+# failure is staged where the product looks: the brightness seam. Pointed at a
+# directory, the step cannot be recorded, the backend genuinely cannot do its
+# job, and the verb has to report that instead of pretending "ok" (which the
+# client prints as nothing at all). The seam also keeps the real panel untouched.
+mkdir -p "$RUN/state/s9a-unwritable"
+EXTRA_PATH="$RUN/deps/bin:" EXTRA_ENV="MEI_BRIGHTNESS_FAKE=$RUN/state/s9a-unwritable" start || { exit 1; }
 bar_up && ok "S9a bar renders with a failing brightnessctl" || bad "S9a bar missing"
 r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1 )"
+# The verb's convention is the daemon's: an error is "err <verb>: <why>", which
+# the client prints as "ryoku-shell: <verb>: <why>" and exits non-zero. Assert on
+# that structure, not on one particular wording: an empty reply here would mean
+# the verb claimed "ok" while the backend could not run at all.
 case "$r" in
-  *brightness:*exec*|err\ brightness:*|*brightness:*not\ found*|*brightness:*exit\ status*)
+  err\ brightness:*|*"ryoku-shell: brightness:"*)
     ok "S9a brightness verb degrades to an error string ($r)" ;;
   *) bad "S9a brightness verb returned '$r'" ;;
 esac
