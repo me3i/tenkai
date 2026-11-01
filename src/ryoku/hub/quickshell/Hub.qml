@@ -19,7 +19,6 @@ import "schema/DictationPage.js" as DictationSchema
 import "schema/LauncherPage.js" as LauncherSchema
 import "schema/FastfetchPage.js" as FastfetchSchema
 import "schema/WidgetsPage.js" as WidgetsSchema
-import "schema/LockscreenPage.js" as LockscreenSchema
 import "schema/AnimationsPage.js" as AnimationsSchema
 import "schema/AddonsPage.js" as AddonsSchema
 import "schema/WindowRulesPage.js" as WindowRulesSchema
@@ -117,7 +116,7 @@ Rectangle {
             { key: "displays", name: "Displays", needs: { cap: "monitorConfig" } }, { key: "connections", name: "Connections" },
             { key: "input", name: "Input" }, { key: "gpu", name: "Graphics & Power" } ] },
         { name: "LOOK", items: [
-            { key: "animations", name: "Animations" }, { key: "lockscreen", name: "Lockscreen" } ] },
+            { key: "animations", name: "Animations" } ] },
         { name: "COMPOSITOR", items: [
             { key: "windowmanager", name: "Window Manager", needs: { provider: true } }, { key: "plugins", name: "Plugins", needs: { cap: "plugins" } },
             { key: "layerrules", name: "Layer Rules", adv: true, needs: { rows: true } } ] },
@@ -176,7 +175,6 @@ Rectangle {
         "launcher": "launcher spotlight command palette greeting weather home",
         "fastfetch": "fetch neofetch terminal system info logo ascii emblem readout",
         "widgets": "desktop widget clock calendar weather face overlay wallpaper",
-        "lockscreen": "lock screensaver signin greeter skin theme login",
         "animations": "animation animations motion transition bezier curve speed feel wobbly disable enable toggle",
         "addons": "installed plugin addon extension manage enable remove update widget bundle extras store marketplace browse",
         "windowrules": "window rule float pin size place opacity class title override",
@@ -202,7 +200,7 @@ Rectangle {
         "displays": DisplaysSchema.rows, "gpu": GpuSchema.rows,
         "recording": RecordingSchema.rows, "dictation": DictationSchema.rows,
         "launcher": LauncherSchema.rows, "fastfetch": FastfetchSchema.rows,
-        "widgets": WidgetsSchema.rows, "lockscreen": LockscreenSchema.rows,
+        "widgets": WidgetsSchema.rows,
         "animations": AnimationsSchema.rows, "addons": AddonsSchema.rows,
         "windowrules": WindowRulesSchema.rows, "appoverrides": AppOverridesSchema.rows,
         "layerrules": LayerRulesSchema.rows, "session": SessionSchema.rows,
@@ -507,7 +505,7 @@ Rectangle {
         return (prov && prov.length) ? base.concat(prov) : base;
     }
     function pageFile(s) {
-        var map = { "plugins": "PluginsPage", "profile": "ProfilePage", "bar-studio": "BarStudioPage", "desktop": "DesktopPage", "session": "SessionPage", "layerrules": "LayerRulesPage", "windowrules": "WindowRulesPage", "appoverrides": "AppOverridesPage", "animations": "AnimationsPage", "input": "InputPage", "keybinds": "KeybindsPage", "dictation": "DictationPage", "displays": "DisplaysPage", "connections": "ConnectionsPage", "gpu": "GpuPage", "updates": "UpdatesPage", "rashin": "RashinPage", "recording": "RecordingPage", "performance": "PerformancePage", "launcher": "LauncherPage", "lockscreen": "LockscreenPage", "fastfetch": "FastfetchPage", "addons": "AddonsPage", "widgets": "WidgetsPage", "credits": "CreditsPage" };
+        var map = { "plugins": "PluginsPage", "profile": "ProfilePage", "bar-studio": "BarStudioPage", "desktop": "DesktopPage", "session": "SessionPage", "layerrules": "LayerRulesPage", "windowrules": "WindowRulesPage", "appoverrides": "AppOverridesPage", "animations": "AnimationsPage", "input": "InputPage", "keybinds": "KeybindsPage", "dictation": "DictationPage", "displays": "DisplaysPage", "connections": "ConnectionsPage", "gpu": "GpuPage", "updates": "UpdatesPage", "rashin": "RashinPage", "recording": "RecordingPage", "performance": "PerformancePage", "launcher": "LauncherPage", "fastfetch": "FastfetchPage", "addons": "AddonsPage", "widgets": "WidgetsPage", "credits": "CreditsPage" };
         map.global = "GlobalPage";
         map["import"] = "ImportPage";
         map.windowmanager = "WindowManagerPage";

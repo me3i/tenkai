@@ -515,10 +515,6 @@ func (d *daemon) bootstrap() {
 	// fails closed: if the session's polkit slot is already held by another
 	// agent, the existing agent keeps working and Mei does not fight it.
 	d.startPolkit()
-	// The ScreenSaver inhibitor service: only where it is asked for (the full
-	// live profile sets MEI_SCREENSAVER_NAME=1), and only when the session's
-	// name is free. The shell's idle service watches the inhibitor count.
-	d.startScreensaver()
 	d.startNetwork()
 	d.startNightlight()
 	go d.paintWorker()
@@ -1102,7 +1098,6 @@ var surfaceCommands = map[string]string{
 	// CustomShortcut press runs in-process.
 	"bar-toggle":         "barToggle",
 	"launcher":           "launcher",
-	"lock":               "lock",
 	"overview":           "overview",
 	"visualizer":         "visualizer",
 	"visualizer-overlay": "visualizer-overlay",
@@ -1234,47 +1229,6 @@ func (d *daemon) dispatch(line string) string {
 			return "err barstyle: " + err.Error()
 		}
 		return "ok"
-	case "lock-quiesce":
-		if len(args) != 0 {
-			return "err lock-quiesce: takes no arguments"
-		}
-		d.lockQuiesced.Store(true)
-		return "ok"
-	case "lock":
-		// lock status is the reference check (prints locked/unlocked, exit 0);
-		// bare lock engages this daemon's login1 session.
-		if len(args) == 1 && args[0] == "status" {
-			if isLocked() {
-				return "locked"
-			}
-			return "unlocked"
-		}
-		if d.lockQuiesced.Load() {
-			return "err lock: generation cutover is in progress"
-		}
-		if len(args) == 2 && args[0] == "session" {
-			if args[1] != lockSessionID() {
-				return "err lock: requested login1 session is not owned by this daemon"
-			}
-			return lockSession()
-		}
-		if len(args) != 0 {
-			return "err lock: expected no arguments, status, or session <id>"
-		}
-		// SAFETY: login1's session lock would lock the owner's whole session,
-		// which a test session must never be able to do. It is stubbed in a
-		// test session and in the first live trial; Mei's own lock is the
-		// shell's surface, not this.
-		if testStubbed() {
-			log.Printf("mei-shell: [mei-stub] suppressed lock (MEI_TEST=1)")
-			return "ok"
-		}
-		if powerStubbed() {
-			log.Printf("mei-shell: [mei-stub] suppressed lock (MEI_STUB_POWER=1)")
-			return "ok"
-		}
-		return "err lock: Mei's own lock is the shell's surface; the session lock is not used"
-		// return lockSession()
 	case "unlock-prepare":
 		if len(args) != 2 || args[0] != "session" {
 			return "err unlock-prepare: expected session <id>"

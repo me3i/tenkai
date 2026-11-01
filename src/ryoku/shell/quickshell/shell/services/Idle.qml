@@ -5,29 +5,25 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// Mei's idle: dim, lock, DPMS off and suspend, with the inhibitors honoured.
+// Mei's idle: dim, DPMS off and suspend, with the inhibitors honoured.
 //
 // The idle source is the compositor's own idle-notify, so a video player that
-// holds an idle-inhibit keeps the desktop awake exactly as it should. The
-// ScreenSaver service the daemon offers (for the apps that use the D-Bus
-// interface instead) feeds the same inhibitor logic.
+// holds an idle-inhibit keeps the desktop awake exactly as it should.
 //
 // The thresholds live in Mei's own config (idle.json), so they are the user's
-// to set and not baked into the code. Defaults: dim after 120 s, lock after
-// 300 s, DPMS off after 360 s, suspend after 600 s.
+// to set and not baked into the code. Defaults: dim after 120 s, DPMS off
+// after 360 s, suspend after 600 s.
 Singleton {
     id: root
 
     readonly property string cfgDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei"
     readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
 
-    property var cfg: ({ "enabled": true, "dim": 120, "lock": 300, "dpms": 360, "suspend": 600, "dimPercent": 40 })
+    property var cfg: ({ "enabled": true, "dim": 120, "dpms": 360, "suspend": 600, "dimPercent": 40 })
 
     property int idleSeconds: 0
     property bool dimmed: false
-    property int screensaverInhibits: 0
     property string lastAction: ""
-    property bool locked: false
     property bool dpmsOff_: false
     property bool suspended: false
 
@@ -62,25 +58,6 @@ Singleton {
         // only has to notice the idle quickly.
         timeout: 1
         onIsIdleChanged: root.idleChanged()
-    }
-
-    // The ScreenSaver service the daemon offers (the full live profile only)
-    // publishes how many apps asked to hold the idle off.
-    Socket {
-        id: sub
-        path: root.sockPath
-        parser: SplitParser {
-            onRead: line => {
-                try {
-                    const f = JSON.parse(line);
-                    if (f && typeof f.count === "number")
-                        root.screensaverInhibits = f.count;
-                } catch (e) {
-                }
-            }
-        }
-        Component.onCompleted: connected = true
-        onConnectionStateChanged: if (connected) { write("subscribe screensaver\n"); flush(); }
     }
 
     Timer {
@@ -147,22 +124,10 @@ Singleton {
             root.suspended = false;
             return;
         }
-        // An app that asked through the D-Bus interface to keep the machine
-        // awake (a video, a call) holds the idle off: the idle time does not
-        // count, and nothing is dimmed, locked or suspended. When it is
-        // released, the idle starts counting again from zero.
-        if (root.screensaverInhibits > 0) {
-            root.idleSeconds = 0;
-            root.checkLockState();
-            return;
-        }
         root.idleSeconds++;
-        root.checkLockState();
         const s = root.idleSeconds;
         if (root.cfg.dim && s >= root.cfg.dim)
             root.dim();
-        if (root.cfg.lock && s >= root.cfg.lock)
-            root.lockNow();
         if (root.cfg.dpms && s >= root.cfg.dpms)
             root.dpmsOff();
         if (root.cfg.suspend && s >= root.cfg.suspend)
@@ -185,21 +150,6 @@ Singleton {
         root.dimmed = false;
         root.lastAction = "restore";
         root.command("brightness.restore");
-    }
-
-    function lockNow() {
-        if (root.locked)
-            return;
-        root.locked = true;
-        root.lastAction = "lock";
-        Lock.lock();
-    }
-
-    // A lock that was dismissed (the right password) must not stop the next
-    // idle from locking again.
-    function checkLockState() {
-        if (root.locked && !Lock.locked)
-            root.locked = false;
     }
 
     function dpmsOff() {
