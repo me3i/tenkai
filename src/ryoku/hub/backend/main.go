@@ -94,11 +94,6 @@ func main() {
 			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
 			os.Exit(1)
 		}
-	case "lock":
-		if err := runLock(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
-			os.Exit(1)
-		}
 	case "gpu":
 		if err := runGpu(args[1:]); err != nil {
 			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)

@@ -42,9 +42,6 @@ type RiceAssets struct {
 	// FastfetchStyle is the bundled config.jsonc: the readout's layout and
 	// modules, distinct from the emblem image above.
 	FastfetchStyle string `json:"fastfetchStyle,omitempty"`
-	// Lock is the active qylock skin slug (e.g. "clockwork/orbital"); the skin
-	// installs separately, so a rice travels the choice, not the files.
-	Lock string `json:"lock,omitempty"`
 }
 
 type Rice struct {
@@ -566,11 +563,6 @@ func captureRice(name string, layers []string) (Rice, error) {
 			}
 		}
 	}
-	// lockscreen: the active qylock skin travels by slug; the skin files install
-	// separately, so a rice carries the choice, not the theme.
-	if slug := readLockPref(qylockThemePref()); slug != "" {
-		r.Assets.Lock = slug
-	}
 	return r, saveRice(r)
 }
 
@@ -635,16 +627,14 @@ func snapshotStores(slot string) error {
 	if wp := currentWallpaper(); wp != "" {
 		_ = atomicWrite(filepath.Join(dir, "wallpaper.path"), []byte(wp), 0o644)
 	}
-	// the fastfetch readout and the qylock skin live outside ~/.config/ryoku, so
-	// snapshot them explicitly to keep a revert whole.
+	// the fastfetch readout lives outside ~/.config/ryoku, so
+	snapshot it explicitly to keep a revert whole.
 	if isFile(fastfetchConfigPath()) {
 		_ = copyFile(fastfetchConfigPath(), filepath.Join(dir, "fastfetch.jsonc"))
 	}
-	if slug := readLockPref(qylockThemePref()); slug != "" {
-		_ = atomicWrite(filepath.Join(dir, "lock.slug"), []byte(slug), 0o644)
-	}
 	return nil
 }
+
 
 // ensureBaseline snapshots the pristine pre-rice setup exactly once; it is never
 // overwritten, so the user can always return to how the machine shipped/was.
@@ -680,11 +670,6 @@ func restoreRice(slot string) error {
 	}
 	if src := filepath.Join(dir, "fastfetch.jsonc"); isFile(src) {
 		_ = copyFile(src, fastfetchConfigPath())
-	}
-	if b, err := os.ReadFile(filepath.Join(dir, "lock.slug")); err == nil {
-		if slug := strings.TrimSpace(string(b)); slug != "" {
-			_ = setLockSkinIn(qylockThemesDir(), qylockThemePref(), slug)
-		}
 	}
 	_, _ = desktopClient().Apply(desktopStorePath())
 	riceReload()
@@ -859,12 +844,6 @@ func applyRice(slug string, layers []string) error {
 	if r.Assets.Fastfetch != "" {
 		_, _ = applyFastfetchEmblem(filepath.Join(dir, r.Assets.Fastfetch))
 	}
-	// lockscreen: point the session lock at the rice's skin when it is installed;
-	// the greeter is left untouched so an apply never pops a privilege prompt, and
-	// an unknown skin is a soft miss, not a failure.
-	if r.Assets.Lock != "" {
-		_ = setLockSkinIn(qylockThemesDir(), qylockThemePref(), r.Assets.Lock)
-	}
 	// profile hero: copy the bundled image into the profile store and point the
 	// hero at it, so the recipient's Profile page wears the rice's face. profile.json
 	// is in backupStores, so a restore reverts it.
@@ -879,16 +858,17 @@ func applyRice(slug string, layers []string) error {
 					prof["hero"] = hero
 				}
 			}
-		}
-		if err := overlayStore(profileConfigPath(), prof, nil); err != nil {
-			return fmt.Errorf("apply profile: %w", err)
-		}
+		}	if err := overlayStore(profileConfigPath(), prof, nil); err != nil {
+		return fmt.Errorf("apply profile: %w", err)
+	}
 	}
 
 	_, _ = desktopClient().Apply(desktopStorePath())
 	riceReload()
 	return nil
 }
+
+
 
 // --- active rice + compatibility -------------------------------------------
 
@@ -1300,8 +1280,7 @@ func preflightData() map[string]any {
 		"widgets":    len(readJSONMap(widgetsStorePath())) > 0,
 		"visualizer": len(readJSONMap(visualizerStorePath())) > 0,
 		"fastfetch":  isFile(fastfetchConfigPath()),
-		"lock":       readLockPref(qylockThemePref()) != "",
-		"layers":     layers,
+			"layers":     layers,
 		"fixed":      !loadThemeState().FollowWallpaper,
 		"themeApps":  themeAppsOn(loadThemeState()),
 	}

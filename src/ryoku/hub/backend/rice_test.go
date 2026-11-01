@@ -732,7 +732,7 @@ func TestRunRiceRejectsStoreCommands(t *testing.T) {
 // (named scheme, GTK choice), the wallpaper daemon's matugen scheme, the
 // fastfetch readout with its emblem, and the lock skin. capture bundles each and
 // apply lands them all on a recipient whose own machine tuning is left alone.
-func TestCaptureAppliesThemeFastfetchAndLock(t *testing.T) {
+func TestCaptureAppliesThemeAndFastfetch(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
@@ -752,12 +752,6 @@ func TestCaptureAppliesThemeFastfetchAndLock(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// a lock skin the author has installed (a folder with Main.qml); the rice
-	// travels its slug, not the files.
-	slug := "clockwork/orbital"
-	w(filepath.Join(qylockThemesDir(), slug, "Main.qml"), "import QtQuick")
-	w(qylockThemePref(), slug+"\n")
-
 	writeDesktopStore(t, `{"appearance":{"rounding":6},"dwindle":{"mfact":0.6}}`)
 	w(shellStorePath(), `{"barStyle":"qsbar"}`)
 	w(launcherStorePath(), `{}`)
@@ -788,15 +782,11 @@ func TestCaptureAppliesThemeFastfetchAndLock(t *testing.T) {
 	if r.Assets.Fastfetch == "" || !isFile(filepath.Join(rdir, r.Assets.Fastfetch)) {
 		t.Fatalf("fastfetch emblem not bundled: %q", r.Assets.Fastfetch)
 	}
-	if r.Assets.Lock != slug {
-		t.Fatalf("lock slug = %q, want %q", r.Assets.Lock, slug)
-	}
 
 	// a recipient with different everything adopts the rice's identity.
 	w(themeStatePath(), `{"followWallpaper":true,"scheme":"light","gtkTheme":"adw"}`)
 	w(ryogamiStorePath(), `{"matugen":{"mode":"light","schemeType":"scheme-tonal-spot"},"resource_tier":"low"}`)
 	w(fastfetchConfigPath(), `{"logo":{"type":"builtin"}}`)
-	w(qylockThemePref(), "other/skin\n")
 
 	if err := applyRice(r.Slug, nil); err != nil {
 		t.Fatal(err)
@@ -813,9 +803,6 @@ func TestCaptureAppliesThemeFastfetchAndLock(t *testing.T) {
 	}
 	if ff, _ := loadFastfetch(); ff.Logo.Kind != "image" {
 		t.Fatalf("apply did not restore the fastfetch emblem: %+v", ff.Logo)
-	}
-	if readLockPref(qylockThemePref()) != slug {
-		t.Fatalf("apply did not set the lock skin: %q", readLockPref(qylockThemePref()))
 	}
 }
 
