@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Q4: the idle measurement, and it must not be more than 5 % over the last
-# recorded table (docs/STATUS.md: idle 602,584 kB RSS / 328,937 kB PSS / 88
-# threads / 1.2 s CPU per 60 s).
+# recorded table (docs/STATUS.md, post-Blobs: idle 657,260 kB RSS / 311,253 kB
+# PSS / 98 threads / 0.73 s CPU per 60 s).
 #
 # The Phase 10A harness measures; this gate compares.
 set -uo pipefail
@@ -11,10 +11,10 @@ RUN="$MEI/.run"
 mkdir -p "$RUN/logs"
 
 # The recorded table, in kB and seconds.
-REC_RSS=602584
-REC_PSS=328937
-REC_THREADS=88
-REC_CPU=1.2
+REC_RSS=657260
+REC_PSS=311253
+REC_THREADS=98
+REC_CPU=0.73
 LIMIT=1.05
 
 log="$RUN/logs/accept-q4.log"
