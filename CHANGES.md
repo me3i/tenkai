@@ -26,6 +26,12 @@ The lock's logic is untouched: it is still the compositor's own session lock
 (ext-session-lock-v1), the password is still checked against PAM by the daemon,
 and a broken PAM setup still refuses the lock instead of covering the screen.
 
+Prove cases for the cgroup attribution path (`live_unit_for_pid` child
+attribution, and the `MEI_DIR` / `run-*.scope` refusals) are deferred to a
+post-accept hygiene commit. The live checks at Phase 2b.4 are stronger evidence
+than a synthetic prove case because they exercise the real `/proc/<pid>/cgroup`
+of a real child of a real unit.
+
 ## Baseline PID update (kitty restart, 2026-10-20)
 
 The owner restarted their terminal during Phase 10A, so the live kitty is a new
