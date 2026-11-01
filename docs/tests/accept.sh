@@ -174,6 +174,20 @@ printf 'Mei acceptance gate: %s\n' "$(date -Is)"
 printf 'the log of this run: %s\n' "$OUT"
 printf '\n'
 
+# Q4's reference is measured here, before any gate has loaded the machine. The
+# idle figure follows whatever the box is doing, so a number recorded on an idle
+# box cannot gate the end of a 30-minute run: it would report this run's own load
+# as a regression. docs/STATUS.md keeps the recorded table as a trend record.
+printf -- '--- measuring the idle reference Q4 will be compared against ---\n'
+if bash "$MEI/docs/tests/accept-q4.sh" --reference > "$RUN/logs/accept-q4-reference-$STAMP.log" 2>&1; then
+  printf 'Q4   idle reference measured                                  %s\n' "$RUN/logs/accept-q4-reference-$STAMP.log"
+  tail -1 "$RUN/logs/accept-q4-reference-$STAMP.log" | sed 's/^/     /'
+else
+  printf 'Q4   idle reference measurement failed (Q4 falls back to the recorded table)\n'
+  tail -3 "$RUN/logs/accept-q4-reference-$STAMP.log" | sed 's/^/     /'
+fi
+printf '\n'
+
 for g in "${GATES[@]}"; do
   IFS='|' read -r id name cmd _evidence <<< "$g"
   run_gate "$id" "$name" "$cmd"
