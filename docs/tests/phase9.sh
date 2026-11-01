@@ -62,7 +62,7 @@ restore() {
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
   sleep 2
   for d in state cache config/mei home/.cache/mei home/.cache/quickshell_widgets_v2 home/.local/state/mei; do
-    rm -rf "$RUN/$d"
+    rm -rf "${RUN:?}/${d:?}"
     if [ -e "$BK/$d" ]; then
       mkdir -p "$RUN/$(dirname "$d")"
       mv "$BK/$d" "$RUN/$d"
@@ -109,7 +109,7 @@ LEAK_PID=$!
 note "leak monitor started (pid $LEAK_PID, log $LEAK_LOG)"
 
 # ── the pass ────────────────────────────────────────────────────────────────
-declare -A SRC RC EVID
+declare -A SRC RC
 run_one() { # $1 = item key, $2 = label, $3 = command...
   local key="$1" label="$2"; shift 2
   local out="$RUN/logs/phase9-${key}-$STAMP.log"

@@ -10,9 +10,7 @@
 # writes a file.
 set -uo pipefail
 MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
-HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
-HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
+RUN="$MEI/.run"
 STAMP="$(date +%H%M%S)"
 LOG="$RUN/logs/start-fallback-$STAMP.log"
 mkdir -p "$RUN/logs"

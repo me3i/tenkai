@@ -20,7 +20,7 @@ STAMP="$(date +%H%M%S)"
 OUT="$LOGDIR/accept-$STAMP.log"
 exec > >(tee -a "$OUT") 2>&1
 
-cd "$MEI"
+cd "$MEI" || exit 1
 
 # ---------------------------------------------------------------- the gates
 # id | name | the command to run | the evidence
@@ -45,7 +45,7 @@ GATES=(
 "F11|the OSD, the clipboard, the screenshots, the polkit agent|bash $MEI/docs/tests/restored-modules.sh|$OUT"
 "F13|mei start, the fallback and the preflight|bash $MEI/docs/tests/start-fallback.sh|$OUT"
 "Q1|the code is clean (qmllint, go vet, go build, go test, shellcheck)|bash $MEI/docs/tests/accept-safety.sh q1|$OUT"
-"Q2|no dead code, no personal strings, no ryoku names outside the allowed ones|bash $MEI/docs/tests/accept-safety.sh q2|$OUT"
+"Q2|no dead code, no personal strings, no upstream-brand names outside the allowed ones|bash $MEI/docs/tests/accept-safety.sh q2|$OUT"
 "F12|the module matrix (every module off, three at once)|bash $MEI/docs/tests/phase8.sh|$OUT"
 "Q3|the reference screenshots|bash $MEI/docs/tests/accept-q3.sh before|$OUT"
 "Q4|the idle measurement table|bash $MEI/docs/tests/accept-q4.sh|$OUT"
@@ -132,7 +132,7 @@ run_gate(){ # id, name, command
 list_only(){
   printf '%-4s %-62s %s\n' "id" "gate" "command"
   for g in "${GATES[@]}"; do
-    IFS='|' read -r id name cmd evidence <<< "$g"
+    IFS='|' read -r id name cmd _evidence <<< "$g"
     printf '%-4s %-62s %s\n' "$id" "$name" "$cmd"
   done
   printf '\n(human gates, UNVERIFIED by design)\n'
@@ -175,14 +175,14 @@ printf 'the log of this run: %s\n' "$OUT"
 printf '\n'
 
 for g in "${GATES[@]}"; do
-  IFS='|' read -r id name cmd evidence <<< "$g"
+  IFS='|' read -r id name cmd _evidence <<< "$g"
   run_gate "$id" "$name" "$cmd"
 done
 
 printf '\n================ the table ================\n'
 printf '%-4s %-62s %s\n' "id" "gate" "state"
 for g in "${GATES[@]}"; do
-  IFS='|' read -r id name cmd evidence <<< "$g"
+  IFS='|' read -r id name cmd _evidence <<< "$g"
   case " $FAILED_IDS " in *" $id "*) printf '%-4s %-62s FAIL\n' "$id" "$name" ;; *) printf '%-4s %-62s PASS\n' "$id" "$name" ;; esac
 done
 for h in "${HUMAN[@]}"; do printf '%-4s %-62s UNVERIFIED\n' "${h%%|*}" "${h#*|}"; done

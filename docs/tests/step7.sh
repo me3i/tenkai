@@ -63,7 +63,6 @@ H() {
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-SCREENW="$(hyprctl -j monitors 2>/dev/null | jq -r '.[0].width // empty' 2>/dev/null)"
 IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
 wake() { H dispatch dpms on >/dev/null 2>&1; H dispatch movecursor 960 540 >/dev/null 2>&1; }
 shot() {
@@ -244,8 +243,12 @@ echo; echo "=== SHUTDOWN ==="
 sleep 2
 stray=""
 for n in ryogami matugen mei-shell mei-hub; do
-  p="$(pgrep -x "$n" 2>/dev/null | tr '\n' ',' || true)"
-  [ -n "$p" ] && stray="$stray $n=$p"
+  # A name alone is not enough: the owner's live session runs its own
+  # /usr/bin ryogami (and matugen), and those are not Mei's. Only a
+  # process whose cmdline carries the project path belongs to Mei.
+  for p in $(pgrep -x "$n" 2>/dev/null || true); do
+    if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qF "$MEI"; then stray="$stray $n=$p"; fi
+  done
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
   if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI/src/ryoku"; then stray="$stray quickshell=$p"; fi

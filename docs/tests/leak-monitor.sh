@@ -150,6 +150,8 @@ build_scope() {
   local pid name
   CHECK=(); ROOT_KIND=(); SCOPE_KIND=(); LAUNCHER_ROOTS=""; COMPOSITOR_ROOTS=""
   if [ -r "$PIDFILE" ]; then
+    # the pid file is TSV: pid, pgid, name. pgid is not needed here.
+    # shellcheck disable=SC2034
     while IFS=$'\t' read -r pid pgid name; do
       case "$pid" in ''|*[!0-9]*) continue ;; esac
       [ -d "/proc/$pid" ] || continue

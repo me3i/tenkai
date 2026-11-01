@@ -27,16 +27,15 @@ bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 owner() { busctl --address="$BUS" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }
 wait_free() {
-  local i
-  for i in $(seq 1 48); do
+  for _ in $(seq 1 48); do
     [ -z "$(owner $NOTIF)" ] && [ -z "$(owner $WATCH)" ] && return 0
     sleep 0.25
   done
   return 1
 }
 wait_owner() { # $1 name, $2 ticks
-  local i o=""
-  for i in $(seq 1 "${2:-80}"); do
+  local o=""
+  for _ in $(seq 1 "${2:-80}"); do
     o="$(owner "$1")"; [ -n "$o" ] && { echo "$o"; return 0; }
     sleep 0.25
   done

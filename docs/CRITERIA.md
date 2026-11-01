@@ -57,7 +57,7 @@ gate.
 | Q2 | no dead code, no duplicate services, no unreferenced file, no personal strings, no `ryoku` name outside the module URIs, the D-Bus names, the polkit paths, the font names and the attribution | `docs/tests/accept-safety.sh q2` (the greps are proven able to fail) |
 | Q3 | the reference screenshots (frozen clock, pinned wallpaper) of the bar, the launcher, the quick settings, the settings pages, the notification popup, the tray, the power menu and the lock screen are the same before and after the cleanup | **TODO**: the frozen set has to be taken before the cleanup |
 | Q4 | the nested idle RSS, PSS, threads and CPU per 60 s must not be more than 5 % over the last recorded table | run with the Phase 10A harness (`docs/tests/phase10a-measure.py`) |
-| Q5 | the documents exist and make no unproven claim: `MODULES.md`, `CHANGES.md`, `CREDITS.md`, `NOTICE`, `UPSTREAM.md`, `PARITY.md`, `LIVE-CHECKLIST.md` and this file | `docs/tests/accept-safety.sh q5` (no "lightweight" without numbers) |
+| Q5 | the documents exist and make no unproven claim: `MODULES.md`, `CHANGES.md`, `CREDITS.md`, `NOTICE`, `UPSTREAM.md`, `PARITY.md`, `LIVE-CHECKLIST.md` and this file | `docs/tests/accept-safety.sh q5` (no size claim without its numbers) |
 
 ## The human gates
 

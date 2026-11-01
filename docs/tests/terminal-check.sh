@@ -36,8 +36,8 @@ for _ in $(seq 1 120); do
 done
 [ -n "$SIG" ] && [ -n "$QS" ] || { bad "no nested session"; echo "RESULT: FAIL"; exit 1; }
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
-export WAYLAND_DISPLAY="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
-BUS="$(cat "$RUN/bus" 2>/dev/null)"
+WL_NAME="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
+export WAYLAND_DISPLAY="$WL_NAME"
 APP="$RUN/bin/mei-app"
 
 env_app() {
@@ -50,7 +50,7 @@ kitty_count() { local n; n="$(H -j clients 2>/dev/null | jq '[.[] | select(.clas
 layers_launcher() {
   H -j layers 2>/dev/null | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="launcher")] | length' 2>/dev/null
 }
-wait_kitty() { local i; for i in $(seq 1 40); do [ "$(kitty_count)" -ge 1 ] && return 0; sleep 0.25; done; return 1; }
+wait_kitty() { for _ in $(seq 1 40); do [ "$(kitty_count)" -ge 1 ] && return 0; sleep 0.25; done; return 1; }
 # A compositor close makes kitty ask "Close OS window" and keep the window, so
 # close the client itself -- but only after proving it is a nested, fake-HOME
 # process (never the owner's kitty on the live session).

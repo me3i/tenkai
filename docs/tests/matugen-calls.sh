@@ -17,7 +17,7 @@
 #   show this check failing on a doctored spawn.
 set -uo pipefail
 MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$MEI"
+cd "$MEI" || exit 1
 
 extra="${1:-}"
 fails=0

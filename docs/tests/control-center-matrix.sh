@@ -44,7 +44,7 @@ set_mods(){ # $1 = overrides
 }
 
 start(){ # starts a nested session and waits for it
-  local old_sig="$SIG" old_qs="$QS"
+  local old_sig="$SIG"
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
   SIG=""; QS=""
   for _ in $(seq 1 250); do

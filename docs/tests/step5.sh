@@ -21,9 +21,9 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 
-REAL_DIRS=($HOME/.config/kitty $HOME/.config/btop $HOME/.config/qt6ct \
-           $HOME/.config/gtk-3.0 $HOME/.config/gtk-4.0 \
-           $HOME/.cache/ryoku $HOME/.cache/matugen)
+REAL_DIRS=("$HOME/.config/kitty" "$HOME/.config/btop" "$HOME/.config/qt6ct" \
+           "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0" \
+           "$HOME/.cache/ryoku" "$HOME/.cache/matugen")
 hash_real() {
   for d in "${REAL_DIRS[@]}"; do
     if [ -e "$d" ]; then
@@ -270,8 +270,12 @@ sleep 2
 # mistaken for a stray; Quickshell is matched only when its cmdline names Mei.
 stray=""
 for n in ryogami matugen mei-shell mei-hub; do
-  p="$(pgrep -x "$n" 2>/dev/null | tr '\n' ',' || true)"
-  [ -n "$p" ] && stray="$stray $n=$p"
+  # A name alone is not enough: the owner's live session runs its own
+  # /usr/bin ryogami (and matugen), and those are not Mei's. Only a
+  # process whose cmdline carries the project path belongs to Mei.
+  for p in $(pgrep -x "$n" 2>/dev/null || true); do
+    if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qF "$MEI"; then stray="$stray $n=$p"; fi
+  done
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
   if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI/src/ryoku"; then stray="$stray quickshell=$p"; fi

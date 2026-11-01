@@ -6,7 +6,7 @@
 # The Phase 10A harness measures; this gate compares.
 set -uo pipefail
 MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$MEI"
+cd "$MEI" || exit 1
 RUN="$MEI/.run"
 mkdir -p "$RUN/logs"
 

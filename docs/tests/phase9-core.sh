@@ -61,7 +61,8 @@ for _ in $(seq 1 240); do
 done
 if [ -z "$SIG" ] || [ -z "$QS" ]; then bad "session did not come up"; echo "RESULT: FAIL"; exit 1; fi
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
-export WAYLAND_DISPLAY="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
+WL_NAME="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
+export WAYLAND_DISPLAY="$WL_NAME"
 BUS="$(cat "$RUN/bus" 2>/dev/null)"
 SHELLLOG="$RUN/state/mei/surfaces/shell.log"
 DPID="$(pgrep -f "^$RUN/bin/mei-shell daemon" | head -1)"
@@ -127,6 +128,7 @@ case "$(IPC layout)" in \{*) ok "qsbar IPC live";; *) bad "qsbar IPC never appea
 # Owner directive: this pass runs on workspace 1 only. Do not focus or create
 # workspaces 2/3 here, so no test surface or window ever appears elsewhere.
 # The bar's per-workspace sync is consequently checked on workspace 1 only.
+# shellcheck disable=SC2043  # one workspace on purpose: the owner asked for workspace 1 only
 for ws in 1; do
   # Lua-config instances: the classic `workspace N` dispatcher is accepted but
   # does nothing here; hl.dsp.focus is the form the nested config uses.
@@ -266,7 +268,7 @@ idle_pids() {
 OUT="$RUN/phase9-idle-outbound-$STAMP.txt"; : > "$OUT"
 LISTEN="$RUN/phase9-idle-listen-$STAMP.txt"; : > "$LISTEN"
 SAMPLES=60
-for i in $(seq 1 $SAMPLES); do
+for _ in $(seq 1 "$SAMPLES"); do
   pids="$(idle_pids | tr '\n' '|')"; pids="${pids%|}"
   if [ -n "$pids" ]; then
     ss -tunap 2>/dev/null | grep -E "pid=($pids)," >> "$OUT.tmp" || true

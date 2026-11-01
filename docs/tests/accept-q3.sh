@@ -12,7 +12,7 @@
 # compares the other surfaces and reports the bar separately.
 set -uo pipefail
 MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$MEI"
+cd "$MEI" || exit 1
 RUN="$MEI/.run"
 RT="$MEI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"

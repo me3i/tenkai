@@ -107,7 +107,8 @@ start() { # EXTRA_PATH optionally prefixes PATH (dependency scenarios)
     return 1
   fi
   export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
-  export WAYLAND_DISPLAY="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
+  WL_NAME="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
+export WAYLAND_DISPLAY="$WL_NAME"
   SHELLLOG="$RUN/state/mei/surfaces/shell.log"
   SHELLLOG_BEFORE="$(wc -l < "$SHELLLOG" 2>/dev/null || echo 0)"
   sleep 2

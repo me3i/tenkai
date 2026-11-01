@@ -27,9 +27,9 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 
-REAL_DIRS=($HOME/.config/kitty $HOME/.config/btop $HOME/.config/qt6ct \
-           $HOME/.config/gtk-3.0 $HOME/.config/gtk-4.0 \
-           $HOME/.cache/ryoku $HOME/.cache/matugen)
+REAL_DIRS=("$HOME/.config/kitty" "$HOME/.config/btop" "$HOME/.config/qt6ct" \
+           "$HOME/.config/gtk-3.0" "$HOME/.config/gtk-4.0" \
+           "$HOME/.cache/ryoku" "$HOME/.cache/matugen")
 hash_real() {
   for d in "${REAL_DIRS[@]}"; do
     if [ -e "$d" ]; then
@@ -285,11 +285,15 @@ else
   bad "real config/cache changed:"; diff -u "$RUN/step6-real-before.txt" <(hash_real)
 fi
 
-echo; echo "=== verify-untouched AFTER ==="
+echo; echo "=== verify-untouched AFTER (this is the live-owner check) ==="
+# The bespoke "the owner's pid must be identical to the one before the test"
+# assertion is gone. A live shell restart legitimately moves the notification
+# name to a child of the live unit, and verify-untouched attributes that now
+# (the /proc/<pid>/cgroup walk). Gate on its exit code instead of keeping a
+# second, narrower copy of the same check here.
 XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
-LIVE_AFTER="$(bus_pid "$LIVE_BUS" "$BASELINE_NAME" || true)"
-[ "$LIVE_AFTER" = "$LIVE_BASE" ] && ok "live $BASELINE_NAME owner still pid $LIVE_AFTER after the test" \
-  || bad "live $BASELINE_NAME owner moved to '$LIVE_AFTER' after the test"
+[ "${PIPESTATUS[0]}" = 0 ] && ok "verify-untouched: the live session is unchanged (a live restart is attributed, not failed)" \
+  || bad "verify-untouched failed after the test"
 
 echo; echo "RESULT: $([ "$fail" = 0 ] && echo PASS || echo FAIL)"
 echo "log: $LOG"
