@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Mei's idle: dim, lock, DPMS off and suspend on the user's own thresholds,
-# with the inhibitors honoured, plus the ScreenSaver service the apps that
-# play video talk to.
+# Mei's idle: dim, DPMS off and suspend on the user's own thresholds, with the
+# compositor's inhibitors honoured (IdleMonitor's respectInhibitors). The
+# D-Bus ScreenSaver inhibitor service and the lock were removed 2026-11-01.
 #
 # Nothing here can reach the owner's session: the nested session has its own
 # bus and its own display, the brightness goes into a file (the harness seam
@@ -24,22 +24,15 @@ bad(){ echo "FAIL        $*"; fail=1; }
 SIG=""; QS=""; WD=""
 H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
 ns_count(){ H -j layers | jq "[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace==\"$1\")] | length" 2>/dev/null; }
-# The session lock is the compositor's own now: its answer, as the shell
-# reported it to the daemon, is what the check looks at.
-proto_state(){ printf 'lock-protocol status\n' | timeout 6 socat - "UNIX-CONNECT:$RT/mei-shell.sock" 2>/dev/null | head -1 | tr -d '\r'; }
-NADDR(){ cat "$RUN/bus" 2>/dev/null; }
-B(){ busctl --address="$(NADDR)" "$@" 2>&1; }
-GDBUS(){ gdbus call --address "$(NADDR)" --dest org.freedesktop.ScreenSaver \
-  --object-path /org/freedesktop/ScreenSaver --method "$@" 2>&1; }
 DAEMON_LOG="$RUN/logs/daemon.log"
 
 FAKE="$RUN/state/idle-fake-brightness"
 CFG="$RUN/config/mei/idle.json"
 # The thresholds are the user's own (Mei's config), so the test only shortens
 # them. Everything else is the real code path.
-cfg_with(){ # $1=dim $2=lock $3=dpms $4=suspend
-  printf '{"enabled": true, "dim": %s, "lock": %s, "dpms": %s, "suspend": %s, "dimPercent": 40}\n' \
-    "$1" "$2" "$3" "$4" > "$CFG.new" && mv "$CFG.new" "$CFG"
+cfg_with(){ # $1=dim $2=dpms $3=suspend
+  printf '{"enabled": true, "dim": %s, "dpms": %s, "suspend": %s, "dimPercent": 40}\n' \
+    "$1" "$2" "$3" > "$CFG.new" && mv "$CFG.new" "$CFG"
 }
 fake_val(){ tr -d '[:space:]' < "$FAKE" 2>/dev/null; }
 # The virtual keyboard must reach the nested session. Without the nested
@@ -49,9 +42,9 @@ key(){ "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$1" >/dev
 start(){
   mkdir -p "$RUN/config/mei" "$RUN/state"
   echo 80 > "$FAKE"
-  cfg_with 9999 9999 9999 9999
+  cfg_with 9999 9999 9999
   ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
-      env MEI_BRIGHTNESS_FAKE="$FAKE" MEI_SCREENSAVER_NAME=1 ./mei run ) >/dev/null 2>&1
+      env MEI_BRIGHTNESS_FAKE="$FAKE" ./mei run ) >/dev/null 2>&1
   SIG=""; QS=""; WD=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
@@ -63,7 +56,7 @@ start(){
   [ -n "$SIG" ] && [ -n "$QS" ] || { bad "the nested session did not come up"; return 1; }
   # The config is re-read when it changes, so it is written again once the
   # shell is up: the file may not have existed when the shell started.
-  cfg_with 9999 9999 9999 9999
+  cfg_with 9999 9999 9999
   sleep 6
 }
 stop(){ ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1; sleep 2; }
@@ -73,59 +66,21 @@ panel_before="$(brightnessctl g 2>/dev/null)"
 start || exit 1
 
 echo
-echo "=== A: the ScreenSaver service is offered on the nested bus ==="
-B list --no-legend 2>/dev/null | grep -q "org.freedesktop.ScreenSaver" \
-  && ok "the nested session offers org.freedesktop.ScreenSaver" \
-  || bad "the name is not offered on the nested bus"
-owner="$(B list --no-legend 2>/dev/null | awk '$1=="org.freedesktop.ScreenSaver"{print $3; exit}')"
-echo "  the owner is ${owner:-?}"
-[ -n "$owner" ] && ok "the name has an owner in this session" || bad "the name has no owner"
-if busctl --address="unix:path=$HOST_XDG/bus" list --no-legend 2>/dev/null \
-   | awk '$1=="org.freedesktop.ScreenSaver"{print $3}' | grep -qx "$owner" 2>/dev/null; then
-  bad "the nested session also owns the name on the live bus"
-else
-  ok "the live bus is untouched by the nested session"
-fi
-
-echo
-echo "=== B: an inhibitor holds the idle off, and releasing it resumes ==="
-# The inhibitor is armed BEFORE the dim threshold comes down, so the
-# inhibitor really has something to hold off.
-out="$(GDBUS org.freedesktop.ScreenSaver.Inhibit "the idle test" "playing a video")"
-echo "  Inhibit said: $out"
-cookie="$(printf '%s' "$out" | sed -nE 's/.*uint32 ([0-9]+).*/\1/p' | head -1)"
-case "$cookie" in
-''|*[!0-9]*) bad "Inhibit returned no cookie ($out)" ;;
-*) ok "the fake client got the cookie $cookie" ;;
-esac
-cfg_with 4 9999 9999 9999
+echo "=== A: the idle dims, and activity restores the brightness exactly ==="
+cfg_with 4 9999 9999
 sleep 14
 v="$(fake_val)"
-[ "$v" = "80" ] && ok "no dim while the inhibitor was held (the panel value is still $v)" \
-  || bad "the dim happened despite the inhibitor (the panel value is $v)"
-GDBUS org.freedesktop.ScreenSaver.UnInhibit "$cookie" >/dev/null 2>&1
-sleep 14
-v="$(fake_val)"
-if [ -n "$v" ] && [ "$v" != "80" ]; then
-  ok "the idle dim ran after the inhibitor was released (the panel value is $v)"
-else
-  bad "the dim did not run after the release (the panel value is $v)"
-fi
-
-echo
-echo "=== C: activity restores the brightness exactly ==="
-before="$(fake_val)"
+[ "$v" = "40" ] && ok "the idle dimmed the panel to 40 (the panel value is $v)" \
+  || bad "the idle did not dim the panel (it reads $v)"
 key 30
 sleep 4
 after="$(fake_val)"
-[ "$before" = "40" ] && ok "the panel was dimmed to $before before the activity" \
-  || bad "the panel was not dimmed before the activity (it reads $before)"
 [ -n "$after" ] && [ "$after" = "80" ] && ok "the brightness came back to exactly 80" \
   || bad "the brightness did not come back to 80 (it reads $after)"
 
 echo
-echo "=== D: the suspend is stubbed ==="
-cfg_with 9999 9999 9999 1
+echo "=== B: the suspend is stubbed ==="
+cfg_with 9999 9999 1
 sleep 8
 if grep -q "suppressed session suspend" "$DAEMON_LOG" 2>/dev/null; then
   ok "the daemon stubbed the suspend (the machine did not suspend)"
@@ -134,8 +89,8 @@ else
 fi
 
 echo
-echo "=== E: the display goes to sleep on idle and wakes on activity ==="
-cfg_with 9999 9999 1 9999
+echo "=== C: the display goes to sleep on idle and wakes on activity ==="
+cfg_with 9999 1 9999
 sleep 8
 if grep -q "wm.act output.power off" "$DAEMON_LOG" 2>/dev/null; then
   ok "the idle turned the nested display off (the provider accepted the dispatch)"
@@ -148,39 +103,9 @@ grep -q "wm.act output.power on" "$DAEMON_LOG" 2>/dev/null \
   && ok "activity woke the display again" \
   || bad "the display was not woken"
 
-echo
-echo "=== F: the idle locks the screen, and a wrong password is refused ==="
-cfg_with 9999 1 9999 9999
-n=""
-for _ in $(seq 1 40); do n="$(proto_state)"; case "${n:-}" in active*) break ;; esac; sleep 0.5; done
-case "${n:-}" in
-active*) ok "the idle locked the screen ($n)" ;;
-*) bad "the idle did not lock the screen ($n)" ;;
-esac
-# The keys have to land in the password field, and the field takes the focus a
-# moment after the surface appears: the input is repeated until the daemon
-# answers.
-refused=0
-for attempt in 1 2 3; do
-  for k in 45 21 52; do key "$k"; sleep 0.2; done
-  key 28
-  for _ in $(seq 1 10); do
-    grep -q "lock verification refused" "$DAEMON_LOG" 2>/dev/null && { refused=1; break; }
-    sleep 0.5
-  done
-  [ "$refused" = 1 ] && break
-done
-[ "$refused" = 1 ] && ok "the daemon refused the wrong password" \
-  || bad "the daemon did not log a refusal"
-n2="$(proto_state)"
-case "${n2:-}" in
-active*) ok "the lock is still up after the wrong password ($n2)" ;;
-*) bad "the lock closed on a wrong password ($n2)" ;;
-esac
-
 stop
 echo
-echo "=== G: the owner's session was not touched ==="
+echo "=== D: the owner's session was not touched ==="
 panel_after="$(brightnessctl g 2>/dev/null)"
 [ "$panel_before" = "$panel_after" ] && ok "the panel brightness was not written ($panel_after)" \
   || bad "the panel brightness changed: $panel_before -> $panel_after"
