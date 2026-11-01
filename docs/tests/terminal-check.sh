@@ -25,7 +25,9 @@ H() {
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-VK="$MEI/docs/tests/tools/nested-input.sh $RUN/tools/vkbd/vkbd"
+# A two-word command in a variable does not survive "$VK" (quoting keeps it one
+# word), so this is a function. The guard pins the display to the nested .r.
+VK() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
 
 SIG=""; QS=""
 for _ in $(seq 1 120); do
@@ -115,7 +117,7 @@ if [ -f "$STORE_BAK" ]; then mv -f "$STORE_BAK" "$STORE"; else rm -f "$STORE"; f
 echo; echo "=== 3. launcher: a Terminal=true entry (Htop) ==="
 m1="$(kitty_count)"
 if [ "$(layers_launcher)" != "0" ]; then
-  "$VK" 1 >/dev/null 2>&1
+  VK 1 >/dev/null 2>&1
   for _ in $(seq 1 20); do [ "$(layers_launcher)" = "0" ] && break; sleep 0.25; done
 fi
 H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1
@@ -126,9 +128,9 @@ if [ "$ln" != "1" ]; then
 else
   ok "launcher opened for the Terminal=true entry"
   sleep 2   # the layer needs keyboard focus before vkbd keys land
-  "$VK" 35 20 24 25 >/dev/null 2>&1   # h t o p
+  VK 35 20 24 25 >/dev/null 2>&1   # h t o p
   sleep 1.2
-  "$VK" 28 >/dev/null 2>&1            # Enter
+  VK 28 >/dev/null 2>&1            # Enter
   m2="$m1"
   for _ in $(seq 1 40); do
     m2="$(kitty_count)"

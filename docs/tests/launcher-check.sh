@@ -1,10 +1,16 @@
 #!/usr/bin/env bash
 # Test-only launcher acceptance for the nested session. Lives in docs/tests (versioned).
-# Assumes ./mei run already started the session.
+# Starts its own nested session: accept stops the previous gate's session before
+# this one runs, so there is never one waiting to be borrowed.
 set -uo pipefail
 MEI=$HOME/projects/mei
 RUN="$MEI/.run"
-export XDG_RUNTIME_DIR="$MEI/.r"
+RT="$MEI/.r"
+# The host runtime and display, read before the nested ones replace them: ./mei
+# run is launched from the host session and builds the nested one itself.
+HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
+export XDG_RUNTIME_DIR="$RT"
 export WAYLAND_DISPLAY=wayland-1
 SIG=""
 H() {
@@ -13,7 +19,11 @@ H() {
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-VK="$MEI/docs/tests/tools/nested-input.sh $RUN/tools/vkbd/vkbd"
+# A two-word command in a variable does not survive "$VK": quoting keeps it one
+# word, so the call was a command named ".../nested-input.sh .../vkbd". A
+# function keeps both words on the command line. VK 53 sends one key;
+# VK 37 23 20 20 21 types "kitty". The guard pins the display to .r.
+VK() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
 fail=0
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
@@ -21,12 +31,29 @@ layers_launcher() {
   H -j layers | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="launcher")] | length' 2>/dev/null
 }
 
-for _ in $(seq 1 60); do
-  pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" >/dev/null && break
-  sleep 0.4
+echo; echo "=== launch nested session ==="
+if [ -f "$RUN/pids" ]; then bad "a Mei session is already running; refusing to start another"; exit 1; fi
+( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+
+# Bounded wait, 120 s: the shell compiles its QML on a cold start, so the
+# process appears well after ./mei run returns. If it is still absent after two
+# minutes that is a startup failure, not a race, and the diagnostics say why.
+QS=""
+for _ in $(seq 1 400); do
+  QS=$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
+  [ -n "$QS" ] && break
+  sleep 0.3
 done
-QS=$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
-[ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; exit 1; }
+if [ -z "$QS" ]; then
+  bad "no shell process after 120 s"
+  echo "--- diagnostics ---"
+  ps -eo pid,args | grep -F "$MEI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  for f in "$RUN"/logs/shell*.log "$RUN"/state/mei/surfaces/shell.log; do
+    [ -f "$f" ] && { echo "--- $f (last 20) ---"; tail -n 20 "$f"; }
+  done
+  exit 1
+fi
+ok "shell process present (pid $QS)"
 
 # The nested signature only exists after the compositor starts; resolve it now,
 # not before ./mei run returned.
@@ -78,17 +105,17 @@ sleep 2
 grim -o WAYLAND-1 "$RUN/shots/launcher-$(date +%H%M%S)-open.png" 2>/dev/null
 
 # "/" must no longer enter a command mode (Actions provider disabled)
-"$VK" 53
+VK 53
 sleep 1
 grim -o WAYLAND-1 "$RUN/shots/launcher-$(date +%H%M%S)-slash.png" 2>/dev/null
-"$VK" 14
+VK 14
 sleep 0.6
 
 # search "kitty" and press Enter
-"$VK" 37 23 20 20 21
+VK 37 23 20 20 21
 sleep 1.5
 grim -o WAYLAND-1 "$RUN/shots/launcher-$(date +%H%M%S)-search.png" 2>/dev/null
-"$VK" 28
+VK 28
 KPID=""
 for _ in $(seq 1 40); do
   KPID=$(H -j clients | jq -r '.[] | select(.class=="kitty") | .pid' 2>/dev/null | head -1)
@@ -116,7 +143,7 @@ grep -q '"kitty"' "$RUN/state/mei/launcher-usage.json" 2>/dev/null \
 H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
 for _ in $(seq 1 40); do [ "$(layers_launcher)" = "1" ] && break; sleep 0.25; done
 sleep 2
-"$VK" 1
+VK 1
 n=1
 for _ in $(seq 1 30); do
   n=$(layers_launcher)
