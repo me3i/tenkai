@@ -1912,7 +1912,9 @@ live_all_gone() {
   # walk below follows. The old version forked cat+awk for every process and
   # re-scanned the whole table once per recorded pid, so a 15 s readiness loop
   # in `mei start` ran for minutes -- which is why the start test hung.
-  local -A kids=()
+  local -A kidOf=()   # named apart from live_descendants' indexed kids: shellcheck
+                       # shares a variable's type across functions, and the -A here
+                       # made it read the indexed one as associative (SC2190)
   local stat rest q pp
   for p in /proc/[0-9]*; do
     q="${p##*/}"
@@ -1922,14 +1924,14 @@ live_all_gone() {
     # after "comm) ": field 1 is the state, field 2 the ppid
     pp="${rest#* }}"
     pp="${pp%% *}"
-    [ -n "$pp" ] && kids["$pp"]+="$q "
+    [ -n "$pp" ] && kidOf["$pp"]+="$q "
   done
 
   stack=("${roots[@]}")
   while [ ${#stack[@]} -gt 0 ]; do
     p="${stack[0]}"; stack=("${stack[@]:1}")
     [ -d "/proc/$p" ] && return 1
-    for pp in ${kids[$p]:-}; do
+    for pp in ${kidOf[$p]:-}; do
       stack+=("$pp")
     done
   done
