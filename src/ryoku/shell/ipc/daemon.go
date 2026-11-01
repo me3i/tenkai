@@ -1017,13 +1017,6 @@ func (d *daemon) handle(conn net.Conn) {
 		fmt.Fprintln(conn, d.keyringRespond(cmd, strings.TrimRight(secret, "\r\n")))
 		return
 	}
-	// The lock's password rides the same way the keyring secret does: on a
-	// line of its own, so it never reaches a command line.
-	if strings.HasPrefix(cmd, "lock-verify") {
-		secret, _ := r.ReadString('\n')
-		fmt.Fprintln(conn, d.lockVerify(strings.TrimRight(secret, "\r\n")))
-		return
-	}
 	// The compositor's own session lock (ext-session-lock-v1): the shell
 	// reports what the compositor answered, and the state can be read back
 	// without looking at a screen.

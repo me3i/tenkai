@@ -627,8 +627,8 @@ func snapshotStores(slot string) error {
 	if wp := currentWallpaper(); wp != "" {
 		_ = atomicWrite(filepath.Join(dir, "wallpaper.path"), []byte(wp), 0o644)
 	}
-	// the fastfetch readout lives outside ~/.config/ryoku, so
-	snapshot it explicitly to keep a revert whole.
+	// the fastfetch readout lives outside ~/.config/ryoku, so snapshot it
+	// explicitly to keep a revert whole.
 	if isFile(fastfetchConfigPath()) {
 		_ = copyFile(fastfetchConfigPath(), filepath.Join(dir, "fastfetch.jsonc"))
 	}
