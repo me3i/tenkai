@@ -486,10 +486,42 @@ live_unit_pids() { # -> "unit_id<TAB>mainpid", one line per live unit with a mai
   done
 }
 
-live_unit_for_pid() { # $1 = pid -> the live unit whose MainPID is it, or nothing
-  [ -n "${1:-}" ] && [ "$1" != "-" ] || return 1
-  # awk reads the whole stream (no early exit -> no SIGPIPE noise from the scan)
-  live_unit_pids | awk -F'\t' -v p="$1" '$2 == p { found = $1 } END { if (found != "") print found }'
+live_unit_for_pid() {
+  # $1 = pid -> owning unit, or nothing (exit 1). Two paths:
+  #   1. MainPID match  — the pid IS a live unit's MainPID  (unchanged)
+  #   2. cgroup member  — the pid lives inside a live unit's cgroup tree
+  #                       (a child of the MainPID), which is how the live
+  #                       shell spawns qs / ryogami / etc.
+  # Never attribute Mei's own processes:
+  #   - any process whose cgroup path contains $MEI_DIR
+  #   - any process inside a transient run-*.scope (systemd-run)
+  #   - the user manager itself (user@*.service)
+  local p="$1" cg unit
+  # Path 1: MainPID match (existing behavior; prove 8 depends on it)
+  unit="$(live_unit_pids | awk -F'\t' -v p="$p" '$2 == p { found = $1 } END { if (found) print found }')"
+  if [ -n "$unit" ]; then printf '%s\n' "$unit"; return 0; fi
+  # Path 2: cgroup membership
+  [ -r "/proc/$p/cgroup" ] || return 1
+  cg="$(head -1 "/proc/$p/cgroup" 2>/dev/null)"
+  [ -n "$cg" ] || return 1
+  # Refuse if this pid is anywhere inside Mei's own directory tree. The guard
+  # is skipped when MEI_DIR is empty: an unquoted-empty pattern would degrade
+  # to '*' and refuse every cgroup, blinding the attribution entirely.
+  if [ -n "${MEI_DIR:-}" ]; then
+    case "$cg" in *"$MEI_DIR"*) return 1 ;; esac
+  fi
+  # Refuse transient scopes (Mei's own systemd-run scope, or any transient)
+  case "$cg" in */run-*.scope/*|*/run-*.scope) return 1 ;; esac
+  # Take the DEEPEST .service element in the cgroup path
+  unit="$(printf '%s' "$cg" | tr '/' '\n' | grep -E '\.service$' | tail -1)"
+  [ -n "$unit" ] || return 1
+  # Refuse the user manager and system-level services
+  case "$unit" in
+    user@*.service) return 1 ;;
+    *.slice) return 1 ;;
+  esac
+  printf '%s\n' "$unit"
+  return 0
 }
 
 # Prints one line per changed owner with its verdict; returns 0 only when EVERY
@@ -706,7 +738,8 @@ cmd_verify_untouched() {
     note "OK    session bus: all watched names still owned by the same PID"
   elif owner_out="$(dbus_owner_changes_check "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv")"; then
     [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
-    note "WARN  every changed owner is a LIVE system unit's MainPID (attributed above): external"
+    note "WARN  every changed owner belongs to a LIVE system unit — its MainPID or a"
+    note "      process inside it (attributed above): external"
     note "      churn, like the live idle service restarting and re-taking its name."
   else
     [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
