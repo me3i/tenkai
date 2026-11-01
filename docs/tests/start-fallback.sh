@@ -37,10 +37,25 @@ BUS="$(echo "$BUSOUT" | tr -d '\r\n')"
 [ -n "$BUS" ] || { echo "no private bus; skipping"; exit 2; }
 
 run_start(){ # $@ = extra flags
+  # A test must never run the owner's real previous-shell command: the local
+  # config points at the live session's unit, and starting it from here would
+  # touch the owner's session (and, when that unit starts Mei, re-enter this
+  # very command). Every call gets a harmless fallback unless it passes one.
+  local -a fb=(--fallback true)
+  case " $* " in *" --fallback "*) fb=() ;; esac
+  # The start writes to a file, not to a pipe: a session it leaves running
+  # inherits the fd, and a `| tail` would then wait for an EOF that only comes
+  # when that session exits. The timeout is a floor, not a product check.
+  mkdir -p "$RUN/tmp"
+  local out="$RUN/tmp/start-$STAMP-$$.txt" rc
   ( cd "$MEI" && \
     XDG_RUNTIME_DIR="$DUMMY" WAYLAND_DISPLAY=wayland-0 HYPRLAND_INSTANCE_SIGNATURE=dummysig \
     DBUS_SESSION_BUS_ADDRESS="$BUS" \
-    ./mei start --profile full "$@" 2>&1 )
+    timeout 180 ./mei start --profile full "${fb[@]}" "$@" >"$out" 2>&1 )
+  rc=$?
+  cat "$out"
+  rm -f "$out"
+  return $rc
 }
 
 echo "mei start: $(date -Is)"

@@ -1901,14 +1901,38 @@ PY
 # would fight over the same names.
 live_all_gone() {
   [ -f "$LIVE_PID_FILE" ] || return 0
-  local p d
+  local -a roots=() stack=()
+  local p _
   while read -r p _; do
-    [ -n "${p:-}" ] || continue
-    [ -d "/proc/$p" ] && return 1
-    while read -r d; do
-      [ -n "${d:-}" ] && [ -d "/proc/$d" ] && return 1
-    done < <(live_descendants "$p")
+    [ -n "${p:-}" ] && roots+=("$p")
   done < "$LIVE_PID_FILE"
+  [ ${#roots[@]} -gt 0 ] || return 0
+
+  # One pass over /proc, with no subprocesses at all: a pid -> ppid table the
+  # walk below follows. The old version forked cat+awk for every process and
+  # re-scanned the whole table once per recorded pid, so a 15 s readiness loop
+  # in `mei start` ran for minutes -- which is why the start test hung.
+  local -A kids=()
+  local stat rest q pp
+  for p in /proc/[0-9]*; do
+    q="${p##*/}"
+    [ -r "$p/stat" ] || continue
+    IFS= read -r stat < "$p/stat" 2>/dev/null || continue
+    rest="${stat##*) }"
+    # after "comm) ": field 1 is the state, field 2 the ppid
+    pp="${rest#* }}"
+    pp="${pp%% *}"
+    [ -n "$pp" ] && kids["$pp"]+="$q "
+  done
+
+  stack=("${roots[@]}")
+  while [ ${#stack[@]} -gt 0 ]; do
+    p="${stack[0]}"; stack=("${stack[@]:1}")
+    [ -d "/proc/$p" ] && return 1
+    for pp in ${kids[$p]:-}; do
+      stack+=("$pp")
+    done
+  done
   return 0
 }
 
