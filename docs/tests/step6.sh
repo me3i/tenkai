@@ -68,6 +68,18 @@ fi
 echo; echo "=== REAL-PATH HASHES BEFORE ==="
 hash_real | tee "$RUN/step6-real-before.txt"
 
+# The owner's own shell owns these paths and keeps writing them: its matugen
+# cache, its wallpaper daemon's state, Quickshell's own cache and the old
+# installer's stamp. Mei must never add to them; the listing below is taken
+# before the test so "new" means "Mei created it", not "it already existed".
+LIVE_OWNED='^\.cache/(ryoku|matugen)(/|$)|^\.cache/ryogami-wall|^\.cache/quickshell/ryoku|^\.cache/ryoku-shell-install'
+home_listing() {
+  find "$HOME/.cache" "$HOME/.local/state" "$HOME/.local/share" "$HOME/.config" \
+    -mindepth 1 -maxdepth 3 2>/dev/null | sed "s|^$HOME/||" \
+    | grep -iE '(^|/)(mei|ryoku|ryogami)([._-]|$)' | grep -vE "$LIVE_OWNED" | sort
+}
+home_listing > "$RUN/step6-home-before.txt"
+
 echo; echo "=== verify-untouched BEFORE ==="
 XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -1
 
@@ -128,8 +140,15 @@ note "nested owner PID = ${NESTED_OWNER:-none}   (nested shell pid $QS)"
 note "live   owner PID = ${LIVE_OWNER:-none}   (baseline ${LIVE_BASE:-unknown})"
 [ "$NESTED_OWNER" = "$QS" ] && ok "Mei owns $BASELINE_NAME on the nested bus (pid $NESTED_OWNER)" \
   || bad "nested $BASELINE_NAME owner is '$NESTED_OWNER', expected the nested shell pid $QS"
-[ "$LIVE_OWNER" = "$LIVE_BASE" ] && ok "live bus $BASELINE_NAME still owned by pid $LIVE_OWNER (unchanged)" \
-  || bad "live $BASELINE_NAME owner changed: $LIVE_BASE -> $LIVE_OWNER"
+# The baseline pid is a snapshot, not a contract: if the owner's shell
+# restarts, its child legitimately re-takes the live name. What matters is
+# that Mei never holds it -- a restart is verify-untouched's business (it
+# attributes the new child to the live unit through /proc/<pid>/cgroup).
+if [ -n "$LIVE_OWNER" ] && [ "$LIVE_OWNER" = "$QS" ]; then
+  bad "Mei's nested shell ($QS) holds the live $BASELINE_NAME name"
+else
+  ok "live $BASELINE_NAME is not held by Mei (owner ${LIVE_OWNER:-none}; a live restart may move it)"
+fi
 
 echo; echo "=== server identity + capabilities (nested bus) ==="
 busctl --address="$NESTED_BUS" --no-pager call org.freedesktop.Notifications /org/freedesktop/Notifications \
@@ -260,9 +279,8 @@ if find "$RUN/home" -name 'qs-rise-notifications*' 2>/dev/null | grep -q .; then
 else
   ok "no qs-rise-notifications file anywhere under the fake HOME"
 fi
-found_real="$(find $HOME/.cache $HOME/.local/state $HOME/.local/share $HOME/.config \
-  -mindepth 1 -maxdepth 3 2>/dev/null | sed 's|^$HOME/||' | grep -iE '(^|/)(mei|ryoku|ryogami)([._-]|$)' || true)"
-[ -z "$found_real" ] && ok "no mei/ryoku/ryogami entry appeared outside the project" || { bad "new entries outside the project:"; printf '            %s\n' "$found_real"; }
+found_real="$(home_listing | grep -vxF -f "$RUN/step6-home-before.txt" 2>/dev/null || true)"
+[ -z "$found_real" ] && ok "no mei/ryoku/ryogami entry appeared outside the project during the test" || { bad "new entries outside the project:"; printf '            %s\n' "$found_real"; }
 
 echo; echo "=== OUTBOUND ==="
 sleep 1
