@@ -1050,14 +1050,6 @@ func (d *daemon) handle(conn net.Conn) {
 		fmt.Fprintln(conn, "ok")
 		return
 	}
-	// The lock's readiness check: it answers whether the PAM setup can be
-	// used, without locking anything.
-	if strings.HasPrefix(cmd, "lock-selfcheck") {
-		ok, reason := lockSelfcheck()
-		reply, _ := json.Marshal(map[string]any{"selfcheck": true, "ok": ok, "reason": reason})
-		fmt.Fprintln(conn, string(reply))
-		return
-	}
 	// Typed subsystem state rides the same socket: a long-lived subscription
 	// stream, or a request/response control call. Both outlive the one-shot
 	// command deadline, which they clear for themselves.

@@ -858,9 +858,10 @@ func applyRice(slug string, layers []string) error {
 					prof["hero"] = hero
 				}
 			}
-		}	if err := overlayStore(profileConfigPath(), prof, nil); err != nil {
-		return fmt.Errorf("apply profile: %w", err)
-	}
+		}
+		if err := overlayStore(profileConfigPath(), prof, nil); err != nil {
+			return fmt.Errorf("apply profile: %w", err)
+		}
 	}
 
 	_, _ = desktopClient().Apply(desktopStorePath())
