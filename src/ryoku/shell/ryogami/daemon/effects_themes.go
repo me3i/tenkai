@@ -214,10 +214,3 @@ func themeLookup(name string) ([][3]uint8, bool) {
 	return nil, false
 }
 
-func themeNames() []string {
-	names := make([]string, len(palettes))
-	for i, p := range palettes {
-		names[i] = p.name
-	}
-	return names
-}
