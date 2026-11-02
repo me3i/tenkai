@@ -45,6 +45,25 @@ fi
 
 echo; echo "=== launch nested session ==="
 ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+
+# Bounded wait, 120 s: the bar compiles its QML on a cold start, so the shell
+# (and the bar's first IPC to Hyprland, which fills its workspace list) appears
+# well after ./mei run returns. If the bar's workspace list is still empty after
+# 120 s that is a startup failure, not a race, and the diagnostics say why.
+QS=""
+for _ in $(seq 1 400); do
+  QS=$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
+  [ -n "$QS" ] && break
+  sleep 0.3
+done
+if [ -z "$QS" ]; then
+  bad "bar shell process not seen after 120 s"
+  echo "--- diagnostics ---"
+  ps -eo pid,args | grep -F "$MEI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  echo "--- shell log tail ---"
+  tail -30 "$RUN/state/mei/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
+  echo "RESULT: FAIL"; exit 1
+fi
 # Bounded wait, 120 s: the bar compiles its QML on a cold start, so the shell
 # (and the bar's first IPC to Hyprland, which fills its workspace list) appears
 # well after ./mei run returns. If the bar's workspace list is still empty after
