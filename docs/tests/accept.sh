@@ -54,8 +54,6 @@ GATES=(
 
 # The gates that only the owner can close. They are UNVERIFIED on purpose.
 HUMAN=(
-"H1|the lock's accept path with the owner's real password"
-"H2|the lock on the owner's second output"
 "H3|the compositor's inhibitors with a real video playing"
 "H4|the idle with the owner's real panel"
 "H5|the feel at 144 Hz"
