@@ -417,9 +417,6 @@ func dictationReady() bool {
 	return exec.Command("systemctl", "--user", "is-active", "--quiet", "voxtype.service").Run() == nil
 }
 
-func currentUserProcessRunning(pattern string) bool {
-	return exec.Command("pgrep", "-u", strconv.Itoa(os.Getuid()), "-f", pattern).Run() == nil
-}
 
 func stateDir() string {
 	if d := os.Getenv("XDG_STATE_HOME"); d != "" {
