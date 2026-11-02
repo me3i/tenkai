@@ -92,14 +92,14 @@ for _ in $(seq 1 60); do case "$(IPC layout)" in \{*) break;; esac; sleep 0.5; d
 case "$(IPC layout)" in \{*) ok "qsbar IPC live";; *) bad "qsbar IPC never appeared";; esac
 
 echo; echo "=== switch through workspaces 1-5; bar must follow ==="
-# Bounded wait: the bar's workspace list becomes non-empty once the bar's
-# workspace widget has finished its first IPC to Hyprland. The earlier
-# bounded waits didn't wait on the bar's workspace list itself, so the
-# sweep below could read an empty list on a cold start. Poll up to 120 s,
-# then fail with full diagnostics (ps, hyprctl, both log tails) instead of
-# a silent empty-list assertion -- a missing worker was the F1 failure.
-WAITED=0
+# Wait until the bar's workspace list is populated AND the bar reports a
+# focused workspace. A cold start leaves the bar's workspace widget with an
+# empty list for a while; polling the exact command the sweep below uses
+# (qs ipc call qsbar workspaceState) turns that wait into a bounded wait
+# instead of a blind assumption. With NO wait, the very first workspace
+# query hits an empty list, which is exactly the silent "bar ''" failure.
 WS_LIST=""
+WAITED=0
 while [ "$WAITED" -lt 120 ]; do
   WS_LIST=$(
     XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar workspaceState 2>/dev/null       | python3 -c 'import json,sys; print(json.load(sys.stdin)["names"])' 2>/dev/null
@@ -124,11 +124,12 @@ if [ -z "$WS_LIST" ]; then
   echo "RESULT: FAIL"; exit 1
 fi
 echo "note    bar workspace list after wait: ${WS_LIST}"
+BAR_FOCUSED=""
 for ws in 1 2 3 4 5; do
   H dispatch "hl.dsp.focus({ workspace = $ws })" >/dev/null 2>&1
   sleep 0.8
   hy="$(H -j activeworkspace | jq -r '.id' 2>/dev/null)"
-  bar="$(IPC workspaceState | python3 -c 'import json,sys; print(json.load(sys.stdin)["focused"])' 2>/dev/null)"
+  bar="$(IPC workspaceState | python3 -c 'import json,sys; print(json.load(sys.stdin)["focused"])' 2>/dev/null || true)"
   names="$(IPC workspaceState | python3 -c 'import json,sys; print(",".join(sorted(json.load(sys.stdin)["names"], key=int)))' 2>/dev/null)"
   if [ "$hy" = "$ws" ] && [ "$bar" = "$ws" ]; then
     ok "workspace $ws: Hyprland active $hy, bar focused $bar"
@@ -139,7 +140,15 @@ for ws in 1 2 3 4 5; do
     *",$ws,"*) ok "workspace $ws is in the bar's live list ($names)" ;;
     *) bad "workspace $ws missing from the bar's live list ($names)" ;;
   esac
+  if [ -z "$BAR_FOCUSED" ] && [ "$bar" = "$ws" ]; then
+    BAR_FOCUSED="$ws"
+  fi
 done
+# The last workspace the test switches to stays focused; the test stops on
+# workspace 1, so assert that the bar ends on workspace 1.
+if [ -z "$BAR_FOCUSED" ] || [ "$BAR_FOCUSED" != "5" ]; then
+  bad "bar never reported workspace 5 as focused (last reported: $BAR_FOCUSED)"
+fi
 # Leave the session on workspace 1 for a clean stop.
 H dispatch "hl.dsp.focus({ workspace = 1 })" >/dev/null 2>&1
 sleep 0.5
