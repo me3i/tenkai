@@ -92,6 +92,38 @@ for _ in $(seq 1 60); do case "$(IPC layout)" in \{*) break;; esac; sleep 0.5; d
 case "$(IPC layout)" in \{*) ok "qsbar IPC live";; *) bad "qsbar IPC never appeared";; esac
 
 echo; echo "=== switch through workspaces 1-5; bar must follow ==="
+# Bounded wait: the bar's workspace list becomes non-empty once the bar's
+# workspace widget has finished its first IPC to Hyprland. The earlier
+# bounded waits didn't wait on the bar's workspace list itself, so the
+# sweep below could read an empty list on a cold start. Poll up to 120 s,
+# then fail with full diagnostics (ps, hyprctl, both log tails) instead of
+# a silent empty-list assertion -- a missing worker was the F1 failure.
+WAITED=0
+WS_LIST=""
+while [ "$WAITED" -lt 120 ]; do
+  WS_LIST=$(
+    XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar workspaceState 2>/dev/null       | python3 -c 'import json,sys; print(json.load(sys.stdin)["names"])' 2>/dev/null
+  )
+  if [ -n "$WS_LIST" ]; then
+    break
+  fi
+  sleep 1
+  WAITED=$((WAITED + 1))
+done
+if [ -z "$WS_LIST" ]; then
+  echo "FAIL    bar's workspace list empty after 120 s"
+  echo "---- ps (hyprland + qs + mei):"
+  ps -eo pid,cmd | grep -E "hyprland|qs -c|mei-" | grep -v grep || echo "(no process matches)"
+  echo "---- hyprctl workspaces (what Hyprland thinks):"
+  hyprctl workspaces -j 2>/dev/null | head -c 500
+  echo
+  echo "---- shell log tail:"
+  tail -30 "$RUN/state/mei/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
+  echo "---- daemon log tail:"
+  tail -30 "$RUN/state/mei/shell.log" 2>/dev/null || echo "(no daemon log)"
+  echo "RESULT: FAIL"; exit 1
+fi
+echo "note    bar workspace list after wait: ${WS_LIST}"
 for ws in 1 2 3 4 5; do
   H dispatch "hl.dsp.focus({ workspace = $ws })" >/dev/null 2>&1
   sleep 0.8
