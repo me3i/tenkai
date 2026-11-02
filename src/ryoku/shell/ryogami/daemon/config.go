@@ -123,9 +123,6 @@ func (c config) wallpapersEnabled() bool {
 	return c.Features.Wallpapers == nil || *c.Features.Wallpapers
 }
 
-func (c config) matugenEnabled() bool {
-	return c.Features.Matugen == nil || *c.Features.Matugen
-}
 
 func (c config) restoreEnabled() bool {
 	return c.RestoreOnStartup == nil || *c.RestoreOnStartup
