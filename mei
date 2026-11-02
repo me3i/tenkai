@@ -1183,6 +1183,15 @@ prepare_nested_home() {
   # through a short symlink for the child's XDG_RUNTIME_DIR; all bytes still
   # land under .run/rt.
   ln -sfn "$RUN_DIR/rt" "$MEI_DIR/.r"
+  # The nested compositor creates its Wayland socket in the HOST's
+  # XDG_RUNTIME_DIR, not in $RUN_DIR/rt. The session script inside the
+  # dbus-run-session scopes XDG_RUNTIME_DIR to .r, so the socket is
+  # invisible to the bar's workspaceState query. Expose it through a
+  # symlink in .run/rt, exactly once: .r is a symlink itself, and .r/rt
+  # is the real directory the shell and its children write to.
+  if [ ! -e "$RUN_DIR/rt/wayland-1" ]; then
+    ln -s "$HOME/.run/user/$(id -u)/wayland-1" "$RUN_DIR/rt/wayland-1"
+  fi
   # Role launcher (AppLaunch.qml runs every Terminal=true entry through it).
   # Symlinked, so the session always uses the source script.
   if [ -f "$MEI_DIR/src/ryoku/shell/scripts/mei-app" ]; then
