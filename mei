@@ -1067,9 +1067,36 @@ cmd_status() {
   [ "$any" = 1 ] || note "mei:      not running (all recorded PIDs are gone)"
 }
 
-# Processes whose cmdline mentions the project root but that are not recorded
-# in .run/pids — e.g. spawned by a test helper that outlived its recorded
-# PIDs.  The script itself is skipped, and so are its ancestors: an invoking
+# Is this pid a process Mei itself started?  "The cmdline mentions the project
+# path" is NOT enough: a test harness's `tee -a .run/logs/...`, a `tail -f` on a
+# log, an editor opened on a project file, or this very shell all carry the path
+# and must never be signalled (AGENTS.md: only signal processes that are Mei's).
+# A Mei session process is therefore one of:
+#   * a program/script whose argv[0] lives inside the project (.run/bin/*,
+#     .run/session.sh, src/...), or
+#   * one of the few system programs the session spawns by name — qs,
+#     quickshell, Hyprland, Xwayland, bash, dbus-run-session, wl-paste, flock,
+#     matugen, ryogami, mei-* — AND at least one argument is a project path.
+# Log readers/writers and editors fail the program test, so they are left alone.
+mei_is_session_proc() { # $1 = pid -> 0 when it is a Mei session process
+  local pid="$1" a0
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  # argv[0] only: /proc/<pid>/cmdline is NUL-separated and may be empty.
+  a0="$(tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | head -n1)"
+  [ -n "$a0" ] || return 1
+  case "$a0" in
+    "$MEI_DIR"/*) return 0 ;;
+  esac
+  case "${a0##*/}" in
+    qs|quickshell|Hyprland|Xwayland|dbus-run-session|bash|sh|wl-paste|flock|matugen|ryogami|mei-*) ;;
+    *) return 1 ;;
+  esac
+  tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | grep -qF "$MEI_DIR"
+}
+
+# Processes that are provably part of a Mei session but are not recorded in
+# .run/pids — e.g. spawned by a test helper that outlived its recorded PIDs.
+# The script itself is skipped, and so are all of its ancestors: an invoking
 # `bash -c '... /home/mei/projects/mei ...'` carries the project path in its
 # cmdline and must never be signalled.
 mei_find_leaked() {
@@ -1087,9 +1114,11 @@ mei_find_leaked() {
       [ "$pid" = "$anc" ] && { skip=1; break; }
     done
     [ "$skip" = 1 ] && continue
-    [ -r "/proc/$pid/cmdline" ] || continue
-    tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q "$MEI_DIR" && echo "$pid"
+    mei_is_session_proc "$pid" && echo "$pid"
   done
+  # The loop's status is its LAST iteration's, and cmd_stop runs under `set -e`:
+  # "no match" is the healthy answer, not an error.
+  return 0
 }
 
 cmd_stop() {
@@ -1138,8 +1167,7 @@ cmd_stop() {
     done
     sleep 2
     for pid in $leaked; do
-      [ -r "/proc/$pid/cmdline" ] || continue
-      tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q "$MEI_DIR" || continue
+      mei_is_session_proc "$pid" || continue
       note "KILL  leaked pid=$pid (survived TERM)"
       kill -KILL "$pid" 2>/dev/null || true
     done
