@@ -1065,8 +1065,33 @@ cmd_status() {
   [ "$any" = 1 ] || note "mei:      not running (all recorded PIDs are gone)"
 }
 
+# Processes whose cmdline mentions the project root but that are not recorded
+# in .run/pids — e.g. spawned by a test helper that outlived its recorded
+# PIDs.  The script itself is skipped, and so are its ancestors: an invoking
+# `bash -c '... /home/mei/projects/mei ...'` carries the project path in its
+# cmdline and must never be signalled.
+mei_find_leaked() {
+  local self=$$ a=$$
+  local ancestors=("$self")
+  while [ -n "$a" ] && [ "$a" != 0 ]; do
+    a="$(ps -o ppid= -p "$a" 2>/dev/null | tr -d ' ')" || break
+    [ -n "$a" ] || break
+    ancestors+=("$a")
+    [ "$a" = 1 ] && break
+  done
+  for pid in $(pgrep -f "$MEI_DIR" 2>/dev/null); do
+    local anc skip=0
+    for anc in "${ancestors[@]}"; do
+      [ "$pid" = "$anc" ] && { skip=1; break; }
+    done
+    [ "$skip" = 1 ] && continue
+    [ -r "/proc/$pid/cmdline" ] || continue
+    tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q "$MEI_DIR" && echo "$pid"
+  done
+}
+
 cmd_stop() {
-  if [ ! -f "$PID_FILE" ]; then note "mei: nothing to stop (no .run/pids)"; return 0; fi
+  if [ ! -f "$PID_FILE" ]; then note "mei: nothing to stop (no .run/pids); still checking for leaked Mei processes"; else
   while read -r pid pgid rest; do
     [ -n "${pid:-}" ] || continue
     [ -d "/proc/$pid" ] || continue
@@ -1099,6 +1124,26 @@ cmd_stop() {
     note "mei: stopped; run './mei verify-untouched' to confirm the live session is untouched"
   fi
   rm -f "$PID_FILE"
+  fi
+  # Leak hunt: test/run-spawned processes that were never recorded in
+  # .run/pids still hold the project path in their cmdline.
+  local leaked; leaked="$(mei_find_leaked)"
+  if [ -n "$leaked" ]; then
+    note "leaked Mei processes not in .run/pids: $(echo "$leaked" | tr '\n' ' ')"
+    for pid in $leaked; do
+      note "TERM  leaked pid=$pid"
+      kill -TERM "$pid" 2>/dev/null || true
+    done
+    sleep 2
+    for pid in $leaked; do
+      [ -r "/proc/$pid/cmdline" ] || continue
+      tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null | grep -q "$MEI_DIR" || continue
+      note "KILL  leaked pid=$pid (survived TERM)"
+      kill -KILL "$pid" 2>/dev/null || true
+    done
+  else
+    note "no leaked Mei processes found"
+  fi
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
