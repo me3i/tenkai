@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -478,7 +479,153 @@ func setupQmlImportPath() {
 // audio, fetches weather/updates/holidays, spawns ryogami/ryoku-hub, or runs a
 // polkit agent. The topic-registering services stay because the kept bar
 // widgets subscribe to them; they only act when a surface asks.
+// visualOverrides is the Visuals settings page's persisted state
+// (src/ryoku/hub/quickshell/pages/VisualsPage.qml). The page applies every
+// change live and writes this file itself; the daemon re-applies it at boot so
+// a Hyprland reload (which re-reads the config from disk and resets the
+// runtime) does not lose the owner's visual settings. Pointer fields
+// distinguish "absent" from "zero", so partial files only apply what they carry.
+type visualOverrides struct {
+	Rounding          *int    `json:"rounding"`
+	BorderSize        *int    `json:"border_size"`
+	GapsIn            *int    `json:"gaps_in"`
+	GapsOut           *int    `json:"gaps_out"`
+	BlurEnabled       *bool   `json:"blur_enabled"`
+	BlurSize          *int    `json:"blur_size"`
+	BlurPasses        *int    `json:"blur_passes"`
+	ShadowEnabled     *bool   `json:"shadow_enabled"`
+	ShadowRange       *int    `json:"shadow_range"`
+	ShadowRenderPower *int    `json:"shadow_render_power"`
+	ScreenShader      *string `json:"screen_shader"`
+}
+
+func visualOverridesPath() string {
+	base := os.Getenv("XDG_CONFIG_HOME")
+	if base == "" {
+		if home := os.Getenv("HOME"); home != "" {
+			base = filepath.Join(home, ".config")
+		} else {
+			base = ".config"
+		}
+	}
+	return filepath.Join(base, "mei", "hypr-visual.json")
+}
+
+func clampVisualInt(p *int, lo, hi int) int {
+	v := *p
+	if v < lo {
+		v = lo
+	} else if v > hi {
+		v = hi
+	}
+	return v
+}
+
+var shaderNameRe = regexp.MustCompile(`^[a-z0-9_-]{1,32}$`)
+
+// visualOverridesLua renders the persisted overrides as one Lua table for
+// `hyprctl eval 'hl.config{...}'`. Only the keys the file carries are
+// emitted, so a partial file leaves everything else alone.
+func visualOverridesLua(o visualOverrides) string {
+	dec := []string{}
+	if o.Rounding != nil {
+		dec = append(dec, fmt.Sprintf("rounding = %d", clampVisualInt(o.Rounding, 0, 20)))
+	}
+	blur := []string{}
+	if o.BlurEnabled != nil {
+		blur = append(blur, fmt.Sprintf("enabled = %t", *o.BlurEnabled))
+	}
+	if o.BlurSize != nil {
+		blur = append(blur, fmt.Sprintf("size = %d", clampVisualInt(o.BlurSize, 1, 8)))
+	}
+	if o.BlurPasses != nil {
+		blur = append(blur, fmt.Sprintf("passes = %d", clampVisualInt(o.BlurPasses, 1, 3)))
+	}
+	if len(blur) > 0 {
+		dec = append(dec, "blur = { "+strings.Join(blur, ", ")+" }")
+	}
+	shadow := []string{}
+	if o.ShadowEnabled != nil {
+		shadow = append(shadow, fmt.Sprintf("enabled = %t", *o.ShadowEnabled))
+	}
+	if o.ShadowRange != nil {
+		shadow = append(shadow, fmt.Sprintf("range = %d", clampVisualInt(o.ShadowRange, 0, 80)))
+	}
+	if o.ShadowRenderPower != nil {
+		shadow = append(shadow, fmt.Sprintf("render_power = %d", clampVisualInt(o.ShadowRenderPower, 1, 4)))
+	}
+	if len(shadow) > 0 {
+		dec = append(dec, "shadow = { "+strings.Join(shadow, ", ")+" }")
+	}
+	if o.ScreenShader != nil {
+		shader := strings.TrimSpace(*o.ScreenShader)
+		path := ""
+		if shader != "" && shader != "none" && shaderNameRe.MatchString(shader) {
+			home := os.Getenv("HOME")
+			if home == "" {
+				home, _ = os.UserHomeDir()
+			}
+			if home != "" {
+				path = filepath.Join(home, ".config", "hypr", "shaders", shader+".glsl")
+			}
+		}
+		dec = append(dec, fmt.Sprintf("screen_shader = %q", path))
+	}
+	gen := []string{}
+	if o.BorderSize != nil {
+		gen = append(gen, fmt.Sprintf("border_size = %d", clampVisualInt(o.BorderSize, 0, 5)))
+	}
+	if o.GapsIn != nil {
+		gen = append(gen, fmt.Sprintf("gaps_in = %d", clampVisualInt(o.GapsIn, 0, 30)))
+	}
+	if o.GapsOut != nil {
+		gen = append(gen, fmt.Sprintf("gaps_out = %d", clampVisualInt(o.GapsOut, 0, 40)))
+	}
+	top := []string{}
+	if len(dec) > 0 {
+		top = append(top, "decoration = { "+strings.Join(dec, ", ")+" }")
+	}
+	if len(gen) > 0 {
+		top = append(top, "general = { "+strings.Join(gen, ", ")+" }")
+	}
+	if len(top) == 0 {
+		return ""
+	}
+	return "hl.config({ " + strings.Join(top, ", ") + " })"
+}
+
+// reapplyVisualOverrides re-asserts the Visuals page's persisted overrides
+// into the compositor at boot. Missing file: nothing to do (a fresh install
+// must not override the compositor). Best-effort: every failure is logged
+// and never fatal — a broken hypr-visual.json must not stop the session.
+func reapplyVisualOverrides() {
+	path := visualOverridesPath()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			fmt.Printf("mei-shell: visual overrides: cannot read %s: %v\n", path, err)
+		}
+		return
+	}
+	var o visualOverrides
+	if err := json.Unmarshal(b, &o); err != nil {
+		fmt.Printf("mei-shell: visual overrides: %s is not valid JSON: %v\n", path, err)
+		return
+	}
+	script := visualOverridesLua(o)
+	if script == "" {
+		return
+	}
+	out, err := exec.Command("hyprctl", "eval", script).CombinedOutput()
+	if err != nil {
+		fmt.Printf("mei-shell: visual overrides: hyprctl eval failed: %v (%s)\n", err, strings.TrimSpace(string(out)))
+		return
+	}
+	fmt.Printf("mei-shell: visual overrides applied from %s\n", path)
+}
+
 func (d *daemon) bootstrap() {
+	reapplyVisualOverrides()
 	d.startSettings()
 	if moduleDisabled("tray") {
 		fmt.Println("mei-shell: tray module off in shell.json; no StatusNotifierWatcher claimed")

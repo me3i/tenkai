@@ -27,6 +27,7 @@ import "schema/LayerRulesPage.js" as LayerRulesSchema
 import "schema/SessionPage.js" as SessionSchema
 import "schema/PerformancePage.js" as PerformanceSchema
 import "schema/UpdatesPage.js" as UpdatesSchema
+import "schema/VisualsPage.js" as VisualsSchema
 import "ReloadCoverModel.js" as ReloadCoverModel
 import Ryoku.FrameBars
 
@@ -98,13 +99,14 @@ Rectangle {
     // deep per-page knobs inside a schema page, never whole sections, so a page
     // stays calm until asked. Compositor-owned pages sit together under one group
     // so a compositor's settings live in one place, not sprinkled through the list.
-    // MEI: only five pages ship (General, Appearance, Bar, Launcher, Motion).
+    // MEI: only six pages ship (General, Appearance, Visuals, Bar, Launcher, Motion).
     // Every other section is disabled, not deleted: the original groups block is
     // kept verbatim below, ready to be restored by swapping the two blocks back.
     readonly property var groups: [
         { name: "GENERAL", items: [ { key: "global", name: "General" } ] },
         { name: "DESKTOP", items: [
             { key: "desktop", name: "Appearance", wired: true },
+            { key: "visuals", name: "Visuals" },
             { key: "bar-studio", name: "Bar", wired: true },
             { key: "launcher", name: "Launcher" },
             { key: "animations", name: "Motion" } ] }
@@ -205,7 +207,8 @@ Rectangle {
         "windowrules": WindowRulesSchema.rows, "appoverrides": AppOverridesSchema.rows,
         "layerrules": LayerRulesSchema.rows, "session": SessionSchema.rows,
         "performance": PerformanceSchema.rows,
-        "updates": UpdatesSchema.rows
+        "updates": UpdatesSchema.rows,
+        "visuals": VisualsSchema.rows
     })
     readonly property var searchIndex: {
         var srcs = hub.sectionRows;
@@ -429,7 +432,7 @@ Rectangle {
         for (var k in hub.sectionRows) {
             var rows = hub.sectionRows[k] || [];
             for (var i = 0; i < rows.length; i++)
-                if (rows[i].src === "desktop.json") { m[k] = true; break; }
+                if (rows[i].src === "desktop.json" || rows[i].src === "hypr-visual.json") { m[k] = true; break; }
         }
         return m;
     }
@@ -505,7 +508,7 @@ Rectangle {
         return (prov && prov.length) ? base.concat(prov) : base;
     }
     function pageFile(s) {
-        var map = { "plugins": "PluginsPage", "profile": "ProfilePage", "bar-studio": "BarStudioPage", "desktop": "DesktopPage", "session": "SessionPage", "layerrules": "LayerRulesPage", "windowrules": "WindowRulesPage", "appoverrides": "AppOverridesPage", "animations": "AnimationsPage", "input": "InputPage", "keybinds": "KeybindsPage", "dictation": "DictationPage", "displays": "DisplaysPage", "connections": "ConnectionsPage", "gpu": "GpuPage", "updates": "UpdatesPage", "rashin": "RashinPage", "recording": "RecordingPage", "performance": "PerformancePage", "launcher": "LauncherPage", "fastfetch": "FastfetchPage", "addons": "AddonsPage", "widgets": "WidgetsPage", "credits": "CreditsPage" };
+        var map = { "plugins": "PluginsPage", "profile": "ProfilePage", "bar-studio": "BarStudioPage", "desktop": "DesktopPage", "session": "SessionPage", "layerrules": "LayerRulesPage", "windowrules": "WindowRulesPage", "appoverrides": "AppOverridesPage", "animations": "AnimationsPage", "input": "InputPage", "keybinds": "KeybindsPage", "dictation": "DictationPage", "displays": "DisplaysPage", "connections": "ConnectionsPage", "gpu": "GpuPage", "updates": "UpdatesPage", "rashin": "RashinPage", "recording": "RecordingPage", "performance": "PerformancePage", "launcher": "LauncherPage", "fastfetch": "FastfetchPage", "addons": "AddonsPage", "widgets": "WidgetsPage", "credits": "CreditsPage", "visuals": "VisualsPage" };
         map.global = "GlobalPage";
         map["import"] = "ImportPage";
         map.windowmanager = "WindowManagerPage";
