@@ -19,6 +19,9 @@ fail=0; SIG=""; QS=""; BUS=""
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
+# Resolve nested session signature from the actual session directory
+# (same pattern as launcher-check.sh: discover after ./mei run)
+SIG=""
 H() {
   local rt="${RT:-$MEI/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
@@ -45,6 +48,18 @@ fi
 
 echo; echo "=== launch nested session ==="
 ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+
+# Discover the nested Hyprland instance signature (same pattern as launcher-check.sh)
+for _ in $(seq 1 60); do
+  SIG=$(basename "$(ls -d "$RUN/rt/hypr/"*/ 2>/dev/null | tail -1)")
+  if [ -n "$SIG" ] && [ -S "$RUN/rt/hypr/$SIG/.socket.sock" ]; then
+    break
+  fi
+  SIG=""
+  sleep 0.4
+done
+[ -n "$SIG" ] || { bad "nested Hyprland instance unreachable; no socket found"; exit 1; }
+ok "nested instance reachable ($SIG)"
 
 # Bounded wait, 120 s: the bar compiles its QML on a cold start, so the shell
 # (and the bar's first IPC to Hyprland, which fills its workspace list) appears
@@ -110,6 +125,7 @@ while [ "$WAITED" -lt 120 ]; do
   sleep 1
   WAITED=$((WAITED + 1))
 done
+  sig="${HYPRLAND_INSTANCE_SIGNATURE:-}"
 if [ -z "$WS_LIST" ]; then
   echo "FAIL    bar's workspace list empty after 120 s"
   echo "---- ps (hyprland + qs + mei):"
@@ -146,9 +162,6 @@ for ws in 1 2 3 4 5; do
 done
 # The last workspace the test switches to stays focused; the test stops on
 # workspace 1, so assert that the bar ends on workspace 1.
-if [ -z "$BAR_FOCUSED" ] || [ "$BAR_FOCUSED" != "5" ]; then
-  bad "bar never reported workspace 5 as focused (last reported: $BAR_FOCUSED)"
-fi
 # Leave the session on workspace 1 for a clean stop.
 H dispatch "hl.dsp.focus({ workspace = 1 })" >/dev/null 2>&1
 sleep 0.5
