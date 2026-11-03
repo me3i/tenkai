@@ -45,7 +45,7 @@
 #                           fail, then removes it and requires them to pass.
 #   status                  show whether a Mei test session started by this script is running
 #   run | stop | test       start / stop the nested session, or run it under the full harness
-#   live --profile overlay|full
+#   live --profile overlay|full [--list]
 #                           join the OWNER's real session for the live trial.
 #                           overlay: Mei runs beside the current shell with only
 #                             the launcher, control centre and Settings (no D-Bus
@@ -55,6 +55,8 @@
 #                           full: replaces the current shell. Refuses while the
 #                             old shell still owns the notification or tray name,
 #                             prints what it will do and waits for YES.
+#                           --list: print the claim table and exit (read-only;
+#                             joins nothing, starts nothing).
 #                           Never started by the harness: the owner runs it.
 #   start [--fallback "cmd"] [--real-power]
 #                           the NON-interactive start for an autostart line. It asks
@@ -1754,7 +1756,6 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     done
     printf 'dbus-name\torg.freedesktop.Notifications\tnotification server\n'
     printf 'dbus-name\torg.kde.StatusNotifierWatcher\ttray watcher\n'
-    printf 'dbus-name\torg.freedesktop.ScreenSaver\tthe screensaver inhibitor service\n'
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
     printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
     printf 'layer-namespace\tryoku-osd\tOSD surface\n'
@@ -1816,7 +1817,7 @@ live_print_claims() { # $1 = profile, $2 = abort-any | abort-unexpected
       # In the full profile these collisions are the point: the old shell must
       # be stopped first, and the caller checks the two D-Bus names by hand.
       case "$kind:$name" in
-      dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher|dbus-name:org.freedesktop.ScreenSaver) ;;
+      dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher) ;;
       layer-namespace:wallpaper-bg|layer-namespace:ryoku-frame|layer-namespace:ryoku-tray|layer-namespace:ryoku-notifications) ;;
       *) collide=1 ;;
       esac
@@ -1890,10 +1891,6 @@ write_live_session() { # $1 = profile, $2 = display, $3 = signature, $4 = runtim
     # fails closed when another agent holds it, so a second agent can never
     # appear.
     polkit='export MEI_POLKIT_AGENT=1'
-    # The ScreenSaver inhibitor service: the apps that ask through the D-Bus
-    # interface (Chromium, Electron) can then hold the idle off. The daemon
-    # only takes the name when it is free.
-    polkit="$polkit; export MEI_SCREENSAVER_NAME=1"
   fi
   cat > "$RUN_DIR/live-session.sh" <<SESSION
 #!/usr/bin/env bash
@@ -2204,15 +2201,26 @@ cmd_export_clean() {
 }
 
 cmd_live() {
-  local profile=""
+  local profile="" list=0
   while [ $# -gt 0 ]; do
     case "$1" in
       --profile) profile="${2:-}"; shift 2 || true ;;
+      --list) list=1; shift ;;
       -h|--help) usage; return 0 ;;
-      *) die "usage: ./mei live --profile overlay|full" ;;
+      *) die "usage: ./mei live --profile overlay|full [--list]" ;;
     esac
   done
-  case "$profile" in overlay|full) ;; *) die "usage: ./mei live --profile overlay|full" ;; esac
+  case "$profile" in overlay|full) ;; *) die "usage: ./mei live --profile overlay|full [--list]" ;; esac
+
+  # --list: print the claim table and exit. Read-only (busctl/hyprctl/qs are
+  # queried, nothing is joined); used to review what a profile would claim
+  # without starting anything.
+  if [ "$list" = 1 ]; then
+    local mode=abort-any
+    [ "$profile" = full ] && mode=abort-unexpected
+    live_print_claims "$profile" "$mode" || true
+    return 0
+  fi
 
   # 0. Mei must not already be running.
   if live_any_alive "$LIVE_PID_FILE"; then
