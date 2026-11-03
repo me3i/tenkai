@@ -35,20 +35,22 @@ prev_start="$(conf MEI_PREV_SHELL_START || true)"
 if [ -z "$prev_start" ]; then
   echo "revert: the previous shell's start command is not configured."
   echo "  Set MEI_PREV_SHELL_START in $CONF (see .local/mei.local.env.example)."
-  echo "  Mei has been stopped; start your previous shell the way your autostart does."
+  echo "  Mei has been stopped; start your previous shell the way your autostart does,"
+  echo "  e.g.: systemctl --user start ryoku-session.target"
   exit 1
 fi
 
 echo "revert: starting ${prev_name:-the previous shell}"
+echo "  command: $prev_start"
 eval "$prev_start" 2>&1 | sed 's/^/  /'
 
-cat <<'NOTE'
+cat <<NOTE
 
 revert: the autostart line is still Mei's, so the next login would start Mei
 again. Uncomment your own line in your Hyprland config and comment Mei's out:
 
-    # hl.exec_cmd("<your previous shell's start command>")
-    hl.exec_cmd("<your previous shell's start command>")
+    # hl.exec_cmd("${prev_start}")
+    hl.exec_cmd("${prev_start}")
 
 then log out and back in (or restart the compositor).
 
