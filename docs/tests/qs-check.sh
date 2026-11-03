@@ -38,7 +38,7 @@ QS=$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
 [ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; exit 1; }
 
 for _ in $(seq 1 60); do
-  SIG=$(basename "$(ls -d "$RUN/rt/hypr/"*/ 2>/dev/null | tail -1)")
+  SIG=$(basename "$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | tail -1)")
   if [ -n "$SIG" ] && HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl -j layers >/dev/null 2>&1; then
     break
   fi

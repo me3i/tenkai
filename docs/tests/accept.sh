@@ -188,6 +188,11 @@ printf '\n'
 
 for g in "${GATES[@]}"; do
   IFS='|' read -r id name cmd _evidence <<< "$g"
+  # Defensive cleanup between gates: stop any leftover session and
+  # clear stale runtime state so the next gate starts from a neutral
+  # environment (fixes F1 PeerClosedError / Q4 cascade).
+  ./mei stop >/dev/null 2>&1 || true
+  rm -rf "$RUN/r/quickshell/by-id"/* 2>/dev/null || true
   run_gate "$id" "$name" "$cmd"
 done
 

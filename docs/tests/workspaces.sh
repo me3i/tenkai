@@ -19,6 +19,10 @@ fail=0; SIG=""; QS=""; BUS=""
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
+# Clean stale state from prior gates (same fix as F2 isolation bug)
+rm -rf "$RUN/r/quickshell/by-id"/* 2>/dev/null || true
+# Ensure clean exit: stop any leftover Mei session
+ trap 'cd /home/mei/projects/mei 2>/dev/null; ./mei stop >/dev/null 2>&1' EXIT
 # Resolve nested session signature from the actual session directory
 # (same pattern as launcher-check.sh: discover after ./mei run)
 SIG=""
@@ -49,16 +53,21 @@ fi
 echo; echo "=== launch nested session ==="
 ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
 
-# Discover the nested Hyprland instance signature (same pattern as launcher-check.sh)
-for _ in $(seq 1 60); do
-  SIG=$(basename "$(ls -d "$RUN/rt/hypr/"*/ 2>/dev/null | tail -1)")
-  if [ -n "$SIG" ] && [ -S "$RUN/rt/hypr/$SIG/.socket.sock" ]; then
-    break
+# Discover the nested Hyprland instance signature — only accept the
+# session F1 itself started, never a leftover from a prior gate.
+# Compare the hypr directory before and after ./mei run.
+BEFORE=$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | sort)
+./mei run > /dev/null 2>&1 &
+for i in $(seq 1 120); do
+  AFTER=$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | sort)
+  NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | head -1)
+  if [ -n "$NEW" ]; then
+    SIG=$(basename "$NEW")
+    [ -S "$RUN/r/hypr/$SIG/.socket.sock" ] && break
   fi
-  SIG=""
-  sleep 0.4
+  sleep 0.5
 done
-[ -n "$SIG" ] || { bad "nested Hyprland instance unreachable; no socket found"; exit 1; }
+[ -n "$SIG" ] || { bad "nested Hyprland instance unreachable; no new session sig found"; exit 1; }
 ok "nested instance reachable ($SIG)"
 
 # Bounded wait, 120 s: the bar compiles its QML on a cold start, so the shell

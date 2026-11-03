@@ -6,7 +6,7 @@
 set -uo pipefail
 MEI=$HOME/projects/mei
 RUN="$MEI/.run"
-RT="$MEI/.r"                 # short symlink to .run/rt (108-byte socket limit)
+RT="$MEI/.r"                 # short symlink to .run/r (108-byte socket limit)
 RTP=/run/user/1000/pipewire-0
 SHELLJSON="$RUN/config/mei/shell.json"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"   # host session (for ./mei run)
@@ -28,8 +28,8 @@ restore_audio() {
     wpctl set-volume @DEFAULT_AUDIO_SINK@ "$VOL_BEFORE" >/dev/null 2>&1 || true
     echo "restored audio: $(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null) (was vol=$VOL_BEFORE mute=$MUTE_BEFORE)"
   fi
-  rm -f "$RUN/rt/pipewire-0"
-  if [ -e "$RUN/rt/pipewire-0" ]; then echo "FAIL  pipewire symlink still present"; else echo "TESTED      pipewire symlink removed from the nested runtime"; fi
+  rm -f "$RUN/r/pipewire-0"
+  if [ -e "$RUN/r/pipewire-0" ]; then echo "FAIL  pipewire symlink still present"; else echo "TESTED      pipewire symlink removed from the nested runtime"; fi
 }
 trap restore_audio EXIT
 note "audio before: vol=${VOL_BEFORE:-?} mute=${MUTE_BEFORE:-?}"
@@ -42,8 +42,8 @@ echo "=== verify-untouched BEFORE ==="
 "$MEI/mei" verify-untouched 2>&1 | tail -2
 
 if [ -S "$RTP" ]; then
-  ln -sfn "$RTP" "$RUN/rt/pipewire-0"
-  ok "linked $RTP -> .run/rt/pipewire-0 (real PipeWire reachable in the nested runtime)"
+  ln -sfn "$RTP" "$RUN/r/pipewire-0"
+  ok "linked $RTP -> .run/r/pipewire-0 (real PipeWire reachable in the nested runtime)"
 else
   bad "real pipewire-0 socket not found at $RTP"
 fi
@@ -94,7 +94,7 @@ sleep 2
 
 # ============================ AUDIO =========================================
 echo; echo "=== AUDIO (nested reaches real PipeWire via the symlink) ==="
-[ -L "$RUN/rt/pipewire-0" ] && ok "pipewire-0 symlink present in the nested runtime" || bad "pipewire-0 symlink missing"
+[ -L "$RUN/r/pipewire-0" ] && ok "pipewire-0 symlink present in the nested runtime" || bad "pipewire-0 symlink missing"
 H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 3
 shot audio-qspanel-readonly
 note "read-only: the bar/panel audio readout should show the real sink (vol=$VOL_BEFORE)"

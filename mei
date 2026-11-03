@@ -1174,23 +1174,23 @@ LUA
 
 prepare_nested_home() {
   mkdir -p "$RUN_DIR/home" "$RUN_DIR/config" "$RUN_DIR/cache" "$RUN_DIR/state" \
-           "$RUN_DIR/data" "$RUN_DIR/rt" "$RUN_DIR/hypr" "$RUN_DIR/logs" "$RUN_DIR/bin" "$RUN_DIR/qml"
-  chmod 700 "$RUN_DIR/rt"
+           "$RUN_DIR/data" "$RUN_DIR/r" "$RUN_DIR/hypr" "$RUN_DIR/logs" "$RUN_DIR/bin" "$RUN_DIR/qml"
+  chmod 700 "$RUN_DIR/r"
   # Hyprland names its IPC sockets $XDG_RUNTIME_DIR/hypr/<signature>/.socket2.sock.
   # The signature is 61 chars, so the full path must stay <= 107 bytes or the
   # *event* socket is silently disabled ("Socket2 path is too long"). The
-  # project path is 22 chars, so .run/rt cannot fit. Expose the same directory
+  # project path is 22 chars, so .run/r cannot fit. Expose the same directory
   # through a short symlink for the child's XDG_RUNTIME_DIR; all bytes still
-  # land under .run/rt.
-  ln -sfn "$RUN_DIR/rt" "$MEI_DIR/.r"
+  # land under .run/r.
+  ln -sfn "$RUN_DIR/r" "$MEI_DIR/.r"
   # The nested compositor creates its Wayland socket in the HOST's
-  # XDG_RUNTIME_DIR, not in $RUN_DIR/rt. The session script inside the
+  # XDG_RUNTIME_DIR, not in $RUN_DIR/r. The session script inside the
   # dbus-run-session scopes XDG_RUNTIME_DIR to .r, so the socket is
   # invisible to the bar's workspaceState query. Expose it through a
-  # symlink in .run/rt, exactly once: .r is a symlink itself, and .r/rt
+  # symlink in .run/r, exactly once: .r is a symlink itself, and .r/r
   # is the real directory the shell and its children write to.
-  if [ ! -e "$RUN_DIR/rt/wayland-1" ]; then
-    ln -s "$HOME/.run/user/$(id -u)/wayland-1" "$RUN_DIR/rt/wayland-1"
+  if [ ! -e "$RUN_DIR/r/wayland-1" ]; then
+    ln -s "$HOME/.run/user/$(id -u)/wayland-1" "$RUN_DIR/r/wayland-1"
   fi
   # Role launcher (AppLaunch.qml runs every Terminal=true entry through it).
   # Symlinked, so the session always uses the source script.
@@ -1436,10 +1436,10 @@ cmd_run() {
   write_session_script "$host_wl" "$bsig"
   # Clean runtime previous runs left behind. Only reached when no session is
   # running (checked below), so this never touches a live instance.
-  rm -rf "$RUN_DIR/rt/hypr" "$RUN_DIR/rt/quickshell"
-  rm -f "$RUN_DIR/rt/mei-shell.sock" "$RUN_DIR/rt/mei-shell.sock.lock" \
-        "$RUN_DIR/rt/ryogami.sock" "$RUN_DIR/rt/mei-hub.lock" \
-        "$RUN_DIR"/rt/wayland-* 2>/dev/null || true
+  rm -rf "$RUN_DIR/r/hypr" "$RUN_DIR/r/quickshell"
+  rm -f "$RUN_DIR/r/mei-shell.sock" "$RUN_DIR/r/mei-shell.sock.lock" \
+        "$RUN_DIR/r/ryogami.sock" "$RUN_DIR/r/mei-hub.lock" \
+        "$RUN_DIR"/r/wayland-* 2>/dev/null || true
   : > "$PID_FILE"
   : > "$RUN_DIR/logs/session.log"
   : > "$RUN_DIR/logs/hyprland.log"

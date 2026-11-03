@@ -58,7 +58,7 @@ ok "shell process present (pid $QS)"
 # The nested signature only exists after the compositor starts; resolve it now,
 # not before ./mei run returned.
 for _ in $(seq 1 60); do
-  SIG=$(basename "$(ls -d "$RUN/rt/hypr/"*/ 2>/dev/null | tail -1)")
+  SIG=$(basename "$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | tail -1)")
   if [ -n "$SIG" ] && HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl -j layers >/dev/null 2>&1; then
     break
   fi
