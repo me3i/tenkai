@@ -129,10 +129,10 @@ shot hub-open
 note "rail sections in source (active block only):"
 AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$MEI/src/ryoku/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
 echo "    $AKEYS"
-[ "$AKEYS" = "animations bar-studio desktop global launcher " ] \
-  && ok "rail carries exactly the 5 kept sections (global/desktop/bar-studio/launcher/animations)" \
-  || bad "rail sections are not the expected 5: $AKEYS"
-for s in global desktop bar-studio launcher animations; do
+[ "$AKEYS" = "animations bar-studio desktop global launcher visuals " ] \
+  && ok "rail carries exactly the 6 kept sections (global/desktop/visuals/bar-studio/launcher/animations)" \
+  || bad "rail sections are not the expected 6: $AKEYS"
+for s in global desktop visuals bar-studio launcher animations; do
   if [ "$HUB_OK" = 1 ]; then
     mesh hub open "$s" >/dev/null 2>&1
     got=""
@@ -144,7 +144,7 @@ for s in global desktop bar-studio launcher animations; do
   fi
 done
 # each kept page must actually render content (a broken page would be blank)
-for s in global desktop bar-studio launcher animations; do
+for s in global desktop visuals bar-studio launcher animations; do
   if [ "$HUB_OK" != 1 ]; then bad "page '$s' content not tested: hub never opened"; continue; fi
   f="$RUN/shots/step4-hub-page-$s.png"
   geom="$(hub_geom)"
@@ -250,7 +250,7 @@ else ok "no QML errors in the hub/shell logs (portal/pipewire noise excluded)"; 
 # static syntax check on the edited hub QML (runtime output is discarded by the daemon)
 if command -v qmllint >/dev/null 2>&1; then
   syn=0
-  for f in Hub.qml pages/AnimationsPage.qml pages/GlobalPage.qml pages/DesktopPage.qml pages/BarStudioPage.qml pages/LauncherPage.qml; do
+  for f in Hub.qml pages/VisualsPage.qml pages/AnimationsPage.qml pages/GlobalPage.qml pages/DesktopPage.qml pages/BarStudioPage.qml pages/LauncherPage.qml; do
     if qmllint "$MEI/src/ryoku/hub/quickshell/$f" 2>&1 | grep -qi 'syntax error'; then bad "syntax error in $f"; syn=1; fi
   done
   [ "$syn" = 0 ] && ok "qmllint: no syntax errors in the six edited hub files"
