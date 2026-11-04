@@ -81,7 +81,9 @@ else
 fi
 hub_geom() { H -j clients 2>/dev/null | jq -r '.[] | select(.class=="org.quickshell") | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' | head -1; }
 hub_focused() { H -j activewindow 2>/dev/null | jq -r '.class // ""'; }
-shot() { grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
+# Bounded: grim can hang on a wedged nested Wayland socket, and an unbounded
+# screenshot would stall the whole gate instead of just losing its picture.
+shot() { timeout 5 grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
 vkbd() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
 # Drive the settings store over the daemon socket with the documented call
 # grammar (`call settings.patch|reset <json>`, ryoku/shell/ipc/settings.go).
@@ -147,10 +149,21 @@ shot hub-open
 note "rail sections in source (active block only):"
 AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$MEI/src/ryoku/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
 echo "    $AKEYS"
-[ "$AKEYS" = "animations bar-studio desktop fastfetch global launcher visuals " ] \
-  && ok "rail carries exactly the 7 kept sections (global/desktop/visuals/bar-studio/launcher/animations/fastfetch)" \
-  || bad "rail sections are not the expected 7: $AKEYS"
-for s in global desktop visuals bar-studio launcher animations fastfetch; do
+# The kept rail, asserted per key rather than as one exact string: the list grows
+# as pages ship (Visuals, Fastfetch, Window Manager so far) and an equality check
+# on the whole string turns every legitimate addition into a red gate. Membership
+# is what matters, plus the count so a page cannot silently vanish.
+RAIL_KEYS="global desktop visuals bar-studio launcher animations fastfetch windowmanager"
+for k in $RAIL_KEYS; do
+  echo " $AKEYS" | grep -q " $k " \
+    && ok "rail carries the '$k' section" \
+    || bad "rail is missing the '$k' section (rail: $AKEYS)"
+done
+RAIL_N="$(printf '%s\n' $AKEYS | grep -c .)"
+[ "$RAIL_N" -eq 8 ] \
+  && ok "rail carries exactly the $RAIL_N kept sections" \
+  || bad "rail carries $RAIL_N sections, expected 8: $AKEYS"
+for s in $RAIL_KEYS; do
   if [ "$HUB_OK" = 1 ]; then
     mesh hub open "$s" >/dev/null 2>&1
     got=""
@@ -162,7 +175,7 @@ for s in global desktop visuals bar-studio launcher animations fastfetch; do
   fi
 done
 # each kept page must actually render content (a broken page would be blank)
-for s in global desktop visuals bar-studio launcher animations fastfetch; do
+for s in $RAIL_KEYS; do
   if [ "$HUB_OK" != 1 ]; then bad "page '$s' content not tested: hub never opened"; continue; fi
   f="$RUN/shots/step4-hub-page-$s.png"
   geom="$(hub_geom)"
@@ -280,10 +293,10 @@ else ok "no QML errors in the hub/shell logs (portal/pipewire noise excluded)"; 
 # static syntax check on the edited hub QML (runtime output is discarded by the daemon)
 if command -v qmllint >/dev/null 2>&1; then
   syn=0
-  for f in Hub.qml pages/VisualsPage.qml pages/FastfetchPage.qml pages/AnimationsPage.qml pages/GlobalPage.qml pages/DesktopPage.qml pages/BarStudioPage.qml pages/LauncherPage.qml; do
+  for f in Hub.qml pages/VisualsPage.qml pages/FastfetchPage.qml pages/WindowManagerPage.qml pages/AnimationsPage.qml pages/GlobalPage.qml pages/DesktopPage.qml pages/BarStudioPage.qml pages/LauncherPage.qml; do
     if qmllint "$MEI/src/ryoku/hub/quickshell/$f" 2>&1 | grep -qi 'syntax error'; then bad "syntax error in $f"; syn=1; fi
   done
-  [ "$syn" = 0 ] && ok "qmllint: no syntax errors in the eight edited hub files"
+  [ "$syn" = 0 ] && ok "qmllint: no syntax errors in the nine edited hub files"
 else note "qmllint unavailable"; fi
 
 if [ "${KEEP:-0}" = 1 ]; then

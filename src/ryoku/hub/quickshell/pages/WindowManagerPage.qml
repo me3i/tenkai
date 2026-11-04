@@ -1,6 +1,8 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
+import Quickshell
+import Quickshell.Io
 import Ryoku.Ui
 import Ryoku.Ui.Singletons
 import ".."
@@ -27,8 +29,84 @@ Item {
     readonly property string pEyebrow: I18n.tr("COMPOSITOR")
     readonly property string pBlurb: I18n.tr("How windows look and behave here. Changes apply at your next login.")
 
-    function hv(path) { return pg.hub ? pg.hub.hyprVal(path) : undefined }
-    function cv(path) { return pg.hub ? pg.hub.hyprCommittedVal(path) : undefined }
+    // Prefer the live read: the shared store is empty in Mei, so hu.hyprVal
+    // would leave every row blank. Reading the running compositor is the whole
+    // point; a store value (never present here) would only ever be stale.
+    function hv(path) { return pg.live[path] !== undefined ? pg.live[path] : (pg.hub ? pg.hub.hyprVal(path) : undefined) }
+    function cv(path) { return pg.live[path] !== undefined ? pg.live[path] : (pg.hub ? pg.hub.hyprCommittedVal(path) : undefined) }
+
+    // ── live, READ-ONLY values ───────────────────────────────────────────
+    // The shared store (hub.hyprDraft) is never loaded in Mei: Settings must not
+    // write Hyprland config, so the store the page would otherwise read stays
+    // empty and every row renders blank. Instead of generating that file, the
+    // page fills the same dotted keys from the running compositor with
+    // `hyprctl getoption` — the read half of the seam, and the only half Mei
+    // uses. Nothing here writes: the map below is display-only, and an edit
+    // still goes through hub.hyprEdit, whose save/preview verbs the backend
+    // refuses (errWMWriteDisabled, ryoku/hub/backend/desktop.go).
+    property var live: ({})
+    readonly property var liveOptions: ({
+        "desktop.appearance.gapsIn": "general:gaps_in",
+        "desktop.appearance.gapsOut": "general:gaps_out",
+        "desktop.appearance.gapsWorkspaces": "general:gaps_workspaces",
+        "desktop.appearance.borderSize": "general:border_size",
+        "desktop.appearance.resizeOnBorder": "general:resize_on_border",
+        "desktop.appearance.snapEnabled": "general:snap:enabled",
+        "desktop.appearance.extendBorderGrab": "general:extend_border_grab_area",
+        "desktop.appearance.hoverIconOnBorder": "general:hover_icon_on_border",
+        "desktop.appearance.noFocusFallback": "general:no_focus_fallback",
+        "desktop.appearance.resizeCorner": "general:resize_corner",
+        "desktop.appearance.rounding": "decoration:rounding",
+        "desktop.appearance.roundingPower": "decoration:rounding_power",
+        "desktop.appearance.activeOpacity": "decoration:active_opacity",
+        "desktop.appearance.inactiveOpacity": "decoration:inactive_opacity",
+        "desktop.appearance.fullscreenOpacity": "decoration:fullscreen_opacity",
+        "desktop.appearance.dimInactive": "decoration:dim_inactive",
+        "desktop.appearance.dimStrength": "decoration:dim_strength",
+        "desktop.appearance.dimSpecial": "decoration:dim_special",
+        "desktop.appearance.dimAround": "decoration:dim_around",
+        "desktop.appearance.dimModal": "decoration:dim_modal",
+        "desktop.appearance.borderPartOfWindow": "decoration:border_part_of_window",
+        "desktop.appearance.blurEnabled": "decoration:blur:enabled",
+        "desktop.appearance.blurSize": "decoration:blur:size",
+        "desktop.appearance.blurPasses": "decoration:blur:passes",
+        "desktop.appearance.blurXray": "decoration:blur:xray",
+        "desktop.appearance.blurVibrancy": "decoration:blur:vibrancy",
+        "desktop.appearance.blurNoise": "decoration:blur:noise",
+        "desktop.appearance.blurContrast": "decoration:blur:contrast",
+        "desktop.appearance.blurBrightness": "decoration:blur:brightness",
+        "desktop.appearance.blurIgnoreOpacity": "decoration:blur:ignore_opacity",
+        "desktop.appearance.blurNewOptimizations": "decoration:blur:new_optimizations",
+        "desktop.appearance.shadowEnabled": "decoration:shadow:enabled",
+        "desktop.appearance.shadowRange": "decoration:shadow:range",
+        "desktop.appearance.shadowPower": "decoration:shadow:render_power",
+        "desktop.appearance.shadowSharp": "decoration:shadow:sharp",
+        "desktop.appearance.shadowScale": "decoration:shadow:scale",
+        "desktop.appearance.animations": "animations:enabled"
+    })
+
+    // "int: 4" / "bool: true" / "float: 0.17" / "css gap data: 4 4 4 4" ->
+    // the bare value the schema expects. An unrecognised shape is skipped
+    // rather than guessed, so a row is never filled with an invented value.
+    function parseOption(key, text) {
+        var first = String(text).split("\n")[0] || "";
+        var val = first.replace(/^\s*[a-z_ ]*:\s*/i, "").trim();
+        if (val === "true") return true;
+        if (val === "false") return false;
+        if (/^-?[0-9]+$/.test(val)) return parseInt(val, 10);
+        if (/^-?[0-9]*\.[0-9]+$/.test(val)) return parseFloat(val);
+        var gap = val.match(/^(-?[0-9]+)[ ]/);
+        if (gap) return parseInt(gap[1], 10);
+        return undefined;
+    }
+    function ingest(key, text) {
+        var v = pg.parseOption(key, text);
+        if (v === undefined) return;
+        var d = {};
+        for (var k in pg.live) d[k] = pg.live[k];
+        d[key] = v;
+        pg.live = d;
+    }
 
     // Every window-manager setting on one page: the neutral window rows the Hub
     // ships followed by the active provider's exclusives. effectiveRows is the
@@ -192,5 +270,24 @@ Item {
         id: wmSheet
         anchors.fill: parent
         onClosed: wmPicker.reload()
+    }
+
+    // ── the live read: one Process per option ────────────────────────────
+    // Explicit fetchers rather than a factory: the map is fixed, a factory would
+    // build the same set anyway, and this keeps the fetch visible in the file
+    // (and lintable) like VisualsPage's fetchers.
+    Component.onCompleted: {
+        var keys = Object.keys(pg.liveOptions);
+        for (var i = 0; i < keys.length; i++)
+            liveFetch.createObject(pg, { key: keys[i], option: pg.liveOptions[keys[i]] }).running = true;
+    }
+    Component {
+        id: liveFetch
+        Process {
+            property string key: ""
+            property string option: ""
+            command: ["hyprctl", "getoption", option]
+            stdout: StdioCollector { onStreamFinished: pg.ingest(key, this.text) }
+        }
     }
 }
