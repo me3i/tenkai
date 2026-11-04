@@ -3,9 +3,13 @@
 # no display, so Ctrl+V and every clipboard tool inside fail. A new pane borrows
 # the running desktop's display from the user manager (Turnstile's env dir on
 # Void); the bash and zsh twin is terminal-shell/desktop-display.sh.
+#
+# Portable: only the display-heal logic is trimmed here. It never touches the
+# real desktop — it only copies the running display socket into the new pane.
 
-function __ryoku_heal_desktop_display
+function __meifetch_heal_desktop_display
     status is-interactive; or return
+
     if not set -q HERDR_ENV; and not set -q TMUX; and not set -q ZELLIJ
         return
     end
@@ -28,8 +32,8 @@ function __ryoku_heal_desktop_display
     end
 
     set -l handles
-    if command -q ryoku
-        set -l printed_handles (ryoku wm handles 2>/dev/null)
+    if command -q meifetch
+        set -l printed_handles (meifetch wm handles 2>/dev/null)
         if test $status -eq 0
             for name in $printed_handles
                 string match -rq '^[A-Za-z_][A-Za-z0-9_]*$' -- "$name"; or continue
@@ -99,5 +103,5 @@ function __ryoku_heal_desktop_display
     end
 end
 
-__ryoku_heal_desktop_display
-functions -e __ryoku_heal_desktop_display
+__meifetch_heal_desktop_display
+functions -e __meifetch_heal_desktop_display

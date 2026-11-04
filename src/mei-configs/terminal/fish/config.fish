@@ -1,5 +1,5 @@
 # ~/.local/bin on PATH for every shell, not only interactive: tools dropped in
-# there (claude, oh-my-posh) work, and the ryoku-fastfetch wrapper below
+# there (claude, oh-my-posh) work, and the meifetch wrapper below
 # resolves. fish_add_path is idempotent.
 if test -d $HOME/.local/bin
   fish_add_path $HOME/.local/bin
@@ -34,9 +34,9 @@ if status is-interactive
   set -g fish_color_autosuggestion 949699
 
   # branded system readout on terminal open: turned off on request.
-  # `ryoku-fastfetch` still runs by hand if you want the readout back.
-  # if command -v ryoku-fastfetch >/dev/null 2>&1
-  #   ryoku-fastfetch
+  # (Mei ships out-of-the-box, no custom wrapper needed)
+  # if command -v fastfetch >/dev/null 2>&1
+  #   fastfetch
   # end
 
   # prompt.

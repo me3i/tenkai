@@ -55,12 +55,12 @@
     },
     {
       "key": "OS",
-      "text": "echo \"Ryoku $(ryoku version --pretty 2\u003e/dev/null || echo dev)\"",
+      "text": "echo \"Mei Arch Linux\"",
       "type": "command"
     },
     {
       "key": "BRANCH",
-      "text": "ryoku version --branch 2\u003e/dev/null || echo main",
+      "text": "echo \"main\"",
       "type": "command"
     },
     {
