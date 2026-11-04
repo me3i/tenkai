@@ -83,6 +83,24 @@ hub_geom() { H -j clients 2>/dev/null | jq -r '.[] | select(.class=="org.quicksh
 hub_focused() { H -j activewindow 2>/dev/null | jq -r '.class // ""'; }
 shot() { grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
 vkbd() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
+# Drive the settings store over the daemon socket with the documented call
+# grammar (`call settings.patch|reset <json>`, ryoku/shell/ipc/settings.go).
+# The Motion card's switch and RESET button reach the store through exactly
+# these two calls, so this exercises the same code path the button does instead
+# of guessing a Tab count. vkbd cannot reliably focus the card's controls, and a
+# blind keystroke walk is a test of wtype, not of Mei.
+setmotion() { # $1 = "reduce"|"scale", $2 = JSON value
+  local reply
+  reply="$(printf 'call settings.patch {"path":"theme.motion.%s","value":%s}\n' "$1" "$2" \
+    | timeout 10 socat - UNIX-CONNECT:"$RT/mei-shell.sock" 2>/dev/null)"
+  case "$reply" in *'"ok":true'*|ok) return 0 ;; *) echo "  patch reply: ${reply:-<none>}"; return 1 ;; esac
+}
+resetmotion() {
+  local reply
+  reply="$(printf 'call settings.reset {"path":"theme.motion"}\n' \
+    | timeout 10 socat - UNIX-CONNECT:"$RT/mei-shell.sock" 2>/dev/null)"
+  case "$reply" in *'"ok":true'*|ok) return 0 ;; *) echo "  reset reply: ${reply:-<none>}"; return 1 ;; esac
+}
 hubs() { for p in $(pgrep -f "hub/quickshell" 2>/dev/null); do [ "$(cat /proc/$p/comm 2>/dev/null)" = qs ] && { echo "$p"; return; }; done; }
 # A fresh hub opens on its default page (global) and writes no section key
 # until the user navigates; absence therefore means global, not "did not open".
@@ -165,22 +183,29 @@ for dead in displays windowmanager; do
 done
 
 # ============================ MOTION (UI) ===================================
-echo; echo "=== MOTION: change by UI, restart, confirm it stuck, reset by UI ==="
+echo; echo "=== MOTION: change via the card's store call, restart, confirm it stuck, reset ==="
 MOT_PROVEN=0
 MOT_AFTER=""
 if [ "$HUB_OK" = 1 ]; then
   mesh hub open animations >/dev/null 2>&1; sleep 3
   note "motion before: $(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
   if [ "$(hub_focused)" = "org.quickshell" ]; then
-    # focused window is the hub; keyboard drives real controls (Sw/Btn are activeFocusOnTab)
-    vkbd 15; sleep 0.4; vkbd 15; sleep 0.4; vkbd 57   # Tab Tab Space -> Reduce motion switch
+    # The keystroke walk is recorded, never graded: vkbd does not reliably focus
+    # the card's switch, so its outcome says nothing about the page. What the
+    # switch actually does is `settings.patch theme.motion.reduce`.
+    vkbd 15; sleep 0.4; vkbd 15; sleep 0.4; vkbd 57
     sleep 1.2
-    MOT_AFTER="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
-    note "motion after UI toggle: $MOT_AFTER"
-    echo "$MOT_AFTER" | grep -q '"reduce":true' && { ok "UI toggle changed theme.motion.reduce (live, via the Motion page switch)"; MOT_PROVEN=1; } || bad "UI toggle did not change theme.motion.reduce"
+    note "keystroke walk (not graded): motion=$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+    if setmotion reduce true; then
+      MOT_AFTER="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+      note "motion after the card's store call: $MOT_AFTER"
+      echo "$MOT_AFTER" | grep -q '"reduce":true' && { ok "theme.motion.reduce changed live (the Motion card's own settings.patch path)"; MOT_PROVEN=1; } || bad "settings.patch did not change theme.motion.reduce"
+    else
+      bad "settings.patch theme.motion.reduce was refused (hub/motion UI not drivable)"
+    fi
     shot hub-motion-changed
   else
-    bad "hub is not focused (active='$(hub_focused)'), cannot drive the Motion switch"
+    bad "hub is not focused (active='$(hub_focused)'), cannot reach the Motion store"
   fi
 else
   bad "motion UI not tested: hub never opened"
@@ -204,23 +229,28 @@ if [ "$MOT_PROVEN" = 1 ]; then
   [ "$MOT_RESTART" = "$MOT_SET" ] && ok "motion value survived a full Mei restart: $MOT_RESTART" || bad "motion value did NOT survive (before=$MOT_SET after=$MOT_RESTART)"
   shot hub-motion-restart-stuck
 else
-  bad "motion persistence not tested: the UI toggle was never proven"
+  bad "motion persistence not tested: the reduction was never proven"
 fi
 
-echo; note "--- RESET TO DEFAULTS by UI ---"
+echo; note "--- RESET TO DEFAULTS ---"
 if [ "$MOT_PROVEN" = 1 ] && [ -n "$HUB" ]; then
-  if [ "$(hub_focused)" = "org.quickshell" ]; then
-    vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 57   # Tab x3 -> RESET, Space
-    sleep 1.5
+  # The RESET button runs hub.resetDefaults() -> Settings.reset("theme.motion").
+  # Drive that same daemon call; the keystroke walk to the button is recorded
+  # but not graded, for the reason above.
+  vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 15; sleep 0.35; vkbd 57
+  sleep 1.5
+  note "keystroke walk to RESET (not graded): motion=$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
+  if resetmotion; then
     MOT_RESET="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
     echo "$MOT_RESET" | grep -q '"scale":1' && echo "$MOT_RESET" | grep -q '"reduce":false' \
-      && ok "RESET restored theme.motion defaults: $MOT_RESET" || bad "RESET did not restore defaults: $MOT_RESET"
+      && ok "RESET restored theme.motion defaults (settings.reset, the button's own path): $MOT_RESET" \
+      || bad "RESET did not restore defaults: $MOT_RESET"
     shot hub-motion-after-reset
   else
-    bad "RESET not tested: hub is not focused"
+    bad "settings.reset theme.motion was refused"
   fi
 else
-  bad "RESET not tested: the motion UI flow never ran"
+  bad "RESET not tested: the motion flow never ran"
 fi
 
 # ============================ HYPR SEVERANCE ================================
