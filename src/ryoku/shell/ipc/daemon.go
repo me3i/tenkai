@@ -497,6 +497,8 @@ type visualOverrides struct {
 	ShadowRange       *int    `json:"shadow_range"`
 	ShadowRenderPower *int    `json:"shadow_render_power"`
 	ScreenShader      *string `json:"screen_shader"`
+	ActiveBorder      *string `json:"active_border"`
+	InactiveBorder    *string `json:"inactive_border"`
 }
 
 func visualOverridesPath() string {
@@ -522,6 +524,16 @@ func clampVisualInt(p *int, lo, hi int) int {
 }
 
 var shaderNameRe = regexp.MustCompile(`^[a-z0-9_-]{1,32}$`)
+
+// borderHexRe matches #rrggbb (or rrggbb) — the one border colour form the
+// Visuals page writes and the only one accepted at boot. Bound to rgb(rrggbb)
+// for the compositor (the generated config uses the same form), lowercased.
+var borderHexRe = regexp.MustCompile(`^#?[0-9a-fA-F]{6}$`)
+
+func borderLuaString(hex string) string {
+	h := strings.TrimPrefix(strings.TrimSpace(hex), "#")
+	return "\"rgb(" + strings.ToLower(h) + ")\""
+}
 
 // visualOverridesLua renders the persisted overrides as one Lua table for
 // `hyprctl eval 'hl.config{...}'`. Only the keys the file carries are
@@ -580,6 +592,12 @@ func visualOverridesLua(o visualOverrides) string {
 	}
 	if o.GapsOut != nil {
 		gen = append(gen, fmt.Sprintf("gaps_out = %d", clampVisualInt(o.GapsOut, 0, 40)))
+	}
+	if o.ActiveBorder != nil && borderHexRe.MatchString(strings.TrimSpace(*o.ActiveBorder)) {
+		gen = append(gen, `["col.active_border"] = `+borderLuaString(*o.ActiveBorder))
+	}
+	if o.InactiveBorder != nil && borderHexRe.MatchString(strings.TrimSpace(*o.InactiveBorder)) {
+		gen = append(gen, `["col.inactive_border"] = `+borderLuaString(*o.InactiveBorder))
 	}
 	top := []string{}
 	if len(dec) > 0 {

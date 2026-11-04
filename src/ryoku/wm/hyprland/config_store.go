@@ -311,8 +311,12 @@ type Overrides struct {
 }
 
 // defaultOverrides mirrors the shipped Hyprland modules so a diff against it
-// writes only real divergences.
+// writes only real divergences. Border defaults derive from the matugen palette
+// when one exists (primary, and the darker of outline/primary for the inactive
+// border); mono grey only when it does not — never the hardcoded Ryoku red,
+// which is why the whole session used to open framed in red.
 func defaultOverrides() Overrides {
+	borderActive, borderInactive := paletteBorderDefaults()
 	return Overrides{
 		Appearance: Appearance{
 			GapsIn: 12, GapsOut: 18, BorderSize: 2, Rounding: 0, RoundingPower: 4,
@@ -323,7 +327,7 @@ func defaultOverrides() Overrides {
 			ShadowEnabled: true, ShadowRange: 45, ShadowPower: 4,
 			GlowEnabled: false, GlowRange: 10, GlowColor: "#ee33cc",
 			Animations: true, Layout: "dwindle",
-			ActiveBorder: "#e0563b", InactiveBorder: "#313a4d", BorderFollowsPalette: true,
+			ActiveBorder: borderActive, InactiveBorder: borderInactive, BorderFollowsPalette: true,
 			ResizeOnBorder: true, SnapEnabled: false,
 			WobblyWindows: false, WindowStyle: "pop",
 			AnimatedBorder: false, BorderAngleSpeed: 3,

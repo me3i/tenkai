@@ -791,20 +791,28 @@ func genMotion(o Overrides, full bool) string {
 }
 
 // gradientBorderBlock re-reads the live palette accents at load time so the
-// rotating border re-themes with the wallpaper on reload.
-const gradientBorderBlock = "do\n" +
-	"  local ok, wc = pcall(dofile, os.getenv(\"HOME\") .. \"/.cache/mei/hypr-colors.lua\")\n" +
-	"  local function rgb(h, f) if type(h) ~= \"string\" then h = f end return \"rgb(\" .. h:gsub(\"#\", \"\") .. \")\" end\n" +
-	"  hl.config({ general = { [\"col.active_border\"] = { colors = { rgb(ok and wc and wc.active, \"#e0563b\"), rgb(ok and wc and wc.inactive, \"#313a4d\") }, angle = 45 } } })\n" +
-	"end\n"
+// rotating border re-themes with the wallpaper on reload. The fallback colours
+// come from the palette at generation time (mono grey when there is none) —
+// never a hardcoded red.
+func gradientBorderBlock() string {
+	active, inactive := paletteBorderDefaults()
+	return "do\n" +
+		"  local ok, wc = pcall(dofile, os.getenv(\"HOME\") .. \"/.cache/mei/hypr-colors.lua\")\n" +
+		"  local function rgb(h, f) if type(h) ~= \"string\" then h = f end return \"rgb(\" .. h:gsub(\"#\", \"\") .. \")\" end\n" +
+		"  hl.config({ general = { [\"col.active_border\"] = { colors = { rgb(ok and wc and wc.active, \"" + active + "\"), rgb(ok and wc and wc.inactive, \"" + inactive + "\") }, angle = 45 } } } })\n" +
+		"end\n"
+}
 
 // solidBorderBlock restores the plain palette active border, for a preview that
 // switches the rotating border back off.
-const solidBorderBlock = "do\n" +
-	"  local ok, wc = pcall(dofile, os.getenv(\"HOME\") .. \"/.cache/mei/hypr-colors.lua\")\n" +
-	"  local function rgb(h, f) if type(h) ~= \"string\" then h = f end return \"rgb(\" .. h:gsub(\"#\", \"\") .. \")\" end\n" +
-	"  hl.config({ general = { [\"col.active_border\"] = rgb(ok and wc and wc.active, \"#e0563b\") } })\n" +
-	"end\n"
+func solidBorderBlock() string {
+	active, _ := paletteBorderDefaults()
+	return "do\n" +
+		"  local ok, wc = pcall(dofile, os.getenv(\"HOME\") .. \"/.cache/mei/hypr-colors.lua\")\n" +
+		"  local function rgb(h, f) if type(h) ~= \"string\" then h = f end return \"rgb(\" .. h:gsub(\"#\", \"\") .. \")\" end\n" +
+		"  hl.config({ general = { [\"col.active_border\"] = rgb(ok and wc and wc.active, \"" + active + "\") } })\n" +
+		"end\n"
+}
 
 // borderAngleHyprSpeed maps the friendly 1..10 rotation speed onto Hyprland's
 // deciseconds-per-turn (higher is slower there), clamped so a stray value can't
@@ -832,13 +840,13 @@ func genAnimatedBorder(o Overrides, follow, full bool) string {
 		var b strings.Builder
 		b.WriteString("hl.animation({ leaf = \"borderangle\", enabled = false, speed = 1, bezier = \"linear\" })\n")
 		if follow {
-			b.WriteString(solidBorderBlock)
+			b.WriteString(solidBorderBlock())
 		}
 		return b.String()
 	}
 	var b strings.Builder
 	if follow {
-		b.WriteString(gradientBorderBlock)
+		b.WriteString(gradientBorderBlock())
 	} else {
 		grad := fmt.Sprintf("{ colors = { %s, %s }, angle = 45 }", luaStr(luaRGB(a.ActiveBorder)), luaStr(luaRGB(a.InactiveBorder)))
 		fmt.Fprintf(&b, "hl.config({ general = { [\"col.active_border\"] = %s } })\n", grad)

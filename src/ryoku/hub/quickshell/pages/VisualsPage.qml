@@ -6,6 +6,7 @@ import Quickshell
 import Quickshell.Io
 import Ryoku.Ui
 import Ryoku.Ui.Singletons
+import ".."
 
 // Visuals: the compositor's visual surface — blur, shadow, gaps, borders,
 // corner rounding and the screen shader — as a live settings page.
@@ -35,16 +36,21 @@ Item {
     // Factory defaults mirror the live session measured on the owner's
     // desktop (2026-11-03, hyprctl getoption): rounding 0, border 1, gaps
     // 4/7, blur off @4@1 pass, shadow off @45@4 render power, no shader.
+    // Border colours default to mono grey — the palette wins whenever one is
+    // available (see the palette-derived provider default), and a missing file
+    // with no live value falls back to those greys, never red.
     readonly property var factory: ({
         "rounding": 0, "border_size": 1, "gaps_in": 4, "gaps_out": 7,
         "blur_enabled": false, "blur_size": 4, "blur_passes": 1,
         "shadow_enabled": false, "shadow_range": 45, "shadow_render_power": 4,
-        "screen_shader": "none"
+        "screen_shader": "none",
+        "active_border": "#c3c3c3", "inactive_border": "#6e6e6e"
     })
     readonly property var factoryOrder: [
         "rounding", "border_size", "gaps_in", "gaps_out",
         "blur_enabled", "blur_size", "blur_passes",
-        "shadow_enabled", "shadow_range", "shadow_render_power", "screen_shader"
+        "shadow_enabled", "shadow_range", "shadow_render_power", "screen_shader",
+        "active_border", "inactive_border"
     ]
 
     // committed = what is on disk; draft = what the controls show. The two
@@ -90,6 +96,13 @@ Item {
     function luaConfig() {
         var d = pg.draft;
         var s = d.screen_shader === undefined ? "none" : d.screen_shader;
+        // Hyprland 0.57's own form: rgb(rrggbb), matching what the provider
+        // emits ("[\"col.active_border\"] = \"rgb(rrggbb)\"").
+        function col(key, fallback) {
+            var v = (d[key] || fallback).trim();
+            var m = v.match(/^#?([0-9a-fA-F]{6})$/);
+            return m ? "rgb(" + m[1].toLowerCase() + ")" : "rgb(" + fallback.replace("#", "").toLowerCase() + ")";
+        }
         return "hl.config({"
             + " decoration = {"
             + " rounding = " + Math.round(Number(d.rounding) || 0)
@@ -105,6 +118,8 @@ Item {
             + " border_size = " + Math.round(Number(d.border_size) || 0)
             + ", gaps_in = " + Math.round(Number(d.gaps_in) || 0)
             + ", gaps_out = " + Math.round(Number(d.gaps_out) || 0)
+            + ", [\"col.active_border\"] = \"" + col("active_border", "#c3c3c3") + "\""
+            + ", [\"col.inactive_border\"] = \"" + col("inactive_border", "#6e6e6e") + "\""
             + " } })";
     }
     function flushWrites() {
@@ -121,6 +136,8 @@ Item {
         cfgA.shadow_range = pg.draft.shadow_range;
         cfgA.shadow_render_power = pg.draft.shadow_render_power;
         cfgA.screen_shader = pg.draft.screen_shader;
+        cfgA.active_border = pg.draft.active_border;
+        cfgA.inactive_border = pg.draft.inactive_border;
         // the Hub's atomic write path (whole adapter serialised to a temp
         // file, renamed over the target)
         cfg.writeAdapter();
@@ -169,6 +186,14 @@ Item {
             if (val === "[[EMPTY]]" || val === "") return "none";
             var m = String(val).match(/([A-Za-z0-9_-]+)\.glsl/);
             return m ? m[1] : "none";
+        case "active_border": case "inactive_border":
+            // "gradient data: ffe0563b 0deg" → "#e0563b". A two-colour gradient
+            // carries both: take the first, strip the alpha if present.
+            var gx = String(val).match(/([0-9a-fA-F]{8}|[0-9a-fA-F]{6})/);
+            if (!gx) return pg.factoryDefaults[key];
+            var hx = gx[0].toUpperCase();
+            if (hx.length === 8) hx = hx.slice(2);
+            return "#" + hx;
         }
         return pg.factoryDefaults[key];
     }
@@ -184,7 +209,9 @@ Item {
         "shadow_enabled": "decoration:shadow:enabled",
         "shadow_range": "decoration:shadow:range",
         "shadow_render_power": "decoration:shadow:render_power",
-        "screen_shader": "decoration:screen_shader"
+        "screen_shader": "decoration:screen_shader",
+        "active_border": "general:col.active_border",
+        "inactive_border": "general:col.inactive_border"
     })
 
     property var liveFetch: ({})
@@ -253,6 +280,8 @@ Item {
             property int shadow_range: 45
             property int shadow_render_power: 4
             property string screen_shader: "none"
+            property string active_border: "#c3c3c3"
+            property string inactive_border: "#6e6e6e"
         }
     }
 
@@ -277,12 +306,15 @@ Item {
     Process { id: fb_shadow_range; command: ["hyprctl", "getoption", "decoration:shadow:range"]; stdout: StdioCollector { onStreamFinished: pg.fetched("shadow_range", "" + text) } stderr: StdioCollector { } }
     Process { id: fb_shadow_render_power; command: ["hyprctl", "getoption", "decoration:shadow:render_power"]; stdout: StdioCollector { onStreamFinished: pg.fetched("shadow_render_power", "" + text) } stderr: StdioCollector { } }
     Process { id: fb_screen_shader; command: ["hyprctl", "getoption", "decoration:screen_shader"]; stdout: StdioCollector { onStreamFinished: pg.fetched("screen_shader", "" + text) } stderr: StdioCollector { } }
+    Process { id: fb_active_border; command: ["hyprctl", "getoption", "general:col.active_border"]; stdout: StdioCollector { onStreamFinished: pg.fetched("active_border", "" + text) } stderr: StdioCollector { } }
+    Process { id: fb_inactive_border; command: ["hyprctl", "getoption", "general:col.inactive_border"]; stdout: StdioCollector { onStreamFinished: pg.fetched("inactive_border", "" + text) } stderr: StdioCollector { } }
 
     readonly property var fetchers: ({
         "rounding": fb_rounding, "border_size": fb_border_size, "gaps_in": fb_gaps_in, "gaps_out": fb_gaps_out,
         "blur_enabled": fb_blur_enabled, "blur_size": fb_blur_size, "blur_passes": fb_blur_passes,
         "shadow_enabled": fb_shadow_enabled, "shadow_range": fb_shadow_range, "shadow_render_power": fb_shadow_render_power,
-        "screen_shader": fb_screen_shader
+        "screen_shader": fb_screen_shader,
+        "active_border": fb_active_border, "inactive_border": fb_inactive_border
     })
 
     // ── head (matches every settings page) ───────────────────────────────
@@ -345,7 +377,7 @@ Item {
             SettingCard {
                 width: col.colWidth
                 title: I18n.tr("SHAPE")
-                summary: "rounding · border"
+                summary: "rounding · border · colour"
 
                 SettingRow {
                     anchors.left: parent.left; anchors.right: parent.right
@@ -377,6 +409,34 @@ Item {
                         from: 0; to: 5
                         value: Math.round(Number(pg.draft.border_size) || 0)
                         onModified: (v) => pg.edit("border_size", Math.round(v))
+                    }
+                }
+                SettingRow {
+                    anchors.left: parent.left; anchors.right: parent.right
+                    divider: true
+                    controlWidth: col.ctlW
+                    label: I18n.tr("Active border")
+                    desc: I18n.tr("Colour of the focused window's border. Click to pick.")
+                    source: "hypr-visual.json"
+                    value: String(pg.draft.active_border || pg.factoryDefaults.active_border).toUpperCase()
+                    ColorField {
+                        anchors.fill: parent
+                        value: String(pg.draft.active_border || pg.factoryDefaults.active_border)
+                        onChosen: (hex) => pg.edit("active_border", String(hex).toUpperCase())
+                    }
+                }
+                SettingRow {
+                    anchors.left: parent.left; anchors.right: parent.right
+                    divider: false
+                    controlWidth: col.ctlW
+                    label: I18n.tr("Inactive border")
+                    desc: I18n.tr("Colour of every unfocused window's border.")
+                    source: "hypr-visual.json"
+                    value: String(pg.draft.inactive_border || pg.factoryDefaults.inactive_border).toUpperCase()
+                    ColorField {
+                        anchors.fill: parent
+                        value: String(pg.draft.inactive_border || pg.factoryDefaults.inactive_border)
+                        onChosen: (hex) => pg.edit("inactive_border", String(hex).toUpperCase())
                     }
                 }
             }

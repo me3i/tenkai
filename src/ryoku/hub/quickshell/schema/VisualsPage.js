@@ -98,6 +98,24 @@ var rows = [
     },
     {
         "tab": "",
+        "group": "SHAPE",
+        "key": "visuals.active_border",
+        "label": "Active border",
+        "desc": "Colour of the focused window's border.",
+        "ctl": "color",
+        "src": "hypr-visual.json"
+    },
+    {
+        "tab": "",
+        "group": "SHAPE",
+        "key": "visuals.inactive_border",
+        "label": "Inactive border",
+        "desc": "Colour of every unfocused window's border.",
+        "ctl": "color",
+        "src": "hypr-visual.json"
+    },
+    {
+        "tab": "",
         "group": "SPACING",
         "key": "visuals.gaps_in",
         "label": "Gaps between windows",
