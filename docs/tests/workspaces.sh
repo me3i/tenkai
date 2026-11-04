@@ -58,7 +58,7 @@ echo; echo "=== launch nested session ==="
 # Compare the hypr directory before and after ./mei run.
 BEFORE=$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | sort)
 ./mei run > /dev/null 2>&1 &
-for i in $(seq 1 120); do
+for _ in $(seq 1 120); do
   AFTER=$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | sort)
   NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | head -1)
   if [ -n "$NEW" ]; then
