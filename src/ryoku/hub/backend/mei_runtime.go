@@ -19,6 +19,10 @@ package main
 //	mei/displays.json       {"layout": [OutputLayout], "profiles": {name: [OutputLayout]}}
 //	mei/keybinds.json       {"binds": [{keys,action,value}], "rebinds": {default: chosen}}
 //	mei/hypr-advanced.json  the desktop store's own map minus keybinds/rebinds
+//
+// Besides the user's own rows, every apply also binds Mei's default chords
+// (meiDefaultBinds: screenshot, clipboard, overview) unless the user claimed
+// the chord first. Those are the shipped bindings, not saved settings.
 
 import (
 	"encoding/json"
@@ -178,6 +182,13 @@ func bindDsp(action, value string) (string, bool) {
 		return "hl.dsp.window.fullscreen()", true
 	case "togglefloating":
 		return `hl.dsp.window.float({ action = "toggle" })`, true
+	case "global":
+		// A shortcut the shell itself registers (mei:overview, mei:clipboard,
+		// ...). Same form the shipped Ryoku config uses for its own surfaces.
+		if strings.TrimSpace(value) == "" {
+			return "", false
+		}
+		return "hl.dsp.global(" + luaStr(value) + ")", true
 	}
 	return "", false
 }
@@ -244,6 +255,46 @@ func unbindLua(k meiKeybinds) string {
 	lines := make([]string, 0, len(chords))
 	for _, c := range chords {
 		lines = append(lines, "hl.unbind("+luaStr(c)+")")
+	}
+	return strings.Join(lines, "\n")
+}
+
+// meiDefaultBinds is the chord set Mei binds for itself, matching the chords the
+// owner's Ryoku config uses (modules/binds.lua: Super+V clipboard, Super+Tab
+// overview, Print / Super+Shift+S screenshot). They are not saved into
+// keybinds.json: they are the shipped defaults the Settings page edits, so a
+// user bind on the same chord always wins (see defaultBindsLua).
+var meiDefaultBinds = []meiBind{
+	{Keys: "PRINT", Action: "exec", Value: "mei-screenshot full"},
+	{Keys: "SUPER + SHIFT + S", Action: "exec", Value: "mei-screenshot region"},
+	{Keys: "SUPER + V", Action: "global", Value: "mei:clipboard"},
+	{Keys: "SUPER + TAB", Action: "global", Value: "mei:overview"},
+	{Keys: "SUPER + ALT + TAB", Action: "global", Value: "mei:overview"},
+}
+
+// defaultBindsLua renders Mei's own chords, skipping any chord the user already
+// claimed with a bind or a rebind. Every chord is unbound first: the shipped
+// config binds the same keys to ryoku:* globals, which no longer resolve here,
+// and two binds on one chord would both fire.
+func defaultBindsLua(user meiKeybinds) string {
+	taken := map[string]bool{}
+	for _, b := range user.Binds {
+		taken[strings.TrimSpace(b.Keys)] = true
+	}
+	for def, chosen := range user.Rebinds {
+		taken[strings.TrimSpace(def)] = true
+		taken[strings.TrimSpace(chosen)] = true
+	}
+	var lines []string
+	for _, b := range meiDefaultBinds {
+		if taken[b.Keys] {
+			continue
+		}
+		dsp, ok := bindDsp(b.Action, b.Value)
+		if !ok {
+			continue
+		}
+		lines = append(lines, "hl.unbind("+luaStr(b.Keys)+")", "hl.bind("+luaStr(b.Keys)+", "+dsp+")")
 	}
 	return strings.Join(lines, "\n")
 }
@@ -319,7 +370,7 @@ func applyKeybinds(k meiKeybinds, persist bool) error {
 		}
 	}
 	script, skipped := keybindsLua(k)
-	script = strings.TrimSpace(strings.Join([]string{unbindLua(prev), script}, "\n"))
+	script = strings.TrimSpace(strings.Join([]string{unbindLua(prev), script, defaultBindsLua(k)}, "\n"))
 	if err := hyprEval(script); err != nil {
 		return err
 	}
@@ -623,7 +674,7 @@ func reapplyMeiOverrides() error {
 	}
 	k := readMeiKeybinds()
 	script, skipped := keybindsLua(k)
-	script = strings.TrimSpace(strings.Join([]string{unbindLua(k), script}, "\n"))
+	script = strings.TrimSpace(strings.Join([]string{unbindLua(k), script, defaultBindsLua(k)}, "\n"))
 	if err := hyprEval(script); err != nil {
 		fmt.Fprintf(os.Stderr, "overrides: keybinds: %v\n", err)
 	}

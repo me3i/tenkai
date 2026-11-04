@@ -379,6 +379,13 @@ func dispatcherToDsp(disp, args string) (string, bool) {
 		return fmt.Sprintf("hl.dsp.window.move({ workspace = %s })", workspaceArg(args)), true
 	case "movetoworkspacesilent":
 		return fmt.Sprintf("hl.dsp.window.move({ workspace = %s, silent = true })", workspaceArg(args)), true
+	case "global":
+		// A shell-owned shortcut (mei:overview, mei:clipboard, ...), which is
+		// what Mei's own default chords dispatch to.
+		if strings.TrimSpace(args) == "" {
+			return "", false
+		}
+		return fmt.Sprintf("hl.dsp.global(%s)", luaStr(args)), true
 	case "togglespecialworkspace":
 		if args == "" {
 			return "hl.dsp.workspace.toggle_special()", true

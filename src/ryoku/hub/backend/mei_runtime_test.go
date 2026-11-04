@@ -112,6 +112,37 @@ func TestUnbindLua(t *testing.T) {
 	}
 }
 
+// Mei's own chords (screenshot, clipboard, overview) are applied on every
+// override pass, so they survive a Hyprland reload without being saved into the
+// user's keybinds.json. A user bind on the same chord wins, and each default is
+// unbound first because the shipped config already binds the same keys to
+// ryoku:* globals.
+func TestDefaultBindsLua(t *testing.T) {
+	got := defaultBindsLua(meiKeybinds{})
+	for _, w := range []string{
+		`hl.unbind("PRINT")`,
+		`hl.bind("PRINT", hl.dsp.exec_cmd("mei-screenshot full"))`,
+		`hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("mei-screenshot region"))`,
+		`hl.bind("SUPER + V", hl.dsp.global("mei:clipboard"))`,
+		`hl.bind("SUPER + TAB", hl.dsp.global("mei:overview"))`,
+		`hl.bind("SUPER + ALT + TAB", hl.dsp.global("mei:overview"))`,
+	} {
+		if !strings.Contains(got, w) {
+			t.Errorf("defaultBindsLua missing %q\ngot:\n%s", w, got)
+		}
+	}
+
+	// A user bind on one of the chords replaces that default, and only that one.
+	user := meiKeybinds{Binds: []meiBind{{Keys: "SUPER + V", Action: "exec", Value: "cliphist"}}}
+	got = defaultBindsLua(user)
+	if strings.Contains(got, `hl.bind("SUPER + V"`) {
+		t.Errorf("a user bind did not win over the default chord:\n%s", got)
+	}
+	if !strings.Contains(got, `hl.bind("SUPER + TAB", hl.dsp.global("mei:overview"))`) {
+		t.Errorf("the other defaults must still apply:\n%s", got)
+	}
+}
+
 // A desktop draft's keybinds move to keybinds.json and must not be echoed back
 // into the advanced file, or every save would grow the store.
 func TestSplitDesktopDraft(t *testing.T) {

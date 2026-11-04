@@ -140,18 +140,35 @@ else
 fi
 [ -S "$RT/ryogami.sock" ] && ok "nest runtime holds ryogami.sock" || bad "no ryogami.sock in $RT"
 
-echo; echo "=== matugen config is Mei's minimal one ==="
+echo; echo "=== matugen config carries exactly one template: kitty ==="
 CFG="$RUN/config/mei/matugen/config.toml"
+KITTY_OUT="$RUN/home/.cache/mei/kitty-colors.conf"
 if [ -f "$CFG" ]; then
-  if grep -qE '^[[:space:]]*(output_path|input_path|post_hook)[[:space:]]*=' "$CFG" || grep -qE '^[[:space:]]*\[templates\.' "$CFG"; then
-    bad "config carries templates or a post_hook:"; cat "$CFG"
+  if grep -qE '^[[:space:]]*post_hook[[:space:]]*=' "$CFG"; then
+    bad "config carries a post_hook (an arbitrary command after every render):"; cat "$CFG"
   else
-    ok "config renders nothing: no [templates.*], no post_hook ($CFG)"
+    ok "no post_hook in $CFG"
+  fi
+  blocks="$(grep -oE '^\[templates\.[^]]+\]' "$CFG" | tr '\n' ' ')"
+  if [ "$blocks" = "[templates.kitty] " ]; then
+    ok "exactly one template block, kitty: $blocks"
+  else
+    bad "template blocks are not just kitty: ${blocks:-none}"
+  fi
+  if [ "$(sed -n 's/^input_path = "\(.*\)"$/\1/p' "$CFG")" = "$RUN/config/mei/matugen/templates/kitty-colors.conf" ]; then
+    ok "kitty template input is Mei's own copy"
+  else
+    bad "kitty template input_path is not Mei's copy"
+  fi
+  if [ "$(sed -n 's/^output_path = "\(.*\)"$/\1/p' "$CFG")" = "$KITTY_OUT" ]; then
+    ok "kitty colours render into the session cache, not ~/.config/kitty"
+  else
+    bad "kitty output_path is not the session cache"
   fi
   if grep -q '^\[config\]' "$CFG" && grep -q '^\[templates\]' "$CFG"; then
-    ok "config is the minimal valid form ([config] + empty [templates]; matugen 4.2.0 requires the templates key)"
+    ok "config keeps the minimal valid form ([config] + [templates])"
   else
-    bad "config is not the expected minimal form"; cat "$CFG"
+    bad "config lost [config] or the templates key"; cat "$CFG"
   fi
 else
   bad "no matugen config at $CFG"
@@ -196,6 +213,16 @@ PY
 COL1="$(sha256sum "$RUN/home/.cache/mei/colors.json" | awk '{print $1}')"
 note "colors.json after set 1: $COL1"
 [ -n "$COL0" ] && [ "$COL0" != "$COL1" ] && ok "colors.json changed on the first palette" || note "colors.json was absent before (first palette)"
+if [ -s "$KITTY_OUT" ]; then
+  ok "kitty colours rendered: $KITTY_OUT ($(wc -l < "$KITTY_OUT") lines)"
+  if grep -qE '^color1?[0-9] #[0-9a-fA-F]{6}$' "$KITTY_OUT" && grep -qE '^background #[0-9a-fA-F]{6}$' "$KITTY_OUT"; then
+    ok "kitty file is in kitty's own colour form (background + color0..15)"
+  else
+    bad "kitty file is not in kitty's colour form:"; head -5 "$KITTY_OUT"
+  fi
+else
+  bad "no kitty colours at $KITTY_OUT after a palette pass"
+fi
 
 echo; echo "=== bar + launcher recolour (pixel evidence) ==="
 snap step5-bar-after1.png

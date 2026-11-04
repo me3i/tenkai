@@ -275,6 +275,24 @@ MATUGEN
   chmod 755 "$1"
 }
 
+mei_seed_matugen() { # $1 = the cache dir this session's palette pass writes into
+  # Mei's matugen config plus the ONE template Mei renders: kitty. Neither end of
+  # the template block can be baked into the shipped config.toml (both follow the
+  # running session's XDG dirs), so the block is appended here with both paths
+  # expanded, and Mei's copy of the template is placed beside it. The output is
+  # under the cache dir the session was given, so a nested palette pass writes
+  # nothing outside the project, and a live one writes ~/.cache/mei only.
+  local cache="${1:?no cache dir given}" cfg="$RUN_DIR/config/mei/matugen"
+  mkdir -p "$cfg/templates" "$cache/mei"
+  cp -f "$MEI_DIR/src/ryoku/shell/matugen/templates/kitty-colors.conf" \
+        "$cfg/templates/kitty-colors.conf"
+  {
+    cat "$MEI_DIR/src/ryoku/shell/matugen/config.toml"
+    printf '\n[templates.kitty]\ninput_path = "%s"\noutput_path = "%s"\n' \
+      "$cfg/templates/kitty-colors.conf" "$cache/mei/kitty-colors.conf"
+  } > "$cfg/config.toml"
+}
+
 mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inventory
   mkdir -p "$RUN_DIR/bin"
   local n src
@@ -383,7 +401,8 @@ cache_warn_re() {
 # (~/.config/matugen/config.toml, shipped in /usr/share/ryoku/config) renders a
 # few CORE desktop surfaces straight into ~/.config — the kitty terminal theme,
 # the btop theme and the Qt palette — whenever the owner changes wallpaper. Mei
-# must never write those (its own matugen config carries no [templates.*] at all
+# must never write those (its own matugen config renders only the kitty template,
+# into ~/.cache/mei,
 # and its app fan-out is switched off in src/ryoku/shell/ipc/matugen.go), so a
 # change there has to be attributable before it is called a leak.
 #
@@ -1441,6 +1460,9 @@ prepare_nested_home() {
   mkdir -p "$RUN_DIR/home" "$RUN_DIR/config" "$RUN_DIR/cache" "$RUN_DIR/state" \
            "$RUN_DIR/data" "$RUN_DIR/r" "$RUN_DIR/hypr" "$RUN_DIR/logs" "$RUN_DIR/bin" "$RUN_DIR/qml"
   chmod 700 "$RUN_DIR/r"
+  # matugen: the config this session's palette pass reads, with kitty's colours
+  # landing in the nested fake home's cache (never the owner's ~/.config/kitty).
+  mei_seed_matugen "$RUN_DIR/home/.cache"
   # Hyprland names its IPC sockets $XDG_RUNTIME_DIR/hypr/<signature>/.socket2.sock.
   # The signature is 61 chars, so the full path must stay <= 107 bytes or the
   # *event* socket is silently disabled ("Socket2 path is too long"). The
@@ -1637,10 +1659,10 @@ for i in \$(seq 1 100); do
 done
 note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY"
 
-# Mei's minimal matugen config: [config] only -- no templates, no post_hook, so
-# a palette pass computes colours and writes nothing outside the project.
-mkdir -p "\$XDG_CONFIG_HOME/mei/matugen"
-cp -f "\$MEI_DIR/src/ryoku/shell/matugen/config.toml" "\$XDG_CONFIG_HOME/mei/matugen/config.toml"
+# Mei's matugen config is seeded by ./mei before the session starts
+# (mei_seed_matugen): the shipped file plus the kitty template block, with both
+# of its paths expanded for this session's XDG dirs. No post_hook, so the pass
+# writes that one file and nothing else.
 
 # Module switchboard: wallpaper=false starts no ryogami at all, so the nested
 # bus and process list have no wallpaper daemon to prove against.
@@ -2093,6 +2115,9 @@ write_live_session() { # $1 = profile, $2 = display, $3 = signature, $4 = runtim
   # shadow stubs before this session gets a PATH that starts with it, or the
   # live system's ryoku* helpers would resolve from /usr/bin.
   mei_provision_bin
+  # matugen: the same config, with kitty's colours rendering into the real cache
+  # (~/.cache/mei/kitty-colors.conf) -- the file the owner's kitty.conf includes.
+  mei_seed_matugen "$HOME/.cache"
   # Every injected block is a SINGLE line: the substitution below is one sed
   # expression, and a newline in a value would break it (the full profile's
   # script was never substituted before this was noticed).
