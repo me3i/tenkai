@@ -56,32 +56,31 @@ type outputRow struct {
 	SdrBrightness float64  `json:"sdrBrightness"`
 }
 
+// errOutputWriteDisabled refuses every mutating outputs verb. Mei's Settings app
+// shows the display layout and the saved profiles READ-ONLY: applying a layout
+// reaches the provider (ryoku-monitor), which writes monitors.lua, and Mei must
+// never write compositor config. Reading (list/profiles) is unaffected.
+func errOutputWriteDisabled(verb string) error {
+	return fmt.Errorf("outputs %s: disabled in Mei (Settings is read-only; it never writes compositor config)", verb)
+}
+
 func runOutputs(args []string) error {
 	switch {
 	case len(args) == 0 || args[0] == "list":
 		return listOutputs()
+	// MEI: every mutating verb is refused. The implementations below
+	// (applyOutputs/saveProfile/loadProfile/rmProfile) are kept, unused, ready to
+	// be restored by returning them to the switch.
 	case args[0] == "apply":
-		if len(args) < 2 {
-			return fmt.Errorf("outputs apply needs a layout JSON")
-		}
-		return applyOutputs(args[1])
+		return errOutputWriteDisabled("apply")
 	case args[0] == "profiles":
 		return listProfiles()
 	case args[0] == "save":
-		if len(args) < 3 {
-			return fmt.Errorf("outputs save needs a name and a layout JSON")
-		}
-		return saveProfile(args[1], args[2])
+		return errOutputWriteDisabled("save")
 	case args[0] == "load":
-		if len(args) < 2 {
-			return fmt.Errorf("outputs load needs a name")
-		}
-		return loadProfile(args[1])
+		return errOutputWriteDisabled("load")
 	case args[0] == "rm":
-		if len(args) < 2 {
-			return fmt.Errorf("outputs rm needs a name")
-		}
-		return rmProfile(args[1])
+		return errOutputWriteDisabled("rm")
 	}
 	return fmt.Errorf("outputs: unknown subcommand %q", args[0])
 }

@@ -150,19 +150,20 @@ note "rail sections in source (active block only):"
 AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$MEI/src/ryoku/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
 echo "    $AKEYS"
 # The kept rail, asserted per key rather than as one exact string: the list grows
-# as pages ship (Visuals, Fastfetch, Window Manager so far) and an equality check
-# on the whole string turns every legitimate addition into a red gate. Membership
-# is what matters, plus the count so a page cannot silently vanish.
-RAIL_KEYS="global desktop visuals bar-studio launcher animations fastfetch windowmanager"
+# as pages ship (Visuals, Fastfetch, Window Manager, Displays, Keybinds,
+# Connections so far) and an equality check on the whole string turns every
+# legitimate addition into a red gate. Membership is what matters, plus the
+# count so a page cannot silently vanish.
+RAIL_KEYS="global desktop visuals bar-studio launcher animations fastfetch windowmanager displays keybinds connections"
 for k in $RAIL_KEYS; do
   echo " $AKEYS" | grep -q " $k " \
     && ok "rail carries the '$k' section" \
     || bad "rail is missing the '$k' section (rail: $AKEYS)"
 done
 RAIL_N="$(printf '%s\n' $AKEYS | grep -c .)"
-[ "$RAIL_N" -eq 8 ] \
+[ "$RAIL_N" -eq 11 ] \
   && ok "rail carries exactly the $RAIL_N kept sections" \
-  || bad "rail carries $RAIL_N sections, expected 8: $AKEYS"
+  || bad "rail carries $RAIL_N sections, expected 11: $AKEYS"
 for s in $RAIL_KEYS; do
   if [ "$HUB_OK" = 1 ]; then
     mesh hub open "$s" >/dev/null 2>&1
@@ -187,8 +188,10 @@ for s in $RAIL_KEYS; do
   awk -v v="${sd:-0}" 'BEGIN{exit !(v>0.02)}' && ok "page '$s' rendered hub content (crop std=$sd)" || bad "page '$s' hub area looks blank (std=$sd)"
 done
 
-# a disabled section must be refused
-for dead in displays windowmanager; do
+# a section that is NOT in the kept rail must still be refused (the router is
+# gated by the group membership, not only the rail's visibility). `profile` and
+# `session` remain disabled pages, so a deep link to them must not open one.
+for dead in profile session; do
   if [ "$HUB_OK" != 1 ]; then bad "disabled section '$dead' not tested: hub never opened"; continue; fi
   mesh hub open "$dead" >/dev/null 2>&1; sleep 2
   got="$(sec)"

@@ -26,6 +26,13 @@ Item {
     property var hub
     readonly property bool fullBleed: true
 
+    // MEI: READ-ONLY. The page shows your Wi-Fi, Bluetooth and hotspot state,
+    // but every mutating path is gated here: nmcli connection modify/add/up,
+    // nmcli dev wifi connect, pkexec ryoku-wifi-backend, pkexec
+    // ryoku-network-kill, and the bluetoothctl pair/trust/connect flow. Mei
+    // treats the network as read-only status (AGENTS.md), so the UI keeps the
+    // controls visible but inert. Set this to false to restore the editors.
+
     // which subtab is showing. transient, not persisted; resets to Wi-Fi on
     // every mount (matches the old page's `property string sub: "wifi"`).
     property string sub: "wifi"
@@ -58,6 +65,8 @@ Item {
     }
 
     function toggleKillSwitch() {
+        if (pg.readOnly)
+            return;
         killBusy = true;
         killError = "";
         killSetProc.target = killState === "off" ? "on" : "off";
@@ -501,7 +510,7 @@ Item {
         // for a network the row reads as saved (nmcli names it after the SSID),
         // so the same key targets it. refresh re-reads the map on completion.
         function setAutoconnect(ssid, enabled) {
-            if (wifi.autoBusy || !ssid.length)
+            if (pg.readOnly || wifi.autoBusy || !ssid.length)
                 return;
             wifi.autoBusy = true;
             autoProc.command = ["nmcli", "connection", "modify", ssid, "connection.autoconnect", enabled ? "yes" : "no"];
@@ -511,7 +520,7 @@ Item {
         // flip the NM backend. no-op if unchanged or already switching; the
         // shipped polkit rule lets wheel run this via pkexec with no prompt.
         function setBackend(choice) {
-            if (wifi.backendBusy || choice === wifi.wifiBackend)
+            if (pg.readOnly || wifi.backendBusy || choice === wifi.wifiBackend)
                 return;
             wifi.backendBusy = true;
             backendSetProc.command = ["pkexec", "ryoku-wifi-backend", choice];
@@ -588,7 +597,7 @@ Item {
         // row click: connected -> disconnect, known or open -> connect, else
         // expand the inline password row.
         function activateNetwork(net) {
-            if (!net)
+            if (pg.readOnly || !net)
                 return;
             var ssid = net.name || "";
             if (wifi.expandedSsid === ssid) {
@@ -621,7 +630,7 @@ Item {
         // `nmcli --ask`, password through stdin. /proc/<pid>/cmdline is world-
         // readable for the whole attempt, so it MUST NOT be in argv.
         function connectWithPassword(ssid, pw) {
-            if (connProc.running || !pw.length)
+            if (pg.readOnly || connProc.running || !pw.length)
                 return;
             wifi.connecting = true;
             wifi.connectFailed = false;
@@ -640,7 +649,7 @@ Item {
         // strongest pick; it shares connProc's success and cleanup wiring and
         // needs no password.
         function connectBand(ssid, bssid) {
-            if (connProc.running)
+            if (pg.readOnly || connProc.running)
                 return;
             wifi.connecting = true;
             wifi.connectFailed = false;
@@ -1118,7 +1127,8 @@ Item {
                                             compact: true
                                             text: wifi.bandLabel(modelData.band)
                                             primary: wifi.selectedBands[netItem.ssid] === modelData.band
-                                            armed: !wifi.connecting
+                                            // MEI: read-only -- a band pick joins an AP.
+                                            armed: !pg.readOnly && !wifi.connecting
                                             onAct: wifi.selectBand(netItem.ssid,
                                                 wifi.selectedBands[netItem.ssid] === modelData.band ? "" : modelData.band)
                                         }
@@ -1158,6 +1168,8 @@ Item {
                                         compact: true
                                         text: autoRow.on ? I18n.tr("On") : I18n.tr("Off")
                                         primary: autoRow.on
+                                        // MEI: read-only -- this runs `nmcli connection modify`.
+                                        armed: false
                                         armed: !wifi.autoBusy
                                         onAct: wifi.setAutoconnect(netItem.ssid, !autoRow.on)
                                     }
@@ -1242,7 +1254,8 @@ Item {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: I18n.tr("Connect")
                                         primary: true
-                                        armed: !wifi.connecting && pwField.text.length > 0
+                                        // MEI: read-only -- this runs `nmcli dev wifi connect`.
+                                        armed: false
                                         onAct: wifi.connectWithPassword(netItem.ssid, pwField.text)
                                     }
                                 }
@@ -1323,7 +1336,8 @@ Item {
                         compact: true
                         text: I18n.tr("iwd")
                         primary: wifi.wifiBackend === "iwd"
-                        armed: !wifi.backendBusy
+                        // MEI: read-only -- this runs `pkexec ryoku-wifi-backend`.
+                        armed: false
                         onAct: wifi.setBackend("iwd")
                     }
 
@@ -1332,7 +1346,8 @@ Item {
                         compact: true
                         text: I18n.tr("wpa_supplicant")
                         primary: wifi.wifiBackend === "wpa_supplicant"
-                        armed: !wifi.backendBusy
+                        // MEI: read-only -- this runs `pkexec ryoku-wifi-backend`.
+                        armed: false
                         onAct: wifi.setBackend("wpa_supplicant")
                     }
                 }
@@ -1407,7 +1422,7 @@ Item {
         // row click: disconnect if connected, connect if paired, else run the
         // bluetoothctl pair-trust-connect flow.
         function activateDevice(d) {
-            if (!d)
+            if (pg.readOnly || !d)
                 return;
             if (d.connected) {
                 if (typeof d.disconnect === "function")
@@ -1423,7 +1438,7 @@ Item {
         }
 
         function pairDevice(d) {
-            if (!d || !d.address || pairProc.running)
+            if (pg.readOnly || !d || !d.address || pairProc.running)
                 return;
             bt.pairingAddress = d.address;
             bt.failedAddress = "";
@@ -1437,7 +1452,7 @@ Item {
         // first (/dev/rfkill is seat-writable via systemd uaccess, no root), and
         // powered on when the unblock lands; everything else is a plain flip.
         function setAdapterEnabled(v) {
-            if (!bt.adapter)
+            if (pg.readOnly || !bt.adapter)
                 return;
             if (v && (bt.blocked || unblockProc.running)) {
                 if (!unblockProc.running)
@@ -1448,7 +1463,7 @@ Item {
         }
 
         function startService() {
-            if (svcProc.running)
+            if (pg.readOnly || svcProc.running)
                 return;
             bt.serviceError = "";
             svcProc.running = true;
@@ -1601,6 +1616,10 @@ Item {
                         anchors.verticalCenter: parent.verticalCenter
                         visible: bt.hasAdapter
                         on: bt.adapterOn
+                        // MEI: read-only -- lifting the rfkill block and powering
+                        // the radio is a system change.
+                        enabled: false
+                        opacity: 0.5
                         onToggled: (v) => bt.setAdapterEnabled(v)
                     }
                 }
@@ -1659,7 +1678,8 @@ Item {
                         anchors.horizontalCenter: parent.horizontalCenter
                         visible: !bt.hasAdapter
                         text: svcProc.running ? I18n.tr("Starting\u2026") : I18n.tr("Start service")
-                        armed: !svcProc.running
+                        // MEI: read-only -- starting org.bluez is a system change.
+                        armed: false
                         onAct: bt.startService()
                     }
 
@@ -1811,6 +1831,8 @@ Item {
                                             anchors.verticalCenter: parent.verticalCenter
                                             visible: !dev.isPaired && !dev.pairing
                                             text: I18n.tr("Pair")
+                                            // MEI: read-only -- runs the bluetoothctl pair/trust/connect flow.
+                                            armed: false
                                             onAct: bt.activateDevice(dev.modelData)
                                         }
 
@@ -1818,6 +1840,8 @@ Item {
                                             anchors.verticalCenter: parent.verticalCenter
                                             visible: dev.isConnected
                                             text: I18n.tr("Disconnect")
+                                            // MEI: read-only -- disconnects a live device.
+                                            armed: false
                                             onAct: bt.activateDevice(dev.modelData)
                                         }
                                     }
@@ -1858,7 +1882,7 @@ Item {
         property string hsDraft: ""
 
         function applyHotspot() {
-            if (hs.hsBusy || hs.hsPw.length < 8)
+            if (pg.readOnly || hs.hsBusy || hs.hsPw.length < 8)
                 return;
             hs.hsBusy = true;
             hsApplyProc.command = ["sh", "-c",
@@ -1874,7 +1898,7 @@ Item {
         }
 
         function stopHotspot() {
-            if (hs.hsBusy)
+            if (pg.readOnly || hs.hsBusy)
                 return;
             hs.hsBusy = true;
             hsDownProc.running = true;
@@ -2026,8 +2050,9 @@ Item {
                     anchors.rightMargin: Tokens.s5
                     anchors.verticalCenter: parent.verticalCenter
                     on: hs.hsActive
-                    enabled: !hs.hsBusy
-                    opacity: hs.hsBusy ? 0.3 : 1
+                    // MEI: read-only -- starting a hotspot runs `nmcli connection add/up`.
+                    enabled: false
+                    opacity: 0.5
                     onToggled: {
                         if (hs.hsActive) {
                             hs.stopHotspot();
@@ -2148,6 +2173,15 @@ Item {
                 color: Tokens.inkMuted; font.family: Tokens.ui
                 font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
             }
+            // MEI: the honest label for an inert write path. The state below is
+            // live; connect/pair/isolate/hotspot are disabled because Mei treats
+            // the network as read-only status.
+            Text {
+                width: Math.min(parent.width, 720)
+                text: I18n.tr("Read-only in Mei: your networks are shown, not changed. Use nmtui or bluetoothctl in a terminal.")
+                color: Tokens.inkMuted; font.family: Tokens.ui
+                font.pixelSize: Tokens.fSmall; font.italic: true; wrapMode: Text.WordWrap
+            }
         }
 
         // The kill switch is a machine-wide firewall, not a radio toggle. The
@@ -2197,7 +2231,8 @@ Item {
                 id: killAction
                 anchors { right: parent.right; rightMargin: Tokens.s3; verticalCenter: parent.verticalCenter }
                 text: pg.killBusy ? I18n.tr("WORKING") : (pg.killState === "off" ? I18n.tr("ISOLATE") : I18n.tr("RESTORE"))
-                armed: !pg.killBusy && pg.killState !== "checking"
+                // MEI: read-only -- this runs `pkexec ryoku-network-kill`.
+                armed: false
                 onAct: pg.toggleKillSwitch()
             }
         }

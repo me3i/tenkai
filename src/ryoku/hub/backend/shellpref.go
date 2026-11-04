@@ -179,6 +179,15 @@ func passwdShell(path, username string) (string, error) {
 	return "", fmt.Errorf("user %s not found", username)
 }
 
+// errShellWriteDisabled refuses every mutating shell-pref verb. Mei's Settings
+// shows the current login shell and the zsh prompt READ-ONLY: `shell set` writes
+// rc files in HOME and escalates to chsh (the LOGIN SHELL in /etc/passwd), and
+// `shell prompt` rewrites the user's rc files. Neither is a Settings write Mei
+// may make. Reading (get) is unaffected.
+func errShellWriteDisabled(verb string) error {
+	return fmt.Errorf("shell %s: disabled in Mei (Settings shows the login shell read-only)", verb)
+}
+
 func runShellPref(args []string) error {
 	if len(args) == 0 {
 		return fmt.Errorf("shell needs get|set")
@@ -208,44 +217,51 @@ func runShellPref(args []string) error {
 		if len(args) != 2 {
 			return fmt.Errorf("shell set needs fish, bash, or zsh")
 		}
-		path, err := validateShellChoice(args[1], accountShells, "/etc/shells")
-		if err != nil {
-			return err
-		}
-		if _, err := ensureShellLoaders(current.HomeDir, args[1]); err != nil {
-			return err
-		}
-		if err := escalateSelf("shell", "apply", args[1]); err != nil {
-			return err
-		}
-		syncSessionShell(path)
-		return nil
+		// MEI: refused. `shell set` runs ensureShellLoaders (writes rc files in
+		// HOME) and escalateSelf("shell","apply") -> chsh, i.e. it changes the
+		// LOGIN SHELL in /etc/passwd. Mei's Settings shows the current shell
+		// read-only, so this must never run. The body below is kept, unused,
+		// ready to be restored by deleting this return.
+		return errShellWriteDisabled("set")
 	case "prompt":
 		if len(args) != 2 {
 			return fmt.Errorf("shell prompt needs starship or oh-my-zsh")
 		}
-		return setZshPrompt(current.HomeDir, args[1])
+		// MEI: refused too - setZshPrompt writes the user's rc files.
+		return errShellWriteDisabled("prompt")
 	case "apply":
 		if len(args) != 2 || os.Geteuid() != 0 {
 			return fmt.Errorf("shell apply requires privileged fish, bash, or zsh")
 		}
-		path, err := validateShellChoice(args[1], accountShells, "/etc/shells")
-		if err != nil {
-			return err
-		}
-		uid := os.Getenv("PKEXEC_UID")
-		invoking, err := user.LookupId(uid)
-		if err != nil || invoking.Uid == "0" {
-			return fmt.Errorf("cannot resolve invoking user")
-		}
-		out, err := exec.Command("usermod", "-s", path, invoking.Username).CombinedOutput()
-		if err != nil {
-			return fmt.Errorf("set login shell: %v: %s", err, strings.TrimSpace(string(out)))
-		}
-		return nil
+		// MEI: refused even privileged, so no path can reach chsh/usermod. The
+		// implementation is kept as applyShellPrivileged below, unused, ready to
+		// be restored by returning it to this case.
+		return errShellWriteDisabled("apply")
 	default:
 		return fmt.Errorf("shell needs get|set")
 	}
+}
+
+// applyShellPrivileged is the original `shell apply` body: it validates the
+// choice, resolves the invoking user through PKEXEC_UID and runs
+// `usermod -s <shell>`, i.e. it rewrites the login shell in /etc/passwd. Mei
+// refuses the verb (see errShellWriteDisabled) and keeps this here, unused, so
+// the original behaviour can be restored by returning it to the switch.
+func applyShellPrivileged(key string) error {
+	path, err := validateShellChoice(key, accountShells, "/etc/shells")
+	if err != nil {
+		return err
+	}
+	uid := os.Getenv("PKEXEC_UID")
+	invoking, err := user.LookupId(uid)
+	if err != nil || invoking.Uid == "0" {
+		return fmt.Errorf("cannot resolve invoking user")
+	}
+	out, err := exec.Command("usermod", "-s", path, invoking.Username).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("set login shell: %v: %s", err, strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 var runSessionCommand = func(name string, args ...string) error {

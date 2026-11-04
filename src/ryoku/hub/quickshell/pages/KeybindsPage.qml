@@ -29,6 +29,13 @@ Item {
     property var hub
     readonly property bool fullBleed: true
 
+    // MEI: READ-ONLY. The legend, the app roles and the current rebinds are
+    // shown, but nothing here is written: a keybind change is staged into the
+    // desktop store and then saved as compositor config (settings.lua /
+    // rebinds.lua), and Mei's Settings must never write Hyprland config. The
+    // backend refuses `desktop save` (desktop.go, errWMWriteDisabled) as the
+    // second line of defence. Set this to false to restore the editor.
+
     // guard the harness and the pre-load window: the shell injects a real hub
     // exposing hyprVal/hyprEdit; a bare probe object exposes neither.
     readonly property bool hubReady: pg.hub && typeof pg.hub.hyprVal === "function"
@@ -257,7 +264,7 @@ Item {
     // Repeater and rebuilds the delegate owning a focused field, so text edits
     // commit on editing-finished, not per keystroke.
     function patch(i, key, val) {
-        if (!pg.hubReady)
+        if (pg.readOnly || !pg.hubReady)
             return;
         var a = (pg.hub.hyprVal("desktop.keybinds") || []).slice();
         a[i] = Object.assign({}, a[i]);
@@ -266,7 +273,7 @@ Item {
     }
     // switching action clears the value: only "exec" carries a command.
     function setAction(i, key) {
-        if (!pg.hubReady)
+        if (pg.readOnly || !pg.hubReady)
             return;
         var a = (pg.hub.hyprVal("desktop.keybinds") || []).slice();
         a[i] = Object.assign({}, a[i]);
@@ -276,24 +283,26 @@ Item {
         pg.hub.hyprEdit("desktop.keybinds", a);
     }
     function addRow() {
-        if (!pg.hubReady)
+        if (pg.readOnly || !pg.hubReady)
             return;
         var a = (pg.hub.hyprVal("desktop.keybinds") || []).slice();
         a.push({ "keys": "", "action": "exec", "value": "", "release": false });
         pg.hub.hyprEdit("desktop.keybinds", a);
     }
     function removeRow(i) {
-        if (!pg.hubReady)
+        if (pg.readOnly || !pg.hubReady)
             return;
         var a = (pg.hub.hyprVal("desktop.keybinds") || []).slice();
         a.splice(i, 1);
         pg.hub.hyprEdit("desktop.keybinds", a);
     }
     function clearAll() {
-        if (pg.hubReady)
+        if (!pg.readOnly && pg.hubReady)
             pg.hub.hyprEdit("desktop.keybinds", []);
     }
     function saveAll() {
+        if (pg.readOnly)
+            return;
         if (pg.hubReady)
             pg.hub.save();
     }
@@ -417,7 +426,7 @@ Item {
         return false;
     }
     function setRebind(defCombo, chord) {
-        if (!pg.hubReady)
+        if (pg.readOnly || !pg.hubReady)
             return;
         var cur = pg.hub.hyprVal("desktop.keybindRebinds") || {};
         var m = {};
@@ -431,7 +440,7 @@ Item {
     }
     function clearRebind(defCombo) { pg.setRebind(defCombo, ""); }
     function clearRebinds() {
-        if (pg.hubReady)
+        if (!pg.readOnly && pg.hubReady)
             pg.hub.hyprEdit("desktop.keybindRebinds", ({}));
     }
 
@@ -742,6 +751,13 @@ Item {
             text: I18n.tr("Every desktop shortcut in one place. Search, rebind, or add your own.")
             color: Tokens.inkMuted; font.family: Tokens.ui
             font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
+        }
+        // MEI: the honest label for an inert write path.
+        Text {
+            width: Math.min(parent.width, 720)
+            text: I18n.tr("Read-only in Mei: shortcuts are shown, not changed. Edit your Hyprland config to rebind.")
+            color: Tokens.inkMuted; font.family: Tokens.ui
+            font.pixelSize: Tokens.fSmall; font.italic: true; wrapMode: Text.WordWrap
         }
     }
 
@@ -1885,7 +1901,8 @@ Item {
             Btn {
                 anchors.verticalCenter: parent.verticalCenter
                 text: pg.tab === "apps" ? I18n.tr("RESET APPS") : (pg.tab === "shortcuts" ? I18n.tr("RESET REBINDS") : I18n.tr("RESTORE DEFAULTS"))
-                armed: pg.tab === "apps" ? pg.hasApps() : (pg.tab === "shortcuts" ? pg.hasRebinds() : pg.customRows.length > 0)
+                // MEI: read-only -- a reset stages a compositor write.
+                armed: false
                 onAct: pg.tab === "apps" ? pg.clearApps() : (pg.tab === "shortcuts" ? pg.clearRebinds() : pg.clearAll())
             }
             Btn {
@@ -1898,7 +1915,8 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 text: I18n.tr("SAVE")
                 primary: true
-                armed: pg.dirtyCount > 0
+                // MEI: read-only -- Save writes compositor config.
+                armed: false
                 onAct: pg.saveAll()
             }
         }

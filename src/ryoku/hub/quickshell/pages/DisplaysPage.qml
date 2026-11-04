@@ -29,6 +29,14 @@ Item {
     // its side panel and global action bar and keeps only the rail.
     readonly property bool fullBleed: true
 
+    // MEI: READ-ONLY. The page shows every connected output, its mode and its
+    // saved profiles, but it never writes: `mei-hub outputs apply|save|load|rm`
+    // reaches the provider (ryoku-monitor), which writes monitors.lua, and Mei's
+    // Settings must never write compositor config. The backend refuses those
+    // verbs too (outputs.go, errOutputWriteDisabled); this flag keeps the UI
+    // honest. Set it to false to restore the write path.
+    readonly property bool readOnly: true
+
     // ── state: live baseline (the seam's output list) + the editable draft ──
     // monCount is the canvas Repeater model (an int, deliberately not the draft
     // array) so in-place edits never rebuild tiles; `tick` drives reactivity for
@@ -622,6 +630,8 @@ Item {
 
     // ── apply ───────────────────────────────────────────────────────────────
     function apply() {
+        if (pg.readOnly)
+            return;
         var prev = pg.committed;
         var next = JSON.stringify(pg.specsAll());
         applyProc.command = ["mei-hub", "outputs", "apply", next];
@@ -675,6 +685,8 @@ Item {
 
     // ── profiles: a stored layout, replayed through the seam ────────────────
     function saveProfile(name) {
+        if (pg.readOnly)
+            return;
         if (name.trim() === "")
             return;
         profileProc.command = ["mei-hub", "outputs", "save", name.trim(), JSON.stringify(pg.specsAll())];
@@ -685,11 +697,15 @@ Item {
         profileRefresh.start();
     }
     function loadProfile(name) {
+        if (pg.readOnly)
+            return;
         profileProc.command = ["mei-hub", "outputs", "load", name];
         profileProc.running = true;
         listRefresh.start();
     }
     function deleteProfile(name) {
+        if (pg.readOnly)
+            return;
         profileProc.command = ["mei-hub", "outputs", "rm", name];
         profileProc.running = true;
         profileRefresh.start();
@@ -779,7 +795,8 @@ Item {
             // the page's utility actions sit beside the title, per DESIGN section
             // 8. Each computes a layout and applies it through the seam. MIRROR is
             // gated on the output-mirroring capability, so it is absent where the
-            // compositor cannot clone one output onto another.
+            // compositor cannot clone one output onto another. MEI: they compose a
+            // DRAFT only; Apply is disabled below, so nothing reaches the system.
             Row {
                 anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter
                 spacing: Tokens.s2
@@ -794,6 +811,16 @@ Item {
             text: I18n.tr("Arrange your displays and set each one's mode. Save a layout to reuse it.")
             color: Tokens.inkMuted; font.family: Tokens.ui
             font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
+        }
+
+        // MEI: the honest label for an inert write path. The values below are
+        // read from the live session; Apply/Save are disabled because Mei never
+        // writes compositor config.
+        Text {
+            width: Math.min(parent.width, 720)
+            text: I18n.tr("Read-only in Mei: your layout is shown, not changed. Edit monitors in your Hyprland config.")
+            color: Tokens.inkMuted; font.family: Tokens.ui
+            font.pixelSize: Tokens.fSmall; font.italic: true; wrapMode: Text.WordWrap
         }
     }
 
@@ -1286,10 +1313,13 @@ Item {
                             anchors.right: parent.right; anchors.rightMargin: Tokens.s4
                             anchors.verticalCenter: parent.verticalCenter
                             text: I18n.tr("SAVE")
+                            // MEI: read-only -- saving writes monitors.lua.
+                            armed: false
                             onAct: pg.saveProfile(nameField.text)
                         }
                         Field {
                             id: nameField
+                            enabled: !pg.readOnly
                             anchors.left: parent.left; anchors.leftMargin: Tokens.s4
                             anchors.right: saveBtn.left; anchors.rightMargin: Tokens.s2
                             anchors.verticalCenter: parent.verticalCenter
@@ -1371,6 +1401,8 @@ Item {
                                     Btn {
                                         anchors.verticalCenter: parent.verticalCenter
                                         text: I18n.tr("APPLY")
+                                        // MEI: read-only -- replaying a profile writes monitors.lua.
+                                        armed: false
                                         onAct: pg.loadProfile(prof.modelData.name)
                                     }
                                     // a paired minus, not a trash icon: remove is
@@ -1379,6 +1411,8 @@ Item {
                                     IconBtn {
                                         anchors.verticalCenter: parent.verticalCenter
                                         glyph: "\u2212"
+                                        // MEI: read-only -- deleting a profile rewrites the store.
+                                        armed: false
                                         onAct: pg.deleteProfile(prof.modelData.name)
                                     }
                                 }
@@ -1497,8 +1531,9 @@ Item {
 
             Btn { text: I18n.tr("REVERT"); armed: pg.dirty; onAct: pg.reload() }
             // Apply writes to the live displays and re-commits the baseline; the
-            // armed primary inverts to bone while dirty.
-            Btn { text: I18n.tr("APPLY"); primary: true; armed: pg.dirty; onAct: pg.apply() }
+            // armed primary inverts to bone while dirty. MEI: disabled -- the
+            // page is read-only (see pg.readOnly).
+            Btn { text: I18n.tr("APPLY"); primary: true; armed: false; onAct: pg.apply() }
         }
 
     }

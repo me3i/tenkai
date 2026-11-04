@@ -99,10 +99,14 @@ Rectangle {
     // deep per-page knobs inside a schema page, never whole sections, so a page
     // stays calm until asked. Compositor-owned pages sit together under one group
     // so a compositor's settings live in one place, not sprinkled through the list.
-    // MEI: eight pages ship (General, Appearance, Visuals, Bar, Launcher, Motion,
-    // Fastfetch, Window Manager). Every other section is disabled, not deleted:
-    // the original groups block is kept verbatim below, ready to be restored by
-    // swapping the two blocks back.
+    // MEI: eleven pages ship (General, Appearance, Visuals, Bar, Launcher,
+    // Motion, Fastfetch, Window Manager, Displays, Keybinds, Connections).
+    // Displays, Keybinds and Connections are READ-ONLY: they show the live
+    // config, but their mutating controls are disabled in each page and their
+    // write verbs are refused by the backend, because Mei's Settings must never
+    // write compositor config, the login shell, or NetworkManager profiles.
+    // Every other section is disabled, not deleted: the original groups block is
+    // kept verbatim below, ready to be restored by swapping the two blocks back.
     readonly property var groups: [
         { name: "GENERAL", items: [ { key: "global", name: "General" } ] },
         { name: "DESKTOP", items: [
@@ -112,7 +116,11 @@ Rectangle {
             { key: "launcher", name: "Launcher" },
             { key: "animations", name: "Motion" } ] },
         { name: "COMPOSITOR", items: [
-            { key: "windowmanager", name: "Window Manager", wired: true } ] },
+            { key: "windowmanager", name: "Window Manager", wired: true },
+            { key: "keybinds", name: "Keybinds" } ] },
+        { name: "DEVICES", items: [
+            { key: "displays", name: "Displays" },
+            { key: "connections", name: "Connections" } ] },
         { name: "SYSTEM", items: [
             { key: "fastfetch", name: "Fastfetch", wired: true } ] }
     ]
