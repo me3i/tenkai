@@ -99,9 +99,10 @@ Rectangle {
     // deep per-page knobs inside a schema page, never whole sections, so a page
     // stays calm until asked. Compositor-owned pages sit together under one group
     // so a compositor's settings live in one place, not sprinkled through the list.
-    // MEI: only six pages ship (General, Appearance, Visuals, Bar, Launcher, Motion).
-    // Every other section is disabled, not deleted: the original groups block is
-    // kept verbatim below, ready to be restored by swapping the two blocks back.
+    // MEI: seven pages ship (General, Appearance, Visuals, Bar, Launcher, Motion,
+    // Fastfetch). Every other section is disabled, not deleted: the original
+    // groups block is kept verbatim below, ready to be restored by swapping the
+    // two blocks back.
     readonly property var groups: [
         { name: "GENERAL", items: [ { key: "global", name: "General" } ] },
         { name: "DESKTOP", items: [
@@ -109,7 +110,9 @@ Rectangle {
             { key: "visuals", name: "Visuals" },
             { key: "bar-studio", name: "Bar", wired: true },
             { key: "launcher", name: "Launcher" },
-            { key: "animations", name: "Motion" } ] }
+            { key: "animations", name: "Motion" } ] },
+        { name: "SYSTEM", items: [
+            { key: "fastfetch", name: "Fastfetch", wired: true } ] }
     ]
     /*
     readonly property var groups: [
