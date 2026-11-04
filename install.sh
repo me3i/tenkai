@@ -14,6 +14,7 @@
 #   3. systemd user units (mei-shell.service, mei-hub.service) + daemon-reload
 #   4. Hyprland autostart: `mei start` — INTERACTIVE y/N ONLY, never --yes
 #   5. kitty: include the generated colour file (prompted)
+#   6. terminal: this repo's Fish + Starship prompt files (prompted)
 #
 # Everything it writes outside this checkout is named and prompted for. It never
 # installs packages, never writes a Hyprland *config* other than the one
@@ -36,6 +37,9 @@ UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 HYPR_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
 KITTY_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/kitty/kitty.conf"
 KITTY_INCLUDE='include ~/.cache/mei/kitty-colors.conf'
+FISH_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
+STARSHIP_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
+TERM_SRC="$MEI_DIR/src/mei-configs/terminal"
 MARK='mei-install'
 
 ASSUME_YES=0
@@ -130,6 +134,10 @@ check_pkg matugen matugen
 check_pkg kitty kitty
 check_pkg pipewire pw-cli
 check_pkg networkmanager nmcli
+# The terminal: Mei ships the owner's own Fish config and Starship preset, and
+# step 6 installs them, so both are dependencies of a complete install.
+check_pkg fish fish
+check_pkg starship starship
 
 # The rest is not in the required list, but a build or a running shell needs it.
 BUILD_MISSING=()
@@ -411,6 +419,67 @@ fi
 say ""
 say "  The file itself appears the first time Mei runs a palette pass."
 say "  Kitty re-reads its config on SIGUSR1: pkill -USR1 -x kitty"
+
+# ── 6. terminal: fish + starship ─────────────────────────────────────────────
+
+step "6. terminal (fish + starship)"
+
+# This repo carries the exact prompt (src/mei-configs/terminal): a Fish config
+# whose prompt line is `starship init fish | source`, and the Starship preset
+# that draws it. Both are copied whole, never merged into an existing file: the
+# target is backed up first and an identical file is left alone, so a second run
+# changes nothing.
+copy_config() { # $1 = file in this checkout, $2 = destination
+  local src="$1" dst="$2"
+  if [ ! -f "$src" ]; then
+    warn "no ${src#$MEI_DIR/} in this checkout; skipped"
+    return 0
+  fi
+  if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+    ok "$dst already matches"
+    return 0
+  fi
+  if [ -f "$dst" ]; then
+    say "  $dst differs from the bundled copy"
+  else
+    say "  $dst does not exist yet"
+  fi
+  if ! confirm_yes "install $dst from the checkout?"; then
+    warn "$dst not touched"
+    return 0
+  fi
+  mkdir -p "$(dirname "$dst")"
+  [ -f "$dst" ] && cp -a "$dst" "$dst.$MARK.bak"
+  if [ "$DRY_RUN" = 1 ]; then
+    ok "$dst (dry run)"
+    return 0
+  fi
+  install -m 0644 "$src" "$dst"
+  ok "$dst written${backup:+ (backup: $backup)}"
+  return 0
+}
+
+copy_config "$TERM_SRC/config.fish" "$FISH_CONF"
+copy_config "$TERM_SRC/starship.toml" "$STARSHIP_CONF"
+
+# A theme directory would be invisible to the prompt unless config.fish sources
+# it, so only the two files above are deployed; anything else in the bundle is
+# listed for you rather than copied somewhere fish does not read.
+for extra in "$TERM_SRC"/*; do
+  [ -f "$extra" ] || continue
+  case "$(basename "$extra")" in
+    config.fish | starship.toml) ;;
+    *) warn "not deployed: $(basename "$extra") (add it yourself if you need it)" ;;
+  esac
+done
+
+if [ -f "$FISH_CONF" ] && ! grep -qsF 'starship init fish' "$FISH_CONF"; then
+  warn "$FISH_CONF does not call starship; the prompt will be plain fish"
+fi
+if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v fish 2>/dev/null)" ]; then
+  say "  fish is installed but is not your login shell. To use it:"
+  say "    chsh -s $(command -v fish)"
+fi
 
 # ── done ─────────────────────────────────────────────────────────────────────
 
