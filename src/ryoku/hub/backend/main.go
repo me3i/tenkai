@@ -89,6 +89,11 @@ func main() {
 			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
 			os.Exit(1)
 		}
+	case "overrides":
+		if err := runOverrides(args[1:]); err != nil {
+			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			os.Exit(1)
+		}
 	case "outputs":
 		if err := runOutputs(args[1:]); err != nil {
 			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)

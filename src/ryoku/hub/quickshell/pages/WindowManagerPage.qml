@@ -27,7 +27,7 @@ Item {
     readonly property string providerName: Settings.provider
     readonly property string pTitle: pg.providerName !== "" ? pg.cap(pg.providerName) : I18n.tr("Window Manager")
     readonly property string pEyebrow: I18n.tr("COMPOSITOR")
-    readonly property string pBlurb: I18n.tr("How windows look and behave here. Changes apply at your next login.")
+    readonly property string pBlurb: I18n.tr("How windows look and behave here. Changes apply live and are saved to Mei's own config, never to your Hyprland files.")
 
     // Prefer the live read: the shared store is empty in Mei, so hu.hyprVal
     // would leave every row blank. Reading the running compositor is the whole
@@ -35,15 +35,13 @@ Item {
     function hv(path) { return pg.live[path] !== undefined ? pg.live[path] : (pg.hub ? pg.hub.hyprVal(path) : undefined) }
     function cv(path) { return pg.live[path] !== undefined ? pg.live[path] : (pg.hub ? pg.hub.hyprCommittedVal(path) : undefined) }
 
-    // ── live, READ-ONLY values ───────────────────────────────────────────
-    // The shared store (hub.hyprDraft) is never loaded in Mei: Settings must not
-    // write Hyprland config, so the store the page would otherwise read stays
-    // empty and every row renders blank. Instead of generating that file, the
-    // page fills the same dotted keys from the running compositor with
-    // `hyprctl getoption` — the read half of the seam, and the only half Mei
-    // uses. Nothing here writes: the map below is display-only, and an edit
-    // still goes through hub.hyprEdit, whose save/preview verbs the backend
-    // refuses (errWMWriteDisabled, ryoku/hub/backend/desktop.go).
+    // ── live values ──────────────────────────────────────────────────────
+    // Every row opens on what the compositor actually runs: the map below fills
+    // the same dotted keys from `hyprctl getoption`. An edit goes through
+    // hub.hyprEdit (the shared draft), Save calls `mei-hub desktop save`, which
+    // persists to mei/hypr-advanced.json and applies each key with
+    // `hl.config` through hyprctl; boot re-applies the file. No Hyprland config
+    // is written, so a reload resets the runtime until Mei starts again.
     property var live: ({})
     readonly property var liveOptions: ({
         "desktop.appearance.gapsIn": "general:gaps_in",

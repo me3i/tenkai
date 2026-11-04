@@ -105,14 +105,26 @@ func runDesktop(args []string) error {
 	// user_edits), so every mutating desktop verb is refused. The implementations
 	// below (saveDesktop/previewDesktop/restoreDesktop/setRebind) are kept, unused,
 	// ready to be restored by returning them to the switch.
+	// MEI: save/preview/restore persist to Mei's own store and apply through
+	// hyprctl (mei_runtime.go). No settings.lua / rebinds.lua / user_edits is
+	// written; the provider's ApplyOutputs/Apply path is never reached.
 	case "save":
-		return errWMWriteDisabled("save")
+		if len(args) < 2 {
+			return fmt.Errorf("desktop save needs a JSON payload")
+		}
+		return applyMeiDesktop(args[1], true)
 	case "preview":
-		return errWMWriteDisabled("preview")
+		if len(args) < 2 {
+			return fmt.Errorf("desktop preview needs a JSON payload")
+		}
+		return applyMeiDesktop(args[1], false)
 	case "restore":
-		return errWMWriteDisabled("restore")
+		return restoreMeiDesktop()
 	case "set-rebind":
-		return errWMWriteDisabled("set-rebind")
+		if len(args) < 3 {
+			return fmt.Errorf("set-rebind needs a default and a chosen chord")
+		}
+		return setMeiRebind(args[1], args[2])
 	case "plugins":
 		return pluginsDesktop(args[1:])
 	case "cursors":
@@ -161,8 +173,27 @@ func runDesktop(args []string) error {
 // getDesktop returns the stored values overlaid on the provider defaults, so
 // every leaf the GUI shows is present even before a save.
 func getDesktop() error {
-	merged := effectiveStore()
-	return printJSON(merged)
+	// MEI: the pages open on Mei's saved runtime overrides, not on a config the
+	// provider generated.
+	return printJSON(meiDesktopStore())
+}
+
+// setMeiRebind patches one entry of the rebind map in keybinds.json and re-applies
+// the binds, so a separate app (ryoshot) can change its launch chord without
+// becoming a second writer of the store.
+func setMeiRebind(def, chosen string) error {
+	def = strings.TrimSpace(def)
+	chosen = strings.TrimSpace(chosen)
+	if def == "" {
+		return fmt.Errorf("set-rebind: empty default chord")
+	}
+	k := readMeiKeybinds()
+	if chosen == "" || chosen == def {
+		delete(k.Rebinds, def)
+	} else {
+		k.Rebinds[def] = chosen
+	}
+	return applyKeybinds(k, true)
 }
 
 // effectiveStore is the user's desktop.json deep-merged over the provider
@@ -381,11 +412,12 @@ func pluginsDesktop(args []string) error {
 // (settings.lua / rebinds.lua / user_edits) and reloads the compositor. Mei's
 // Settings app must never do either, so it does nothing. Disabled, not deleted --
 // restore by returning the body:
-//   c := desktopClient()
-//   rep, err := c.Apply(desktopStorePath())
-//   if err != nil { return err }
-//   if rep.ReloadNeeded { _ = c.Act(wm.ActionConfigReload) }
-//   return nil
+//
+//	c := desktopClient()
+//	rep, err := c.Apply(desktopStorePath())
+//	if err != nil { return err }
+//	if rep.ReloadNeeded { _ = c.Act(wm.ActionConfigReload) }
+//	return nil
 func applyDesktop() error {
 	return nil
 }

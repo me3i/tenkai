@@ -101,12 +101,12 @@ Rectangle {
     // so a compositor's settings live in one place, not sprinkled through the list.
     // MEI: eleven pages ship (General, Appearance, Visuals, Bar, Launcher,
     // Motion, Fastfetch, Window Manager, Displays, Keybinds, Connections).
-    // Displays, Keybinds and Connections are READ-ONLY: they show the live
-    // config, but their mutating controls are disabled in each page and their
-    // write verbs are refused by the backend, because Mei's Settings must never
-    // write compositor config, the login shell, or NetworkManager profiles.
-    // Every other section is disabled, not deleted: the original groups block is
-    // kept verbatim below, ready to be restored by swapping the two blocks back.
+    // Window Manager, Displays and Keybinds are PRACTICAL: each change is saved
+    // under XDG_CONFIG_HOME/mei and applied to the running compositor with
+    // hyprctl, so ~/.config/hypr is never written. Connections drives
+    // NetworkManager/BlueZ over their own tools, which touch no compositor
+    // config. Every other section is disabled, not deleted: the original groups
+    // block is kept verbatim below, ready to be restored by swapping the blocks.
     readonly property var groups: [
         { name: "GENERAL", items: [ { key: "global", name: "General" } ] },
         { name: "DESKTOP", items: [
@@ -950,15 +950,16 @@ Rectangle {
     signal revertPage()
     signal invalidatePageWork()
 
-    // MEI: the compositor store is severed. Mei ships no window-manager page and
-    // must never read or write Hyprland config from Settings, so the store is
-    // never loaded (wmLoaded stays false, hyprDraft/hyprDefaults stay empty).
-    // The pages below are kept intact but disabled; the backend verbs that back
-    // this store (desktop get/defaults/save/preview/restore) are refused too.
+    // MEI: the compositor store is Mei's own. `desktop get` returns Mei's saved
+    // runtime overrides (hypr-advanced.json + keybinds.json) over the provider's
+    // defaults, and save/preview/restore persist those files and apply through
+    // hyprctl — no settings.lua, rebinds.lua or user_edits is written. Loading it
+    // at open is what makes the Window Manager and Keybinds pages read back the
+    // values the user saved.
     Process {
         id: hyprGet
         command: ["mei-hub", "desktop", "get"]
-        running: false
+        running: true
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

@@ -644,6 +644,9 @@ func reapplyVisualOverrides() {
 
 func (d *daemon) bootstrap() {
 	reapplyVisualOverrides()
+	// Displays, advanced window settings and keybinds: the same runtime-override
+	// files, applied before any surface is painted so the first frame is right.
+	reapplyMeiOverrides()
 	d.startSettings()
 	if moduleDisabled("tray") {
 		fmt.Println("mei-shell: tray module off in shell.json; no StatusNotifierWatcher claimed")

@@ -56,31 +56,37 @@ type outputRow struct {
 	SdrBrightness float64  `json:"sdrBrightness"`
 }
 
-// errOutputWriteDisabled refuses every mutating outputs verb. Mei's Settings app
-// shows the display layout and the saved profiles READ-ONLY: applying a layout
-// reaches the provider (ryoku-monitor), which writes monitors.lua, and Mei must
-// never write compositor config. Reading (list/profiles) is unaffected.
-func errOutputWriteDisabled(verb string) error {
-	return fmt.Errorf("outputs %s: disabled in Mei (Settings is read-only; it never writes compositor config)", verb)
-}
-
+// MEI: the mutating verbs no longer touch the provider (which writes
+// monitors.lua). They persist to Mei's own displays.json and apply the layout to
+// the running compositor with `hl.monitor` through hyprctl (mei_runtime.go), so
+// the page is practical and ~/.config/hypr is never written. The provider is
+// still read for enumeration and profile matching only.
 func runOutputs(args []string) error {
 	switch {
 	case len(args) == 0 || args[0] == "list":
 		return listOutputs()
-	// MEI: every mutating verb is refused. The implementations below
-	// (applyOutputs/saveProfile/loadProfile/rmProfile) are kept, unused, ready to
-	// be restored by returning them to the switch.
 	case args[0] == "apply":
-		return errOutputWriteDisabled("apply")
+		if len(args) < 2 {
+			return fmt.Errorf("outputs apply needs a layout JSON")
+		}
+		return applyOutputs(args[1])
 	case args[0] == "profiles":
 		return listProfiles()
 	case args[0] == "save":
-		return errOutputWriteDisabled("save")
+		if len(args) < 3 {
+			return fmt.Errorf("outputs save needs a name and a layout JSON")
+		}
+		return saveProfile(args[1], args[2])
 	case args[0] == "load":
-		return errOutputWriteDisabled("load")
+		if len(args) < 2 {
+			return fmt.Errorf("outputs load needs a name")
+		}
+		return loadProfile(args[1])
 	case args[0] == "rm":
-		return errOutputWriteDisabled("rm")
+		if len(args) < 2 {
+			return fmt.Errorf("outputs rm needs a name")
+		}
+		return rmProfile(args[1])
 	}
 	return fmt.Errorf("outputs: unknown subcommand %q", args[0])
 }
@@ -123,35 +129,9 @@ func applyOutputs(raw string) error {
 	if err != nil {
 		return err
 	}
-	return applyLayout(layout)
-}
-
-// applyLayout hands the layout to the provider by path, like the seam wants, and
-// prints its report so the page can surface anything the compositor could not
-// honour. Shared by a direct apply and a profile load.
-func applyLayout(layout []wm.OutputLayout) error {
-	body, err := json.Marshal(layout)
-	if err != nil {
-		return err
-	}
-	f, err := os.CreateTemp("", "ryoku-outputs-*.json")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(f.Name())
-	if _, err := f.Write(body); err != nil {
-		f.Close()
-		return err
-	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-	rep, err := desktopClient().ApplyOutputs(f.Name())
-	if err != nil {
-		return err
-	}
-	publishGreeterPrimary(layout)
-	return printJSON(rep)
+	// Persist the layout as Mei's active one, then apply it live. The greeter
+	// hand-off is not published: it writes outside the project.
+	return applyDisplays(layout, true)
 }
 
 // publishGreeterPrimary records the layout's main output where the login
@@ -234,17 +214,13 @@ func saveProfile(name, raw string) error {
 	if err != nil {
 		return err
 	}
-	body, err := json.Marshal(layout)
-	if err != nil {
+	d := readDisplaysDoc()
+	d.Profiles[n] = layout
+	d.Layout = layout
+	if err := writeJSONFile(meiDisplaysPath(), d); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(profilesDir(), 0o755); err != nil {
-		return err
-	}
-	if err := atomicWrite(filepath.Join(profilesDir(), n+".json"), body, 0o644); err != nil {
-		return err
-	}
-	return applyLayout(layout)
+	return applyDisplays(layout, false)
 }
 
 func loadProfile(name string) error {
@@ -252,7 +228,7 @@ func loadProfile(name string) error {
 	if err != nil {
 		return err
 	}
-	return applyLayout(layout)
+	return applyDisplays(layout, true)
 }
 
 func rmProfile(name string) error {
@@ -260,7 +236,9 @@ func rmProfile(name string) error {
 	if err != nil {
 		return err
 	}
-	if err := os.Remove(filepath.Join(profilesDir(), n+".json")); err != nil && !os.IsNotExist(err) {
+	d := readDisplaysDoc()
+	delete(d.Profiles, n)
+	if err := writeJSONFile(meiDisplaysPath(), d); err != nil {
 		return err
 	}
 	return printJSON(map[string]bool{"removed": true})
@@ -271,36 +249,18 @@ func readProfile(name string) ([]wm.OutputLayout, error) {
 	if err != nil {
 		return nil, err
 	}
-	raw, err := os.ReadFile(filepath.Join(profilesDir(), n+".json"))
-	if err != nil {
-		return nil, err
-	}
-	var layout []wm.OutputLayout
-	if err := json.Unmarshal(raw, &layout); err != nil {
-		return nil, err
+	layout, ok := readDisplaysDoc().Profiles[n]
+	if !ok {
+		return nil, fmt.Errorf("profile %q not found", n)
 	}
 	return layout, nil
 }
 
 func listProfiles() error {
 	connected := connectedOutputs()
-	ents, err := os.ReadDir(profilesDir())
-	if err != nil {
-		if os.IsNotExist(err) {
-			return printJSON([]outputProfile{})
-		}
-		return err
-	}
-	out := make([]outputProfile, 0, len(ents))
-	for _, e := range ents {
-		if e.IsDir() || !strings.HasSuffix(e.Name(), ".json") {
-			continue
-		}
-		name := strings.TrimSuffix(e.Name(), ".json")
-		layout, err := readProfile(name)
-		if err != nil {
-			continue
-		}
+	d := readDisplaysDoc()
+	out := make([]outputProfile, 0, len(d.Profiles))
+	for name, layout := range d.Profiles {
 		out = append(out, outputProfile{Name: name, Matches: profileMatches(layout, connected)})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })

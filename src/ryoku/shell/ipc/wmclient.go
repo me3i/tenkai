@@ -32,6 +32,10 @@ func (d *daemon) startWM() {
 		return map[string]any{"ok": true}, nil
 	})
 	go d.watchWindowManager()
+	// Mei's persisted runtime overrides (displays, advanced settings, keybinds)
+	// are applied at boot and again here, once the compositor is ready: an
+	// early hl.bind is dropped by the config load that finishes afterwards.
+	go d.reapplyOverridesWhenReady()
 }
 
 func (d *daemon) activeMonitor() string {
