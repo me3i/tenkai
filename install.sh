@@ -420,15 +420,15 @@ say ""
 say "  The file itself appears the first time Mei runs a palette pass."
 say "  Kitty re-reads its config on SIGUSR1: pkill -USR1 -x kitty"
 
-# ── 6. terminal: fish + starship ─────────────────────────────────────────────
+# ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ─────
 
-step "6. terminal (fish + starship)"
+step "6. terminal (kitty + fish + starship + fastfetch)"
 
-# This repo carries the exact prompt (src/mei-configs/terminal): a Fish config
-# whose prompt line is `starship init fish | source`, and the Starship preset
-# that draws it. Both are copied whole, never merged into an existing file: the
-# target is backed up first and an identical file is left alone, so a second run
-# changes nothing.
+# Mei ships the owner's exact terminal environment: kitty style/conf (opacity,
+# padding, fonts), Fish behaviour (config + conf.d), the Starship prompt preset,
+# and the Fastfetch look-and-feel. Everything is copied whole and never merged
+# into an existing file: the target is backed up first and an identical file is
+# left alone, so a second run changes nothing.
 copy_config() { # $1 = file in this checkout, $2 = destination
   local src="$1" dst="$2"
   if [ ! -f "$src" ]; then
@@ -459,20 +459,56 @@ copy_config() { # $1 = file in this checkout, $2 = destination
   return 0
 }
 
-copy_config "$TERM_SRC/config.fish" "$FISH_CONF"
+# ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ───────
+
+step "6. terminal (kitty + fish + starship + fastfetch)"
+
+# Mei ships the owner's exact terminal environment: kitty style/conf (opacity,
+# padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
+# prompt preset, and the Fastfetch look-and-feel. Everything is copied whole and
+# never merged into an existing file: the target is backed up first, and an
+# identical file is left alone, so a second run changes nothing.
+
+# --- kitty: style + theme + user config, plus the generated palette include ---
+copy_config "$TERM_SRC/kitty/kitty.conf" "$KITTY_CONF"
+copy_config "$TERM_SRC/kitty/current-font.conf" "$HOME/.config/kitty/current-font.conf"
+copy_config "$TERM_SRC/kitty/current-theme.conf" "$HOME/.config/kitty/current-theme.conf"
+copy_config "$TERM_SRC/kitty/user.conf" "$HOME/.config/kitty/user.conf"
+
+# The generated palette (from `./mei colours`) is read by kitty only if its
+# config includes it. Mei never writes ~/.config/kitty itself; one idempotent
+# include line is appended here (idempotent via grep).
+if [ -f "$KITTY_CONF" ] && ! grep -qsF "include ~/.cache/mei/kitty-colors.conf" "$KITTY_CONF"; then
+  if [ -f "$HOME/.cache/mei/kitty-colors.conf" ]; then
+    say "  appending palette include to $KITTY_CONF"
+    printf '%s\n' 'include ~/.cache/mei/kitty-colors.conf' >> "$KITTY_CONF"
+    ok "palette include appended"
+  else
+    warn "$HOME/.cache/mei/kitty-colors.conf missing; palette include not added"
+  fi
+fi
+
+# --- fish: config + conf.d (no functions bundle shipped yet) ---
+copy_config "$TERM_SRC/fish/config.fish" "$FISH_CONF"
+if [ -d "$TERM_SRC/fish/conf.d" ]; then
+  for confd in "$TERM_SRC/fish/conf.d"/*; do
+    [ -f "$confd" ] || continue
+    copy_config "$confd" "$HOME/.config/fish/conf.d/$(basename "$confd")"
+  done
+fi
+
+# --- starship prompt preset ---
 copy_config "$TERM_SRC/starship.toml" "$STARSHIP_CONF"
 
-# A theme directory would be invisible to the prompt unless config.fish sources
-# it, so only the two files above are deployed; anything else in the bundle is
-# listed for you rather than copied somewhere fish does not read.
-for extra in "$TERM_SRC"/*; do
-  [ -f "$extra" ] || continue
-  case "$(basename "$extra")" in
-    config.fish | starship.toml) ;;
-    *) warn "not deployed: $(basename "$extra") (add it yourself if you need it)" ;;
-  esac
-done
+# --- fastfetch: look-and-feel + assets ---
+if [ -d "$TERM_SRC/fastfetch/fastfetch" ]; then
+  cp -rv "$TERM_SRC/fastfetch/fastfetch"/* "$HOME/.config/fastfetch/"
+  ok "fastfetch files deployed"
+else
+  warn "no fastfetch bundle in this checkout"
+fi
 
+# Report what was installed.
 if [ -f "$FISH_CONF" ] && ! grep -qsF 'starship init fish' "$FISH_CONF"; then
   warn "$FISH_CONF does not call starship; the prompt will be plain fish"
 fi
