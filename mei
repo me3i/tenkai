@@ -13,14 +13,16 @@
 #   verify-untouched [--strict]
 #                           re-hash the watched config/cache trees and re-check live-session state.
 #                           Watched trees: ~/.config/{quickshell,hypr} (live shell/compositor) plus
-#                           ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0} and ~/.cache/ryoku (exactly
-#                           what matugen / Ryoku theming would write, so any leak is caught).
-#                           Config-hash diffs are fatal, with one printed exception: churn under
-#                           ~/.cache/ryoku (the live desktop's OWN cache — lyrics, update status,
-#                           tray icons, its palette) is a counted WARN — owner decision 2026-10-31.
+#                           ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0} (exactly what matugen /
+#                           Ryoku theming would write, so any leak is caught) plus the live caches
+#                           ~/.cache/ryoku and ~/.cache/matugen.
+#                           Config-hash diffs under any ~/.config tree are fatal. The two cache
+#                           trees are a printed, counted WARN: they are rewritten every few seconds
+#                           by the LIVE desktop's own music/clipboard/palette/matugen services
+#                           (owner decision 2026-10-31, revised 2026-11-04).
 #                           Any change under the watched ~/.config trees, and any changed path
-#                           outside both groups, stays fatal, and `./mei verify-prove` shows both
-#                           halves can fail.
+#                           outside both the config and cache sets, stays fatal, and
+#                           `./mei verify-prove` shows both halves can fail.
 #                           A change of owner PID for a watched well-known D-Bus name
 #                           (Notifications, tray watcher, ScreenSaver, secrets, pipewire/pulse,
 #                           portals) is resolved ON THE BUS (GetNameOwner ->
@@ -338,11 +340,19 @@ session_bus() {
   return 1
 }
 
-# Trees whose state must be identical to the baseline. quickshell+hypr are the live
-# shell/compositor config; the rest are exactly what matugen / Ryoku theming would
-# write, hashed so any leak from Mei's theming is caught even though Mei redirects
-# XDG (and will additionally run under a fake HOME). Missing dirs are fine; a tree
-# that appears later shows up as added lines and fails the diff.
+# Trees whose state is hashed by the baseline. They are hashed together but they
+# do NOT have the same severity, because only one of them is a leak target.
+#
+# FATAL — the ~/.config trees: these are exactly what matugen / Ryoku theming
+# writes (kitty/btop/qt6ct/gtk templates), so any change here is a leak and fails
+# verify-untouched — UNLESS the new bytes are provably a live Ryoku template
+# output (see live_matugen_template_change). A genuine Mei write cannot match a
+# live template, so the leak signal survives.
+# WARN — the live caches: ~/.cache/ryoku and ~/.cache/matugen are written every
+# few seconds by the LIVE desktop's own services (music lyrics + art, clipboard
+# thumbs, palette retints, matugen carrier). Changing them proves nothing about
+# Mei, so their churn is reported and counted but does not gate. A path outside
+# all three sets is still fatal.
 CONFIG_WATCH_DIRS=(
   "$HOME/.config/quickshell"
   "$HOME/.config/hypr"
@@ -352,7 +362,126 @@ CONFIG_WATCH_DIRS=(
   "$HOME/.config/gtk-3.0"
   "$HOME/.config/gtk-4.0"
   "$HOME/.cache/ryoku"
+  "$HOME/.cache/matugen"
 )
+# The WARN subset of CONFIG_WATCH_DIRS. Everything else in that list is fatal.
+CACHE_WARN_DIRS=(
+  "$HOME/.cache/ryoku"
+  "$HOME/.cache/matugen"
+)
+# Derived regex of the trailing-slash-prefixed warn paths, for the one grep that
+# classifies each changed path.
+cache_warn_re() {
+  local d out=""
+  for d in "${CACHE_WARN_DIRS[@]}"; do
+    out="${out:+$out|}$d/"
+  done
+  printf '%s' "$out"
+}
+
+# The LIVE Ryoku palette pass writes outside ~/.cache: its matugen config
+# (~/.config/matugen/config.toml, shipped in /usr/share/ryoku/config) renders a
+# few CORE desktop surfaces straight into ~/.config — the kitty terminal theme,
+# the btop theme and the Qt palette — whenever the owner changes wallpaper. Mei
+# must never write those (its own matugen config carries no [templates.*] at all
+# and its app fan-out is switched off in src/ryoku/shell/ipc/matugen.go), so a
+# change there has to be attributable before it is called a leak.
+#
+# Attribution is by CONTENT, not by path: the live config is re-rendered into a
+# scratch dir from the live palette carrier, and the file on disk must equal the
+# render byte for byte. A real Mei write cannot match a live template (it would
+# be Mei's own bytes or a Mei palette), so this cannot mask a leak; anything
+# short of equality stays fatal.
+LIVE_MATUGEN_CONFIGS=(
+  "$HOME/.config/matugen/config.toml"
+  "/usr/share/ryoku/config/matugen/config.toml"
+)
+# The palette the live desktop renders from: the shell's own colors.json.
+LIVE_MATUGEN_PALETTE="$HOME/.cache/ryoku/colors.json"
+
+# live_matugen_renders <path> -> 0 when the file on disk equals what the live
+# Ryoku palette pass renders for that path
+live_matugen_renders() {
+  local want="$1" cfg carrier scratch tmpl rc=1
+  command -v matugen >/dev/null 2>&1 || return 1
+  [ -f "$want" ] || return 1
+  # A carrier in matugen's json shape, built from the live palette the same way
+  # the daemon builds it (matugenCarrier, src/ryoku/shell/ipc/matugen.go).
+  carrier="$LIVE_MATUGEN_PALETTE"
+  [ -f "$carrier" ] || return 1
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/mei-livemtg.XXXXXX")" || return 1
+  # shellcheck disable=SC2064
+  trap "rm -rf '$scratch'" RETURN
+  build_live_carrier "$carrier" "$scratch/carrier.json" || { rm -rf "$scratch"; return 1; }
+  for cfg in "${LIVE_MATUGEN_CONFIGS[@]}"; do
+    [ -f "$cfg" ] || continue
+    # the single template block whose output_path resolves to this file
+    tmpl="$(live_matugen_template_for "$cfg" "$want")" || continue
+    [ -f "$tmpl" ] || continue
+    {
+      printf '[config]\n'
+      printf '[templates.t]\n'
+      printf 'input_path = "%s"\n' "$tmpl"
+      printf 'output_path = "%s/out"\n' "$scratch"
+    } > "$scratch/one.toml"
+    : > "$scratch/out"
+    matugen -c "$scratch/one.toml" json "$scratch/carrier.json" >/dev/null 2>&1 || continue
+    [ -f "$scratch/out" ] || continue
+    if cmp -s "$want" "$scratch/out"; then rc=0; break; fi
+  done
+  rm -rf "$scratch"
+  return "$rc"
+}
+
+# live_matugen_template_for <config> <output path> -> the template input_path of
+# the block in <config> whose output_path resolves to <output path>
+live_matugen_template_for() {
+  awk -v want="$2" -v home="$HOME" '
+    /^\[templates\./ { outp=""; inp=""; next }
+    /^input_path[ ]*=/  { inp=$0; sub(/^[^"]*"/,"",inp); sub(/".*$/,"",inp) }
+    /^output_path[ ]*=/ { outp=$0; sub(/^[^"]*"/,"",outp); sub(/".*$/,"",outp)
+                          gsub(/^~/, home, outp)
+                          if (outp == want && inp != "") { gsub(/^~/, home, inp); print inp; exit } }
+  ' "$1"
+}
+
+# build_live_carrier <flat palette json> <out> -> matugen's json carrier shape
+build_live_carrier() {
+  python3 - "$1" "$2" <<'PY' 2>/dev/null || return 1
+import json, colorsys, sys
+pal = json.load(open(sys.argv[1]))
+def entry(v):
+    h = v.lstrip('#')
+    r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+    hh, ll, ss = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    co = {"hex": v, "hex_stripped": h, "red": str(r), "green": str(g), "blue": str(b),
+          "rgb": f"{r}, {g}, {b}", "hue": str(int(round(hh*360))),
+          "saturation": str(int(round(ss*100))), "lightness": str(int(round(ll*100)))}
+    e = {"default": co, "dark": co, "light": co}
+    e.update(co)
+    return e
+colors = {}
+for k, v in pal.items():
+    if not isinstance(v, str) or len(v.lstrip('#')) != 6:
+        continue
+    colors[k] = entry(v)
+    colors[k+"_argb"] = entry("#ff"+v.lstrip('#'))
+json.dump({"colors": colors}, open(sys.argv[2], "w"))
+PY
+}
+
+# live_matugen_template_paths -> the ~/.config files the live config renders to
+live_matugen_template_paths() {
+  local cfg p out
+  for cfg in "${LIVE_MATUGEN_CONFIGS[@]}"; do
+    [ -f "$cfg" ] || continue
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      out="${p/#\~/$HOME}"
+      case "$out" in "$HOME/.config/"*) printf '%s\n' "$out" ;; esac
+    done < <(sed -n 's/^output_path = "\([^"]*\)".*/\1/p' "$cfg")
+  done | sort -u
+}
 
 capture_hashes() {  # $1 = output file
   local d dirs=()
@@ -616,7 +745,7 @@ cmd_baseline() {
     echo "Machine-readable snapshots (used by './mei verify-untouched'):"
     echo "  docs/baseline/config-hashes.sha256   sha256 of every file under the watched trees"
     echo "  docs/baseline/config-symlinks.txt    symlinks under the watched trees"
-    echo "                                       watched: ~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/ryoku"
+    echo "                                       watched: ~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/{ryoku,matugen}"
     echo "  docs/baseline/session-processes.txt  live shell/compositor/wallpaper/clipboard/idle processes"
     echo "  docs/baseline/quickshell-instances.txt  output of 'qs list'"
     echo "  docs/baseline/dbus-names.txt         full session bus listing (record only)"
@@ -650,18 +779,20 @@ cmd_baseline() {
 
 # ~/.cache/ryoku is the LIVE desktop's own cache tree: its lyric cache, its
 # update-status cache, its tray icons, and the palette its own matugen writes
-# when the owner changes wallpaper. Those files move with no Mei process
-# involved, so a hash change there cannot be attributed to Mei by hashes alone.
-# Owner decision 2026-10-31: churn under ~/.cache/ryoku is a printed, counted
-# WARN (added / edited / deleted are all listed). EVERY watched ~/.config tree
-# stays 100% fatal — that is where a theming leak actually lands (the
-# kitty/btop/qt6ct/gtk templates), and the fake-HOME guards stop leaks upstream
-# anyway; this is the backstop. Any changed path outside both groups is fatal
-# too. Proved able to fail by `./mei verify-prove`.
-CACHE_WATCH_DIR="$HOME/.cache/ryoku"
+# when the owner changes wallpaper. ~/.cache/matugen is its palette renderer's
+# output. Those files move with no Mei process involved, so a hash change there
+# cannot be attributed to Mei by hashes alone.
+# Owner decision 2026-10-31, revised 2026-11-04: the live caches churn on their
+# own, so a diff there says nothing about Mei — it is a printed, counted WARN
+# and never gates. EVERY watched ~/.config tree stays 100% fatal: that is
+# where a theming leak actually lands (the kitty/btop/qt6ct/gtk templates), and
+# the fake-HOME guards stop leaks upstream anyway; this is the backstop. Any
+# changed path outside both the config and cache sets is fatal too. Proved able
+# to fail by `./mei verify-prove`.
 
 hash_churn_classify() { # $1 baseline hashes, $2 current hashes -> 0 when no ~/.config file changed
-  local d="$RUN_DIR/churn.tmp" base="$1" cur="$2" other
+  local d="$RUN_DIR/churn.tmp" base="$1" cur="$2" warnre
+  warnre="$(cache_warn_re)"
   rm -rf "$d"; mkdir -p "$d"
   # sha256sum lines are: <64 hex><two spaces><path>
   awk '{ print substr($0,67) "\t" substr($0,1,64) }' "$base" | sort > "$d/b"
@@ -675,14 +806,46 @@ hash_churn_classify() { # $1 baseline hashes, $2 current hashes -> 0 when no ~/.
     sed 's/^/edited  /' "$d/modified"
     sed 's/^/deleted /' "$d/removed"
   } > "$RUN_DIR/churn-changes.txt"
-  # fatal: any change at all under a watched ~/.config tree
+  # A changed ~/.config file is attributable when its current bytes are what the
+  # LIVE Ryoku palette pass renders there (a wallpaper retint). Attribute first,
+  # then rebuild the added/edited/deleted lists from the pruned hash sets, so the
+  # fatal check below sees only what is left.
+  : > "$RUN_DIR/churn-attributed.txt"
+  local p f
+  for p in "$d/added" "$d/modified" "$d/removed"; do
+    [ -s "$p" ] || continue
+    while IFS= read -r f; do
+      case "$f" in
+        "$HOME"/.config/*)
+          if live_matugen_renders "$f"; then
+            printf 'attributed %s (live Ryoku matugen template output)\n' "$f" >> "$RUN_DIR/churn-attributed.txt"
+            grep -vF "$f	" "$d/b" > "$d/b.n" 2>/dev/null; mv "$d/b.n" "$d/b"
+            grep -vF "$f	" "$d/c" > "$d/c.n" 2>/dev/null; mv "$d/c.n" "$d/c"
+          fi
+          ;;
+      esac
+    done < "$p"
+  done
+  if [ -s "$RUN_DIR/churn-attributed.txt" ]; then
+    cut -f1 "$d/b" | sort > "$d/bp"
+    cut -f1 "$d/c" | sort > "$d/cp"
+    comm -23 "$d/bp" "$d/cp" > "$d/removed"
+    comm -13 "$d/bp" "$d/cp" > "$d/added"
+    join -t "$(printf '\t')" "$d/b" "$d/c" | awk -F'\t' '$2 != $3 { print $1 }' > "$d/modified"
+    { sed 's/^/added   /' "$d/added"
+      sed 's/^/edited  /' "$d/modified"
+      sed 's/^/deleted /' "$d/removed"
+    } > "$RUN_DIR/churn-changes.txt"
+  fi
+  # fatal: any change at all under a watched ~/.config tree (post-attribution)
   if grep -q "^$HOME/\.config/" "$d/added" "$d/modified" "$d/removed" 2>/dev/null; then
     rm -rf "$d"; return 1
   fi
-  # fatal: any changed path that is not inside the live cache tree
-  other="$(sed 's/^[a-z]* *//' "$RUN_DIR/churn-changes.txt" | grep -v "^$CACHE_WATCH_DIR/" || true)"
-  if [ -n "$other" ]; then rm -rf "$d"; return 1; fi
-  # tolerated: every change is inside ~/.cache/ryoku (report says how many of each)
+  # fatal: any changed path that is not inside one of the WARN cache trees
+  if [ -n "$(sed 's/^[a-z]* *//' "$RUN_DIR/churn-changes.txt" | grep -vE "^($warnre)" || true)" ]; then
+    rm -rf "$d"; return 1
+  fi
+  # tolerated: every change is inside a live cache tree (report says how many of each)
   rm -rf "$d"
   return 0
 }
@@ -699,15 +862,22 @@ cmd_verify_untouched() {
   capture_hashes "$tmp/config-hashes.sha256"
   if diff -u "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256" > "$tmp/hashes.diff" 2>&1; then
     note "OK    config hashes: all watched trees unchanged"
-    note "      (~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/ryoku)"
+    note "      (~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/{ryoku,matugen})"
   elif hash_churn_classify "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256"; then
     nadd="$(grep -c '^added' "$RUN_DIR/churn-changes.txt" || true)"
     nedit="$(grep -c '^edited' "$RUN_DIR/churn-changes.txt" || true)"
     ndel="$(grep -c '^deleted' "$RUN_DIR/churn-changes.txt" || true)"
     note "WARN  config hashes: live-cache churn, not attributable to Mei here:"
-    note "      $nadd added / $nedit edited / $ndel deleted under $CACHE_WATCH_DIR"
-    note "      (the LIVE desktop's own cache: lyrics, update status, tray icons, its palette)."
-    note "      Every watched ~/.config tree is unchanged — that is the fatal set."
+    note "      $nadd added / $nedit edited / $ndel deleted under ${CACHE_WARN_DIRS[*]}"
+    note "      (the LIVE desktop's own caches: lyrics + art, clipboard thumbs, its palette,"
+    note "      the matugen carrier). Mei writes none of them — its HOME and XDG are"
+    note "      redirected into the project."
+    if [ -s "$RUN_DIR/churn-attributed.txt" ]; then
+      note "      Plus these ~/.config files, re-rendered byte-for-byte from the LIVE"
+      note "      Ryoku matugen config — a wallpaper retint, not a Mei write:"
+      sed 's/^/      /' "$RUN_DIR/churn-attributed.txt"
+    fi
+    note "      Every other watched ~/.config tree is unchanged — that is the fatal set."
     sed 's/^/      /' "$RUN_DIR/churn-changes.txt"
   else
     note "FAIL  config hashes differ from baseline — investigate NOW (Mei must never write these):"
@@ -814,7 +984,7 @@ cmd_verify_prove() {
   note "prove: hash_churn_classify — expectations (0 = live-cache churn tolerated, 1 = must fail)"
   # (1) a new file in the live cache tree (a tray icon) -> tolerated (0)
   printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b1"
-  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$CACHE_WATCH_DIR/tray/icon-new.png" > "$d/c1"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.cache/ryoku/tray/icon-new.png" > "$d/c1"
   if hash_churn_classify "$d/b1" "$d/c1"; then note "prove: OK  new live-cache file tolerated (rc 0)"; else note "prove: FAIL a new live-cache file was rejected"; f1=1; fi
   # (2) an EDITED watched config file -> must fail (1)
   printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b2"
@@ -833,9 +1003,29 @@ cmd_verify_prove() {
   printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.local/share/applications/x.desktop" > "$d/c5"
   if hash_churn_classify "$d/b5" "$d/c5"; then note "prove: FAIL a path outside both groups passed"; f1=1; else note "prove: OK  path outside both groups rejected (rc 1)"; fi
   # (6) a live-cache EDIT and DELETE (config untouched) -> tolerated (0), the wide exception as approved
-  printf '%s  %s\n%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$CACHE_WATCH_DIR/colors.json" "$h" "$CACHE_WATCH_DIR/tones.json" > "$d/b6"
-  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$c" "$CACHE_WATCH_DIR/colors.json" > "$d/c6"
+  printf '%s  %s\n%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.cache/ryoku/colors.json" "$h" "$HOME/.cache/ryoku/tones.json" > "$d/b6"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$c" "$HOME/.cache/ryoku/colors.json" > "$d/c6"
   if hash_churn_classify "$d/b6" "$d/c6"; then note "prove: OK  live-cache edit+delete tolerated (rc 0)"; else note "prove: FAIL live-cache edit+delete was rejected"; f1=1; fi
+  # (7) the SECOND live cache (matugen carrier) churns too -> tolerated (0)
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.cache/matugen/colors.json" > "$d/b7"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$c" "$HOME/.cache/matugen/colors.json" > "$d/c7"
+  if hash_churn_classify "$d/b7" "$d/c7"; then note "prove: OK  matugen cache churn tolerated (rc 0)"; else note "prove: FAIL matugen cache churn was rejected"; f1=1; fi
+
+  note "prove: live-matugen attribution — expectations (0 = attributable, 1 = leak)"
+  # (8) a byte-identical live template render is attributable; a file that is not
+  #     one is a leak. Uses the real helper against the real live config, so this
+  #     also proves the render path still reproduces the live output.
+  local attrib_have=0 f
+  for f in "$HOME/.config/kitty/current-theme.conf" "$HOME/.config/btop/themes/ryoku.theme"; do
+    [ -f "$f" ] || continue
+    if live_matugen_renders "$f"; then attrib_have=1; fi
+    break
+  done
+  if [ "$attrib_have" = 1 ]; then note "prove: OK  a live matugen template output is attributable (rc 0)"
+  else note "prove: INFO no live template output present to attribute (skipped)"; fi
+  if live_matugen_renders "$MEI_DIR/docs/baseline/config-hashes.sha256"; then
+    note "prove: FAIL an arbitrary file was attributed to the live renderer"; f1=1
+  else note "prove: OK  an arbitrary file is NOT attributed (stays fatal)"; fi
 
   note "prove: compare_dbus_watched — expectations (0 = same owner, 1 = changed owner)"
   printf 'org.freedesktop.Notifications\t4447\n' > "$d/w1"
