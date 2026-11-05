@@ -431,10 +431,10 @@ say "  Kitty re-reads its config on SIGUSR1: pkill -USR1 -x kitty"
 step "6. terminal (kitty + fish + starship + fastfetch)"
 
 # Mei ships the owner's exact terminal environment: kitty style/conf (opacity,
-# padding, fonts), Fish behaviour (config + conf.d), the Starship prompt preset,
-# and the Fastfetch look-and-feel. Everything is copied whole and never merged
-# into an existing file: the target is backed up first and an identical file is
-# left alone, so a second run changes nothing.
+# padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
+# prompt preset, and the Fastfetch look-and-feel. Everything is copied whole and
+# never merged into an existing file: the target is backed up first, and an
+# identical file is left alone, so a second run changes nothing.
 copy_config() { # $1 = file in this checkout, $2 = destination
   local src="$1" dst="$2"
   if [ ! -f "$src" ]; then
@@ -464,16 +464,6 @@ copy_config() { # $1 = file in this checkout, $2 = destination
   ok "$dst written${backup:+ (backup: $backup)}"
   return 0
 }
-
-# ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ───────
-
-step "6. terminal (kitty + fish + starship + fastfetch)"
-
-# Mei ships the owner's exact terminal environment: kitty style/conf (opacity,
-# padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
-# prompt preset, and the Fastfetch look-and-feel. Everything is copied whole and
-# never merged into an existing file: the target is backed up first, and an
-# identical file is left alone, so a second run changes nothing.
 
 # --- kitty: style + theme + user config, plus the generated palette include ---
 copy_config "$TERM_SRC/kitty/kitty.conf" "$KITTY_CONF"
@@ -598,7 +588,9 @@ deploy_hypr() {
       say "  keep  $dst (user-owned, seeded once — not overwritten)"
       continue
     fi
-    if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+    # identical content AND, for a script, a working exec bit: an earlier
+    # 0644 deploy is re-installed rather than left inert.
+    if [ -f "$dst" ] && cmp -s "$src" "$dst" && { [ ! -x "$src" ] || [ -x "$dst" ]; }; then
       continue
     fi
     plan+=("$rel")
@@ -626,11 +618,75 @@ deploy_hypr() {
     if [ -f "$dst" ]; then
       cp -a "$dst" "$dst.$MARK.bak"
     fi
-    install -m 0644 "$HYPR_SRC/$rel" "$dst"
+    # scripts/ carries the helpers the bundled binds exec, so the exec bit is
+    # part of the file being installed (a 0644 script is a bind that fails).
+    mode=0644
+    [ -x "$HYPR_SRC/$rel" ] && mode=0755
+    install -m "$mode" "$HYPR_SRC/$rel" "$dst"
   done
   ok "hypr configs installed (${#plan[@]} files; backups are *.$MARK.bak)"
 }
 deploy_hypr
+
+# --- keybind helpers: the ryoku-* scripts the bundled binds exec --------------
+#
+# modules/binds.lua execs these by bare name, and modules/env.lua puts
+# ~/.local/bin first, so a link there is what makes the key work on a machine
+# that has never had Ryoku installed. Linked, not copied: the checkout stays the
+# single source. A name that already exists is never overwritten — it is
+# reported and left alone, because a stock Ryoku install has its own copy.
+LOCAL_BIN="$HOME/.local/bin"
+HELPER_SRC=(
+  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-app"
+  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-summon"
+  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-volume"
+  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-restart-audio"
+  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness"
+  "$HYPR_SRC/scripts/ryoku-monitor"
+  "$HYPR_SRC/scripts/ryoku-workspace"
+)
+
+deploy_helper_links() {
+  local src dst
+  local -a plan=()
+  for src in "${HELPER_SRC[@]}"; do
+    if [ ! -f "$src" ]; then
+      warn "missing ${src#"$MEI_DIR"/} — its bind will not resolve"
+      continue
+    fi
+    dst="$LOCAL_BIN/${src##*/}"
+    if [ -L "$dst" ] && [ "$(readlink -f "$dst")" = "$(readlink -f "$src")" ]; then
+      continue
+    fi
+    if [ -e "$dst" ] || [ -L "$dst" ]; then
+      warn "$dst already exists (not Mei's link) — left alone"
+      continue
+    fi
+    plan+=("$src")
+  done
+  if [ "${#plan[@]}" -eq 0 ]; then
+    ok "keybind helpers already linked in $LOCAL_BIN"
+    return 0
+  fi
+  local names="" n
+  for n in "${plan[@]}"; do names+="${n##*/} "; done
+  say "  link ${#plan[@]} helper(s) into $LOCAL_BIN: ${names% }"
+  if [ "$DRY_RUN" = 1 ]; then
+    say "  (dry run: nothing written)"
+    return 0
+  fi
+  if ! confirm "link these into $LOCAL_BIN?"; then
+    warn "not linked — those keybinds will not resolve"
+    return 0
+  fi
+  mkdir -p "$LOCAL_BIN"
+  for src in "${plan[@]}"; do
+    ln -sfn "$src" "$LOCAL_BIN/${src##*/}"
+  done
+  ok "${#plan[@]} keybind helper(s) linked in $LOCAL_BIN"
+}
+
+deploy_helper_links
 
 # ── 8. wallpapers ───────────────────────────────────────────────────────────
 

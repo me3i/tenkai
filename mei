@@ -169,7 +169,7 @@ MEI_SYSTEM_PATH="/usr/local/bin:/usr/bin:/bin"
 # matugen shim this script writes (R5: only a matugen running with Mei's -c
 # config and Mei's state dirs may run). These are the only names allowed to
 # resolve to a working program inside .run/bin.
-MEI_OWNED_BINS="mei-shell mei-hub mei-wm-hyprland ryogami mei-app mei-screenshot ryoku-cmd-brightness matugen"
+MEI_OWNED_BINS="mei-shell mei-hub mei-wm-hyprland ryogami mei-app mei-screenshot ryoku-cmd-brightness ryoku-app ryoku-summon ryoku-volume ryoku-restart-audio matugen"
 
 # The external commands (besides the three classes above) that the kept QML, the
 # Go daemons, the project scripts and the session script itself spawn — the exact
@@ -298,7 +298,12 @@ mei_provision_bin() { # build the .run/bin shadow: project copies + stubs + inve
   local n src
   # 1. Mei-owned scripts: always (re)linked to the source in the project, so a
   #    stale copy can never sit in front of the source.
-  for n in mei-app mei-screenshot ryoku-cmd-brightness; do
+  # The ryoku-* names here are the helpers the bundled Hyprland binds exec
+  # (modules/binds.lua). Mei ships them so a box without Ryoku installed still
+  # has a working key, and linking them also keeps a nested session from
+  # resolving the live system's /usr/bin copy of the same name.
+  for n in mei-app mei-screenshot ryoku-cmd-brightness \
+           ryoku-app ryoku-summon ryoku-volume ryoku-restart-audio; do
     src="$MEI_DIR/src/ryoku/shell/scripts/$n"
     [ -f "$src" ] || continue
     ln -sfn "$src" "$RUN_DIR/bin/$n"
