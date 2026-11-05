@@ -1,5 +1,44 @@
 # CHANGES.md — modifications vs upstream Ryoku
 
+## Bundled Hyprland configs, fonts and installer deploy steps (2026-11-05)
+
+Mei now ships the owner's Hyprland Lua config and the two OFL fonts its UI
+references, and `./install.sh` can deploy them on a fresh machine:
+
+- `src/mei-configs/hypr/` — the owner's `modules/` tree (all Lua modules +
+  13 animation presets), `hyprland.lua`, `keyboard.lua` and `shaders/*.glsl`
+  (the print-filter passes `decoration.lua` can name). Machine- and
+  hub-generated files (`monitors.lua`, `gpu.lua`, `settings.lua`, `user.lua`,
+  `monitors_user.lua`, `ghosttype.lua`) are deliberately NOT bundled.
+  Adaptation vs the live copies: the three files that read shell/Hub state
+  (`decoration.lua`, `animations.lua`, `perf_saver.lua`) try `~/.config/mei` /
+  `~/.cache/mei` first and fall back to the legacy `~/.config/ryoku` /
+  `~/.cache/ryoku` paths, because the Mei tree is mid-rebrand (the Hub backend
+  still writes `~/.config/ryoku`). Layer namespaces (`ryoku-notifications`,
+  `^launcher`, …) are unchanged — Mei's QML still creates them.
+- `src/mei-assets/fonts/` — Space Grotesk + Fraunces variable fonts with
+  their OFL.txt files, installed by install.sh into `~/.local/share/fonts/mei/`
+  (user-local, no sudo). Nerd Font / Material Symbols fonts are not bundled;
+  install.sh prints the official-repo pacman line instead.
+- `src/mei-assets/wallpapers/` — intentionally empty (no redistributable
+  wallpapers); see the README there. install.sh copies any images dropped
+  into that directory into `~/Pictures/Wallpapers/` (Mei's default scan dir).
+- `install.sh` — new steps 7 (hypr configs: interactive y/N only, existing
+  files backed up to `*.mei-install.bak`, `keyboard.lua` seeded once and never
+  overwritten, nothing deleted), 8 (wallpapers) and 9 (fonts). Two pre-existing
+  ungated writes are fixed: the fastfetch copy and the kitty palette-include
+  append now honour `--dry-run`, ask first and write `*.mei-install.bak`
+  backups — previously `./install.sh --dry-run` still wrote into
+  `~/.config/fastfetch`.
+
+Known gap (owner decision: report, don't bundle): the bundled keybinds call
+`ryoku-*` helpers Mei does not ship (`ryoku-volume`, `ryoku-app`,
+`ryoku-monitor`, `ryoku-summon`, `ryoku-shell`, …) and expect
+`~/.config/hypr/scripts/ryoku-workspace`. On a fresh install those binds are
+dead; autostart's optional calls are `command -v`-guarded and degrade
+gracefully. Brightness keys work (Mei ships `ryoku-cmd-brightness`). Bundling
+the needed upstream scripts with dependency traces is a possible follow-up.
+
 ## The lock screen and the D-Bus ScreenSaver are gone (2026-11-01)
 
 Owner decision: the orbital clock's lock screen is removed, and with it the

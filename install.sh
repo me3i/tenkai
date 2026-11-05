@@ -15,10 +15,16 @@
 #   4. Hyprland autostart: `mei start` — INTERACTIVE y/N ONLY, never --yes
 #   5. kitty: include the generated colour file (prompted)
 #   6. terminal: this repo's Fish + Starship prompt files (prompted)
+#   7. Hyprland configs: deploy the bundled Lua config to ~/.config/hypr
+#      (interactive y/N only, *.mei-install.bak backups; keyboard.lua is
+#      seeded once and never overwritten)
+#   8. wallpapers: copy any bundled images into ~/Pictures/Wallpapers/
+#   9. fonts: install the bundled OFL Space Grotesk / Fraunces user-locally,
+#      and print the pacman line for the Nerd/Material Symbols fonts
 #
 # Everything it writes outside this checkout is named and prompted for. It never
-# installs packages, never writes a Hyprland *config* other than the one
-# autostart line you approve, and never touches a running Mei session.
+# installs packages and never runs sudo; the one Hyprland-config deploy (step 7)
+# is interactive y/N only and always writes *.mei-install.bak backups first.
 #
 # Idempotent: a second run rebuilds nothing that is up to date, rewrites no
 # identical unit, appends no second autostart line and no second kitty include.
@@ -89,7 +95,7 @@ confirm_yes() {
 }
 
 usage() {
-  sed -n '2,40p' "$0" | grep '^#' | sed 's/^# \{0,1\}//'
+  sed -n '2,34p' "$0" | grep '^#' | sed 's/^# \{0,1\}//'
 }
 
 while [ $# -gt 0 ]; do
@@ -477,12 +483,17 @@ copy_config "$TERM_SRC/kitty/user.conf" "$HOME/.config/kitty/user.conf"
 
 # The generated palette (from `./mei colours`) is read by kitty only if its
 # config includes it. Mei never writes ~/.config/kitty itself; one idempotent
-# include line is appended here (idempotent via grep).
-if [ -f "$KITTY_CONF" ] && ! grep -qsF "include ~/.cache/mei/kitty-colors.conf" "$KITTY_CONF"; then
+# include line is appended here (idempotent via grep) — prompted, and the
+# target is backed up to *.mei-install.bak first. Skipped entirely on a dry run.
+if [ "$DRY_RUN" = 0 ] && [ -f "$KITTY_CONF" ] && ! grep -qsF "include ~/.cache/mei/kitty-colors.conf" "$KITTY_CONF"; then
   if [ -f "$HOME/.cache/mei/kitty-colors.conf" ]; then
-    say "  appending palette include to $KITTY_CONF"
-    printf '%s\n' 'include ~/.cache/mei/kitty-colors.conf' >> "$KITTY_CONF"
-    ok "palette include appended"
+    if confirm_yes "append the palette include to $KITTY_CONF (a backup is written first)?"; then
+      cp -a "$KITTY_CONF" "$KITTY_CONF.$MARK.bak"
+      printf '%s\n' 'include ~/.cache/mei/kitty-colors.conf' >> "$KITTY_CONF"
+      ok "palette include appended"
+    else
+      warn "palette include not added"
+    fi
   else
     warn "$HOME/.cache/mei/kitty-colors.conf missing; palette include not added"
   fi
@@ -501,9 +512,45 @@ fi
 copy_config "$TERM_SRC/starship.toml" "$STARSHIP_CONF"
 
 # --- fastfetch: look-and-feel + assets ---
+# Copied file-by-file with the same rules as everything else: identical files
+# are left alone, differing/missing files are listed and installed only after a
+# yes, and existing targets are backed up to *.mei-install.bak first. A dry run
+# writes nothing.
 if [ -d "$TERM_SRC/fastfetch/fastfetch" ]; then
-  cp -rv "$TERM_SRC/fastfetch/fastfetch"/* "$HOME/.config/fastfetch/"
-  ok "fastfetch files deployed"
+  FF_DEST="$HOME/.config/fastfetch"
+  FF_PLAN=()
+  while IFS= read -r -d '' src; do
+    base="$(basename "$src")"
+    if [ -f "$FF_DEST/$base" ] && cmp -s "$src" "$FF_DEST/$base"; then
+      continue
+    fi
+    FF_PLAN+=("$base")
+  done < <(find "$TERM_SRC/fastfetch/fastfetch" -maxdepth 1 -type f -print0)
+  if [ "${#FF_PLAN[@]}" -eq 0 ]; then
+    ok "fastfetch files already in place"
+  else
+    for base in "${FF_PLAN[@]}"; do
+      if [ -f "$FF_DEST/$base" ]; then
+        say "  $FF_DEST/$base differs from the bundled copy"
+      else
+        say "  $FF_DEST/$base does not exist yet"
+      fi
+    done
+    if [ "$DRY_RUN" = 1 ]; then
+      say "  (dry run: nothing written)"
+    elif confirm_yes "install ${#FF_PLAN[@]} fastfetch file(s) into $FF_DEST?"; then
+      mkdir -p "$FF_DEST"
+      for base in "${FF_PLAN[@]}"; do
+        if [ -f "$FF_DEST/$base" ]; then
+          cp -a "$FF_DEST/$base" "$FF_DEST/$base.$MARK.bak"
+        fi
+        install -m 0644 "$TERM_SRC/fastfetch/fastfetch/$base" "$FF_DEST/$base"
+      done
+      ok "fastfetch files deployed"
+    else
+      warn "fastfetch files not touched"
+    fi
+  fi
 else
   warn "no fastfetch bundle in this checkout"
 fi
@@ -515,6 +562,184 @@ fi
 if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v fish 2>/dev/null)" ]; then
   say "  fish is installed but is not your login shell. To use it:"
   say "    chsh -s $(command -v fish)"
+fi
+
+# ── 7. Hyprland configs ─────────────────────────────────────────────────────
+
+step "7. Hyprland configs (Lua)"
+
+# Mei ships the owner's Hyprland Lua config so a fresh install is not stuck
+# with Hyprland defaults. Files are copied whole, never merged; existing
+# targets are backed up to <name>.mei-install.bak before being overwritten.
+# This step is INTERACTIVE y/N only (never --yes, never a piped answer) —
+# overwriting a live ~/.config/hypr is a human decision. Nothing is deleted;
+# files only in your checkout stay exactly where they are.
+#
+# keyboard.lua is the exception: it is user-owned, seeded once, and never
+# overwritten by an install (mirrors how hyprland.lua treats it).
+#
+# The bundled configs try ~/.config/mei (and ~/.cache/mei) first and fall back
+# to the legacy ~/.config/ryoku / ~/.cache/ryoku paths, so they work both on a
+# pure Mei install and on a hybrid box with stock Ryoku still present.
+HYPR_SRC="$MEI_DIR/src/mei-configs/hypr"
+HYPR_DEST="$HYPR_DIR"
+
+deploy_hypr() {
+  if [ ! -d "$HYPR_SRC" ]; then
+    warn "no bundled hypr configs at $HYPR_SRC; skipped"
+    return 0
+  fi
+  local src rel dst
+  local -a plan=() new=() over=()
+  while IFS= read -r -d '' src; do
+    rel="${src#"$HYPR_SRC"/}"
+    dst="$HYPR_DEST/$rel"
+    if [ "$rel" = "keyboard.lua" ] && [ -f "$dst" ]; then
+      say "  keep  $dst (user-owned, seeded once — not overwritten)"
+      continue
+    fi
+    if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+      continue
+    fi
+    plan+=("$rel")
+    if [ -f "$dst" ]; then over+=("$rel"); else new+=("$rel"); fi
+  done < <(find "$HYPR_SRC" -type f -print0)
+
+  if [ "${#plan[@]}" -eq 0 ]; then
+    ok "all bundled hypr files already in place"
+    return 0
+  fi
+  say "  would install ${#plan[@]} bundled file(s) into $HYPR_DEST:"
+  for rel in "${new[@]}";  do say "    new        $rel"; done
+  for rel in "${over[@]}"; do say "    overwrite  $rel  (backup: $rel.$MARK.bak)"; done
+  if [ "$DRY_RUN" = 1 ]; then
+    say "  (dry run: nothing written)"
+    return 0
+  fi
+  if ! confirm "install/overwrite these ${#plan[@]} file(s) under $HYPR_DEST?"; then
+    warn "hypr configs not installed — your existing config is untouched"
+    return 0
+  fi
+  for rel in "${plan[@]}"; do
+    dst="$HYPR_DEST/$rel"
+    mkdir -p "$(dirname "$dst")"
+    if [ -f "$dst" ]; then
+      cp -a "$dst" "$dst.$MARK.bak"
+    fi
+    install -m 0644 "$HYPR_SRC/$rel" "$dst"
+  done
+  ok "hypr configs installed (${#plan[@]} files; backups are *.$MARK.bak)"
+}
+deploy_hypr
+
+# ── 8. wallpapers ───────────────────────────────────────────────────────────
+
+step "8. wallpapers"
+
+# The repo ships NO wallpapers (the owner's set is not redistributable), so
+# this step mostly reports and prepares the directory Mei's wallpaper daemon
+# scans by default: ~/Pictures/Wallpapers. Drop image files into
+# src/mei-assets/wallpapers/ before running ./install.sh and they are copied
+# there; or copy images yourself at any time. Existing files in that directory
+# are never touched without an explicit yes, and differing files are backed up
+# to *.mei-install.bak first.
+WP_SRC="$MEI_DIR/src/mei-assets/wallpapers"
+WP_DEST="$HOME/Pictures/Wallpapers"
+
+if [ "$DRY_RUN" = 1 ]; then
+  say "  (dry run: would mkdir -p $WP_DEST and copy any bundled images)"
+else
+  run mkdir -p "$WP_DEST"
+fi
+
+WP_PLAN=()
+if [ -d "$WP_SRC" ]; then
+  while IFS= read -r -d '' src; do
+    rel="${src#"$WP_SRC"/}"
+    dst="$WP_DEST/$rel"
+    if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
+      continue
+    fi
+    WP_PLAN+=("$rel")
+  done < <(find "$WP_SRC" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' -o -iname '*.avif' \) -print0)
+fi
+
+if [ "${#WP_PLAN[@]}" -eq 0 ]; then
+  say "  no wallpapers bundled in this checkout (see src/mei-assets/wallpapers/README.md)"
+  say "  Matugen has no fallback image until you drop one into:"
+  say "    $WP_DEST"
+else
+  for rel in "${WP_PLAN[@]}"; do say "    copy  $rel -> $WP_DEST/"; done
+  if [ "$DRY_RUN" = 1 ]; then
+    say "  (dry run: nothing written)"
+  elif confirm_yes "copy ${#WP_PLAN[@]} wallpaper(s) into $WP_DEST?"; then
+    for rel in "${WP_PLAN[@]}"; do
+      dst="$WP_DEST/$rel"
+      mkdir -p "$(dirname "$dst")"
+      if [ -f "$dst" ]; then
+        cp -a "$dst" "$dst.$MARK.bak"
+      fi
+      install -m 0644 "$WP_SRC/$rel" "$dst"
+    done
+    ok "wallpapers installed into $WP_DEST"
+  else
+    warn "wallpapers not copied"
+  fi
+fi
+
+# ── 9. fonts ────────────────────────────────────────────────────────────────
+
+step "9. fonts"
+
+# Bundled OFL fonts (Space Grotesk + Fraunces) install user-locally — no
+# sudo. The remaining fonts Mei's QML references live in the official Arch
+# repos; install.sh never runs sudo, so the pacman line is printed instead.
+FONT_SRC="$MEI_DIR/src/mei-assets/fonts"
+FONT_DEST="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/mei"
+fonts_written=0
+for fam in space-grotesk fraunces; do
+  [ -d "$FONT_SRC/$fam" ] || { warn "no bundled fonts at $FONT_SRC/$fam; skipped"; continue; }
+  for f in "$FONT_SRC/$fam"/*.ttf; do
+    [ -f "$f" ] || continue
+    base="$(basename "$f")"
+    dst="$FONT_DEST/$base"
+    if [ -f "$dst" ] && cmp -s "$f" "$dst"; then
+      ok "$base already installed"
+      continue
+    fi
+    if [ "$DRY_RUN" = 1 ]; then
+      say "  (dry run: would install $dst)"
+      fonts_written=1
+      continue
+    fi
+    mkdir -p "$FONT_DEST"
+    install -m 0644 "$f" "$dst"
+    ok "installed $dst"
+    fonts_written=1
+  done
+done
+if [ "$DRY_RUN" = 0 ] && [ "$fonts_written" = 1 ]; then
+  if command -v fc-cache >/dev/null 2>&1; then
+    run fc-cache -f "$FONT_DEST" || warn "fc-cache failed; run it yourself"
+  else
+    warn "fc-cache not found; refresh the font cache yourself"
+  fi
+fi
+
+MISSING_FONTS=()
+if command -v fc-list >/dev/null 2>&1; then
+  fc-list | grep -qi "JetBrainsMono Nerd Font"   || MISSING_FONTS+=(ttf-jetbrains-mono-nerd)
+  fc-list | grep -qi "SpaceMono Nerd Font"       || MISSING_FONTS+=(ttf-space-mono-nerd)
+  fc-list | grep -qi "Material Symbols"          || MISSING_FONTS+=(ttf-material-symbols-variable)
+  if [ "${#MISSING_FONTS[@]}" -gt 0 ]; then
+    say "  optional icon/mono fonts not found; to install them (needs sudo):"
+    say "    sudo pacman -S --needed ${MISSING_FONTS[*]}"
+  else
+    ok "nerd/material fonts already present"
+  fi
+else
+  say "  fc-list not found; cannot check Nerd/Material Symbols fonts"
+  say "    sudo pacman -S --needed ttf-jetbrains-mono-nerd ttf-space-mono-nerd ttf-material-symbols-variable"
 fi
 
 # ── done ─────────────────────────────────────────────────────────────────────
@@ -529,4 +754,5 @@ say "    ./mei status                 # nothing running yet"
 say "    ./mei start                  # join this Hyprland session now"
 say ""
 say "  A second run of this script is safe: it rebuilds only what changed,"
-say "  rewrites no identical unit, and adds no second autostart line or include."
+say "  rewrites no identical unit, reinstalls no identical hypr file or font,"
+say "  and adds no second autostart line or kitty include."
