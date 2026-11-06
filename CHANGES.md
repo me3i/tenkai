@@ -1,18 +1,30 @@
-## Heavenly installer (2026-11-06)
+## Tenkai installer: celestial CLI (2026-11-06)
 
-`install.sh` is now a full-screen, 60-column experience: ANSI-colour ASCII-art
-MEI banner, rounded magenta step frames (`╭ STEP n/9 · …`), ✓/✗/→/⚙/⚠ status
-glyphs, a dry-run mode that is genuinely read-only, and a closing success
-banner telling the user to log out and back in. Static frame widths are
-computed manually so the boxes align in any UTF-8 locale and collapse to plain
-text when there is no tty or NO_COLOR is set.
+`install.sh` is a 60-column, full-screen install: a six-row `天界` / `TENKAI`
+banner with the tagline beneath it, hairline deep-blue step frames
+(`╭ STEP n/9 · …`, count in soft purple, title in star white), ✓/✗/⚠/→ status
+glyphs, and a night-sky palette — deep blue rules, soft-purple counts, and
+celestial gold for the one line that closes the install. Frame widths are fixed
+so the boxes line up in any UTF-8 locale, and everything collapses to plain
+text with no tty or with NO_COLOR set.
 
-Behaviour is unchanged except for one pre-existing bug fix: `--dry-run` died at
-"the Blobs module was not produced" / "missing QML module source" because the
-build-artifact existence checks ran even when nothing was built; both are now
-skipped on a dry run. `bash -n` and `shellcheck -S warning` pass; every step,
-prompt, backup and the interactive-y/N-only Hyprland rule behave exactly as
-before.
+Motion is small and guarded: a starry spinner (`✦ ✧ ✶ ✷ ✸ ✹ ✺ ✻`, alternating
+purple/cyan) while the Go and CMake build steps run, a single comet crossing a
+dim strip of sky for the long Blobs compile, and a sub-second twinkle plus a
+cyan→purple→gold fade on the closing line. Every animation requires a real tty,
+NO_COLOR unset and a non-dry run, so a piped log or CI run gets exactly the
+bytes of an unanimated install; the spinner is a background child killed by its
+recorded PID — never by name — and reaped with `wait`. Build output is captured
+and reprinted dimmed beneath the result, so a failure still shows its errors.
+
+`--dry-run` is genuinely read-only and exits 0 without writing anything; it
+also skips the build-artifact existence checks that used to kill it at "the
+Blobs module was not produced" / "missing QML module source". `bash -n` passes
+and every step, prompt, backup and the interactive-y/N-only Hyprland rule
+behaves exactly as before.
+
+Naming: this tree was developed under the working name "Mei"; the entries
+below that say "Mei" describe Tenkai before that rename.
 
 ## Deep clean: strip Ryoku mentions, dead ceremony, stale docs (2026-11-06)
 
