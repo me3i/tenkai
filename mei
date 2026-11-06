@@ -1526,16 +1526,10 @@ EOF
   fi
 }
 
-write_session_script() {  # $1 = absolute host wayland socket, $2 = live baseline signature
-  # Compute the demo runtime dir BEFORE the heredoc (the heredoc content is
-  # expanded with 'set -u', and MEI_DEMO_RUNTIME must be set before the
-  # session.sh body references it).
-  if [ "${MEI_DEMO:-0}" = "1" ]; then
-    export MEI_DEMO_RUNTIME=/run/user/$(id -u)
-  else
-    export MEI_DEMO_RUNTIME="$MEI_DIR/.r"
-  fi
-
+# $1 = the LIVE wayland socket, used only as the guard ryogami refuses on;
+# $2 = the live baseline Hyprland signature. Neither is exported into the
+# session's display: the nested session runs strictly on its own runtime dir.
+write_session_script() {
   cat > "$RUN_DIR/session.sh" <<SESSION
 #!/usr/bin/env bash
 set -uo pipefail
@@ -1560,7 +1554,6 @@ if [ "\${MEI_ENV_SCRUBBED:-0}" != "1" ]; then
       "XDG_DATA_DIRS=$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
       "FONTCONFIG_FILE=\$RUN/home/.config/fontconfig/fonts.conf"
       "MEI_HOST_WAYLAND_SOCKET=__HOST_WAYLAND__"
-      "WAYLAND_DISPLAY=__HOST_WAYLAND__"
       "PATH=\$RUN/bin:$MEI_SYSTEM_PATH"
       "QML2_IMPORT_PATH=\$RUN/qml"
       "QML_IMPORT_PATH=\$RUN/qml"
@@ -1596,13 +1589,9 @@ export XDG_DATA_HOME="\$RUN/data"
 # Read-only: the owner's real .desktop files, so the launcher lists the same
 # applications as the live session. Writes still go to the fake XDG_DATA_HOME.
 export XDG_DATA_DIRS="$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
+# Strict isolation: every nested process resolves its display, sockets and
+# pipewire from this session's own runtime dir. The live one is never used.
 export XDG_RUNTIME_DIR="\$MEI_DIR/.r"
-# Demo mode: the nested Hyprland compositor must attach to the HOST's
-# XDG_RUNTIME_DIR (which carries the host wayland-1 socket) so it paints on
-# the host desktop. Override the per-session runtime dir in this case.
-if [ "\${MEI_DEMO:-0}" = "1" ]; then
-  export XDG_RUNTIME_DIR="/run/user/$(id -u)"
-fi
 
 export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
 # R1: .run/bin first, then a fixed system list. The caller's PATH is NOT used:
@@ -1622,7 +1611,10 @@ export QSG_RENDER_LOOP=threaded
 # A nested surface must never fall back to the host X server: with no Wayland
 # socket, Qt exits instead of painting a stray window on the live desktop.
 export QT_QPA_PLATFORM=wayland
-export WAYLAND_DISPLAY="__HOST_WAYLAND__"
+# WAYLAND_DISPLAY is deliberately NOT exported here: it is set below from the
+# nested compositor's OWN socket, once that socket exists. Handing the live
+# socket down would put the compositor and every client on the owner's desktop.
+unset WAYLAND_DISPLAY
 unset MEI_POLKIT_AGENT HYPRLAND_INSTANCE_SIGNATURE
 unset XDG_VIDEOS_DIR XDG_PICTURES_DIR XDG_DOCUMENTS_DIR XDG_DOWNLOAD_DIR \\
       XDG_MUSIC_DIR XDG_DESKTOP_DIR XDG_TEMPLATES_DIR XDG_PUBLICSHARE_DIR
@@ -1656,28 +1648,23 @@ printf '%s\\n' "\${DBUS_SESSION_BUS_ADDRESS:-}" > "\$RUN/bus"
 note() { printf '%s\\n' "\$*" >> "\$log/session.log"; }
 record() { local p="\$1" n="\$2"; local pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\\t%s\\t%s\\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
 
-note "starting nested Hyprland"
-# In demo mode, run the compositor with the HOST's XDG_RUNTIME_DIR so it
-# attaches to the host wayland-1 socket and paints on the host desktop.
-# The signautre/IPCS lookup below uses the nested runtime dir for the
-# baseline guard, so a unique demo signature is used.
-if [ "\${MEI_DEMO:-0}" = "1" ]; then
-  env XDG_RUNTIME_DIR="$MEI_DEMO_RUNTIME" Hyprland -c "\$RUN/hypr/nested.lua" >> "\$log/hyprland.log" 2>&1 &
-else
-  Hyprland -c "\$RUN/hypr/nested.lua" >> "\$log/hyprland.log" 2>&1 &
-fi
+note "starting nested Hyprland (own output; live socket handed only to it)"
+# Isolation: the live socket is given to the COMPOSITOR PROCESS ONLY (inline,
+# never exported), and only so it can create an output of its own. Everything
+# else in the session -- daemon, shell, ryogami, apps -- resolves its display
+# from \$XDG_RUNTIME_DIR below, i.e. the session's own wayland socket.
+#
+# A strictly headless compositor would be better, but this Hyprland (0.57.1)
+# has no headless backend: the DRM backend cannot take a seat from inside the
+# owner's session and `AQ_BACKENDS=headless` aborts in CBackend::create()
+# (measured 2026-11-06, "no allocator available"). So the nested compositor
+# itself still needs a parent display; nothing else in the session ever sees it.
+WAYLAND_DISPLAY="\$MEI_HOST_WAYLAND_SOCKET" Hyprland -c "\$RUN/hypr/nested.lua" >> "\$log/hyprland.log" 2>&1 &
 HYPPID=\$!; record "\$HYPPID" hyprland-nested
 
 sig=""
 for i in \$(seq 1 150); do
-  # Signature lookup uses the nested runtime dir (unique per session) while
-  # the display socket uses the HOST runtime (for the compositor). In demo
-  # mode, MEI_DEMO_RUNTIME holds the nested path; otherwise XDG_RUNTIME_DIR.
-  local_sig_dir="$XDG_RUNTIME_DIR"
-  if [ "\${MEI_DEMO:-0}" = "1" ]; then
-    local_sig_dir="$MEI_DEMO_RUNTIME"
-  fi
-  d="\$(ls -d "\$local_sig_dir"/hypr/*/ 2>/dev/null | head -n1 || true)"
+  d="\$(ls -d "\$XDG_RUNTIME_DIR"/hypr/*/ 2>/dev/null | head -n1 || true)"
   [ -n "\$d" ] && { sig="\$(basename "\$d")"; break; }
   kill -0 "\$HYPPID" 2>/dev/null || { note "Hyprland died before ready"; exit 1; }
   sleep 0.2
@@ -1691,15 +1678,16 @@ fi
 export HYPRLAND_INSTANCE_SIGNATURE="\$sig"
 note "hyprland instance: \$sig (baseline \$BASELINE_SIG)"
 
-# The compositor's display socket uses the HOST runtime dir (so it attaches to
-# the host wayland-1 socket and paints on the host desktop). In demo mode,
-# XDG_RUNTIME_DIR was already set to the host; use it for the display lookup.
+# The nested display is the compositor's own socket, resolved from this
+# session's runtime dir. If it never appears the session dies here instead of
+# falling back to the live socket.
 for i in \$(seq 1 100); do
   w="\$(ls "\$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)"
   [ -n "\$w" ] && { export WAYLAND_DISPLAY="\$(basename "\$w")"; break; }
   sleep 0.2
 done
-note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY"
+[ -n "\${WAYLAND_DISPLAY:-}" ] || { note "no nested WAYLAND_DISPLAY appeared"; kill -TERM "\$HYPPID" 2>/dev/null || true; exit 1; }
+note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY (isolated runtime dir)"
 
 # Mei's matugen config is seeded by ./mei before the session starts
 # (mei_seed_matugen): the shipped file plus the kitty template block, with both
@@ -1753,11 +1741,14 @@ cmd_run() {
   fi
 
   local bsig; bsig="$(baseline_hypr_sig || true)"
+  # The live socket is needed ONLY as the guard ryogami refuses on (it never
+  # becomes the session's WAYLAND_DISPLAY — the nested compositor is headless
+  # and every nested client resolves its own socket from .run/r).
   local host_wl="${WAYLAND_DISPLAY:-}"
   if [ -n "$host_wl" ] && [[ "$host_wl" != /* ]]; then
     host_wl="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/$host_wl"
   fi
-  [ -n "$host_wl" ] || die "no WAYLAND_DISPLAY in this shell — cannot open a nested window"
+  [ -n "$host_wl" ] || die "no WAYLAND_DISPLAY in this shell — cannot name the live socket for the isolation guard"
   [ -e "$host_wl" ] || die "WAYLAND_DISPLAY=$host_wl does not exist"
 
   prepare_nested_home
@@ -1775,9 +1766,9 @@ cmd_run() {
   : > "$RUN_DIR/logs/daemon.log"
   : > "$RUN_DIR/logs/ryogami.log"
 
-  # The nested compositor opens as a window on the host; the session script
-  # scrubs the inherited signature and refuses to start the shell unless the
-  # nested instance is provably a different one.
+  # The nested compositor runs headless on the session's own runtime dir; the
+  # session script scrubs the inherited signature and refuses to start the
+  # shell unless the nested instance is provably a different one.
   local inner=(dbus-run-session -- bash "$RUN_DIR/session.sh")
   local cap="none (systemd-run unavailable; process group only)"
   # Test hook: run on a caller-supplied private bus instead of a fresh
@@ -1802,98 +1793,6 @@ cmd_run() {
   note "  cap: $cap"
   note "  logs: $RUN_DIR/logs/{session,hyprland,daemon}.log"
   note "  stop: ./mei stop"
-}
-
-cmd_demo() {
-  # Demonstrate the full nested Mei session as a LIVE, VISIBLE window on the
-  # host desktop. Unlike ./mei run (which opens the nested compositor with its
-  # own isolated XDG_RUNTIME_DIR, so Qt apps inside the nested shell fall back
-  # to headless), cmd_demo binds the nested Hyprland to the HOST's
-  # XDG_RUNTIME_DIR, so the nested compositor attaches to the host wayland-1
-  # socket and paints directly on the host display.
-  #
-  # The nested shell (mei-shell/ryogami) still runs in the .run env, so the
-  # live session is untouched: only the compositor's display socket is shared.
-  [ -x "$RUN_DIR/bin/mei-shell" ] || die "mei-shell not built — run the Phase 6 build first"
-  [ -d "$RUN_DIR/qml/Ryoku/Ui" ] || die "QML modules not assembled under .run/qml"
-
-  # Refuse to clobber a session that is still up.
-  if [ -f "$PID_FILE" ]; then
-    local alive=0 p
-    while read -r p _; do
-      [ -n "${p:-}" ] && [ -d "/proc/$p" ] && alive=1
-    done < "$PID_FILE"
-    [ "$alive" = 1 ] && die "a Mei session is already running (see .run/pids); run './mei stop' first"
-  fi
-
-  local host_wl="${WAYLAND_DISPLAY:-}"
-  if [ -n "$host_wl" ] && [[ "$host_wl" != /* ]]; then
-    host_wl="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/$host_wl"
-  fi
-  [ -n "$host_wl" ] || die "no WAYLAND_DISPLAY in this shell — cannot open a nested window"
-  [ -e "$host_wl" ] || die "WAYLAND_DISPLAY=$host_wl does not exist"
-
-  prepare_nested_home
-  write_nested_conf
-  # Pass the host's display socket to the session script; the compositor will
-  # attach to it via the shared socket path. Use a demo-specific signature
-  # (dynamically generated) so the session script's baseline check never
-  # refuses -- the demo is a distinct compositor, not the live one.
-  local bsig; bsig="$(baseline_hypr_sig || true)"
-  local demo_sig="demo-$(tr -dc 'a-z0-9' < /dev/urandom | head -c4)-$(date +%s)"
-  local demo_path="$host_wl"
-  write_session_script "$demo_path" "$demo_sig"
-
-  # Clean runtime previous runs left behind (only when no session is running).
-  rm -rf "$RUN_DIR/r/hypr" "$RUN_DIR/r/quickshell"
-  rm -f "$RUN_DIR/r/mei-shell.sock" "$RUN_DIR/r/mei-shell.sock.lock" \
-        "$RUN_DIR/r/ryogami.sock" "$RUN_DIR/r/mei-hub.lock" \
-        "$RUN_DIR"/r/wayland-* 2>/dev/null || true
-  : > "$PID_FILE"
-  : > "$RUN_DIR/logs/session.log"
-  : > "$RUN_DIR/logs/hyprland.log"
-  : > "$RUN_DIR/logs/daemon.log"
-  : > "$RUN_DIR/logs/ryogami.log"
-
-  # The nested compositor opens as a window on the host. We run the session
-  # script in a dbus-run-session. To make the nested Hyprland visible on the
-  # host desktop, the compositor must see the HOST's XDG_RUNTIME_DIR (which
-  # carries the host wayland-1 socket) so it attaches to the host's physical
-  # outputs. The shell inside (mei-shell/ryogami) still runs in the .run env
-  # for isolation; only the compositor's display is shared.
-  #
-  # XDG_RUNTIME_DIR=/run/user/1000 (host) + WAYLAND_DISPLAY=$host_wl (host socket)
-  # makes the nested compositor paint directly on the host display.
-  local inner=(dbus-run-session -- env \
-    XDG_RUNTIME_DIR=/run/user/$(id -u) \
-    WAYLAND_DISPLAY="$host_wl" \
-    HYPRLAND_INSTANCE_SIGNATURE="$bsig" \
-    MEI_TEST=1 \
-    MEI_DEMO=1 \
-    bash "$RUN_DIR/session.sh")
-  local cap="none (systemd-run unavailable; process group only)"
-  if command -v systemd-run >/dev/null 2>&1 && systemd-run --user --scope --quiet true >/dev/null 2>&1; then
-    inner=(systemd-run --user --scope --quiet \
-      -p MemoryMax=3G -p CPUQuota=200% -- \
-      "${inner[@]}")
-    cap="MemoryMax=3G CPUQuota=200% (systemd-run --user --scope)"
-  fi
-  local runner=("${inner[@]}")
-  setsid "${runner[@]}" >> "$RUN_DIR/logs/session.log" 2>&1 &
-  local lp=$!
-  printf '%s\t%s\tdemo-launcher\n' "$lp" "$lp" >> "$PID_FILE"
-  note "demo session launched (launcher pid $lp)"
-  note "  cap: $cap"
-  note "  compositor display: $host_wl (host)'"
-  note "  logs: $RUN_DIR/logs/{session,hyprland,daemon}.log"
-  note "  stop: ./mei stop"
-
-  # Block until the nested demo session (the launcher PID above, which leads
-  # through dbus-run-session -> session.sh -> Hyprland) exits.  The launcher
-  # was launched with setsid so it keeps running even after this function
-  # returns; waiting on it here keeps the parent shell (and therefore the
-  # demo window) alive until the user kills it with ./mei stop.
-  wait "$lp"
 }
 
 nested_sig() {  # print the nested instance signature while it is up
@@ -2790,7 +2689,6 @@ case "${1:-help}" in
   wallpaper)        shift; cmd_wallpaper "$@" ;;
   env-check)        shift; cmd_env_check "${1:-}" ;;
   test)             shift; cmd_test ;;
-  demo)             shift; cmd_demo ;;
   accept)           shift; cmd_accept "$@" ;;
   help|--help|-h)   usage ;;
   *) die "unknown subcommand '${1}' — see './mei help'" ;;

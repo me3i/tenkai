@@ -15,8 +15,8 @@ Mei routes the same chord to the picker the qsbar style already hosts:
   through `ShellState.requestSurfaceActive("wallpaper")`).
 - `shell/.../barstyles/qsbar/Scene.qml` — exposes `openPicker(mode)` on the
   scene and its hosted bar system, the seam Frame calls.
-- `mei` — the nested test compositor binds the same chord, so the demo can drive
-  the picker.
+- `mei` — the nested test compositor binds the same chord, so a nested session
+  can drive the picker (`./mei run`; the demo command was removed on 2026-11-06).
 
 Applying from the picker runs `ryogami wallpaper set <path>`, which the daemon's
 `watchRyogami` already mirrors into `scheduleTheme()` → matugen → `colors.json`
