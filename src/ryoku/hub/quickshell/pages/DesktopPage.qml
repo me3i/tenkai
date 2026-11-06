@@ -26,7 +26,7 @@ Item {
     // seam so a write patches only that key and never rebuilds the whole qsbar
     // object, which would clobber the bar layout and widgets the panel writes; it
     // applies live like every daemon-backed key.
-    readonly property var pickerOptions: ["tanzaku", "hearthstone", "carousel"]
+    readonly property var pickerOptions: ["tanzaku"]
     readonly property string pickerStyle: {
         Settings.revision;
         const v = Settings.get("qsbar.pickerStyle");

@@ -261,12 +261,7 @@ Item {
     TrayMenu { root: theme }
 
     // Picker variants: only the selected pickerStyle is instantiated.
-    LazyLoader { active: theme.pickerStyle === "tanzaku" || theme.pickerStyle === "";  ImageCarouselPanel       { root: theme } }
-    LazyLoader { active: theme.pickerStyle === "hearthstone";                           ImageCarouselHearthstone { root: theme } }
-    LazyLoader { active: theme.pickerStyle === "carousel";                              ImageCarouselCarousel    { root: theme } }
-    LazyLoader { active: theme.mediaBrowserVisible && (theme.pickerStyle === "tanzaku" || theme.pickerStyle === "");  MediaBrowserPanel        { root: theme } }
-    LazyLoader { active: theme.mediaBrowserVisible && theme.pickerStyle === "hearthstone";                             MediaBrowserHearthstone  { root: theme } }
-    LazyLoader { active: theme.mediaBrowserVisible && theme.pickerStyle === "carousel";                                MediaBrowserCarousel     { root: theme } }
+    // Picker variants: only the selected pickerStyle is instantiated.
 
     // The bar's own IPC surface (contract 5): open QS Bar Settings on a route
     // (a keybind or `ryoku-shell bar settings`), close it (`bar settings close`,

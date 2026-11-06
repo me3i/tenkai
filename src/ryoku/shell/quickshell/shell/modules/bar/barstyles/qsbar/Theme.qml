@@ -2626,7 +2626,7 @@ Item {
     }
 
     // ── picker visual style (theme/wallpaper/screenshot/video pickers) ──
-    property string pickerStyle: "tanzaku"   // "tanzaku", "hearthstone", "carousel"
+    property string pickerStyle: "tanzaku"   // "tanzaku"
     property string launcherLogoMode: "text"     // "text" or "icon"
     property string launcherLogoText: "tenkai"      // "tenkai", "hyprland", "arch", ...
     property string launcherLogoIcon: "tenkai"      // see launcherLogoIconGlyph()
@@ -3109,7 +3109,7 @@ Item {
                     // pickerStyle is the field right after the workspace mode
                     if (parts.length > wsField + 1) {
                         var ps = parts[wsField + 1]
-                        if (ps === "hearthstone" || ps === "carousel" || ps === "tanzaku")
+                        if (ps === "tanzaku")
                             theme.pickerStyle = ps
                     }
                     // weatherImperial / clock12h follow pickerStyle
