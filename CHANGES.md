@@ -1,5 +1,27 @@
 # CHANGES.md — modifications vs upstream Ryoku
 
+## Wallpaper picker: SUPER+P opens the in-shell qsbar picker (2026-11-06)
+
+Upstream binds `Super+P` to `ryogami wallpaper ui`, a separate ryogami picker
+this build does not ship (its `ui` verb refuses here), so the chord did nothing.
+Mei routes the same chord to the picker the qsbar style already hosts:
+
+- `hub/backend/mei_runtime.go` — `meiDefaultBinds` gains
+  `SUPER + P` → `hl.dsp.global("mei:wallpaper-menu")`, the shortcut name the
+  shell root already registers (`shell.qml`), so the Hub's keybind apply
+  replaces upstream's dead ryogami bind like the other `ryoku:*` chords.
+- `shell/.../bar/Frame.qml` — a `wallpaper` surface request is no longer dropped:
+  it opens the hosted style's in-shell picker (the request already reached here
+  through `ShellState.requestSurfaceActive("wallpaper")`).
+- `shell/.../barstyles/qsbar/Scene.qml` — exposes `openPicker(mode)` on the
+  scene and its hosted bar system, the seam Frame calls.
+- `mei` — the nested test compositor binds the same chord, so the demo can drive
+  the picker.
+
+Applying from the picker runs `ryogami wallpaper set <path>`, which the daemon's
+`watchRyogami` already mirrors into `scheduleTheme()` → matugen → `colors.json`
+plus the app templates, so no theming code changed.
+
 ## Bundled Hyprland configs, fonts and installer deploy steps (2026-11-05)
 
 Mei now ships the owner's Hyprland Lua config and the two OFL fonts its UI

@@ -261,13 +261,15 @@ func unbindLua(k meiKeybinds) string {
 
 // meiDefaultBinds is the chord set Mei binds for itself, matching the chords the
 // owner's Ryoku config uses (modules/binds.lua: Super+V clipboard, Super+Tab
-// overview, Print / Super+Shift+S screenshot). They are not saved into
-// keybinds.json: they are the shipped defaults the Settings page edits, so a
-// user bind on the same chord always wins (see defaultBindsLua).
+// overview, Print / Super+Shift+S screenshot) plus Super+P for the wallpaper
+// picker the qsbar hosts in-shell. They are not saved into keybinds.json: they
+// are the shipped defaults the Settings page edits, so a user bind on the same
+// chord always wins (see defaultBindsLua).
 var meiDefaultBinds = []meiBind{
 	{Keys: "PRINT", Action: "exec", Value: "mei-screenshot full"},
 	{Keys: "SUPER + SHIFT + S", Action: "exec", Value: "mei-screenshot region"},
 	{Keys: "SUPER + V", Action: "global", Value: "mei:clipboard"},
+	{Keys: "SUPER + P", Action: "global", Value: "mei:wallpaper-menu"},
 	{Keys: "SUPER + TAB", Action: "global", Value: "mei:overview"},
 	{Keys: "SUPER + ALT + TAB", Action: "global", Value: "mei:overview"},
 }

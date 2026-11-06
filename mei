@@ -1457,6 +1457,9 @@ hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }))
 hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }))
 hl.bind("SUPER + SPACE", hl.dsp.global("mei:launcher"))
 hl.bind("SUPER + ESCAPE", hl.dsp.global("mei:quicksettings"))
+-- The wallpaper picker the qsbar style hosts in-shell (the external ryogami
+-- picker is not part of this build). Same chord as Mei's own default bind.
+hl.bind("SUPER + P", hl.dsp.global("mei:wallpaper-menu"))
 hl.bind("CTRL + RETURN", hl.dsp.exec_cmd("kitty"))
 LUA
 }

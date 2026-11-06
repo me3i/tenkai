@@ -124,6 +124,7 @@ func TestDefaultBindsLua(t *testing.T) {
 		`hl.bind("PRINT", hl.dsp.exec_cmd("mei-screenshot full"))`,
 		`hl.bind("SUPER + SHIFT + S", hl.dsp.exec_cmd("mei-screenshot region"))`,
 		`hl.bind("SUPER + V", hl.dsp.global("mei:clipboard"))`,
+		`hl.bind("SUPER + P", hl.dsp.global("mei:wallpaper-menu"))`,
 		`hl.bind("SUPER + TAB", hl.dsp.global("mei:overview"))`,
 		`hl.bind("SUPER + ALT + TAB", hl.dsp.global("mei:overview"))`,
 	} {

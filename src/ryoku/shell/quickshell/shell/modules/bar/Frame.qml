@@ -400,12 +400,14 @@ Scope {
                     function onSurfaceRequested(id, mon, ctx) {
                         if (mon !== "" && mon !== (root.modelData ? root.modelData.name : ""))
                             return;
-                        // MEI: the ryogami wall-ui picker is not part of this
-                        // build (the daemon's `ui` verb refuses), so a wallpaper
-                        // surface request is dropped instead of launching a
-                        // picker that is not there. Restore the execDetached
-                        // line together with the picker.
+                        // MEI: the external ryogami wall-ui picker is not part of
+                        // this build (the daemon's `ui` verb refuses), so a
+                        // wallpaper surface request opens the in-shell picker the
+                        // qsbar style hosts (Super+P / `mei:wallpaper-menu`). A
+                        // style without one drops the request.
                         if (id === "wallpaper") {
+                            if (barStyleLoader.item)
+                                barStyleLoader.item.openPicker("wallpaper");
                             return;
                         }
                         frameMenus.openSurface(id, null, mon, ctx);
