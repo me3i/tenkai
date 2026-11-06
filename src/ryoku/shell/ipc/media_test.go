@@ -72,7 +72,7 @@ func TestMediaControl(t *testing.T) {
 	defer conn.Close()
 
 	player := &fakePlayer{}
-	const name = "org.mpris.MediaPlayer2.meitest"
+	const name = "org.mpris.MediaPlayer2.tenkaitest"
 	reply, err := conn.RequestName(name, dbus.NameFlagDoNotQueue)
 	if err != nil || reply != dbus.RequestNameReplyPrimaryOwner {
 		t.Fatalf("cannot own %s: %v (%v)", name, err, reply)

@@ -93,7 +93,7 @@ func TestSyncSessionShellUpdatesLaunchEnvironments(t *testing.T) {
 	for _, want := range []string{
 		"systemctl --user set-environment SHELL=/usr/bin/zsh",
 		"dbus-update-activation-environment --systemd SHELL=/usr/bin/zsh",
-		"mei reload",
+		"tenkai reload",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("session calls missing %q:\n%s", want, joined)

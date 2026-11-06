@@ -8,7 +8,7 @@ import Quickshell.Io
  * ~/.cache/ryoku/colors.json the desktop widgets read, so a preview shows the
  * real wallpaper colours rather than a stand-in ramp. Mirrors the widgets'
  * Scheme singleton (each Quickshell config carries its own thin palette reader);
- * the defaults are the Mei brand palette.
+ * the defaults are the Tenkai brand palette.
  */
 Singleton {
     id: root

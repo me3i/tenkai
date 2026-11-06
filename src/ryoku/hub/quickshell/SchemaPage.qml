@@ -200,7 +200,7 @@ Item {
             if (page.reloadCoverImportBusy || !page.pendingReloadCoverRow) return;
             page.reloadCoverImportGeneration++;
             reloadCoverImport.requestGeneration = page.reloadCoverImportGeneration;
-            reloadCoverImport.command = ["mei-hub", "reload-cover", "import", "" + p];
+            reloadCoverImport.command = ["tenkai-hub", "reload-cover", "import", "" + p];
             page.reloadCoverImportBusy = true;
             reloadCoverImport.running = true;
         }

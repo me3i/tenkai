@@ -110,7 +110,7 @@ type pluginBlock struct {
 // luaPluginLoaded is the guard every plugin block runs its config behind:
 // hl.plugin.load only declares a path and Hyprland loads the set in a later pass,
 // so the config must wait for the plugin to actually be present.
-const luaPluginLoaded = `local function mei_plugin_loaded(name)
+const luaPluginLoaded = `local function tenkai_plugin_loaded(name)
   for _, p in ipairs(hl.get_loaded_plugins()) do
     if p.name == name then return true end
   end
@@ -165,7 +165,7 @@ func (pb pluginBlock) configLua(indent string) string {
 		return ""
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "%sif mei_plugin_loaded(%s) then\n", indent, luaStr(pb.name))
+	fmt.Fprintf(&b, "%sif tenkai_plugin_loaded(%s) then\n", indent, luaStr(pb.name))
 	if pb.config != "" {
 		fmt.Fprintf(&b, "%s  hl.config({ plugin = %s })\n", indent, pb.config)
 	}

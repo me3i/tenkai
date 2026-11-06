@@ -102,7 +102,7 @@ Item {
             if (mouse.button === Qt.RightButton)
                 Wm.cycleKeyboardLayout()
             else
-                Quickshell.execDetached(["mei-shell", "hub", "open", "input"])
+                Quickshell.execDetached(["tenkai-shell", "hub", "open", "input"])
         }
     }
 }

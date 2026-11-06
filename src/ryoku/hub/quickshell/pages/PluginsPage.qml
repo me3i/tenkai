@@ -149,8 +149,8 @@ Item {
         pg.log = [];
         pg.notice = "";
         actProc.command = id === "all"
-            ? ["mei-hub", "desktop", "plugins", "rebuild", "--stale"]
-            : ["mei-hub", "desktop", "plugins", "rebuild", id];
+            ? ["tenkai-hub", "desktop", "plugins", "rebuild", "--stale"]
+            : ["tenkai-hub", "desktop", "plugins", "rebuild", id];
         actProc.running = true;
     }
     function inspect() {
@@ -161,7 +161,7 @@ Item {
         pg.notice = "";
         pg.inspected = null;
         pg.picked = ({});
-        actProc.command = ["mei-hub", "desktop", "plugins", "add", "--inspect", url];
+        actProc.command = ["tenkai-hub", "desktop", "plugins", "add", "--inspect", url];
         actProc.running = true;
     }
     function addPicked() {
@@ -171,7 +171,7 @@ Item {
         pg.busy = "add";
         pg.log = [];
         pg.notice = "";
-        actProc.command = ["mei-hub", "desktop", "plugins", "add", pg.inspected.repo].concat(ids);
+        actProc.command = ["tenkai-hub", "desktop", "plugins", "add", pg.inspected.repo].concat(ids);
         actProc.running = true;
     }
     function remove(id) {
@@ -179,7 +179,7 @@ Item {
         pg.busy = "remove:" + id;
         pg.log = [];
         pg.notice = "";
-        actProc.command = ["mei-hub", "desktop", "plugins", "remove", id];
+        actProc.command = ["tenkai-hub", "desktop", "plugins", "remove", id];
         actProc.running = true;
     }
     function openDocs(url) { if (url) Spawn.run(["xdg-open", url]); }
@@ -229,7 +229,7 @@ Item {
 
     Process {
         id: listProc
-        command: ["mei-hub", "desktop", "plugins", "list"]
+        command: ["tenkai-hub", "desktop", "plugins", "list"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -568,7 +568,7 @@ Item {
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: offer.modelData.bundled ? I18n.tr("bundled with Mei") : (offer.modelData.installed ? I18n.tr("installed") : (offer.modelData.desc || ""))
+                                        text: offer.modelData.bundled ? I18n.tr("bundled with Tenkai") : (offer.modelData.installed ? I18n.tr("installed") : (offer.modelData.desc || ""))
                                         color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fSmall
                                         elide: Text.ElideRight
                                     }

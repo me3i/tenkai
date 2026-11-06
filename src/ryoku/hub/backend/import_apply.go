@@ -29,14 +29,14 @@ type pendingWrite struct {
 	luaCheck bool
 }
 
-// conflictChoice is a decoded conflict decision. mode is "mei" (default),
+// conflictChoice is a decoded conflict decision. mode is "tenkai" (default),
 // "mine", or "remap"; remap carries the new chord for the remap case.
 type conflictChoice struct {
 	mode  string
 	remap string
 }
 
-func backupsDir() string { return filepath.Join(configHome(), "mei", "import-backups") }
+func backupsDir() string { return filepath.Join(configHome(), "tenkai", "import-backups") }
 
 func applyImport(dec decisions) (applyResult, error) {
 	if strings.TrimSpace(dec.Source) == "" {
@@ -62,7 +62,7 @@ func applyImport(dec decisions) (applyResult, error) {
 		if hpath, ok := findConfig(dec.Source, "hypr", "hyprland.conf"); ok {
 			b, _ := os.ReadFile(hpath)
 			_, hs := parseHyprland(string(b))
-			plan := planBinds(hs.Binds, meiShipped(), resolve)
+			plan := planBinds(hs.Binds, tenkaiShipped(), resolve)
 
 			var userLua []string
 			for _, kb := range plan.keep {
@@ -226,7 +226,7 @@ func planBinds(binds []importBind, shipped map[string]shippedInfo, resolve map[s
 	unbound := map[string]bool{}
 	for i, b := range binds {
 		n := b.Norm
-		ch := resolve[n] // absent => zero value => default ("mei")
+		ch := resolve[n] // absent => zero value => default ("tenkai")
 		switch kind[n] {
 		case "shipped":
 			if i != shippedWinner[n] {
@@ -259,7 +259,7 @@ func planBinds(binds []importBind, shipped map[string]shippedInfo, resolve map[s
 				} else if i == dupSecond[n] {
 					plan.keep = append(plan.keep, remapBind(b, ch.remap))
 				}
-			default: // mei: keep the first, drop the rest
+			default: // tenkai: keep the first, drop the rest
 				if i == dupFirst[n] {
 					plan.keep = append(plan.keep, b)
 				}
@@ -277,7 +277,7 @@ func remapBind(b importBind, combo string) importBind {
 	return b
 }
 
-// parseChoice decodes a decisions.conflicts value: a bare string ("mei" /
+// parseChoice decodes a decisions.conflicts value: a bare string ("tenkai" /
 // "mine") or a { "remap": "<combo>" } object.
 func parseChoice(raw json.RawMessage) conflictChoice {
 	var s string
@@ -339,7 +339,7 @@ func snapshotBestEffort(ts string) {
 	}
 	// -c root + -c number so it uses the root config and prunes under NUMBER_LIMIT
 	// like update snapshots, instead of piling up untagged forever.
-	_ = exec.Command("snapper", "-c", "root", "create", "-c", "number", "-d", "mei config import "+ts).Run()
+	_ = exec.Command("snapper", "-c", "root", "create", "-c", "number", "-d", "tenkai config import "+ts).Run()
 	_ = exec.Command("snapper", "-c", "root", "cleanup", "number").Run()
 }
 
@@ -478,7 +478,7 @@ func relPaths(paths []string) []string {
 	return out
 }
 
-// luaContentOK is the write-time syntax gate, mirroring mei doctor: luac -p
+// luaContentOK is the write-time syntax gate, mirroring tenkai doctor: luac -p
 // when available, else non-empty with balanced () and {} (a torn write's
 // failure mode).
 func luaContentOK(b []byte) bool {

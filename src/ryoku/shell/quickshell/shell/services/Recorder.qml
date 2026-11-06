@@ -69,7 +69,7 @@ Singleton {
     // clear the stamp whenever the region clears (a manual clear, or the drop
     // above), so it is only ever consulted alongside a live region.
     onRegionGeomChanged: if (root.regionGeom === "") root.regionLayoutSig = "";
-    readonly property string regionFilePath: (Quickshell.env("MEI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/region-pick"
+    readonly property string regionFilePath: (Quickshell.env("TENKAI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/region-pick"
     function pickRegion() {
         root.regionPicking = true;
         Quickshell.execDetached(["sh", "-c",
@@ -109,7 +109,7 @@ Singleton {
     readonly property string discordScript: "ryoku-cmd-discord-compress"
     property bool discordMode: false
     property bool pendingDiscord: false
-    readonly property string discordFile: (Quickshell.env("MEI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/discord-record"
+    readonly property string discordFile: (Quickshell.env("TENKAI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/discord-record"
     FileView {
         id: discordPref
         path: root.discordFile
@@ -130,7 +130,7 @@ Singleton {
     property alias editMode: recPrefs.edit
     FileView {
         id: recPrefsFile
-        path: (Quickshell.env("MEI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/record.json"
+        path: (Quickshell.env("TENKAI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/record.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -155,7 +155,7 @@ Singleton {
     // capture begins and cleared when it ends; the process poll below reads it
     // back on reload. A capture started outside the shell has no stamp and falls
     // back to counting from when the shell first saw it.
-    readonly property string sessionFile: (Quickshell.env("MEI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/record-session"
+    readonly property string sessionFile: (Quickshell.env("TENKAI_STATE_PATH") || (Quickshell.env("HOME") + "/.local/state/ryoku")) + "/record-session"
     function writeSession(v) {
         Quickshell.execDetached(["sh", "-c",
             "mkdir -p \"${1%/*}\"; printf '%s' \"$2\" > \"$1\"", "sh", root.sessionFile, v]);

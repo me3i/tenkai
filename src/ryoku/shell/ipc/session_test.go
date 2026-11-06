@@ -7,35 +7,35 @@ import "testing"
 // the flag on (the action is suppressed) and the flag off (the action would
 // run). A guard that cannot fail is not a guard.
 func TestPowerGuards(t *testing.T) {
-	t.Setenv("MEI_TEST", "")
-	t.Setenv("MEI_STUB_SHUTDOWN", "")
-	t.Setenv("MEI_STUB_POWER", "")
+	t.Setenv("TENKAI_TEST", "")
+	t.Setenv("TENKAI_STUB_SHUTDOWN", "")
+	t.Setenv("TENKAI_STUB_POWER", "")
 
 	if testStubbed() {
-		t.Fatal("MEI_TEST unset must not report a stubbed test session")
+		t.Fatal("TENKAI_TEST unset must not report a stubbed test session")
 	}
 	if powerStubbed() {
-		t.Fatal("MEI_STUB_POWER unset must not report a stubbed power action")
+		t.Fatal("TENKAI_STUB_POWER unset must not report a stubbed power action")
 	}
 	if shutdownStubbed() {
-		t.Fatal("MEI_STUB_SHUTDOWN unset must not report a stubbed shutdown")
+		t.Fatal("TENKAI_STUB_SHUTDOWN unset must not report a stubbed shutdown")
 	}
 
-	t.Setenv("MEI_TEST", "1")
+	t.Setenv("TENKAI_TEST", "1")
 	if !testStubbed() {
-		t.Fatal("MEI_TEST=1 must report a stubbed test session")
+		t.Fatal("TENKAI_TEST=1 must report a stubbed test session")
 	}
 
-	t.Setenv("MEI_TEST", "")
-	t.Setenv("MEI_STUB_POWER", "1")
+	t.Setenv("TENKAI_TEST", "")
+	t.Setenv("TENKAI_STUB_POWER", "1")
 	if !powerStubbed() {
-		t.Fatal("MEI_STUB_POWER=1 must report a stubbed power action")
+		t.Fatal("TENKAI_STUB_POWER=1 must report a stubbed power action")
 	}
 
-	t.Setenv("MEI_STUB_POWER", "")
-	t.Setenv("MEI_STUB_SHUTDOWN", "1")
+	t.Setenv("TENKAI_STUB_POWER", "")
+	t.Setenv("TENKAI_STUB_SHUTDOWN", "1")
 	if !shutdownStubbed() {
-		t.Fatal("MEI_STUB_SHUTDOWN=1 must report a stubbed shutdown")
+		t.Fatal("TENKAI_STUB_SHUTDOWN=1 must report a stubbed shutdown")
 	}
 }
 

@@ -1,6 +1,6 @@
-// QS Bar (Quickshell Rise) entry, adapted to Mei's barstyle contract.
+// QS Bar (Quickshell Rise) entry, adapted to Tenkai's barstyle contract.
 //
-// Mei loads a barstyle Scene once per monitor via Frame's Loader, so this
+// Tenkai loads a barstyle Scene once per monitor via Frame's Loader, so this
 // Scene hosts the single bar system a single time on the primary output. The
 // VariantRoot inside fans one bar across every screen itself, so multi-monitor
 // behaviour is unchanged.
@@ -21,7 +21,7 @@ Item {
     // The screen, set by Frame's per-monitor Loader.
     property var modelData: null
 
-    // MEI: the in-shell wallpaper picker lives on the hosted bar system
+    // TENKAI: the in-shell wallpaper picker lives on the hosted bar system
     // (VariantRoot -> Theme.openImagePicker), so Frame forwards a `wallpaper`
     // surface request here instead of launching the external ryogami picker this
     // build does not ship.

@@ -64,7 +64,7 @@ Item {
     readonly property var sel: (pg.selected >= 0 && pg.selected < pg.draft.length) ? pg.draft[pg.selected] : null
 
     // ── per-monitor interface (shell) scale ──────────────────────────────
-    // Distinct from the compositor SCALE control below: this is the Mei shell
+    // Distinct from the compositor SCALE control below: this is the Tenkai shell
     // chrome's own logical scale on a monitor (shell.json displays.ui_scale,
     // keyed by output name), so one screen's bar, menus and this Hub can shrink
     // or grow without touching the crisp compositor scale apps render at. A shell
@@ -223,7 +223,7 @@ Item {
     // ── data load: the seam's output list + saved profiles ──────────────────
     Process {
         id: listProc
-        command: ["mei-hub", "outputs"]
+        command: ["tenkai-hub", "outputs"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -261,7 +261,7 @@ Item {
 
     Process {
         id: profilesProc
-        command: ["mei-hub", "outputs", "profiles"]
+        command: ["tenkai-hub", "outputs", "profiles"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -624,7 +624,7 @@ Item {
     function apply() {
         var prev = pg.committed;
         var next = JSON.stringify(pg.specsAll());
-        applyProc.command = ["mei-hub", "outputs", "apply", next];
+        applyProc.command = ["tenkai-hub", "outputs", "apply", next];
         applyProc.running = true;
         pg.committed = next;
         pg.tick++;
@@ -666,7 +666,7 @@ Item {
         pg.revertSecs = 0;
         if (pg.revertBaseline === "")
             return;
-        applyProc.command = ["mei-hub", "outputs", "apply", pg.revertBaseline];
+        applyProc.command = ["tenkai-hub", "outputs", "apply", pg.revertBaseline];
         applyProc.running = true;
         pg.committed = pg.revertBaseline;
         pg.revertBaseline = "";
@@ -677,7 +677,7 @@ Item {
     function saveProfile(name) {
         if (name.trim() === "")
             return;
-        profileProc.command = ["mei-hub", "outputs", "save", name.trim(), JSON.stringify(pg.specsAll())];
+        profileProc.command = ["tenkai-hub", "outputs", "save", name.trim(), JSON.stringify(pg.specsAll())];
         profileProc.running = true;
         pg.committed = JSON.stringify(pg.specsAll());
         pg.tick++;
@@ -685,12 +685,12 @@ Item {
         profileRefresh.start();
     }
     function loadProfile(name) {
-        profileProc.command = ["mei-hub", "outputs", "load", name];
+        profileProc.command = ["tenkai-hub", "outputs", "load", name];
         profileProc.running = true;
         listRefresh.start();
     }
     function deleteProfile(name) {
-        profileProc.command = ["mei-hub", "outputs", "rm", name];
+        profileProc.command = ["tenkai-hub", "outputs", "rm", name];
         profileProc.running = true;
         profileRefresh.start();
     }
@@ -953,7 +953,7 @@ Item {
                     visible: pg.listFailed
                     horizontalAlignment: Text.AlignHCenter
                     wrapMode: Text.WordWrap
-                    text: I18n.tr("The display backend looks out of date. Run 'mei deploy' (or update the desktop) and retry.")
+                    text: I18n.tr("The display backend looks out of date. Run 'tenkai deploy' (or update the desktop) and retry.")
                     color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fSmall
                 }
                 Btn {
@@ -1078,7 +1078,7 @@ Item {
                         anchors.left: parent.left; anchors.right: parent.right
                         divider: true
                         // The SCALE above is the compositor (hardware) scale apps
-                        // render at; this is the Mei shell's own interface scale
+                        // render at; this is the Tenkai shell's own interface scale
                         // on this monitor, shrinking or growing its chrome without
                         // touching that crisp compositor scale. Live shell setting.
                         label: I18n.tr("INTERFACE SCALE")
@@ -1096,7 +1096,7 @@ Item {
                         anchors.left: parent.left; anchors.right: parent.right
                         divider: true
                         label: I18n.tr("SHOW BAR")
-                        desc: I18n.tr("Show the active Mei bar style on this display.")
+                        desc: I18n.tr("Show the active Tenkai bar style on this display.")
                         source: "shell.json"
                         controlWidth: 54
                         Sw {

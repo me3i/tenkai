@@ -257,7 +257,7 @@ type Hyprscrolling struct {
 	FollowFocus bool    `json:"followFocus"`
 }
 
-// Keysounds is Mei's own plugin.
+// Keysounds is Tenkai's own plugin.
 type Keysounds struct {
 	Enabled bool    `json:"enabled"`
 	Profile string  `json:"profile"`
@@ -313,7 +313,7 @@ type Overrides struct {
 // defaultOverrides mirrors the shipped Hyprland modules so a diff against it
 // writes only real divergences. Border defaults derive from the matugen palette
 // when one exists (primary, and the darker of outline/primary for the inactive
-// border); mono grey only when it does not — never the hardcoded Mei red,
+// border); mono grey only when it does not — never the hardcoded Tenkai red,
 // which is why the whole session used to open framed in red.
 func defaultOverrides() Overrides {
 	borderActive, borderInactive := paletteBorderDefaults()
@@ -498,11 +498,11 @@ func configHome() string {
 	return base
 }
 
-func meiConfigDir() string { return filepath.Join(configHome(), "mei") }
+func tenkaiConfigDir() string { return filepath.Join(configHome(), "tenkai") }
 
 // desktopStorePath is the neutral settings store the Hub writes and the provider
 // reads.
-func desktopStorePath() string { return filepath.Join(meiConfigDir(), "desktop.json") }
+func desktopStorePath() string { return filepath.Join(tenkaiConfigDir(), "desktop.json") }
 
 func hyprConfigDir() string { return filepath.Join(configHome(), "hypr") }
 
@@ -510,12 +510,12 @@ func hyprConfigDir() string { return filepath.Join(configHome(), "hypr") }
 // lives here so it survives an update as a user edit; writeOverlayLua reflects
 // the same bytes into the live hypr dir so a reload picks them up at once.
 func userEditsHyprDir() string {
-	return filepath.Join(meiConfigDir(), "user_edits", "hypr")
+	return filepath.Join(tenkaiConfigDir(), "user_edits", "hypr")
 }
 
-func shellStorePath() string { return filepath.Join(meiConfigDir(), "shell.json") }
+func shellStorePath() string { return filepath.Join(tenkaiConfigDir(), "shell.json") }
 
-func themeStatePath() string { return filepath.Join(meiConfigDir(), "theme.json") }
+func themeStatePath() string { return filepath.Join(tenkaiConfigDir(), "theme.json") }
 
 // --- theme state ----------------------------------------------------------
 

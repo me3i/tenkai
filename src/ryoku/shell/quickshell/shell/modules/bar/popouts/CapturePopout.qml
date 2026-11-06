@@ -61,7 +61,7 @@ Item {
     // The latest screenshots and recordings, each in its own labelled group so the
     // two never blur together. A recording shows a poster frame with a play badge
     // and its duration; a click on any tile opens that group's folder.
-    readonly property string recordingsDir: Quickshell.env("MEI_SCREENRECORD_DIR")
+    readonly property string recordingsDir: Quickshell.env("TENKAI_SCREENRECORD_DIR")
         || ((Quickshell.env("XDG_VIDEOS_DIR") || (Quickshell.env("HOME") + "/Videos")) + "/Recordings")
     readonly property string thumbDir: Quickshell.env("HOME") + "/.cache/ryoku-capture-thumbs"
     property var clipDur: ({})                // recording path -> "M:SS"

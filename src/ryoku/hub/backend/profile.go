@@ -20,7 +20,7 @@ func profileDir() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei")
+	return filepath.Join(base, "tenkai")
 }
 
 func profileConfigPath() string { return filepath.Join(profileDir(), "profile.json") }

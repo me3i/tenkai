@@ -182,7 +182,7 @@ PanelWindow {
                 "HASHCACHE=$HOME/.cache/quickshell-img-thumb-hashes.tsv; touch \"$HASHCACHE\";",
                 "hash_for() { local s=\"$1\" r m key h tmp; r=$(readlink -f \"$s\" 2>/dev/null || printf '%s' \"$s\"); m=$(stat -Lc '%s:%Y:%Z' \"$s\" 2>/dev/null) || return 1; key=\"$r|$m\"; h=$(awk -F '\\t' -v k=\"$key\" '$1 == k { v=$2 } END { print v }' \"$HASHCACHE\" 2>/dev/null); if [ -z \"$h\" ]; then h=$(sha256sum \"$s\" 2>/dev/null | cut -d' ' -f1); [ -n \"$h\" ] || return 1; tmp=\"$HASHCACHE.$$\"; { awk -F '\\t' -v k=\"$key\" '$1 != k' \"$HASHCACHE\" 2>/dev/null; printf '%s\\t%s\\n' \"$key\" \"$h\"; } > \"$tmp\" && mv -f \"$tmp\" \"$HASHCACHE\"; fi; printf '%s' \"$h\"; };",
                 "thumb_for() { local s=\"$1\" k; k=$(hash_for \"$s\") || return 1; printf '%s/%s-512.jpg' \"$D\" \"$k\"; };",
-                "for d in ~/.local/share/mei/themes/* ~/.config/mei/themes/*; do",
+                "for d in ~/.local/share/tenkai/themes/* ~/.config/tenkai/themes/*; do",
                 "  [ -d \"$d\" ] || continue;",
                 "  name=$(basename \"$d\");",
                 "  prev=\"\";",
@@ -217,7 +217,7 @@ PanelWindow {
         var path = filtered[selFilt].filePath; if (!path) return
         if (isThemeMode) {
             var name = Model.nameForPath(path)
-            applyThemeProc.command = ["env", "MEI_PATH=" + root.omarchyInstallRoot, "true", name]
+            applyThemeProc.command = ["env", "TENKAI_PATH=" + root.omarchyInstallRoot, "true", name]
             applyThemeProc.running = false; applyThemeProc.running = true
         } else {
             applyBgProc.command = ["ryogami", "wallpaper", "set", path]

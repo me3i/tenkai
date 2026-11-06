@@ -6,8 +6,8 @@
 # Each harness starts and stops its own nested session and runs
 # verify-untouched itself. The live session is never touched.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"
 STAMP="$(date +%H%M%S)"
 LOG="$RUN/logs/restored-modules-$STAMP.log"
 mkdir -p "$RUN/logs"
@@ -31,14 +31,14 @@ for entry in "${TESTS[@]}"; do
   name="${entry%%|*}"; script="${entry##*|}"
   printf '\n========== %s (%s) ==========\n' "$name" "$script"
   # A test that failed halfway can leave a nested session behind, and the next
-  # test's "./mei run" would then refuse to start. Every test starts clean.
-  ( cd "$MEI" && ./mei stop ) >/dev/null 2>&1
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" ./mei live-stop ) >/dev/null 2>&1
-  # Each sub-test's log lives under the project, like everything else Mei
+  # test's "./tenkai run" would then refuse to start. Every test starts clean.
+  ( cd "$TENKAI" && ./tenkai stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" ./tenkai live-stop ) >/dev/null 2>&1
+  # Each sub-test's log lives under the project, like everything else Tenkai
   # writes. It used to go to /tmp/opencode, a directory this project does not
   # own: when it disappeared every sub-test "failed" on the redirect alone.
   sub_log="$RUN/logs/restored-${name// /-}-$STAMP.log"
-  if bash "$MEI/$script" >"$sub_log" 2>&1; then
+  if bash "$TENKAI/$script" >"$sub_log" 2>&1; then
     grep -E "TESTED|PASS|FAIL" "$sub_log" | tail -4 | sed 's/^/  /'
     RESULT[$name]="PASS"
   else

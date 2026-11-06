@@ -87,7 +87,7 @@ Item {
 
                         Repeater {
                             model: [
-                                { mode: "text", label: I18n.tr("Wordmark"), glyph: "MEI" },
+                                { mode: "text", label: I18n.tr("Wordmark"), glyph: "TENKAI" },
                                 { mode: "icon", label: I18n.tr("Glyph"),    glyph: "M" }
                             ]
 

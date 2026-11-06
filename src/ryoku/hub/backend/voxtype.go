@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// Voxtype dictation backend for Mei Settings' Dictation page. Voxtype owns a
-// large config; Mei writes a minimal, schema-valid ~/.config/voxtype/config.toml
+// Voxtype dictation backend for Tenkai Settings' Dictation page. Voxtype owns a
+// large config; Tenkai writes a minimal, schema-valid ~/.config/voxtype/config.toml
 // with the built-in hotkey off (the shell owns Super+` and drives `voxtype
 // record`), pins the Whisper engine + model, and manages the user service.
 // Models download and remove in-process, so the Hub never shells out to a
@@ -227,7 +227,7 @@ func voxtypeRmModel(key string) error {
 // the keys are released well before Voxtype types.
 func buildVoxtypeConfig(p voxtypePreset, openaiKey string) string {
 	var b strings.Builder
-	b.WriteString("# Mei dictation config for Voxtype. Managed by Mei Settings > Dictation\n")
+	b.WriteString("# Tenkai dictation config for Voxtype. Managed by Tenkai Settings > Dictation\n")
 	b.WriteString("# (ryoku-hub voxtype); hand edits are overwritten when you change it there.\n")
 	b.WriteString("# The shell owns Super+` and the pill mic-wave, so the built-in hotkey is off.\n")
 	fmt.Fprintf(&b, "# ryoku-preset: %s\n\n", p.Key)
@@ -252,7 +252,7 @@ func buildVoxtypeConfig(p voxtypePreset, openaiKey string) string {
 	}
 	b.WriteString("\n[output]\nmode = \"type\"\nfallback_to_clipboard = true\ntype_delay_ms = 1\n\n")
 	b.WriteString("[output.notification]\non_recording_start = false\non_recording_stop = false\non_transcription = false\n\n")
-	// the pill's mic wave is the indicator; keep Voxtype's own OSD off (Mei does
+	// the pill's mic wave is the indicator; keep Voxtype's own OSD off (Tenkai does
 	// not ship gtk4-layer-shell, which the OSD would need).
 	b.WriteString("[osd]\nenabled = false\n")
 	return b.String()
@@ -315,7 +315,7 @@ func ensureVoxtypeUnit() {
 		_ = exec.Command("voxtype", "setup", "systemd").Run()
 	}
 	dropin := filepath.Join(configHome(), "systemd", "user", "voxtype.service.d", "ryoku-resilient.conf")
-	want := "# Mei: never give up restarting the daemon; a mic-capture crash-loop\n" +
+	want := "# Tenkai: never give up restarting the daemon; a mic-capture crash-loop\n" +
 		"# must not permanently disable dictation.\n" +
 		"[Unit]\nStartLimitIntervalSec=0\n\n[Service]\nRestart=always\nRestartSec=2\n"
 	if readFileString(dropin) != want && atomicWrite(dropin, []byte(want), 0o644) == nil {

@@ -28,7 +28,7 @@ import (
 // is the first daily entry's sunrise/sunset.
 //
 // Divergence from the reference (recorded): the reference default location is the
-// null island (Coordinates 0,0). Mei instead falls back to a keyless IP lookup
+// null island (Coordinates 0,0). Tenkai instead falls back to a keyless IP lookup
 // when no location is configured, so a fresh profile shows local weather rather
 // than the Gulf of Guinea. An explicit location always wins over the fallback.
 
@@ -171,7 +171,7 @@ func conditionLabel(code int) string {
 	}
 }
 
-// weatherIcon maps a condition and day/night flag to a Mei weather icon token
+// weatherIcon maps a condition and day/night flag to a Tenkai weather icon token
 // (reference get_weather_icon_name, appendix A). Only Clear and PartlyCloudy
 // split on day/night; every other condition uses one icon for both. Daily items
 // always pass isDay=true.
@@ -729,7 +729,7 @@ func wxRetryable(kind string) bool {
 
 // resolveLocation turns the config into concrete coordinates. An explicit city
 // query geocodes; explicit coordinates are used directly; an empty query falls
-// back to a keyless IP lookup (the Mei divergence).
+// back to a keyless IP lookup (the Tenkai divergence).
 func (s *wxState) resolveLocation(cfg wxConfig) (*wxLocation, string, error) {
 	if cfg.query != "" {
 		return s.geocode(cfg.query)
@@ -823,11 +823,11 @@ func (s *wxState) fetchAir(lat, lon float64) (*wxAirResponse, error) {
 
 // getJSON performs a GET and decodes JSON, mapping transport and status failures
 // to the reference error kinds.
-// MEI: weather is off the keep list and the daemon is local-only. Mei compiles
+// TENKAI: weather is off the keep list and the daemon is local-only. Tenkai compiles
 // the HTTP client out entirely (no net/http import in this file), so no weather
 // request can be built. Every caller lands on its existing network-error path.
 func (s *wxState) getJSON(rawURL string, out any) (string, error) {
-	return wxErrNetwork, fmt.Errorf("mei: outbound network disabled")
+	return wxErrNetwork, fmt.Errorf("tenkai: outbound network disabled")
 }
 
 // currentHourIndex finds the entry for the current hour: the last entry whose

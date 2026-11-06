@@ -500,7 +500,7 @@ Item {
                                             }
                                             Btn {
                                                 anchors.verticalCenter: parent.verticalCenter
-                                                // MEI: the timezone is display-only, so this button
+                                                // TENKAI: the timezone is display-only, so this button
                                                 // did nothing. Hidden, not deleted.
                                                 visible: false
                                                 text: I18n.tr("CHANGE ON MAP")
@@ -954,7 +954,7 @@ Item {
                                         Item {
                                             id: locRoot
                                             anchors.fill: parent
-                                            readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mei"
+                                            readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/tenkai"
 
                                             Rectangle {
                                                 id: locField
@@ -996,8 +996,8 @@ Item {
                                                 id: debounce
                                                 interval: 300
                                                 onTriggered: {
-                                                    // MEI: the weather city search called a live
-                                                    // geocoding API. Mei's Settings stays offline;
+                                                    // TENKAI: the weather city search called a live
+                                                    // geocoding API. Tenkai's Settings stays offline;
                                                     // disabled, not deleted. Original:
                                                     //   var q = lti.text.trim();
                                                     //   if (q.length < 2) { locPop.close(); return; }

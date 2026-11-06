@@ -248,10 +248,10 @@ func TestLiftColorKeepsDarkPalettesVisible(t *testing.T) {
 		t.Fatal("a palette already bright enough must pass through untouched")
 	}
 	if got := liftColor("#000000"); got != lightingFallback {
-		t.Fatalf("black = %s, want the Mei fallback", got)
+		t.Fatalf("black = %s, want the Tenkai fallback", got)
 	}
 	if got := liftColor("garbage"); got != lightingFallback {
-		t.Fatalf("nonsense = %s, want the Mei fallback", got)
+		t.Fatalf("nonsense = %s, want the Tenkai fallback", got)
 	}
 }
 
@@ -274,7 +274,7 @@ func TestPunchColorRestoresWashedOutAccents(t *testing.T) {
 		t.Fatalf("dark = %s, want unchanged", got)
 	}
 	if got := punchColor("garbage"); got != lightingFallback {
-		t.Fatalf("nonsense = %s, want the Mei fallback", got)
+		t.Fatalf("nonsense = %s, want the Tenkai fallback", got)
 	}
 }
 
@@ -309,7 +309,7 @@ func TestStateDefaultsToOffAndSurvivesGarbage(t *testing.T) {
 		t.Fatalf("round trip lost settings: %+v", got.Devices["Board#SN1"])
 	}
 
-	if err := os.WriteFile(filepath.Join(dir, "mei", "lighting.json"), []byte("{{{"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "tenkai", "lighting.json"), []byte("{{{"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if st := loadLighting(); st.Enabled || len(st.Devices) != 0 {
@@ -471,10 +471,10 @@ func TestStateReportDoesNotTouchHardware(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", dir)
 	t.Setenv("PATH", dir)
 
-	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "tenkai"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "mei", "hypr-colors.lua"),
+	if err := os.WriteFile(filepath.Join(dir, "tenkai", "hypr-colors.lua"),
 		[]byte("return {\n    active = \"#dec2a2\",\n}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}

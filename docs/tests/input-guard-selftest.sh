@@ -6,20 +6,20 @@
 # stand-in path or a stub tool: nothing connects to a compositor, and the
 # live session is never touched.
 set -uo pipefail
-MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-GUARD="$MEI/docs/tests/tools/nested-input.sh"
-RT="$MEI/.r"
-LIVE_RT="$(sed -n 's/^XDG_RUNTIME_DIR=//p' "$MEI/docs/baseline/env.txt" 2>/dev/null | head -1)"
+TENKAI="$(cd "$(dirname "$0")/../.." && pwd)"
+GUARD="$TENKAI/docs/tests/tools/nested-input.sh"
+RT="$TENKAI/.r"
+LIVE_RT="$(sed -n 's/^XDG_RUNTIME_DIR=//p' "$TENKAI/docs/baseline/env.txt" 2>/dev/null | head -1)"
 [ -n "$LIVE_RT" ] || LIVE_RT="/run/user/$(id -u)"
-LIVE_NAME="$(sed -n 's/^WAYLAND_DISPLAY=//p' "$MEI/docs/baseline/env.txt" 2>/dev/null | head -1)"
+LIVE_NAME="$(sed -n 's/^WAYLAND_DISPLAY=//p' "$TENKAI/docs/baseline/env.txt" 2>/dev/null | head -1)"
 
 fail=0
 ok(){ echo "TESTED      $*"; }
 bad(){ echo "FAIL        $*"; fail=1; }
 
 # A stub tool: it reports the environment it was given and touches nothing.
-STUB="$MEI/.run/input-guard-stub.sh"
-mkdir -p "$MEI/.run"
+STUB="$TENKAI/.run/input-guard-stub.sh"
+mkdir -p "$TENKAI/.run"
 cat > "$STUB" <<'EOF'
 #!/usr/bin/env bash
 echo "STUB display=$WAYLAND_DISPLAY runtime=$XDG_RUNTIME_DIR"
@@ -64,7 +64,7 @@ esac
 
 echo
 echo "=== C: any other socket outside the nested runtime is refused ==="
-out="$(NESTED_INPUT_DISPLAY="$MEI/.run/wayland-not-nested" "$GUARD" "$STUB" 2>&1)"; rc=$?
+out="$(NESTED_INPUT_DISPLAY="$TENKAI/.run/wayland-not-nested" "$GUARD" "$STUB" 2>&1)"; rc=$?
 [ "$rc" = 3 ] && ok "a socket outside the nested runtime is refused (exit 3)" \
   || bad "the guard accepted a socket outside the nested runtime (exit $rc): $out"
 
@@ -81,7 +81,7 @@ esac
 
 echo
 echo "=== E: nothing was sent to the live session ==="
-( cd "$MEI" && ./mei verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" \
+( cd "$TENKAI" && ./tenkai verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" \
   || bad "verify-untouched FAILED"
 rm -f "$STUB" "$RT/wayland-selftest"
 

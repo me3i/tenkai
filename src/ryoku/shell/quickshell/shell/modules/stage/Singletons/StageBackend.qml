@@ -12,7 +12,7 @@ Singleton {
     id: root
 
     readonly property string bin: {
-        const d = Quickshell.env("MEI_SHELL_DIR");
+        const d = Quickshell.env("TENKAI_SHELL_DIR");
         return (d && d.length > 0) ? d + "/scripts/ryostage" : "ryostage";
     }
     property bool available: false
@@ -89,7 +89,7 @@ Singleton {
         onExited: { root.removing = false; root.recheck(); }
     }
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
     property var frame: ({ current: "", busy: false, stage: "", percent: 0, walls: {} })
 
     readonly property string current: root.frame.current || ""
@@ -185,7 +185,7 @@ Singleton {
 
     // Verbs (fire-and-forget; the topic republish is the confirmation).
     function call(verb) {
-        const cmd = ["mei-shell", "stage", verb];
+        const cmd = ["tenkai-shell", "stage", verb];
         for (var i = 1; i < arguments.length; i++) cmd.push("" + arguments[i]);
         Quickshell.execDetached(cmd);
     }

@@ -12,7 +12,7 @@ import Ryoku.Ui.Singletons
 Singleton {
     id: root
 
-    readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mei/nvibrant-value"
+    readonly property string stateFile: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/tenkai/nvibrant-value"
 
     property int vibrance: 40
 

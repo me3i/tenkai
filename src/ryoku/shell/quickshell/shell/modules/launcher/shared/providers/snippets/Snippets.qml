@@ -17,7 +17,7 @@ Provider {
 
     providerId: "snippets"
 
-    readonly property string dir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei"
+    readonly property string dir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai"
     property var snippetList: []
     property var quicklinkList: []
     onSnippetListChanged: Dispatcher.notifyAsync()

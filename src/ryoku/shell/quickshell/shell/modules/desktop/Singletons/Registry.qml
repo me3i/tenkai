@@ -9,7 +9,7 @@ import Quickshell.Io
 // and Store revision state, so Settings edits and product install/update/remove
 // transactions retune the running shell without a restart.
 //
-// discover.sh path = MEI_SHELL_DIR in dev, else the installed quickshell
+// discover.sh path = TENKAI_SHELL_DIR in dev, else the installed quickshell
 // tree.
 Singleton {
     id: root
@@ -17,13 +17,13 @@ Singleton {
     property var plugins: []
     property bool ready: false
 
-    readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
+    readonly property string _shellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string _script: (_shellDir && _shellDir.length > 0)
         ? _shellDir + "/quickshell/plugins/discover.sh"
         : (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/quickshell/plugins/discover.sh"
     readonly property string _stateHome: Quickshell.env("XDG_STATE_HOME")
         || ((Quickshell.env("HOME") + "/.local/state"))
-    readonly property string _revision: root._stateHome + "/mei/store/revision.json"
+    readonly property string _revision: root._stateHome + "/tenkai/store/revision.json"
 
     // one sweep per burst. a dragged tile writes placement on release, a resize
     // writes it again as the wheel settles, and a Store transaction writes its
@@ -72,7 +72,7 @@ Singleton {
     // change re-discovers, so the shell retunes live like the rest of the
     // desktop.
     FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/plugins.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/plugins.json"
         watchChanges: true
         printErrors: false
         onFileChanged: root.reload()

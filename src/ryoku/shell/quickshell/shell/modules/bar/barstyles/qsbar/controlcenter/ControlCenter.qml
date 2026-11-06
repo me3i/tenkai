@@ -108,7 +108,7 @@ PanelWindow {
             { id: "dock.pinned", name: I18n.tr("Pinned apps"), route: "dock", category: I18n.tr("Dock"),
               searchTags: ["pin", "pinned", "app", "add", "remove"], description: I18n.tr("The apps the dock always shows.") },
             { id: "community.installed", name: I18n.tr("Community widgets"), route: "community", category: I18n.tr("Community"),
-              searchTags: ["plugin", "plugins", "installed", "third", "party", "remove", "uninstall"], description: I18n.tr("Bar widgets installed from outside Mei.") },
+              searchTags: ["plugin", "plugins", "installed", "third", "party", "remove", "uninstall"], description: I18n.tr("Bar widgets installed from outside Tenkai.") },
             { id: "community.add", name: I18n.tr("Add from git or Ryostore"), route: "community", category: I18n.tr("Community"),
               searchTags: ["git", "url", "ryostore", "store", "install", "add"], description: I18n.tr("Install a community bar widget.") }
         ]);
@@ -212,7 +212,7 @@ PanelWindow {
             current: cc.route
             onChose: (id) => cc.route = id
             onSearchRequested: searchOverlay.shown = true
-            onHubRequested: { Spawn.run(["sh", "-c", "flock -n -o /tmp/mei-hub.lock qs -c hub"]); cc.close(); }
+            onHubRequested: { Spawn.run(["sh", "-c", "flock -n -o /tmp/tenkai-hub.lock qs -c hub"]); cc.close(); }
         }
 
         Item {

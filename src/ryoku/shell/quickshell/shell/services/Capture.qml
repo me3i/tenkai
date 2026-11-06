@@ -20,7 +20,7 @@ import Ryoku.Ui.Singletons
 //
 // Divergence: the capture backend shells out to grim + wl-copy rather than a
 // bespoke zwlr_screencopy_v1 client -- grim speaks exactly that protocol, and
-// Mei already shells out to wl-copy / wf-recorder for the same reasons.
+// Tenkai already shells out to wl-copy / wf-recorder for the same reasons.
 Singleton {
     id: root
 
@@ -44,7 +44,7 @@ Singleton {
     property var _recordAudio: []          // extra Recorder args for a targeted record
     property var _pending: null            // { flag, val } grim target for the pending shot
 
-    // Mei owns its screenshot location; the filename pattern is the reference
+    // Tenkai owns its screenshot location; the filename pattern is the reference
     // UTC stamp. XDG_PICTURES_DIR honoured, else ~/Pictures, matching ryoshot.
     readonly property string shotsDir: (Quickshell.env("XDG_PICTURES_DIR") || (Quickshell.env("HOME") + "/Pictures")) + "/Screenshots"
 
@@ -53,7 +53,7 @@ Singleton {
     // on a real first run so a slow load never clobbers a present file.
     FileView {
         id: prefsFile
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mei/capture.json"
+        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/tenkai/capture.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -166,12 +166,12 @@ Singleton {
             'FLAG="$1"; VAL="$2"; OUT="$3"; MODE="$4"; CLIP="$5"; BEAUTIFY="$6"',
             'mkdir -p "$(dirname "$OUT")" 2>/dev/null || true',
             'if [ -n "$FLAG" ]; then grim "$FLAG" "$VAL" "$OUT"; else grim "$OUT"; fi || exit 0',
-            '[ -n "$CLIP" ] && mei-shell clip-copy image/png "$OUT"',
-            'mei-shell sound shutter >/dev/null 2>&1 || true',
+            '[ -n "$CLIP" ] && tenkai-shell clip-copy image/png "$OUT"',
+            'tenkai-shell sound shutter >/dev/null 2>&1 || true',
             'case "$MODE" in',
-            'clipboard) notify-send -a mei "Screenshot copied to clipboard" >/dev/null 2>&1 || true ;;',
-            'file) notify-send -a mei "Screenshot saved" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
-            '*) notify-send -a mei "Screenshot saved & copied" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
+            'clipboard) notify-send -a tenkai "Screenshot copied to clipboard" >/dev/null 2>&1 || true ;;',
+            'file) notify-send -a tenkai "Screenshot saved" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
+            '*) notify-send -a tenkai "Screenshot saved & copied" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
             'esac',
             '[ -n "$BEAUTIFY" ] && RYOSHOT_OPEN="$OUT" flock -n -o /tmp/ryoshot.lock qs -c ryoshot >/dev/null 2>&1 || true'
         ].join("\n");

@@ -25,10 +25,10 @@ Item {
     implicitHeight: 28
 
     readonly property string tooltipText: {
-        if (!updateAvailable) return I18n.tr("Mei is up to date")
+        if (!updateAvailable) return I18n.tr("Tenkai is up to date")
         var lines = []
         if (pending > 0) {
-            var head = I18n.tr("Mei update") + " · " + (pending === 1
+            var head = I18n.tr("Tenkai update") + " · " + (pending === 1
                 ? I18n.tr("%1 commit").arg(pending) : I18n.tr("%1 commits").arg(pending))
             if (Updates.channel !== "") head += " · " + Updates.channel
             lines.push(head)
@@ -65,7 +65,7 @@ Item {
         function onUpdateRefreshTickChanged() { Updates.check() }
     }
 
-    Process { id: runProc; command: ["bash", "-c", "kitty mei update"] }
+    Process { id: runProc; command: ["bash", "-c", "kitty tenkai update"] }
 
     IconText {
         anchors.centerIn: parent

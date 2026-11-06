@@ -789,7 +789,7 @@ PanelWindow {
             }
 
             // Available / saved profiles. Both views use the native
-            // NetworkManager objects on Mei 4 and the iwctl snapshot on
+            // NetworkManager objects on Tenkai 4 and the iwctl snapshot on
             // legacy installations.
             Row {
                 width: parent.width
@@ -1338,7 +1338,7 @@ PanelWindow {
                 }
             }
 
-            // NetworkManager (Mei 4.0): the iwctl scan/connect don't apply here →
+            // NetworkManager (Tenkai 4.0): the iwctl scan/connect don't apply here →
             // show an nmtui shortcut if the Quickshell.Networking adapter is unavailable.
             Rectangle {
                 width: parent.width

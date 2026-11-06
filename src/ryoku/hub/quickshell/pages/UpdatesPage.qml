@@ -8,16 +8,16 @@ import Ryoku.Ui
 import Ryoku.Ui.Singletons
 import "../Singletons"
 
-// System > Updates (DESIGN.md section 8, SYSTEM). The Mei update channel as a
+// System > Updates (DESIGN.md section 8, SYSTEM). The Tenkai update channel as a
 // paper-and-ink instrument: how far the install sits behind origin, the commits
 // that would land (or the recent history it already runs), and a one-click
-// update that runs `mei update` in a terminal and mirrors its progress here.
+// update that runs `tenkai update` in a terminal and mirrors its progress here.
 //
 // This is a full-bleed page -- the shell hides its side panel and global action
 // bar and keeps the rail -- so it draws its own head, content and action bar.
 // The backend is carried verbatim from the old UpdatesPage/UpdateRow/
-// UpdateStatus: the Updates singleton (wired to `mei status --json`), the
-// run-state FileView `mei update` publishes, and the same execDetached calls.
+// UpdateStatus: the Updates singleton (wired to `tenkai status --json`), the
+// run-state FileView `tenkai update` publishes, and the same execDetached calls.
 // Only the presentation changed: no ember, no boxed banners -- ink on black,
 // inversion for emphasis, the shared progress spec (a hairline track + a square
 // ink fill) for advancement and the 600ms heartbeat dot for the indeterminate
@@ -64,13 +64,13 @@ Item {
         if (pg.interval === k)
             return;
         pg.interval = k;
-        saveInterval.command = ["mei-hub", "config", "set", "update_interval", k];
+        saveInterval.command = ["tenkai-hub", "config", "set", "update_interval", k];
         saveInterval.running = true;
     }
 
     Process {
         id: loadInterval
-        command: ["mei-hub", "config", "get", "update_interval"]
+        command: ["tenkai-hub", "config", "get", "update_interval"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -99,7 +99,7 @@ Item {
         onTriggered: Updates.check()
     }
 
-    // ── live run state (published by `mei update`) ────────────────────────
+    // ── live run state (published by `tenkai update`) ────────────────────────
     property string phase: "idle"   // idle | running | prompt | done | error
     property real progress: 0
     property string label: ""
@@ -114,7 +114,7 @@ Item {
     readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ryoku-update.json"
     readonly property string answerPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ryoku-update-answer"
 
-    // the fill fraction for the shared progress track. `mei update` may report
+    // the fill fraction for the shared progress track. `tenkai update` may report
     // an explicit progress, but even when it only advances the stage list we can
     // read completion off the stages, so the track never sits dead at 0 while
     // work is plainly happening. done pins it full.
@@ -198,7 +198,7 @@ Item {
         pg.checkOwner();
     }
 
-    // answer a prompt phase: write the choice to the back-channel `mei update`
+    // answer a prompt phase: write the choice to the back-channel `tenkai update`
     // is polling (positional args, so a quote in the label can't break out),
     // then optimistically resume the running view so the buttons clear.
     function answer(choice) {
@@ -207,12 +207,12 @@ Item {
     }
 
     // guide restoring the pre-update snapshot after a failed run, in a terminal
-    // (`mei rollback` prints the boot-menu restore steps and exits, so hold
+    // (`tenkai rollback` prints the boot-menu restore steps and exits, so hold
     // the window for the user to read), then clear the error state.
     function rollback() {
         if (pg.snapshot === "")
             return;
-        Spawn.run(["kitty", "-e", "sh", "-c", "mei rollback \"$1\"; printf '\\npress enter to close '; read -r _", "sh", pg.snapshot]);
+        Spawn.run(["kitty", "-e", "sh", "-c", "tenkai rollback \"$1\"; printf '\\npress enter to close '; read -r _", "sh", pg.snapshot]);
         pg.dismiss();
     }
 
@@ -225,7 +225,7 @@ Item {
     }
 
     function startUpdate() {
-        Spawn.run(["kitty", "-e", "sh", "-c", "exec mei update"]);
+        Spawn.run(["kitty", "-e", "sh", "-c", "exec tenkai update"]);
     }
 
     // idle list: incoming commits when behind, else the recent history the
@@ -337,7 +337,7 @@ Item {
                         // the channel has moved on ("Onogoro -> Amaterasu").
                         Text {
                             visible: Updates.currentName !== ""
-                            text: "Mei " + Updates.currentName
+                            text: "Tenkai " + Updates.currentName
                                   + (Updates.available && Updates.latestName !== "" && Updates.latestName !== Updates.currentName
                                      ? "  \u2192  " + Updates.latestName : "")
                             color: Tokens.ink; font.family: Tokens.display
@@ -588,7 +588,7 @@ Item {
                     }
                 }
 
-                // These come from Arch or CachyOS, not from Ryoku: `mei update`
+                // These come from Arch or CachyOS, not from Ryoku: `tenkai update`
                 // does not move them, so the section has to name what does.
                 Text {
                     width: idleCol.width
@@ -899,8 +899,8 @@ Item {
         }
     }
 
-    // ── prompt: the editorial question `mei update` is blocked on -- an ink
-    // rule + title + detail, with the option stamps `mei update` offers. ──
+    // ── prompt: the editorial question `tenkai update` is blocked on -- an ink
+    // rule + title + detail, with the option stamps `tenkai update` offers. ──
     Item {
         visible: pg.phase === "prompt"
         anchors {

@@ -125,7 +125,7 @@ func parseHyprland(src string) ([]scanItem, hyprScan) {
 }
 
 // parseBind splits `MODS, KEY, DISPATCHER, ARGS` (args may hold commas) and maps
-// the native dispatcher onto the hub Keybind model. killactive is Mei's
+// the native dispatcher onto the hub Keybind model. killactive is Tenkai's
 // "close"; anything outside the four ingestable dispatchers stays raw.
 func parseBind(val, raw string) importBind {
 	f := splitNCommaTrim(val, 4)
@@ -380,8 +380,8 @@ func dispatcherToDsp(disp, args string) (string, bool) {
 	case "movetoworkspacesilent":
 		return fmt.Sprintf("hl.dsp.window.move({ workspace = %s, silent = true })", workspaceArg(args)), true
 	case "global":
-		// A shell-owned shortcut (mei:overview, mei:clipboard, ...), which is
-		// what Mei's own default chords dispatch to.
+		// A shell-owned shortcut (tenkai:overview, tenkai:clipboard, ...), which is
+		// what Tenkai's own default chords dispatch to.
 		if strings.TrimSpace(args) == "" {
 			return "", false
 		}
@@ -430,10 +430,10 @@ func numOr0(s string) string {
 // --- conflict detection ------------------------------------------------------
 
 // hyprConflicts flags every imported chord that clashes: shipped (shadows a
-// Mei bind) takes priority over duplicate (repeats an earlier imported chord),
+// Tenkai bind) takes priority over duplicate (repeats an earlier imported chord),
 // one row per chord, keyed by the stable norm.
 func hyprConflicts(binds []importBind) []scanConflict {
-	shipped := meiShipped()
+	shipped := tenkaiShipped()
 	seen := map[string]importBind{}
 	done := map[string]bool{}
 	out := []scanConflict{}
@@ -445,7 +445,7 @@ func hyprConflicts(binds []importBind) []scanConflict {
 		if si, ok := shipped[n]; ok {
 			out = append(out, scanConflict{
 				Combo: b.Combo, Norm: n,
-				Mei: conflictMei{Action: si.Action, Desc: si.Desc},
+				Tenkai: conflictTenkai{Action: si.Action, Desc: si.Desc},
 				Mine:  conflictMine{Raw: b.Raw, Desc: b.Desc},
 				Kind:  "shipped",
 			})
@@ -455,7 +455,7 @@ func hyprConflicts(binds []importBind) []scanConflict {
 		if first, ok := seen[n]; ok {
 			out = append(out, scanConflict{
 				Combo: b.Combo, Norm: n,
-				Mei: conflictMei{Action: first.Action, Desc: first.Desc},
+				Tenkai: conflictTenkai{Action: first.Action, Desc: first.Desc},
 				Mine:  conflictMine{Raw: b.Raw, Desc: b.Desc},
 				Kind:  "duplicate",
 			})

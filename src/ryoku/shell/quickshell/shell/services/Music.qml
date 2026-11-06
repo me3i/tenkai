@@ -18,7 +18,7 @@ import "../utils/menupoll.js" as MenuPoll
 Singleton {
     id: root
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     property var frame: ({})
     readonly property string source: root.frame.source || ""

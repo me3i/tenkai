@@ -32,7 +32,7 @@ Item {
     property bool open: false
     signal requestClose()
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     // The preview catalog the cards render from (the extension point). A future
     // Go `theme` topic replaces this with a subscribed frame.

@@ -28,7 +28,7 @@ import (
 
 const (
 	lightingUnit = "ryoku-openrgb"
-	// a device with no accent of its own falls back to the Mei signature.
+	// a device with no accent of its own falls back to the Tenkai signature.
 	lightingFallback = "#F25623"
 	// a palette this dark reads as "off" on a keyboard, so the accent is lifted
 	// until its brightest channel clears this.
@@ -59,8 +59,8 @@ const (
 type lightingSettings struct {
 	Name    string `json:"name"`
 	Managed bool   `json:"managed"`
-	// exactly one of these drives the device: Effect is one Mei paints (and
-	// needs Mei running), Mode is one of the device's own (which keeps running
+	// exactly one of these drives the device: Effect is one Tenkai paints (and
+	// needs Tenkai running), Mode is one of the device's own (which keeps running
 	// without it). Picking one clears the other.
 	Mode       string            `json:"mode"`
 	Effect     string            `json:"effect,omitempty"`
@@ -83,7 +83,7 @@ func lightingPath() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei", "lighting.json")
+	return filepath.Join(base, "tenkai", "lighting.json")
 }
 
 // loadLighting: a missing or unreadable file is the off state, never an error.
@@ -169,7 +169,7 @@ type lightZone struct {
 	LEDs int    `json:"leds"`
 }
 
-// lightFx = one effect Mei paints, listed only for devices that can be
+// lightFx = one effect Tenkai paints, listed only for devices that can be
 // painted at all.
 type lightFx struct {
 	ID    string `json:"id"`
@@ -423,7 +423,7 @@ func mergeViews(live []orgbDevice, st lightingState) []lightDevice {
 		for _, z := range d.Zones {
 			v.Zones = append(v.Zones, lightZone{Name: z.Name, LEDs: int(z.LEDs)})
 		}
-		// Mei's own effects, but only where the device can be painted at all.
+		// Tenkai's own effects, but only where the device can be painted at all.
 		if canPaint(d) {
 			for _, e := range fxEffects {
 				v.Effects = append(v.Effects, lightFx{ID: e.ID, Label: e.Label, Speed: e.Speed})
@@ -477,8 +477,8 @@ func sortDevices(ds []lightDevice) {
 }
 
 // lightingEnable flips the master switch. Turning it off hands every adopted
-// device back to the mode it was on before Mei touched it and stops the
-// server Mei started, so "off" means the desktop is not in the loop at all.
+// device back to the mode it was on before Tenkai touched it and stops the
+// server Tenkai started, so "off" means the desktop is not in the loop at all.
 // The per-device choices are kept, so turning it back on restores the look.
 func lightingEnable(on bool) error {
 	st := loadLighting()
@@ -536,8 +536,8 @@ func lightingSet(key, patch string) error {
 	if p.Managed != nil {
 		s.Managed = *p.Managed
 	}
-	// a device runs one thing at a time: picking its own effect drops Mei's,
-	// and picking Mei's leaves the device mode as what to fall back to.
+	// a device runs one thing at a time: picking its own effect drops Tenkai's,
+	// and picking Tenkai's leaves the device mode as what to fall back to.
 	if p.Mode != nil {
 		s.Mode = *p.Mode
 		s.Effect = ""
@@ -573,7 +573,7 @@ func lightingSet(key, patch string) error {
 	if err := saveLighting(st); err != nil {
 		return err
 	}
-	// a Mei-painted effect needs the painter running; it exits by itself once
+	// a Tenkai-painted effect needs the painter running; it exits by itself once
 	// no device wants one, so this is the only place that has to ask.
 	ensureAnimator(st)
 	// one connection: apply, then answer from the device list already in hand.
@@ -650,7 +650,7 @@ func lightingSaveToDevice(key string) error {
 	st := loadLighting()
 	s := st.Devices[key]
 	if s == nil || !s.Managed {
-		return printJSON(failed(lightingStateReport(), fmt.Errorf("%s is not under Mei control", key)))
+		return printJSON(failed(lightingStateReport(), fmt.Errorf("%s is not under Tenkai control", key)))
 	}
 	rep := lightingStateReport()
 	err := access(true, false, providersForKey(key), func(o *orgbConn, live []orgbDevice) error {
@@ -687,7 +687,7 @@ func failed(rep lightReport, cause error) lightReport {
 	return rep
 }
 
-// lightingRelease hands one device back: the mode it was on before Mei ever
+// lightingRelease hands one device back: the mode it was on before Tenkai ever
 // wrote to it, then out of the managed set. Its settings stay on disk, so
 // adopting it again restores the look the user built.
 func lightingRelease(key string) error {
@@ -817,7 +817,7 @@ func applyOne(o *orgbConn, live []orgbDevice, key string, s *lightingSettings, a
 	}
 	if d.Provider == auraProvider {
 		if s.Effect != "" {
-			return fmt.Errorf("%s offers its firmware effects, not Mei per-key effects", d.Name)
+			return fmt.Errorf("%s offers its firmware effects, not Tenkai per-key effects", d.Name)
 		}
 		_, mode, ok := resolveMode(d, s.Mode)
 		if !ok {
@@ -827,7 +827,7 @@ func applyOne(o *orgbConn, live []orgbDevice, key string, s *lightingSettings, a
 	}
 	if d.Provider == qmkProvider {
 		if s.Effect != "" {
-			return fmt.Errorf("%s offers its firmware effects, not Mei per-key effects", d.Name)
+			return fmt.Errorf("%s offers its firmware effects, not Tenkai per-key effects", d.Name)
 		}
 		_, mode, ok := resolveMode(d, s.Mode)
 		if !ok {
@@ -838,13 +838,13 @@ func applyOne(o *orgbConn, live []orgbDevice, key string, s *lightingSettings, a
 	if o == nil {
 		return fmt.Errorf("OpenRGB is not running")
 	}
-	// a Mei effect: sit the device in its per-LED mode and paint. An animated
+	// a Tenkai effect: sit the device in its per-LED mode and paint. An animated
 	// one is then drawn frame by frame by the painter; a still one is this one
 	// write, so a fixed colour needs no process behind it.
 	if s.Effect != "" {
 		idx, m, ok := paintMode(d)
 		if !ok {
-			return fmt.Errorf("%s cannot be painted by Mei; pick one of its own effects", d.Name)
+			return fmt.Errorf("%s cannot be painted by Tenkai; pick one of its own effects", d.Name)
 		}
 		if m.has(modeHasBrightness) {
 			m.Bri = m.BriMax // the effect scales the colour itself
@@ -1064,7 +1064,7 @@ func palettePath() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
-	return filepath.Join(base, "mei", "hypr-colors.lua")
+	return filepath.Join(base, "tenkai", "hypr-colors.lua")
 }
 
 // accentColor: the desktop's current accent, lifted to something a keyboard can
@@ -1150,7 +1150,7 @@ func punchColor(hex string) string {
 // ── the OpenRGB server ──────────────────────────────────────────────────────
 
 // serverUp: is an SDK server listening now? A user running the OpenRGB GUI has
-// one, and Mei uses it rather than starting a second.
+// one, and Tenkai uses it rather than starting a second.
 func serverUp() bool {
 	c, err := net.DialTimeout("tcp", orgbAddr, 400*time.Millisecond)
 	if err != nil {
@@ -1160,9 +1160,9 @@ func serverUp() bool {
 	return true
 }
 
-// connectServer: use the running server, or start Mei's own as a transient
+// connectServer: use the running server, or start Tenkai's own as a transient
 // systemd unit so it is supervised, logged, and stoppable by name. The second
-// return says Mei started it, which matters: OpenRGB accepts connections
+// return says Tenkai started it, which matters: OpenRGB accepts connections
 // before it has finished finding devices, so a cold start needs a moment more
 // before the empty device list can be believed.
 var openrgbDial = orgbDial
@@ -1197,7 +1197,7 @@ func startServer() error {
 	}
 	out, err := exec.Command("systemd-run", "--user", "--collect",
 		"--unit="+lightingUnit,
-		"--description=OpenRGB SDK server for Mei lighting",
+		"--description=OpenRGB SDK server for Tenkai lighting",
 		"--setenv=QT_QPA_PLATFORM=offscreen",
 		"openrgb", "--server", "--server-host", "127.0.0.1").CombinedOutput()
 	if err != nil {
@@ -1206,8 +1206,8 @@ func startServer() error {
 	return nil
 }
 
-// stopServer stops only the unit Mei starts. A server the user runs themselves
-// is theirs; Mei never takes it down.
+// stopServer stops only the unit Tenkai starts. A server the user runs themselves
+// is theirs; Tenkai never takes it down.
 func stopServer() {
 	_ = exec.Command("systemctl", "--user", "stop", lightingUnit+".service").Run()
 }

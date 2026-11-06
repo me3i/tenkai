@@ -11,10 +11,10 @@
 # The clock is in the bar, so the bar's shot moves with the time; the diff
 # compares the other surfaces and reports the bar separately.
 set -uo pipefail
-MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$MEI" || exit 1
-RUN="$MEI/.run"
-RT="$MEI/.r"
+TENKAI="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$TENKAI" || exit 1
+RUN="$TENKAI/.run"
+RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STATE="${1:-before}"
@@ -23,7 +23,7 @@ DIR="$RUN/shots/clean-$STATE"
 mkdir -p "$DIR"
 if [ ! -d "$RUN/shots/clean-before" ] || [ "$STATE" = "before" ]; then
   echo "capturing the reference set into $DIR"
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
   SIG=""; WD=""
   for _ in $(seq 1 120); do
     [ -z "$SIG" ] && SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
@@ -35,10 +35,10 @@ if [ ! -d "$RUN/shots/clean-before" ] || [ "$STATE" = "before" ]; then
   H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
   shot(){ XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$WD" HYPRLAND_INSTANCE_SIGNATURE="$SIG" grim "$DIR/$1.png" 2>/dev/null; }
   shot bar
-  H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 2; shot launcher
-  H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1; sleep 1
-  H dispatch 'hl.dsp.global("mei:lock")' >/dev/null 2>&1; sleep 4; shot lock
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  H dispatch 'hl.dsp.global("tenkai:launcher")' >/dev/null 2>&1; sleep 2; shot launcher
+  H dispatch 'hl.dsp.global("tenkai:launcher")' >/dev/null 2>&1; sleep 1
+  H dispatch 'hl.dsp.global("tenkai:lock")' >/dev/null 2>&1; sleep 4; shot lock
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
   sleep 2
 fi
 

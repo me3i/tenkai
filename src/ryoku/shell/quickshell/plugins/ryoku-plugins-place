@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # merge a plugin placement change into ~/.config/ryoku/plugins.json. used by:
-# the desktop layer (drag commits a free position), Mei Settings (any
+# the desktop layer (drag commits a free position), Tenkai Settings (any
 # placement edit), and the installer (seed/forget a plugin's settings block).
 # Registry's file watch sees it and retunes every surface, no reload.
 #

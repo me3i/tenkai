@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install.sh — set Mei up on a fresh Arch Linux + Hyprland machine.
+# install.sh — set Tenkai up on a fresh Arch Linux + Hyprland machine.
 #
 #   ./install.sh                 check, build, then ask before each system change
 #   ./install.sh --yes           answer "yes" to the non-Hyprland prompts too
@@ -11,12 +11,12 @@
 #   1. dependency check (pacman list printed, nothing installed)
 #   2. build: the three Go daemons, the Ryoku.Blobs C++/QML plugin, and the
 #      QML module tree under .run/qml
-#   3. systemd user units (mei-shell.service, mei-hub.service) + daemon-reload
-#   4. Hyprland autostart: `mei start` — INTERACTIVE y/N ONLY, never --yes
+#   3. systemd user units (tenkai-shell.service, tenkai-hub.service) + daemon-reload
+#   4. Hyprland autostart: `tenkai start` — INTERACTIVE y/N ONLY, never --yes
 #   5. kitty: include the generated colour file (prompted)
 #   6. terminal: this repo's Fish + Starship prompt files (prompted)
 #   7. Hyprland configs: deploy the bundled Lua config to ~/.config/hypr
-#      (interactive y/N only, *.mei-install.bak backups; keyboard.lua is
+#      (interactive y/N only, *.tenkai-install.bak backups; keyboard.lua is
 #      seeded once and never overwritten)
 #   8. wallpapers: copy any bundled images into ~/Pictures/Wallpapers/
 #   9. fonts: install the bundled OFL Space Grotesk / Fraunces user-locally,
@@ -24,31 +24,31 @@
 #
 # Everything it writes outside this checkout is named and prompted for. It never
 # installs packages and never runs sudo; the one Hyprland-config deploy (step 7)
-# is interactive y/N only and always writes *.mei-install.bak backups first.
+# is interactive y/N only and always writes *.tenkai-install.bak backups first.
 #
 # Idempotent: a second run rebuilds nothing that is up to date, rewrites no
 # identical unit, appends no second autostart line and no second kitty include.
 #
 # The systemd units and the autostart line are ALTERNATIVES, not both: the units
-# start the daemons directly, while `mei start` runs Mei's own live-session
+# start the daemons directly, while `tenkai start` runs Tenkai's own live-session
 # script (which starts the same daemons and records their pids). Use one.
 #
 # The terminal forces colour off when there is no tty or NO_COLOR is set.
 set -uo pipefail
 
-MEI_DIR="${MEI_DIR:-$(cd "$(dirname "$0")" && pwd)}"
-RUN="$MEI_DIR/.run"
+TENKAI_DIR="${TENKAI_DIR:-$(cd "$(dirname "$0")" && pwd)}"
+RUN="$TENKAI_DIR/.run"
 SYS_GO_BIN="$RUN/bin"
 QML_ROOT="$RUN/qml/Ryoku"
 BLOBS_BUILD="$RUN/build/blobs"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 HYPR_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
 KITTY_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/kitty/kitty.conf"
-KITTY_INCLUDE='include ~/.cache/mei/kitty-colors.conf'
+KITTY_INCLUDE='include ~/.cache/tenkai/kitty-colors.conf'
 FISH_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
 STARSHIP_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
-TERM_SRC="$MEI_DIR/src/mei-configs/terminal"
-MARK='mei-install'
+TERM_SRC="$TENKAI_DIR/src/tenkai-configs/terminal"
+MARK='tenkai-install'
 STEP_TOTAL=9
 
 ASSUME_YES=0
@@ -97,16 +97,17 @@ step() {
 print_banner() {
   printf '%s\n' "$CY"
   cat <<'ART'
-   ███╗   ███╗███████╗██╗
-   ████╗ ████║██╔════╝██║
-   ██╔████╔██║█████╗  ██║
-   ██║╚██╔╝██║██╔══╝  ██║
-   ██║ ╚═╝ ██║███████╗██║
-   ╚═╝     ╚═╝╚══════╝╚═╝
+   ████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗
+   ╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║
+      ██║   █████╗  ██╔██╗ ██║█████╔╝ ███████║██║
+      ██║   ██╔══╝  ██║╚██╗██║██╔═██╗ ██╔══██║██║
+      ██║   ███████╗██║ ╚████║██║  ██╗██║  ██║██║
+      ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝
+                         天 界
 ART
   printf '%s' "$R"
-  printf '%s   A lightweight Quickshell environment%s\n' "$GY" "$R"
-  printf '%s   checkout:%s %s\n' "$GY" "$R" "$MEI_DIR"
+  printf '%s   天界 — The Celestial Quickshell Environment%s\n' "$GY" "$R"
+  printf '%s   checkout:%s %s\n' "$GY" "$R" "$TENKAI_DIR"
   printf '\n'
 }
 
@@ -121,17 +122,18 @@ print_success() {
   local W=58
   printf '\n%s╭%s╮%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
   fl 0 "" 0
-  fl 17 "${CY}${B}███╗   ███╗███████╗██╗${R}" 22
-  fl 17 "${CY}${B}████╗ ████║██╔════╝██║${R}" 22
-  fl 17 "${CY}${B}██╔████╔██║█████╗  ██║${R}" 22
-  fl 17 "${CY}${B}██║╚██╔╝██║██╔══╝  ██║${R}" 22
-  fl 17 "${CY}${B}██║ ╚═╝ ██║███████╗██║${R}" 22
-  fl 17 "${CY}${B}╚═╝     ╚═╝╚══════╝╚═╝${R}" 22
+  fl 6 "${CY}${B}████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗${R}" 46
+  fl 6 "${CY}${B}╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║${R}" 46
+  fl 6 "${CY}${B}   ██║   █████╗  ██╔██╗ ██║█████╔╝ ███████║██║${R}" 46
+  fl 6 "${CY}${B}   ██║   ██╔══╝  ██║╚██╗██║██╔═██╗ ██╔══██║██║${R}" 46
+  fl 6 "${CY}${B}   ██║   ███████╗██║ ╚████║██║  ██╗██║  ██║██║${R}" 46
+  fl 6 "${CY}${B}   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝${R}" 46
+  fl 26 "${CY}${B}天 界${R}" 5
   fl 0 "" 0
-  fl 13 "${GR}${B}Mei is installed and ready.${R}" 27
+  fl 13 "${GR}${B}Tenkai is installed and ready.${R}" 31
   fl 0 "" 0
   fl 9 "${WH}Log out and log back in -- your desktop${R}" 39
-  fl 9 "${WH}will be Mei.${R}" 12
+  fl 9 "${WH}will be Tenkai.${R}" 15
   fl 0 "" 0
   printf '%s╰%s╯%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
   printf '\n'
@@ -174,7 +176,7 @@ confirm_yes() {
 
 usage() {
   cat <<'USAGE'
-install.sh — set Mei up on a fresh Arch Linux + Hyprland machine.
+install.sh — set Tenkai up on a fresh Arch Linux + Hyprland machine.
 
   ./install.sh                 check, build, then ask before each system change
   ./install.sh --yes           answer "yes" to the non-Hyprland prompts too
@@ -202,8 +204,8 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-[ -f "$MEI_DIR/mei" ] || die "no ./mei beside this script — run install.sh from the checkout"
-[ -n "${MEI_TEST:-}" ] && die "MEI_TEST is set: this is a nested test session, not an install"
+[ -f "$TENKAI_DIR/tenkai" ] || die "no ./tenkai beside this script — run install.sh from the checkout"
+[ -n "${TENKAI_TEST:-}" ] && die "TENKAI_TEST is set: this is a nested test session, not an install"
 [ "$(id -u)" = 0 ] && die "do not run this as root: it builds and installs into your own account"
 
 print_banner
@@ -236,7 +238,7 @@ check_pkg matugen matugen
 check_pkg kitty kitty
 check_pkg pipewire pw-cli
 check_pkg networkmanager nmcli
-# The terminal: Mei ships the owner's own Fish config and Starship preset, and
+# The terminal: Tenkai ships the owner's own Fish config and Starship preset, and
 # step 6 installs them, so both are dependencies of a complete install.
 check_pkg fish fish
 check_pkg starship starship
@@ -270,7 +272,7 @@ fi
 
 if [ "${#BUILD_MISSING[@]}" -gt 0 ]; then
   say ""
-  say "  Not on the required list, but needed to build or run Mei. If the build"
+  say "  Not on the required list, but needed to build or run Tenkai. If the build"
   say "  fails below, this is the line:"
   say ""
   say "  ${BL}sudo pacman -S --needed ${BUILD_MISSING[*]}${R}"
@@ -295,7 +297,7 @@ else
   export CGO_ENABLED=0
 
   go_build() { # $1 = source dir, $2 = output name
-    local src="$MEI_DIR/src/ryoku/$1" out="$SYS_GO_BIN/$2"
+    local src="$TENKAI_DIR/src/ryoku/$1" out="$SYS_GO_BIN/$2"
     [ -d "$src" ] || die "missing source dir: $src"
     gear "building $2"
     ( cd "$src" && nice -n 10 go build -trimpath -p 2 -o "$out" ./ ) \
@@ -304,19 +306,19 @@ else
     ok "$out"
   }
 
-  go_build shell/ipc mei-shell
-  go_build hub/backend mei-hub
+  go_build shell/ipc tenkai-shell
+  go_build hub/backend tenkai-hub
   # The wallpaper daemon shares the session with the shell; without it the
   # wallpaper module has nothing to talk to.
   go_build shell/ryogami/daemon ryogami
 
   # Ryoku.Blobs — the SDF metaball plugin behind the frame. Prebuilt upstream
   # because a target machine has no toolchain; here we do have one.
-  [ -d "$MEI_DIR/src/ryoku/shell/plugin" ] || die "missing src/ryoku/shell/plugin"
+  [ -d "$TENKAI_DIR/src/ryoku/shell/plugin" ] || die "missing src/ryoku/shell/plugin"
   gear "configuring Ryoku.Blobs"
   CMAKE_GEN=()
   command -v ninja >/dev/null 2>&1 && CMAKE_GEN=(-G Ninja)
-  run cmake -S "$MEI_DIR/src/ryoku/shell/plugin" -B "$BLOBS_BUILD" \
+  run cmake -S "$TENKAI_DIR/src/ryoku/shell/plugin" -B "$BLOBS_BUILD" \
       "${CMAKE_GEN[@]}" -DCMAKE_BUILD_TYPE=Release \
     || die "cmake configure failed (Qt6 6.5+ with Quick/ShaderTools/Multimedia is required)"
   gear "building Ryoku.Blobs"
@@ -337,10 +339,10 @@ else
     mkdir -p "$2"
     run cp -a "$1/." "$2/"
   }
-  sync_dir "$MEI_DIR/src/ryoku/ui" "$QML_ROOT/Ui"
-  sync_dir "$MEI_DIR/src/ryoku/shell/framebars" "$QML_ROOT/FrameBars"
-  sync_dir "$MEI_DIR/src/ryoku/shell/quickshell/plugins/kit" "$QML_ROOT/PluginKit"
-  sync_dir "$MEI_DIR/src/ryoku/wm/hyprland/qml" "$QML_ROOT/Wm/Hyprland"
+  sync_dir "$TENKAI_DIR/src/ryoku/ui" "$QML_ROOT/Ui"
+  sync_dir "$TENKAI_DIR/src/ryoku/shell/framebars" "$QML_ROOT/FrameBars"
+  sync_dir "$TENKAI_DIR/src/ryoku/shell/quickshell/plugins/kit" "$QML_ROOT/PluginKit"
+  sync_dir "$TENKAI_DIR/src/ryoku/wm/hyprland/qml" "$QML_ROOT/Wm/Hyprland"
   sync_dir "$BLOBS_BUILD/qml/Ryoku/Blobs" "$QML_ROOT/Blobs"
 
   ok "QML modules under $QML_ROOT (Ui, FrameBars, PluginKit, Wm/Hyprland, Blobs)"
@@ -349,7 +351,7 @@ fi
 # A dry run builds nothing, so it must not fail these two (that is the point of
 # printing them). A real run stops here rather than installing an empty tree.
 if [ "$DRY_RUN" = 0 ]; then
-  [ -x "$SYS_GO_BIN/mei-shell" ] || die "mei-shell is not built at $SYS_GO_BIN/mei-shell"
+  [ -x "$SYS_GO_BIN/tenkai-shell" ] || die "tenkai-shell is not built at $SYS_GO_BIN/tenkai-shell"
   [ -d "$QML_ROOT/Ui" ] || die "the QML modules are not assembled under $QML_ROOT"
 fi
 
@@ -387,12 +389,12 @@ write_unit() { # $1 = file name, stdin = content
 }
 
 UNIT_CHANGED=0
-write_unit mei-shell.service <<UNIT
+write_unit tenkai-shell.service <<UNIT
 [Unit]
-# Mei's shell daemon: the bar, the launcher, the OSD, notifications, the tray,
+# Tenkai's shell daemon: the bar, the launcher, the OSD, notifications, the tray,
 # the clipboard watcher and every other surface. Supervised here as an
 # alternative to the Hyprland autostart line — use one, never both.
-Description=Mei shell daemon
+Description=Tenkai shell daemon
 PartOf=graphical-session.target
 After=graphical-session.target
 ConditionEnvironment=WAYLAND_DISPLAY
@@ -401,8 +403,8 @@ StartLimitBurst=5
 
 [Service]
 Type=simple
-WorkingDirectory=$MEI_DIR
-ExecStart=$SYS_GO_BIN/mei-shell daemon
+WorkingDirectory=$TENKAI_DIR
+ExecStart=$SYS_GO_BIN/tenkai-shell daemon
 Restart=always
 RestartSec=2
 # Kill only the daemon, not its cgroup: apps launched from the shell outlive a
@@ -414,21 +416,21 @@ Slice=session.slice
 WantedBy=graphical-session.target
 UNIT
 
-write_unit mei-hub.service <<UNIT
+write_unit tenkai-hub.service <<UNIT
 [Unit]
-# mei-hub is a command-line backend, not a daemon: the shell starts it on demand
+# tenkai-hub is a command-line backend, not a daemon: the shell starts it on demand
 # for Settings saves. This unit only re-applies the persisted runtime overrides
 # (displays, keybinds, advanced window options) once the session is up, which is
-# useful if you run the daemons through systemd instead of \`mei start\`.
-Description=Mei settings backend: re-apply the runtime overrides at session start
-After=graphical-session.target mei-shell.service
+# useful if you run the daemons through systemd instead of \`tenkai start\`.
+Description=Tenkai settings backend: re-apply the runtime overrides at session start
+After=graphical-session.target tenkai-shell.service
 PartOf=graphical-session.target
 ConditionEnvironment=WAYLAND_DISPLAY
 
 [Service]
 Type=oneshot
-WorkingDirectory=$MEI_DIR
-ExecStart=$SYS_GO_BIN/mei-hub overrides apply
+WorkingDirectory=$TENKAI_DIR
+ExecStart=$SYS_GO_BIN/tenkai-hub overrides apply
 
 [Install]
 WantedBy=graphical-session.target
@@ -441,7 +443,7 @@ else
 fi
 say ""
 say "  ${GY}Not enabled on purpose. To use the units instead of the autostart line:${R}"
-say "    ${BL}systemctl --user enable --now mei-shell.service mei-hub.service${R}"
+say "    ${BL}systemctl --user enable --now tenkai-shell.service tenkai-hub.service${R}"
 
 # ── 4. Hyprland autostart ────────────────────────────────────────────────────
 
@@ -454,20 +456,20 @@ AUTOSTART_LUA="$HYPR_DIR/modules/autostart.lua"
 LUA_CONF="$HYPR_DIR/hyprland.lua"
 CLASSIC_CONF="$HYPR_DIR/hyprland.conf"
 
-if grep -rqsF -- "$MEI_DIR/mei start" "$HYPR_DIR" 2>/dev/null; then
+if grep -rqsF -- "$TENKAI_DIR/tenkai start" "$HYPR_DIR" 2>/dev/null; then
   ok "an autostart line for this checkout already exists under $HYPR_DIR"
 elif [ -f "$CLASSIC_CONF" ]; then
   say "  Hyprland config: $CLASSIC_CONF (hyprlang)"
-  say "  add:  exec-once = $MEI_DIR/mei start"
+  say "  add:  exec-once = $TENKAI_DIR/tenkai start"
   if confirm "append that line to $CLASSIC_CONF (a backup is written first)?"; then
     cp -a "$CLASSIC_CONF" "$CLASSIC_CONF.$MARK.bak"
     {
-      printf '\n# %s: start the Mei shell at session start\n' "$MARK"
-      printf 'exec-once = %s\n' "$MEI_DIR/mei start"
+      printf '\n# %s: start the Tenkai shell at session start\n' "$MARK"
+      printf 'exec-once = %s\n' "$TENKAI_DIR/tenkai start"
     } >> "$CLASSIC_CONF"
     ok "appended to $CLASSIC_CONF (backup: $CLASSIC_CONF.$MARK.bak)"
   else
-    warn "not modified — add the line above yourself if you want Mei to autostart"
+    warn "not modified — add the line above yourself if you want Tenkai to autostart"
   fi
 elif [ -f "$LUA_CONF" ]; then
   # Hyprland's Lua config: startup commands live in an
@@ -479,44 +481,44 @@ elif [ -f "$LUA_CONF" ]; then
   say "  Hyprland config: $LUA_CONF (Lua)"
   say "  add, at the end of $TARGET:"
   say "    hl.on(\"hyprland.start\", function()"
-  say "        hl.exec_cmd(\"$MEI_DIR/mei start\")"
+  say "        hl.exec_cmd(\"$TENKAI_DIR/tenkai start\")"
   say "    end)"
   if confirm "append that hook to $TARGET (a backup is written first)?"; then
     cp -a "$TARGET" "$TARGET.$MARK.bak"
     {
-      printf '\n-- %s: start the Mei shell at session start\n' "$MARK"
+      printf '\n-- %s: start the Tenkai shell at session start\n' "$MARK"
       printf 'hl.on("hyprland.start", function()\n'
-      printf '    hl.exec_cmd("%s")\n' "$MEI_DIR/mei start"
+      printf '    hl.exec_cmd("%s")\n' "$TENKAI_DIR/tenkai start"
       printf 'end)\n'
     } >> "$TARGET"
     ok "appended to $TARGET (backup: $TARGET.$MARK.bak)"
   else
-    warn "not modified — add the hook above yourself if you want Mei to autostart"
+    warn "not modified — add the hook above yourself if you want Tenkai to autostart"
   fi
 else
   warn "no $CLASSIC_CONF and no $LUA_CONF: is Hyprland configured for this user?"
   say "  add this to your Hyprland config by hand, once:"
-  say "    exec-once = $MEI_DIR/mei start"
+  say "    exec-once = $TENKAI_DIR/tenkai start"
 fi
 
 # ── 5. kitty colours ────────────────────────────────────────────────────────
 
 step 5 "kitty colours"
 
-# Mei's palette pass writes ~/.cache/mei/kitty-colors.conf; kitty only reads it
-# if its own config includes it. Mei never writes ~/.config/kitty itself.
+# Tenkai's palette pass writes ~/.cache/tenkai/kitty-colors.conf; kitty only reads it
+# if its own config includes it. Tenkai never writes ~/.config/kitty itself.
 if [ ! -f "$KITTY_CONF" ]; then
   warn "no $KITTY_CONF — kitty is not configured for this user"
   say "  create it with:"
   say "    ${BL}mkdir -p ${KITTY_CONF%/*} && printf '%s\\n' '$KITTY_INCLUDE' >> $KITTY_CONF${R}"
 elif grep -qF "$KITTY_INCLUDE" "$KITTY_CONF"; then
-  ok "$KITTY_CONF already includes the Mei colour file"
+  ok "$KITTY_CONF already includes the Tenkai colour file"
 else
   say "  add:  $KITTY_INCLUDE"
   if confirm_yes "append that include to $KITTY_CONF (a backup is written first)?"; then
     cp -a "$KITTY_CONF" "$KITTY_CONF.$MARK.bak"
     {
-      printf '\n# %s: Mei (matugen) colour file\n' "$MARK"
+      printf '\n# %s: Tenkai (matugen) colour file\n' "$MARK"
       printf '%s\n' "$KITTY_INCLUDE"
     } >> "$KITTY_CONF"
     ok "appended to $KITTY_CONF (backup: $KITTY_CONF.$MARK.bak)"
@@ -526,14 +528,14 @@ else
   fi
 fi
 say ""
-info "The file itself appears the first time Mei runs a palette pass."
+info "The file itself appears the first time Tenkai runs a palette pass."
 info "Kitty re-reads its config on SIGUSR1: ${BL}pkill -USR1 -x kitty${R}"
 
 # ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ─────
 
 step 6 "terminal (kitty + fish + starship + fastfetch)"
 
-# Mei ships the owner's exact terminal environment: kitty style/conf (opacity,
+# Tenkai ships the owner's exact terminal environment: kitty style/conf (opacity,
 # padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
 # prompt preset, and the Fastfetch look-and-feel. Everything is copied whole and
 # never merged into an existing file: the target is backed up first, and an
@@ -541,7 +543,7 @@ step 6 "terminal (kitty + fish + starship + fastfetch)"
 copy_config() { # $1 = file in this checkout, $2 = destination
   local src="$1" dst="$2"
   if [ ! -f "$src" ]; then
-    warn "no ${src#$MEI_DIR/} in this checkout; skipped"
+    warn "no ${src#$TENKAI_DIR/} in this checkout; skipped"
     return 0
   fi
   if [ -f "$dst" ] && cmp -s "$src" "$dst"; then
@@ -574,21 +576,21 @@ copy_config "$TERM_SRC/kitty/current-font.conf" "$HOME/.config/kitty/current-fon
 copy_config "$TERM_SRC/kitty/current-theme.conf" "$HOME/.config/kitty/current-theme.conf"
 copy_config "$TERM_SRC/kitty/user.conf" "$HOME/.config/kitty/user.conf"
 
-# The generated palette (from `./mei colours`) is read by kitty only if its
-# config includes it. Mei never writes ~/.config/kitty itself; one idempotent
+# The generated palette (from `./tenkai colours`) is read by kitty only if its
+# config includes it. Tenkai never writes ~/.config/kitty itself; one idempotent
 # include line is appended here (idempotent via grep) — prompted, and the
-# target is backed up to *.mei-install.bak first. Skipped entirely on a dry run.
-if [ "$DRY_RUN" = 0 ] && [ -f "$KITTY_CONF" ] && ! grep -qsF "include ~/.cache/mei/kitty-colors.conf" "$KITTY_CONF"; then
-  if [ -f "$HOME/.cache/mei/kitty-colors.conf" ]; then
+# target is backed up to *.tenkai-install.bak first. Skipped entirely on a dry run.
+if [ "$DRY_RUN" = 0 ] && [ -f "$KITTY_CONF" ] && ! grep -qsF "include ~/.cache/tenkai/kitty-colors.conf" "$KITTY_CONF"; then
+  if [ -f "$HOME/.cache/tenkai/kitty-colors.conf" ]; then
     if confirm_yes "append the palette include to $KITTY_CONF (a backup is written first)?"; then
       cp -a "$KITTY_CONF" "$KITTY_CONF.$MARK.bak"
-      printf '%s\n' 'include ~/.cache/mei/kitty-colors.conf' >> "$KITTY_CONF"
+      printf '%s\n' 'include ~/.cache/tenkai/kitty-colors.conf' >> "$KITTY_CONF"
       ok "palette include appended"
     else
       warn "palette include not added"
     fi
   else
-    warn "$HOME/.cache/mei/kitty-colors.conf missing; palette include not added"
+    warn "$HOME/.cache/tenkai/kitty-colors.conf missing; palette include not added"
   fi
 fi
 
@@ -607,7 +609,7 @@ copy_config "$TERM_SRC/starship.toml" "$STARSHIP_CONF"
 # --- fastfetch: look-and-feel + assets ---
 # Copied file-by-file with the same rules as everything else: identical files
 # are left alone, differing/missing files are listed and installed only after a
-# yes, and existing targets are backed up to *.mei-install.bak first. A dry run
+# yes, and existing targets are backed up to *.tenkai-install.bak first. A dry run
 # writes nothing.
 if [ -d "$TERM_SRC/fastfetch/fastfetch" ]; then
   FF_DEST="$HOME/.config/fastfetch"
@@ -661,9 +663,9 @@ fi
 
 step 7 "Hyprland configs (Lua)"
 
-# Mei ships the owner's Hyprland Lua config so a fresh install is not stuck
+# Tenkai ships the owner's Hyprland Lua config so a fresh install is not stuck
 # with Hyprland defaults. Files are copied whole, never merged; existing
-# targets are backed up to <name>.mei-install.bak before being overwritten.
+# targets are backed up to <name>.tenkai-install.bak before being overwritten.
 # This step is INTERACTIVE y/N only (never --yes, never a piped answer) —
 # overwriting a live ~/.config/hypr is a human decision. Nothing is deleted;
 # files only in your checkout stay exactly where they are.
@@ -671,10 +673,10 @@ step 7 "Hyprland configs (Lua)"
 # keyboard.lua is the exception: it is user-owned, seeded once, and never
 # overwritten by an install (mirrors how hyprland.lua treats it).
 #
-# The bundled configs try ~/.config/mei (and ~/.cache/mei) first and fall back
+# The bundled configs try ~/.config/tenkai (and ~/.cache/tenkai) first and fall back
 # to the legacy ~/.config/ryoku / ~/.cache/ryoku paths, so they work both on a
-# pure Mei install and on a hybrid box with stock Ryoku still present.
-HYPR_SRC="$MEI_DIR/src/mei-configs/hypr"
+# pure Tenkai install and on a hybrid box with stock Ryoku still present.
+HYPR_SRC="$TENKAI_DIR/src/tenkai-configs/hypr"
 HYPR_DEST="$HYPR_DIR"
 
 deploy_hypr() {
@@ -740,11 +742,11 @@ deploy_hypr
 # reported and left alone, because a stock Ryoku install has its own copy.
 LOCAL_BIN="$HOME/.local/bin"
 HELPER_SRC=(
-  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-app"
-  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-summon"
-  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-volume"
-  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-restart-audio"
-  "$MEI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-app"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-summon"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-volume"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-restart-audio"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness"
   "$HYPR_SRC/scripts/ryoku-monitor"
   "$HYPR_SRC/scripts/ryoku-workspace"
 )
@@ -754,7 +756,7 @@ deploy_helper_links() {
   local -a plan=()
   for src in "${HELPER_SRC[@]}"; do
     if [ ! -f "$src" ]; then
-      warn "missing ${src#"$MEI_DIR"/} — its bind will not resolve"
+      warn "missing ${src#"$TENKAI_DIR"/} — its bind will not resolve"
       continue
     fi
     dst="$LOCAL_BIN/${src##*/}"
@@ -762,7 +764,7 @@ deploy_helper_links() {
       continue
     fi
     if [ -e "$dst" ] || [ -L "$dst" ]; then
-      warn "$dst already exists (not Mei's link) — left alone"
+      warn "$dst already exists (not Tenkai's link) — left alone"
       continue
     fi
     plan+=("$src")
@@ -796,13 +798,13 @@ deploy_helper_links
 step 8 "wallpapers"
 
 # The repo ships NO wallpapers (the owner's set is not redistributable), so
-# this step mostly reports and prepares the directory Mei's wallpaper daemon
+# this step mostly reports and prepares the directory Tenkai's wallpaper daemon
 # scans by default: ~/Pictures/Wallpapers. Drop image files into
-# src/mei-assets/wallpapers/ before running ./install.sh and they are copied
+# src/tenkai-assets/wallpapers/ before running ./install.sh and they are copied
 # there; or copy images yourself at any time. Existing files in that directory
 # are never touched without an explicit yes, and differing files are backed up
-# to *.mei-install.bak first.
-WP_SRC="$MEI_DIR/src/mei-assets/wallpapers"
+# to *.tenkai-install.bak first.
+WP_SRC="$TENKAI_DIR/src/tenkai-assets/wallpapers"
 WP_DEST="$HOME/Pictures/Wallpapers"
 
 if [ "$DRY_RUN" = 1 ]; then
@@ -824,7 +826,7 @@ if [ -d "$WP_SRC" ]; then
 fi
 
 if [ "${#WP_PLAN[@]}" -eq 0 ]; then
-  say "  no wallpapers bundled in this checkout (see src/mei-assets/wallpapers/README.md)"
+  say "  no wallpapers bundled in this checkout (see src/tenkai-assets/wallpapers/README.md)"
   say "  Matugen has no fallback image until you drop one into:"
   say "    $WP_DEST"
 else
@@ -851,10 +853,10 @@ fi
 step 9 "fonts"
 
 # Bundled OFL fonts (Space Grotesk + Fraunces) install user-locally — no
-# sudo. The remaining fonts Mei's QML references live in the official Arch
+# sudo. The remaining fonts Tenkai's QML references live in the official Arch
 # repos; install.sh never runs sudo, so the pacman line is printed instead.
-FONT_SRC="$MEI_DIR/src/mei-assets/fonts"
-FONT_DEST="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/mei"
+FONT_SRC="$TENKAI_DIR/src/tenkai-assets/fonts"
+FONT_DEST="${XDG_DATA_HOME:-$HOME/.local/share}/fonts/tenkai"
 fonts_written=0
 for fam in space-grotesk fraunces; do
   [ -d "$FONT_SRC/$fam" ] || { warn "no bundled fonts at $FONT_SRC/$fam; skipped"; continue; }
@@ -905,12 +907,12 @@ fi
 
 print_success
 
-say "  ${GY}binaries:${R}  $SYS_GO_BIN/{mei-shell,mei-hub,ryogami}"
+say "  ${GY}binaries:${R}  $SYS_GO_BIN/{tenkai-shell,tenkai-hub,ryogami}"
 say "  ${GY}QML:${R}       $QML_ROOT"
 say ""
 say "  ${WH}Next:${R}"
-say "    ${BL}./mei status${R}                 # nothing running yet"
-say "    ${BL}./mei start${R}                  # join this Hyprland session now"
+say "    ${BL}./tenkai status${R}                 # nothing running yet"
+say "    ${BL}./tenkai start${R}                  # join this Hyprland session now"
 say ""
 say "  A second run of this script is safe: it rebuilds only what changed,"
 say "  rewrites no identical unit, reinstalls no identical hypr file or font,"

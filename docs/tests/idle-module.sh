@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Mei's idle: dim, DPMS off and suspend on the user's own thresholds, with the
+# Tenkai's idle: dim, DPMS off and suspend on the user's own thresholds, with the
 # compositor's inhibitors honoured (IdleMonitor's respectInhibitors). The
 # D-Bus ScreenSaver inhibitor service and the lock were removed 2026-11-01.
 #
 # Nothing here can reach the owner's session: the nested session has its own
 # bus and its own display, the brightness goes into a file (the harness seam
-# MEI_BRIGHTNESS_FAKE), the suspend is stubbed (MEI_STUB_POWER), and the DPMS
+# TENKAI_BRIGHTNESS_FAKE), the suspend is stubbed (TENKAI_STUB_POWER), and the DPMS
 # reaches only the nested compositor.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
@@ -27,8 +27,8 @@ ns_count(){ H -j layers | jq "[to_entries[] | .value.levels | to_entries[] | .va
 DAEMON_LOG="$RUN/logs/daemon.log"
 
 FAKE="$RUN/state/idle-fake-brightness"
-CFG="$RUN/config/mei/idle.json"
-# The thresholds are the user's own (Mei's config), so the test only shortens
+CFG="$RUN/config/tenkai/idle.json"
+# The thresholds are the user's own (Tenkai's config), so the test only shortens
 # them. Everything else is the real code path.
 cfg_with(){ # $1=dim $2=dpms $3=suspend
   printf '{"enabled": true, "dim": %s, "dpms": %s, "suspend": %s, "dimPercent": 40}\n' \
@@ -37,18 +37,18 @@ cfg_with(){ # $1=dim $2=dpms $3=suspend
 fake_val(){ tr -d '[:space:]' < "$FAKE" 2>/dev/null; }
 # The virtual keyboard must reach the nested session. Without the nested
 # runtime and display it would type into the owner's live session.
-key(){ "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$1" >/dev/null 2>&1; }
+key(){ "$TENKAI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$1" >/dev/null 2>&1; }
 
 start(){
-  mkdir -p "$RUN/config/mei" "$RUN/state"
+  mkdir -p "$RUN/config/tenkai" "$RUN/state"
   echo 80 > "$FAKE"
   cfg_with 9999 9999 9999
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
-      env MEI_BRIGHTNESS_FAKE="$FAKE" ./mei run ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
+      env TENKAI_BRIGHTNESS_FAKE="$FAKE" ./tenkai run ) >/dev/null 2>&1
   SIG=""; QS=""; WD=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
     WD="$(ls "$RT"/wayland-* 2>/dev/null | head -1 | xargs -r basename)"
     [ -n "$SIG" ] && [ -n "$QS" ] && [ -n "$WD" ] && break
     sleep 0.3
@@ -62,7 +62,7 @@ start(){
 # stop also puts the thresholds back. They are the shell's config, not the
 # test's: leaving dpms at 1 s behind blacked out the next gate's screenshots.
 stop(){
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
   sleep 2
   printf '{"enabled": true, "dim": 9999, "dpms": 9999, "suspend": 9999, "dimPercent": 40}\n' \
     > "$CFG.new" && mv "$CFG.new" "$CFG"
@@ -116,7 +116,7 @@ echo "=== D: the owner's session was not touched ==="
 panel_after="$(brightnessctl g 2>/dev/null)"
 [ "$panel_before" = "$panel_after" ] && ok "the panel brightness was not written ($panel_after)" \
   || bad "the panel brightness changed: $panel_before -> $panel_after"
-( cd "$MEI" && ./mei verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" \
+( cd "$TENKAI" && ./tenkai verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" \
   || bad "verify-untouched FAILED"
 [ "$fail" = 0 ] && echo "IDLE MODULE: PASS" || echo "IDLE MODULE: FAIL"
 echo "log: $LOG"

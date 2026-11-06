@@ -24,7 +24,7 @@ import (
 
 // userThemeDir is the install root RyoStore writes to and this reads.
 func userThemeDir() string {
-	return filepath.Join(matugenDataHome(), "mei", "themes")
+	return filepath.Join(matugenDataHome(), "tenkai", "themes")
 }
 
 // noctaliaColors is the reduced Material set each Noctalia block carries. The

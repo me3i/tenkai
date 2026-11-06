@@ -22,7 +22,7 @@ esac
 # backlight -- on ASUS AMD+NVIDIA laptops brightnessctl's default pick is the
 # unreliable nvidia_wmi_ec_backlight, so ryoku-hw-backlight names the right one.
 #
-# MEI: upstream ignored every failure here. A keep-list feature must not fail
+# TENKAI: upstream ignored every failure here. A keep-list feature must not fail
 # silently, so remember the error; if no external DDC path exists either, exit
 # nonzero below (the hub verb then reports it instead of returning "ok").
 panel_present=0
@@ -83,7 +83,7 @@ if command -v ddcutil >/dev/null 2>&1; then
   fi
 fi
 
-# MEI: report a panel failure when there was no external-monitor path that
+# TENKAI: report a panel failure when there was no external-monitor path that
 # could have changed something. The hub verb then returns a real error.
 if (( panel_present )) && [[ -n $panel_err ]] && (( ddc_present == 0 )); then
   echo "ryoku-cmd-brightness: $panel_err" >&2

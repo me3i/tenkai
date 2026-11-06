@@ -63,7 +63,7 @@ face. Keep it visually equivalent without duplicating runtime behavior.
 
 ## Configuration
 
-The desktop menu, dragging code and Mei Settings all meet at
+The desktop menu, dragging code and Tenkai Settings all meet at
 `~/.config/ryoku/widgets.json`. `Singletons/Config.qml` watches that file, so a
 write retunes the running clock without IPC or a shell reload.
 

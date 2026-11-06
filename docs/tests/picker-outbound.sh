@@ -8,8 +8,8 @@
 #   2. a live nested session owns no TCP or UDP socket at all;
 #   3. the library it lists is the local folder.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
@@ -24,16 +24,16 @@ note(){ echo "NOTE        $*"; }
 
 SIG=""; QS=""
 start(){
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ -n "$QS" ] && break; sleep 0.3
   done
   [ -n "$SIG" ] && [ -n "$QS" ] || { bad "the nested session did not come up"; return 1; }
   sleep 8
 }
-stop(){ ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1; sleep 2; }
+stop(){ ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1; sleep 2; }
 
 echo "picker outbound audit: $(date -Is)"
 
@@ -58,7 +58,7 @@ done
 
 echo; echo "=== 2. the library is the local folder ==="
 if [ -d "$RUN/home/Pictures" ]; then
-  ok "Mei's library folder exists: $RUN/home/Pictures"
+  ok "Tenkai's library folder exists: $RUN/home/Pictures"
 else
   bad "no Pictures folder under .run/home"
 fi
@@ -83,7 +83,7 @@ if command -v ryogami >/dev/null 2>&1; then
 fi
 stop
 
-( cd "$MEI" && ./mei verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" || bad "verify-untouched FAILED"
+( cd "$TENKAI" && ./tenkai verify-untouched >/dev/null 2>&1 ) && ok "verify-untouched PASS" || bad "verify-untouched FAILED"
 [ "$fail" = 0 ] && echo "PICKER OUTBOUND: PASS" || echo "PICKER OUTBOUND: FAIL"
 echo "log: $LOG"
 exit $fail

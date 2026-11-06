@@ -13,7 +13,7 @@ import shell.services
 //
 // Openness is owned by FrameMenuManager (menuOpen), never a private boolean, so
 // a busy anchor's content is replaced by flipping which record is active. The
-// Mei-own surfaces (power/voice/keyring/stash/system) are NOT menus; they are
+// Tenkai-own surfaces (power/voice/keyring/stash/system) are NOT menus; they are
 // hosted by FrameSurface (still a Popout blob this pass), delegated below.
 Item {
     id: root
@@ -36,7 +36,7 @@ Item {
     property real triggerAlong: -1
     property real s: 1
     property bool active: true
-    // Forwarded to FrameSurface for the Mei-own surface popouts.
+    // Forwarded to FrameSurface for the Tenkai-own surface popouts.
     property var group: null
     property real frameThickness: 0
     property real radius: 8
@@ -234,7 +234,7 @@ Item {
         }
     }
 
-    // ---- Mei-own surface path: still a Popout blob this pass (FrameSurface).
+    // ---- Tenkai-own surface path: still a Popout blob this pass (FrameSurface).
     Loader {
         id: surfaceHost
         anchors.fill: parent

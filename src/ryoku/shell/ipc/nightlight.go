@@ -187,7 +187,7 @@ func (n *nightlightState) run(args ...string) error {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Pdeathsig: syscall.SIGKILL}
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Printf("mei-shell: nightlight %v: %v: %s", args, err, strings.TrimSpace(string(out)))
+		log.Printf("tenkai-shell: nightlight %v: %v: %s", args, err, strings.TrimSpace(string(out)))
 	}
 	return err
 }
@@ -212,7 +212,7 @@ func (n *nightlightState) watch() {
 	}
 	defer unix.Close(fd)
 	if _, err := unix.InotifyAddWatch(fd, n.stateDir, unix.IN_CLOSE_WRITE|unix.IN_CREATE|unix.IN_DELETE|unix.IN_MOVED_TO); err != nil {
-		log.Printf("mei-shell: nightlight watch failed: %v", err)
+		log.Printf("tenkai-shell: nightlight watch failed: %v", err)
 	}
 
 	buf := make([]byte, 4096)
@@ -260,7 +260,7 @@ func (n *nightlightState) loopNoWatch(on bool, temp int) {
 }
 
 // settle resolves a state-dir wake, where the first /proc scan can lie: the
-// script writes the enabled marker before `mei wm act nightlight.on` has
+// script writes the enabled marker before `tenkai wm act nightlight.on` has
 // spawned the backend, so a scan in that window sees no process and would
 // publish off. Read the marker (the script's declared intent) once, then rescan
 // /proc every 100 ms until running() agrees with it or 2 s elapse, and report

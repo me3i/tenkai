@@ -17,7 +17,7 @@ Singleton {
     readonly property color sun:   "#e2342a"
     readonly property color gold:  "#d9a441"
 
-    // accent: the live system accent (the palette's primary role). Mei keeps
+    // accent: the live system accent (the palette's primary role). Tenkai keeps
     // colour on the frame, not the content, so the menu chrome no longer tints
     // its selected/on states with it -- those invert (see `bone` below). Only a
     // widget's own live colour (resize grips, active surfaces) still paints here.
@@ -78,13 +78,13 @@ Singleton {
     readonly property string font:   Config.widgetFont.length > 0 ? Config.widgetFont : "Space Grotesk"
     readonly property string fontJp: "Noto Sans CJK JP"
     readonly property string mono:   "JetBrainsMono Nerd Font"
-    // brand mark + name, user-overridable via ~/.config/mei/brand.json (Shell ->
-    // Global). defaults to the 力 seal / "Mei". BrandMark renders `mark`, or
-    // `markSource` (an image) when set. Mei's own apps never read these.
+    // brand mark + name, user-overridable via ~/.config/tenkai/brand.json (Shell ->
+    // Global). defaults to the 力 seal / "Tenkai". BrandMark renders `mark`, or
+    // `markSource` (an image) when set. Tenkai's own apps never read these.
     readonly property string mark: Config.markText.length > 0 ? Config.markText : "M"
     readonly property string markSource: Config.markImage
     readonly property bool markTint: Config.markTint
-    readonly property string brandName: Config.brandName.length > 0 ? Config.brandName : "Mei"
+    readonly property string brandName: Config.brandName.length > 0 ? Config.brandName : "Tenkai"
     readonly property int radius: 0
     // rounded corners for the menu card and its tiles (the sidebar radiusWidget
     // idiom); the sharp `radius: 0` above stays the clock-face default.

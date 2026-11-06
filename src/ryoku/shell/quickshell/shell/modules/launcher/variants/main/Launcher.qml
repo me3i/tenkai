@@ -10,7 +10,7 @@ import Ryoku.Ui.Singletons
 // The command palette body: a search row over the rest dashboard (empty query),
 // the all-apps grid (Ctrl+A from rest), the action-mode tabs + list ("/" prefix),
 // or the ranked result list. Ctrl+K opens the selected row's action panel. Grows
-// and shrinks with its content on the Mei morph curve. Providers register with
+// and shrinks with its content on the Tenkai morph curve. Providers register with
 // the dispatcher; this view only renders what the dispatcher returns.
 Item {
     id: root
@@ -75,8 +75,8 @@ Item {
         if (askMode) return "RASHIN";
         return "";
     }
-    // Mei: the "/" command mode is disabled with the Actions provider (owner
-    // decision); the catalog's commands point at helpers Mei does not build.
+    // Tenkai: the "/" command mode is disabled with the Actions provider (owner
+    // decision); the catalog's commands point at helpers Tenkai does not build.
     readonly property bool actionMode: false
     // "?" prefix with a non-empty query and an available DDG answer: the
     // AnswerPanel takes the body above the Search fallback row.
@@ -89,7 +89,7 @@ Item {
     readonly property bool actionBrowse: actionMode && routed.query.length === 0
     // "\" prefix: a one-shot quick ask to the Rashin agent. No provider claims
     // it; the panel owns the whole body and the Enter key while active.
-    // Mei: the AI panel (RASHIN) is off-list; the "\\" prefix is disabled.
+    // Tenkai: the AI panel (RASHIN) is off-list; the "\\" prefix is disabled.
     readonly property bool askMode: false
     readonly property string askQuestion: askMode ? query.slice(1).replace(/^\s+/, "") : ""
     // an async provider is resolving the current query and nothing has come back
@@ -232,7 +232,7 @@ Item {
     Component.onCompleted: root.scheduleEvaluation()
 
 
-    // Mei: disabled with the Actions provider (owner decision). Kept here so the
+    // Tenkai: disabled with the Actions provider (owner decision). Kept here so the
     // upstream binding is visible if the command mode is ever re-enabled.
     // Binding {
     //     target: providerSet.actions

@@ -40,7 +40,7 @@ Item {
         return rootMod.weatherUnavailable ? I18n.tr("Weather offline") : I18n.tr("Weather\u2026");
     }
 
-    // MEI: weather is off the keep list (the daemon never starts the weather
+    // TENKAI: weather is off the keep list (the daemon never starts the weather
     // topic, and the shell is offline), so the bar reserves no space for it and
     // the wrapper's `visible: width > 0.5` hides it. Disabled, not deleted --
     // original: implicitWidth: root.modWeather ? ico.implicitWidth : 0

@@ -226,7 +226,7 @@ func (p *videoPlayer) removeLocked(cmd *exec.Cmd) bool {
 }
 
 // Stop invalidates any in-flight transcode and kills every player this daemon
-// spawned (whole process group). It never sweeps for processes by name: Mei
+// spawned (whole process group). It never sweeps for processes by name: Tenkai
 // signals only the PIDs it started.
 func (p *videoPlayer) Stop() {
 	p.mu.Lock()

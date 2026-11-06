@@ -4,13 +4,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The one place Mei's look is defined. Everything that draws imports this;
+// The one place Tenkai's look is defined. Everything that draws imports this;
 // nothing hardcodes a hex, a size or a duration.
 //
 // Colour resolves live from the daemon palette the same way the pill's Theme
 // does: a fixed named colour scheme (shell.json themePalette) wins, then the
-    // live wallpaper palette (~/.cache/mei/colors.json Material roles), then the
-// compiled signature default. So every Mei app (the Hub, Ryowalls, ...)
+    // live wallpaper palette (~/.cache/tenkai/colors.json Material roles), then the
+// compiled signature default. So every Tenkai app (the Hub, Ryowalls, ...)
 // retints on ANY scheme change, a named theme or a wallpaper switch, with no
 // colour math of its own. The kit's role names are kept; only their source moved
 // onto the Material roles.
@@ -329,7 +329,7 @@ Singleton {
 
     FileView {
         id: themeFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/theme.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/theme.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -338,7 +338,7 @@ Singleton {
     }
     FileView {
         id: shellFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/shell.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/shell.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -347,7 +347,7 @@ Singleton {
     }
     FileView {
         id: paletteFile
-        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/mei/colors.json"
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/tenkai/colors.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

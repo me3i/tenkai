@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mei's acceptance gate.
+# Tenkai's acceptance gate.
 #
 # Every machine-checkable criterion of the release, one table: the gate
 # id, the name, PASS / FAIL / UNVERIFIED and the evidence (a log path).
@@ -8,48 +8,48 @@
 # private bus, the nested compositor. Nothing here can reach the owner's live
 # session, and every synthetic keystroke goes through the guarded input tool.
 #
-#   usage: ./mei accept            the whole gate
-#          ./mei accept --list     the gates and their commands, nothing run
-#          ./mei accept --prove    show that the static gates can fail
+#   usage: ./tenkai accept            the whole gate
+#          ./tenkai accept --list     the gates and their commands, nothing run
+#          ./tenkai accept --prove    show that the static gates can fail
 set -uo pipefail
-MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-RUN="$MEI/.run"
+TENKAI="$(cd "$(dirname "$0")/../.." && pwd)"
+RUN="$TENKAI/.run"
 LOGDIR="$RUN/logs/accept"
 mkdir -p "$LOGDIR"
 STAMP="$(date +%H%M%S)"
 OUT="$LOGDIR/accept-$STAMP.log"
 exec > >(tee -a "$OUT") 2>&1
 
-cd "$MEI" || exit 1
+cd "$TENKAI" || exit 1
 
 # ---------------------------------------------------------------- the gates
 # id | name | the command to run | the evidence
 GATES=(
-"S1|the live session is untouched|bash $MEI/docs/tests/accept-safety.sh s1|$OUT"
-"S2|no personal values in the tracked tree|bash $MEI/docs/tests/accept-safety.sh s2|$OUT"
-"S3|no Mei process holds the live runtime or the live display|bash $MEI/docs/tests/accept-safety.sh s3|$OUT"
-"S4|no process is ever signalled by name|bash $MEI/docs/tests/accept-safety.sh s4|$OUT"
-"S5|the guarded input tool refuses the live display|bash $MEI/docs/tests/accept-safety.sh s5|$OUT"
-"S6|Mei makes no outbound connection and listens on nothing|bash $MEI/docs/tests/accept-safety.sh s6|$OUT"
-"S7|a clean stop leaves nothing behind|bash $MEI/docs/tests/accept-safety.sh s7|$OUT"
-"S8|nothing is written outside the project|bash $MEI/docs/tests/accept-safety.sh s8|$OUT"
-"F1|the bar and the workspaces|bash $MEI/docs/tests/workspaces.sh|$OUT"
-"F2|the launcher|bash $MEI/docs/tests/launcher-check.sh|$OUT"
-"F3|the control centre, and the audio and brightness steps|bash $MEI/docs/tests/control-center-matrix.sh|$OUT"
-"F4|the notifications|bash $MEI/docs/tests/step6.sh|$OUT"
-"F5|the system tray|bash $MEI/docs/tests/step7.sh|$OUT"
-"F6|the wallpaper and the palette|bash $MEI/docs/tests/step5.sh|$OUT"
-"F7|the settings app|bash $MEI/docs/tests/step4.sh|$OUT"
-"F9|the idle module (dim, DPMS, suspend)|bash $MEI/docs/tests/idle-module.sh|$OUT"
-"F10|the power menu|bash $MEI/docs/tests/power-menu.sh|$OUT"
-"F11|the OSD, the clipboard, the screenshots, the polkit agent|bash $MEI/docs/tests/restored-modules.sh|$OUT"
-"F13|mei start, the fallback and the preflight|bash $MEI/docs/tests/start-fallback.sh|$OUT"
-"Q1|the code is clean (qmllint, go vet, go build, go test, shellcheck)|bash $MEI/docs/tests/accept-safety.sh q1|$OUT"
-"Q2|no dead code, no personal strings, no upstream-brand names outside the allowed ones|bash $MEI/docs/tests/accept-safety.sh q2|$OUT"
-"F12|the module matrix (every module off, three at once)|bash $MEI/docs/tests/phase8.sh|$OUT"
-"Q3|the reference screenshots|bash $MEI/docs/tests/accept-q3.sh before|$OUT"
-"Q4|the idle measurement table|bash $MEI/docs/tests/accept-q4.sh|$OUT"
-"Q5|the documents are there and say what is true|bash $MEI/docs/tests/accept-safety.sh q5|$OUT"
+"S1|the live session is untouched|bash $TENKAI/docs/tests/accept-safety.sh s1|$OUT"
+"S2|no personal values in the tracked tree|bash $TENKAI/docs/tests/accept-safety.sh s2|$OUT"
+"S3|no Tenkai process holds the live runtime or the live display|bash $TENKAI/docs/tests/accept-safety.sh s3|$OUT"
+"S4|no process is ever signalled by name|bash $TENKAI/docs/tests/accept-safety.sh s4|$OUT"
+"S5|the guarded input tool refuses the live display|bash $TENKAI/docs/tests/accept-safety.sh s5|$OUT"
+"S6|Tenkai makes no outbound connection and listens on nothing|bash $TENKAI/docs/tests/accept-safety.sh s6|$OUT"
+"S7|a clean stop leaves nothing behind|bash $TENKAI/docs/tests/accept-safety.sh s7|$OUT"
+"S8|nothing is written outside the project|bash $TENKAI/docs/tests/accept-safety.sh s8|$OUT"
+"F1|the bar and the workspaces|bash $TENKAI/docs/tests/workspaces.sh|$OUT"
+"F2|the launcher|bash $TENKAI/docs/tests/launcher-check.sh|$OUT"
+"F3|the control centre, and the audio and brightness steps|bash $TENKAI/docs/tests/control-center-matrix.sh|$OUT"
+"F4|the notifications|bash $TENKAI/docs/tests/step6.sh|$OUT"
+"F5|the system tray|bash $TENKAI/docs/tests/step7.sh|$OUT"
+"F6|the wallpaper and the palette|bash $TENKAI/docs/tests/step5.sh|$OUT"
+"F7|the settings app|bash $TENKAI/docs/tests/step4.sh|$OUT"
+"F9|the idle module (dim, DPMS, suspend)|bash $TENKAI/docs/tests/idle-module.sh|$OUT"
+"F10|the power menu|bash $TENKAI/docs/tests/power-menu.sh|$OUT"
+"F11|the OSD, the clipboard, the screenshots, the polkit agent|bash $TENKAI/docs/tests/restored-modules.sh|$OUT"
+"F13|tenkai start, the fallback and the preflight|bash $TENKAI/docs/tests/start-fallback.sh|$OUT"
+"Q1|the code is clean (qmllint, go vet, go build, go test, shellcheck)|bash $TENKAI/docs/tests/accept-safety.sh q1|$OUT"
+"Q2|no dead code, no personal strings, no upstream-brand names outside the allowed ones|bash $TENKAI/docs/tests/accept-safety.sh q2|$OUT"
+"F12|the module matrix (every module off, three at once)|bash $TENKAI/docs/tests/phase8.sh|$OUT"
+"Q3|the reference screenshots|bash $TENKAI/docs/tests/accept-q3.sh before|$OUT"
+"Q4|the idle measurement table|bash $TENKAI/docs/tests/accept-q4.sh|$OUT"
+"Q5|the documents are there and say what is true|bash $TENKAI/docs/tests/accept-safety.sh q5|$OUT"
 )
 
 # The gates that only the owner can close. They are UNVERIFIED on purpose.
@@ -71,9 +71,9 @@ TODO=(
 )
 
 # ---------------------------------------------------------------- the runners
-# mei_alive asks whether a Mei shell is still running, by reading /proc (no
+# tenkai_alive asks whether a Tenkai shell is still running, by reading /proc (no
 # process is looked up by name, and nothing is signalled).
-mei_alive(){
+tenkai_alive(){
   local p
   for p in /proc/[0-9]*; do
     [ -r "$p/cmdline" ] || continue
@@ -91,16 +91,16 @@ settle(){
   # A gate that leaves its own idle config behind would lock the next gate's
   # session (the idle module's lock threshold is one second there), and the
   # bar would never appear. Every gate starts from a neutral one.
-  mkdir -p "$RUN/config/mei"
+  mkdir -p "$RUN/config/tenkai"
   printf '{"enabled": true, "dim": 9999, "lock": 9999, "dpms": 9999, "suspend": 9999, "dimPercent": 40}\n' \
-    > "$RUN/config/mei/idle.json.new" 2>/dev/null && mv "$RUN/config/mei/idle.json.new" "$RUN/config/mei/idle.json" 2>/dev/null
+    > "$RUN/config/tenkai/idle.json.new" 2>/dev/null && mv "$RUN/config/tenkai/idle.json.new" "$RUN/config/tenkai/idle.json" 2>/dev/null
   while [ $i -lt 45 ]; do
-    mei_alive || return 0
+    tenkai_alive || return 0
     sleep 1
     i=$((i+1))
   done
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
-      WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+      WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./tenkai stop ) >/dev/null 2>&1
   sleep 3
 }
 
@@ -144,13 +144,13 @@ prove_static(){
   printf 'the static gates can fail:\n'
   local tmp="$RUN/accept-prove.txt"
   printf 'pkill -f quickshell\n' > "$tmp"
-  if bash "$MEI/docs/tests/accept-safety.sh" s4 "$tmp" 2>&1 | grep -q "FAIL"; then
+  if bash "$TENKAI/docs/tests/accept-safety.sh" s4 "$tmp" 2>&1 | grep -q "FAIL"; then
     printf '  S4  a file with pkill in it is caught            OK\n'
   else
     printf '  S4  a file with pkill in it is caught            NOT PROVEN\n'
   fi
   printf 'https://example.invalid/secret\n' > "$tmp"
-  if bash "$MEI/docs/tests/accept-safety.sh" q2 "$tmp" 2>&1 | grep -q "FAIL"; then
+  if bash "$TENKAI/docs/tests/accept-safety.sh" q2 "$tmp" 2>&1 | grep -q "FAIL"; then
     printf '  Q2  a file with an outbound URL is caught        OK\n'
   else
     printf '  Q2  a file with an outbound URL is caught        NOT PROVEN\n'
@@ -168,7 +168,7 @@ case "${1:-}" in
 --prove) prove_static; exit 0 ;;
 esac
 
-printf 'Mei acceptance gate: %s\n' "$(date -Is)"
+printf 'Tenkai acceptance gate: %s\n' "$(date -Is)"
 printf 'the log of this run: %s\n' "$OUT"
 printf '\n'
 
@@ -178,7 +178,7 @@ printf '\n'
 # as a regression. The recorded Phase 10A figures in accept-q4.sh stay as a trend
 # record.
 printf -- '--- measuring the idle reference Q4 will be compared against ---\n'
-if bash "$MEI/docs/tests/accept-q4.sh" --reference > "$RUN/logs/accept-q4-reference-$STAMP.log" 2>&1; then
+if bash "$TENKAI/docs/tests/accept-q4.sh" --reference > "$RUN/logs/accept-q4-reference-$STAMP.log" 2>&1; then
   printf 'Q4   idle reference measured                                  %s\n' "$RUN/logs/accept-q4-reference-$STAMP.log"
   tail -1 "$RUN/logs/accept-q4-reference-$STAMP.log" | sed 's/^/     /'
 else
@@ -192,7 +192,7 @@ for g in "${GATES[@]}"; do
   # Defensive cleanup between gates: stop any leftover session and
   # clear stale runtime state so the next gate starts from a neutral
   # environment (fixes F1 PeerClosedError / Q4 cascade).
-  ./mei stop >/dev/null 2>&1 || true
+  ./tenkai stop >/dev/null 2>&1 || true
   rm -rf "$RUN/r/quickshell/by-id"/* 2>/dev/null || true
   run_gate "$id" "$name" "$cmd"
 done

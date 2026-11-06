@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 # revert-to-previous-shell.sh — the owner's rescue path.
 #
-# It stops Mei and brings the previous shell back. It does NOT edit the Hyprland
+# It stops Tenkai and brings the previous shell back. It does NOT edit the Hyprland
 # config: that stays a manual step, so nothing here can silently rewrite the
 # owner's configuration. The agent never runs this against the live session.
 #
-# The previous shell's own commands come from .local/mei.local.env, which is
+# The previous shell's own commands come from .local/tenkai.local.env, which is
 # not tracked by git: the public repository must not name anyone's setup. If
-# that file or its values are missing, the script says so and stops Mei only.
+# that file or its values are missing, the script says so and stops Tenkai only.
 #
 # Usage (from your own terminal):
-#   bash ~/projects/mei/docs/revert-to-previous-shell.sh
+#   bash ~/projects/tenkai/docs/revert-to-previous-shell.sh
 set -uo pipefail
 
-MEI="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-CONF="$MEI/.local/mei.local.env"
+TENKAI="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
+CONF="$TENKAI/.local/tenkai.local.env"
 
 conf() { # $1 = key -> the value, or nothing
   [ -f "$CONF" ] || return 1
@@ -24,18 +24,18 @@ conf() { # $1 = key -> the value, or nothing
   printf '%s' "${line#*=}" | sed 's/^"//; s/"$//'
 }
 
-echo "revert: stopping Mei"
-if [ -d "$MEI" ]; then
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" ./mei live-stop ) 2>&1 | sed 's/^/  /'
+echo "revert: stopping Tenkai"
+if [ -d "$TENKAI" ]; then
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" ./tenkai live-stop ) 2>&1 | sed 's/^/  /'
 fi
 
-prev_name="$(conf MEI_PREV_SHELL_NAME || true)"
-prev_start="$(conf MEI_PREV_SHELL_START || true)"
+prev_name="$(conf TENKAI_PREV_SHELL_NAME || true)"
+prev_start="$(conf TENKAI_PREV_SHELL_START || true)"
 
 if [ -z "$prev_start" ]; then
   echo "revert: the previous shell's start command is not configured."
-  echo "  Set MEI_PREV_SHELL_START in $CONF (see .local/mei.local.env.example)."
-  echo "  Mei has been stopped; start your previous shell the way your autostart does,"
+  echo "  Set TENKAI_PREV_SHELL_START in $CONF (see .local/tenkai.local.env.example)."
+  echo "  Tenkai has been stopped; start your previous shell the way your autostart does,"
   echo "  e.g.: systemctl --user start ryoku-session.target"
   exit 1
 fi
@@ -46,8 +46,8 @@ eval "$prev_start" 2>&1 | sed 's/^/  /'
 
 cat <<NOTE
 
-revert: the autostart line is still Mei's, so the next login would start Mei
-again. Uncomment your own line in your Hyprland config and comment Mei's out:
+revert: the autostart line is still Tenkai's, so the next login would start Tenkai
+again. Uncomment your own line in your Hyprland config and comment Tenkai's out:
 
     # hl.exec_cmd("${prev_start}")
     hl.exec_cmd("${prev_start}")
@@ -55,7 +55,7 @@ again. Uncomment your own line in your Hyprland config and comment Mei's out:
 then log out and back in (or restart the compositor).
 
 If the screen is blank: Ctrl+Alt+F3 gives you a TTY. Log in, then:
-    bash ~/projects/mei/docs/revert-to-previous-shell.sh
+    bash ~/projects/tenkai/docs/revert-to-previous-shell.sh
 
 If the screen is blank because the lock is up and the shell died with it, the
 compositor is still holding the lock. Clear it with the compositor's own

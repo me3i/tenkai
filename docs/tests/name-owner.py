@@ -2,7 +2,7 @@
 """Own the two shell D-Bus names on the private nested bus, then wait.
 
 Test-only stand-in for the Phase 8 handover test: it plays the role of the old
-shell (or a tray host) that is about to be replaced by Mei. It never touches the
+shell (or a tray host) that is about to be replaced by Tenkai. It never touches the
 live bus -- the caller hands it the nested bus address.
 
 Prints "owned <name>" per name, then "READY" once both are held. SIGTERM/SIGINT

@@ -6,7 +6,7 @@ import "../lib/weather.js" as Model
 
 // Live weather for HeroShutter. Open-Meteo needs no API key; location resolves
 // once via a keyless IP lookup and is cached at
-// ~/.local/state/mei/weather-loc.json so a restart skips the coord round-trip.
+// ~/.local/state/tenkai/weather-loc.json so a restart skips the coord round-trip.
 // replaced the old wttr.in scrape (rate-limited, re-located on every poll).
 // public contract = temp / condition / glyph / available, unchanged. hourly /
 // daily / humidity / city for richer panes. all parsing + the WMO-code ->
@@ -16,11 +16,11 @@ import "../lib/weather.js" as Model
 Singleton {
     id: root
 
-    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mei"
+    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/tenkai"
     // unit override from the launcher config: "" follows the locale (Fahrenheit
     // only for US/LR/MM), "C"/"F" force it. a change refetches in the new unit.
     property string unitOverride: ""
-    // Mei: weather is off-list and network-backed. Keep the singleton (the
+    // Tenkai: weather is off-list and network-backed. Keep the singleton (the
     // rest dashboard binds its unit/available state) but never fetch, locate,
     // or replay a forecast.
     readonly property bool online: false
@@ -115,7 +115,7 @@ Singleton {
 
     Component.onCompleted: {
         root.ready = true;
-        // Mei: no IP lookup, no forecast fetch, no cache replay. The dashboard
+        // Tenkai: no IP lookup, no forecast fetch, no cache replay. The dashboard
         // falls back to its date-only readout.
     }
 

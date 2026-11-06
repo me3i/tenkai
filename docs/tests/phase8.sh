@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # Phase 8 acceptance: the shell.json `modules` switchboard.
 #
-# Each scenario rewrites ONLY .run/config/mei/shell.json (the nested fake
+# Each scenario rewrites ONLY .run/config/tenkai/shell.json (the nested fake
 # config), starts one nested session, asserts, stops it and runs
 # verify-untouched. The owner's real config is never opened.
 #
 # Evidence: this log plus .run/shots/phase8-*.png.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
-CFG="$RUN/config/mei/shell.json"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
+CFG="$RUN/config/tenkai/shell.json"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
@@ -25,12 +25,12 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-D() { H dispatch "hl.dsp.global(\"mei:$1\")" >/dev/null 2>&1; }
+D() { H dispatch "hl.dsp.global(\"tenkai:$1\")" >/dev/null 2>&1; }
 bar_up() { H layers | grep -q 'namespace: ryoku-frame'; }
 launcher_layers() { H layers | grep -c 'namespace: launcher'; }
 all_layers() { H layers | grep -c 'Layer '; }
@@ -78,17 +78,17 @@ set_mods() { # $1 = module overrides (all others true)
 
 start() { # EXTRA_PATH optionally prefixes PATH, EXTRA_ENV adds VAR=VALUE (dependency scenarios)
   local old_sig="$SIG" old_qs="$QS" old_bus="$BUS" nqs
-  # EXTRA_ENV exists because PATH alone cannot stage a broken backend: mei
+  # EXTRA_ENV exists because PATH alone cannot stage a broken backend: tenkai
   # gives every session a fixed PATH (.run/bin + the system list, R1) and never
   # inherits the caller's, so a failing tool placed on EXTRA_PATH is invisible
-  # to the daemon. A product seam (MEI_*) does survive, and is how a nested test
+  # to the daemon. A product seam (TENKAI_*) does survive, and is how a nested test
   # makes a backend fail without touching the owner's hardware.
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
-      env ${EXTRA_ENV:-} PATH="${EXTRA_PATH:-}${PATH}" ./mei run ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" \
+      env ${EXTRA_ENV:-} PATH="${EXTRA_PATH:-}${PATH}" ./tenkai run ) >/dev/null 2>&1
   SIG=""; QS=""
   for _ in $(seq 1 200); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ "$SIG" != "$old_sig" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] \
       && [ -n "$QS" ] && [ "$QS" != "$old_qs" ] && break
     SIG=""; QS=""
@@ -102,7 +102,7 @@ start() { # EXTRA_PATH optionally prefixes PATH, EXTRA_ENV adds VAR=VALUE (depen
   # wait for the count to settle before calling it contamination.
   nqs=""
   for _ in $(seq 1 40); do
-    nqs="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+    nqs="$(pgrep -fc "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
     [ "$nqs" = 1 ] && break
     sleep 0.25
   done
@@ -114,10 +114,10 @@ start() { # EXTRA_PATH optionally prefixes PATH, EXTRA_ENV adds VAR=VALUE (depen
   export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
   WL_NAME="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WL_NAME"
-  SHELLLOG="$RUN/state/mei/surfaces/shell.log"
+  SHELLLOG="$RUN/state/tenkai/surfaces/shell.log"
   SHELLLOG_BEFORE="$(wc -l < "$SHELLLOG" 2>/dev/null || echo 0)"
   sleep 2
-  DPID="$(pgrep -f "^$RUN/bin/mei-shell daemon" | head -1)"
+  DPID="$(pgrep -f "^$RUN/bin/tenkai-shell daemon" | head -1)"
   if [ "${WALL_OFF:-0}" = 1 ]; then settle dark; else settle; fi
   return 0
 }
@@ -125,40 +125,40 @@ export WAYLAND_DISPLAY="$WL_NAME"
 cleanup_on_exit() {
   local rc=$?
   [ "${KEEP:-0}" = 1 ] && return $rc
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
   return $rc
 }
 trap cleanup_on_exit EXIT
 
 stopit() {
   local dying_qs="$QS" dying_daemon="$DPID" i nq nd
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
   for i in $(seq 1 180); do
-    nq="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
-    nd="$(pgrep -fc "^$RUN/bin/mei-shell daemon" 2>/dev/null || true)"
+    nq="$(pgrep -fc "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+    nd="$(pgrep -fc "^$RUN/bin/tenkai-shell daemon" 2>/dev/null || true)"
     { [ "$nq" = 0 ] || [ "$nq" = "" ]; } && { [ "$nd" = 0 ] || [ "$nd" = "" ]; } && break
     sleep 0.25
   done
   # recorded PIDs only, and only if their cmdline still names this project
   for p in "$dying_qs" "$dying_daemon"; do
     [ -n "$p" ] && [ -d "/proc/$p" ] || continue
-    tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI" && kill -TERM "$p" 2>/dev/null
+    tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI" && kill -TERM "$p" 2>/dev/null
   done
   sleep 1
-  nq="$(pgrep -fc "^qs -p $MEI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
-  nd="$(pgrep -fc "^$RUN/bin/mei-shell daemon" 2>/dev/null || true)"
+  nq="$(pgrep -fc "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+  nd="$(pgrep -fc "^$RUN/bin/tenkai-shell daemon" 2>/dev/null || true)"
   if { [ "${nq:-0}" != 0 ]; } || { [ "${nd:-0}" != 0 ]; }; then
     bad "stop left shells=$nq daemons=$nd; aborting so the next scenario is not contaminated"
     echo "RESULT: FAIL"; exit 1
   fi
   rm -f "$RUN/bus"
-  echo "  verify-untouched: $( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )"
+  echo "  verify-untouched: $( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )"
 }
 
 cp -f "$CFG" "$BK/shell.json"
 note "config backup -> $BK/shell.json"
 echo "=== verify-untouched BEFORE ==="
-( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )
+( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )
 
 # ---------------------------------------------------------------- S0 baseline
 echo; echo "=== S0: every module on ==="
@@ -247,9 +247,9 @@ stopit
 echo; echo "=== S6: settings=false ==="
 set_mods '{"settings":false}'
 start || { exit 1; }
-r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" hub open general 2>&1 )"
+r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/tenkai-shell" hub open general 2>&1 )"
 [ "$r" = "ok settings module off" ] && ok "S6 hub verb refuses while settings is off ($r)" || bad "S6 hub verb returned '$r'"
-pgrep -f "$RUN/bin/mei-hub" >/dev/null && bad "S6 a hub process still spawned" || ok "S6 no hub process"
+pgrep -f "$RUN/bin/tenkai-hub" >/dev/null && bad "S6 a hub process still spawned" || ok "S6 no hub process"
 bar_up && ok "S6 bar renders" || bad "S6 bar missing"
 stopit
 
@@ -285,8 +285,8 @@ dc="$(dcount s8-a s8-b)"
 e="$(new_shell_errors "$SHELLLOG_BEFORE")"
 [ -z "$e" ] && ok "S8 no new QML errors" || bad "S8 QML errors: $e"
 stopit
-pgrep -f "^$RUN/bin/mei-shell daemon" >/dev/null && bad "S8 daemon survived stop" || ok "S8 no stray daemon after stop"
-pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" >/dev/null && bad "S8 shell survived stop" || ok "S8 no stray shell after stop"
+pgrep -f "^$RUN/bin/tenkai-shell daemon" >/dev/null && bad "S8 daemon survived stop" || ok "S8 no stray daemon after stop"
+pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" >/dev/null && bad "S8 shell survived stop" || ok "S8 no stray shell after stop"
 
 # ------------------------------------------------------- S9 missing deps
 echo; echo "=== S9a: brightness backend unavailable ==="
@@ -299,9 +299,9 @@ set_mods '{}'
 # job, and the verb has to report that instead of pretending "ok" (which the
 # client prints as nothing at all). The seam also keeps the real panel untouched.
 mkdir -p "$RUN/state/s9a-unwritable"
-EXTRA_PATH="$RUN/deps/bin:" EXTRA_ENV="MEI_BRIGHTNESS_FAKE=$RUN/state/s9a-unwritable" start || { exit 1; }
+EXTRA_PATH="$RUN/deps/bin:" EXTRA_ENV="TENKAI_BRIGHTNESS_FAKE=$RUN/state/s9a-unwritable" start || { exit 1; }
 bar_up && ok "S9a bar renders with a failing brightnessctl" || bad "S9a bar missing"
-r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1 )"
+r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/tenkai-shell" brightness up 2>&1 )"
 # The verb's convention is the daemon's: an error is "err <verb>: <why>", which
 # the client prints as "ryoku-shell: <verb>: <why>" and exits non-zero. Assert on
 # that structure, not on one particular wording: an empty reply here would mean

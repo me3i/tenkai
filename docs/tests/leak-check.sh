@@ -6,14 +6,14 @@
 # compositor and no live process is signalled. The monitor is pointed at a
 # temporary pidfile, never at the real session.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 LIVE_RT="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 LIVE_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
 TMP="$RUN/tmp-leak-$STAMP"
 LOG="$RUN/logs/leak-check-$STAMP.log"
-MON="$MEI/docs/tests/leak-monitor.sh"
+MON="$TENKAI/docs/tests/leak-monitor.sh"
 mkdir -p "$TMP" "$RUN/logs"
 exec > >(tee -a "$LOG") 2>&1
 
@@ -38,7 +38,7 @@ run_monitor() { # $1 pidfile, $2 stopfile, $3 log; extra env comes from caller
 
 echo "leak guard self-test: live=$LIVE_RT display=$LIVE_WL nested=$RT"
 
-# 1. The old b915e0a failure mode: a Mei-shaped process with the live runtime.
+# 1. The old b915e0a failure mode: a Tenkai-shaped process with the live runtime.
 env XDG_RUNTIME_DIR="$LIVE_RT" WAYLAND_DISPLAY="$LIVE_WL" sleep 6 &
 BROKEN_PID=$!
 printf '%s\t%s\tbroken-live-runtime\n' "$BROKEN_PID" "$BROKEN_PID" > "$TMP/broken.pids"
@@ -134,7 +134,7 @@ else
 fi
 kill -TERM "$GOOD_DESC_QS" "$GOOD_DESC_ROOT" 2>/dev/null; wait "$GOOD_DESC_ROOT" 2>/dev/null; GOOD_DESC_QS=""; GOOD_DESC_ROOT=""
 
-# 6. A non-Mei compositor startup probe (Hyprland runs `sh -c lspci ...`)
+# 6. A non-Tenkai compositor startup probe (Hyprland runs `sh -c lspci ...`)
 #    inherits the host display before the nested display is set. It must not
 #    be a false positive.
 cp /bin/sleep "$TMP/lspci"
@@ -157,7 +157,7 @@ else
 fi
 kill -TERM "$COMP_CHILD" "$COMP_ROOT" 2>/dev/null; wait "$COMP_ROOT" 2>/dev/null; COMP_CHILD=""; COMP_ROOT=""
 
-# 7. The compositor allowance must not hide a Mei component: qs below the
+# 7. The compositor allowance must not hide a Tenkai component: qs below the
 #    compositor with the host display still fails.
 env XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY="$LIVE_RT/$LIVE_WL" \
   bash -c "XDG_RUNTIME_DIR='$RT' WAYLAND_DISPLAY='$LIVE_RT/$LIVE_WL' '$TMP/qs' 6 & wait" &
@@ -171,9 +171,9 @@ sleep 1
 touch "$TMP/qs-comp.stop"
 wait "$MONPID"; QCRC=$?
 if [ "$QCRC" != 0 ] && grep -q 'name=qs .*WAYLAND_DISPLAY points into the live runtime' "$TMP/qs-comp.log"; then
-  ok "Mei qs below the compositor with the host display still fails (pid ${QS_COMP_CHILD:-?}, rc=$QCRC)"
+  ok "Tenkai qs below the compositor with the host display still fails (pid ${QS_COMP_CHILD:-?}, rc=$QCRC)"
 else
-  bad "compositor allowance hid a Mei qs with the host display (rc=$QCRC)"
+  bad "compositor allowance hid a Tenkai qs with the host display (rc=$QCRC)"
   sed 's/^/  | /' "$TMP/qs-comp.log"
 fi
 kill -TERM "$QS_COMP_CHILD" "$QS_COMP_ROOT" 2>/dev/null; wait "$QS_COMP_ROOT" 2>/dev/null; QS_COMP_CHILD=""; QS_COMP_ROOT=""

@@ -9,8 +9,8 @@ import (
 	"time"
 )
 
-// WebExtension native-messaging host (host name "mei_theme"). The browser
-// launches it when the Mei extension connects; it streams the live palette
+// WebExtension native-messaging host (host name "tenkai_theme"). The browser
+// launches it when the Tenkai extension connects; it streams the live palette
 // (colors.json) as {mode,colors} on connect and on every change, until the
 // browser closes stdin. Framing is the native-messaging standard: a 4-byte
 // native-endian length prefix then UTF-8 JSON. See ryoku/browser.

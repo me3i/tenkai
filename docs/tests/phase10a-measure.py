@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Phase 10A: measure only. No product changes, no installs, no live signalling.
 
-One nested session is started by ./mei run. After 120 s of idle it measures:
+One nested session is started by ./tenkai run. After 120 s of idle it measures:
   idle, launcher open, quick settings open, Settings hub open, one wallpaper set.
 Each window is 60 s. Per-process RSS/PSS/threads/CPU/context switches come from
 /proc only. The live Quickshell (PID 949) is read-only via /proc; it is never
 signalled or queried over IPC. The nested Hyprland is measured separately and is
-never included in the Mei total.
+never included in the Tenkai total.
 
 Output: .run/logs/phase10a-<stamp>.log and .run/logs/phase10a-<stamp>.json
 """
@@ -20,9 +20,9 @@ import sys
 import time
 from datetime import datetime
 
-MEI = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-RUN = os.path.join(MEI, ".run")
-RT = os.path.join(MEI, ".r")
+TENKAI = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+RUN = os.path.join(TENKAI, ".run")
+RT = os.path.join(TENKAI, ".r")
 HOST_XDG = os.environ.get("XDG_RUNTIME_DIR", "/run/user/%d" % os.getuid())
 HOST_WL = os.environ.get("WAYLAND_DISPLAY", "wayland-1")
 LIVE_QS = 949
@@ -88,7 +88,7 @@ def read_environ(pid):
 def belongs_to_current_session(label, pid):
     """Reject a test process left behind by a previous nested session.
 
-    All Mei processes should carry the fake HOME and the nested runtime. Shell
+    All Tenkai processes should carry the fake HOME and the nested runtime. Shell
     and hub qs additionally carry the current nested Hyprland signature. This is
     deliberately a guard for this measurement harness, not a product check.
     """
@@ -103,7 +103,7 @@ def belongs_to_current_session(label, pid):
 
 
 def classify(strict=False):
-    """Return {label: pid} for every persistent Mei process, no name-wide pgrep."""
+    """Return {label: pid} for every persistent Tenkai process, no name-wide pgrep."""
     found = {}
     for entry in os.listdir("/proc"):
         if not entry.isdigit():
@@ -124,14 +124,14 @@ def classify(strict=False):
                 label = "qs"
             elif "/src/ryoku/hub/quickshell" in project:
                 label = "hub-qs"
-        elif exe == "mei-shell" and "daemon" in argv:
-            label = "mei-shell"
+        elif exe == "tenkai-shell" and "daemon" in argv:
+            label = "tenkai-shell"
         elif exe == "ryogami" and "daemon" in argv:
             label = "ryogami"
-        elif exe == "mei-hub":
-            label = "mei-hub"
-        elif exe == "mei-wm-hyprland":
-            label = "mei-wm-hyprland"
+        elif exe == "tenkai-hub":
+            label = "tenkai-hub"
+        elif exe == "tenkai-wm-hyprland":
+            label = "tenkai-wm-hyprland"
         if not label:
             continue
         if strict and not belongs_to_current_session(label, pid):
@@ -142,7 +142,7 @@ def classify(strict=False):
 
 
 def project_hubs():
-    """Find any Mei Settings-hub qs, including a stale one from an earlier run."""
+    """Find any Tenkai Settings-hub qs, including a stale one from an earlier run."""
     found = []
     for entry in os.listdir("/proc"):
         if not entry.isdigit():
@@ -156,7 +156,7 @@ def project_hubs():
             if arg == "-p":
                 project = argv[i + 1]
                 break
-        if project.startswith(MEI + "/") and "/src/ryoku/hub/quickshell" in project:
+        if project.startswith(TENKAI + "/") and "/src/ryoku/hub/quickshell" in project:
             found.append((pid, project))
     return found
 
@@ -262,7 +262,7 @@ def measure(state, note, duration=DURATION):
     log("=== %s — %s ===" % (state, note))
     log("nested-only: %s  (live PID 949 reference is host read-only)" % state)
     if not procs:
-        log("FAIL no Mei processes found")
+        log("FAIL no Tenkai processes found")
     start = {label: read_metric(pid) for label, pid in procs.items()}
     start_hypr = read_metric(hypr)
     start_live = read_metric(LIVE_QS) if live_ok else None
@@ -274,13 +274,13 @@ def measure(state, note, duration=DURATION):
     end_live = read_metric(LIVE_QS) if live_ok else None
 
     rows = []
-    for label in ("qs", "mei-shell", "mei-wm-hyprland", "ryogami", "mei-hub", "hub-qs"):
+    for label in ("qs", "tenkai-shell", "tenkai-wm-hyprland", "ryogami", "tenkai-hub", "hub-qs"):
         if label in procs:
             row = metric_row(label, start.get(label), end.get(label), elapsed)
             if row:
                 rows.append(row)
     total = {
-        "label": "MEI TOTAL (no compositor)",
+        "label": "TENKAI TOTAL (no compositor)",
         "rss_kb": sum(r["rss_kb"] or 0 for r in rows) if rows else 0,
         "pss_kb": sum(r["pss_kb"] or 0 for r in rows) if rows and all(r["pss_kb"] is not None for r in rows) else None,
         "threads": sum(r["threads"] or 0 for r in rows) if rows else 0,
@@ -291,7 +291,7 @@ def measure(state, note, duration=DURATION):
         "pid": "-",
         "gone": False,
     }
-    hypr_row = metric_row("nested Hyprland (excluded from Mei total)", start_hypr, end_hypr, elapsed)
+    hypr_row = metric_row("nested Hyprland (excluded from Tenkai total)", start_hypr, end_hypr, elapsed)
     live_row = metric_row("live Quickshell 949 (host read-only reference)", start_live, end_live, elapsed)
     if live_row:
         live_row["live_reference"] = True
@@ -305,8 +305,8 @@ def measure(state, note, duration=DURATION):
             row["label"], row["pid"], fmt(row["rss_kb"]), fmt(row["pss_kb"]),
             fmt(row["threads"]), fmt(row["cpu_s"]), fmt(row["cpu_pct"]),
             fmt(row["vol_s"]), fmt(row["nonvol_s"])))
-    if "mei-hub" not in procs:
-        log("NOTE no persistent `mei-hub` process was observed in this state.")
+    if "tenkai-hub" not in procs:
+        log("NOTE no persistent `tenkai-hub` process was observed in this state.")
     if "hub-qs" not in procs and state == "settings-hub":
         log("NOTE no Settings hub qs process was observed in this state.")
     if not live_ok:
@@ -361,8 +361,8 @@ def nested_h(*args):
 
 
 def dispatch_global(name):
-    r = nested_h("dispatch", 'hl.dsp.global("mei:%s")' % name)
-    log("dispatch mei:%s rc=%s %s" % (name, r.returncode, (r.stdout + r.stderr).strip()))
+    r = nested_h("dispatch", 'hl.dsp.global("tenkai:%s")' % name)
+    log("dispatch tenkai:%s rc=%s %s" % (name, r.returncode, (r.stdout + r.stderr).strip()))
     time.sleep(2.0)
 
 
@@ -444,20 +444,20 @@ def main():
     if os.path.exists(os.path.join(RUN, "pids")):
         log("REFUSING: .run/pids exists; a session may already be running")
         return 2
-    before = run([os.path.join(MEI, "mei"), "verify-untouched"], HOST_ENV, timeout=120)
+    before = run([os.path.join(TENKAI, "tenkai"), "verify-untouched"], HOST_ENV, timeout=120)
     log("verify-untouched BEFORE: %s" % before.stdout.strip().splitlines()[-1])
     if before.returncode != 0:
         return 2
 
-    r = run([os.path.join(MEI, "mei"), "run"], HOST_ENV, timeout=90)
+    r = run([os.path.join(TENKAI, "tenkai"), "run"], HOST_ENV, timeout=90)
     if r.returncode != 0:
-        log("FAIL ./mei run rc=%s\n%s\n%s" % (r.returncode, r.stdout, r.stderr))
+        log("FAIL ./tenkai run rc=%s\n%s\n%s" % (r.returncode, r.stdout, r.stderr))
         return 2
     STARTED = True
     wait_session()
     ready = classify(strict=True)
     log("nested ready: sig=%s shell=%s daemon=%s ryogami=%s" % (
-        SIG, ready.get("qs"), ready.get("mei-shell"), ready.get("ryogami")))
+        SIG, ready.get("qs"), ready.get("tenkai-shell"), ready.get("ryogami")))
     if "hub-qs" in ready:
         log("REFUSING: a Settings hub is already open before the idle measurement")
         return 2
@@ -467,7 +467,7 @@ def main():
     parents = classify(strict=True)
     kids = child_rows(parents)
     log("")
-    log("=== idle child processes (direct children of Mei processes) ===")
+    log("=== idle child processes (direct children of Tenkai processes) ===")
     if not kids:
         log("none")
     for row in kids:
@@ -488,13 +488,13 @@ def main():
     dispatch_global("quicksettings")
     time.sleep(2)
 
-    r = run([os.path.join(RUN, "bin", "mei-shell"), "hub", "open"], MESH_ENV, timeout=45)
+    r = run([os.path.join(RUN, "bin", "tenkai-shell"), "hub", "open"], MESH_ENV, timeout=45)
     log("hub open rc=%s %s" % (r.returncode, (r.stdout + r.stderr).strip()))
     hub_ready = wait_hub_ready()
     log("Settings hub QML ready: %s" % ("yes" if hub_ready else "NO (measured as-is)"))
     log("layers after Settings hub: %s" % layer_namespaces())
-    measure("settings-hub", "Settings hub open via mei-shell hub open")
-    r = run([os.path.join(RUN, "bin", "mei-shell"), "hub", "close"], MESH_ENV, timeout=30)
+    measure("settings-hub", "Settings hub open via tenkai-shell hub open")
+    r = run([os.path.join(RUN, "bin", "tenkai-shell"), "hub", "close"], MESH_ENV, timeout=30)
     log("hub close rc=%s %s" % (r.returncode, (r.stdout + r.stderr).strip()))
     for _ in range(30):
         if "hub-qs" not in classify(strict=True):
@@ -503,10 +503,10 @@ def main():
     log("Settings hub closed: %s" % ("yes" if "hub-qs" not in classify(strict=True) else "NO"))
     time.sleep(2)
 
-    r = run([os.path.join(MEI, "mei"), "wallpaper", WALL], HOST_ENV, timeout=120)
+    r = run([os.path.join(TENKAI, "tenkai"), "wallpaper", WALL], HOST_ENV, timeout=120)
     log("wallpaper set rc=%s %s" % (r.returncode, (r.stdout + r.stderr).strip()))
     time.sleep(3)
-    measure("wallpaper", "one still wallpaper set via ./mei wallpaper")
+    measure("wallpaper", "one still wallpaper set via ./tenkai wallpaper")
 
     with open(JSON_PATH, "w", encoding="utf-8") as fh:
         json.dump(DATA, fh, indent=2)
@@ -521,9 +521,9 @@ if __name__ == "__main__":
         rc = main()
     finally:
         if STARTED:
-            r = run([os.path.join(MEI, "mei"), "stop"], HOST_ENV, timeout=60)
+            r = run([os.path.join(TENKAI, "tenkai"), "stop"], HOST_ENV, timeout=60)
             log("nested stop rc=%s" % r.returncode)
         if HOST_ENV:
-            after = run([os.path.join(MEI, "mei"), "verify-untouched"], HOST_ENV, timeout=120)
+            after = run([os.path.join(TENKAI, "tenkai"), "verify-untouched"], HOST_ENV, timeout=120)
             log("verify-untouched AFTER: %s" % after.stdout.strip().splitlines()[-1])
     sys.exit(rc)

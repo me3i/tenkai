@@ -22,7 +22,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/launcher.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/launcher.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

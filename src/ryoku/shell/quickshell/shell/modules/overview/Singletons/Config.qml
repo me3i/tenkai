@@ -12,12 +12,12 @@ Singleton {
     property alias fontFamily:     adapter.fontFamily
     property alias fontScale:      adapter.fontScale
 
-    // brand: the desktop's mark + name, user-overridable from Mei Settings ->
+    // brand: the desktop's mark + name, user-overridable from Tenkai Settings ->
     // Shell -> Global. a small cross-cutting identity master (like theme.json).
     // markText is the glyph/short-text seal (default 力); markImage an optional
     // image path that wins over the text; markTint recolours a single-colour
-    // image to the accent; name is the wordmark ("Mei") shown in chrome copy.
-    // Mei's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
+    // image to the accent; name is the wordmark ("Tenkai") shown in chrome copy.
+    // Tenkai's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
     property alias markText:  brandAdapter.markText
     property alias markImage: brandAdapter.markImage
     property alias markTint:  brandAdapter.markTint
@@ -25,7 +25,7 @@ Singleton {
 
     // Current wallpaper path, so the workspace cells can render the real desktop
     // background behind their window previews. The daemon writes the absolute
-    // path (+ newline) to ~/.local/state/mei-wallpaper on every change; watch
+    // path (+ newline) to ~/.local/state/tenkai-wallpaper on every change; watch
     // it and expose a file:// url (empty until it resolves).
     // The workspace cells render this as a still Image backdrop, so a live (video)
     // wallpaper has no frame to decode: feeding its path to Image just logs
@@ -41,7 +41,7 @@ Singleton {
     }
     FileView {
         id: wallFile
-        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mei-wallpaper"
+        path: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/tenkai-wallpaper"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -49,7 +49,7 @@ Singleton {
     }
 
     FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/shell.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/shell.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -64,7 +64,7 @@ Singleton {
     // The colour-source master (single source shared with the daemon, window
     // borders, and shell chrome): true = follow the wallpaper palette.
     FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/theme.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/theme.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -76,7 +76,7 @@ Singleton {
     // Hub's Shell -> Global editor. read-only here; the always-on pill seeds it.
     FileView {
         id: brandFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/brand.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/brand.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -86,7 +86,7 @@ Singleton {
             property string markText: "M"
             property string markImage: ""
             property bool markTint: true
-            property string name: "Mei"
+            property string name: "Tenkai"
         }
     }
 }

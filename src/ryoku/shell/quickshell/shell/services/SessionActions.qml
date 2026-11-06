@@ -12,36 +12,36 @@ import Quickshell.Io
 Singleton {
     id: root
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
-    // Mei test-mode stub (AGENTS.md rule 7): the nested test session exports
-    // MEI_TEST=1, and every power path routes through here, so nothing executes --
+    // Tenkai test-mode stub (AGENTS.md rule 7): the nested test session exports
+    // TENKAI_TEST=1, and every power path routes through here, so nothing executes --
     // it only logs. session.go keeps the same guard as defence in depth.
-    readonly property bool testMode: Quickshell.env("MEI_TEST") === "1"
+    readonly property bool testMode: Quickshell.env("TENKAI_TEST") === "1"
 
     // A live run is not a test run: the power actions are real there, because
-    // MEI_TEST is deliberately not set. The first live trial still stubs them,
+    // TENKAI_TEST is deliberately not set. The first live trial still stubs them,
     // so a mis-click in the sidebar cannot end the owner's session:
-    // MEI_STUB_POWER=1 covers logout, reboot, suspend and shutdown. Lock is
+    // TENKAI_STUB_POWER=1 covers logout, reboot, suspend and shutdown. Lock is
     // not a power action and stays real.
-    readonly property bool powerStubbed: Quickshell.env("MEI_STUB_POWER") === "1"
+    readonly property bool powerStubbed: Quickshell.env("TENKAI_STUB_POWER") === "1"
 
     // The narrower variant, for a run that wants everything real except
     // shutdown.
-    readonly property bool shutdownStubbed: Quickshell.env("MEI_STUB_SHUTDOWN") === "1"
+    readonly property bool shutdownStubbed: Quickshell.env("TENKAI_STUB_SHUTDOWN") === "1"
 
     // action is one of "logout" | "reboot" | "shutdown"; the daemon validates it.
     function run(action) {
         if (testMode) {
-            console.log("[mei-stub] suppressed session." + action + " (MEI_TEST=1)");
+            console.log("[tenkai-stub] suppressed session." + action + " (TENKAI_TEST=1)");
             return;
         }
         if (root.powerStubbed) {
-            console.log("[mei-stub] suppressed session." + action + " (MEI_STUB_POWER=1)");
+            console.log("[tenkai-stub] suppressed session." + action + " (TENKAI_STUB_POWER=1)");
             return;
         }
         if (action === "shutdown" && root.shutdownStubbed) {
-            console.log("[mei-stub] suppressed session.shutdown (MEI_STUB_SHUTDOWN=1)");
+            console.log("[tenkai-stub] suppressed session.shutdown (TENKAI_STUB_SHUTDOWN=1)");
             return;
         }
         ctl.queued += "call session." + action + " {}\n";
@@ -51,13 +51,13 @@ Singleton {
             ctl.connected = true;
     }
 
-    // Lock runs the shell's own lock verb (mei-shell lock), never the daemon.
+    // Lock runs the shell's own lock verb (tenkai-shell lock), never the daemon.
     function lock() {
         if (testMode) {
-            console.log("[mei-stub] suppressed lock (MEI_TEST=1)");
+            console.log("[tenkai-stub] suppressed lock (TENKAI_TEST=1)");
             return;
         }
-        Quickshell.execDetached(["mei-shell", "lock"]);
+        Quickshell.execDetached(["tenkai-shell", "lock"]);
     }
 
     Socket {

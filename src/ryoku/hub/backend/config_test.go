@@ -23,7 +23,7 @@ func TestConfigRoundTrip(t *testing.T) {
 	}
 
 	// landed on disk as real TOML.
-	b, err := os.ReadFile(filepath.Join(dir, "mei", "hub.toml"))
+	b, err := os.ReadFile(filepath.Join(dir, "tenkai", "hub.toml"))
 	if err != nil {
 		t.Fatalf("config not written: %v", err)
 	}
@@ -79,7 +79,7 @@ func TestLegacyBarAndFrameSectionsMigrateToBarStudio(t *testing.T) {
 		t.Run(legacy, func(t *testing.T) {
 			dir := t.TempDir()
 			t.Setenv("XDG_CONFIG_HOME", dir)
-			path := filepath.Join(dir, "mei", "hub.toml")
+			path := filepath.Join(dir, "tenkai", "hub.toml")
 			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 				t.Fatal(err)
 			}

@@ -90,7 +90,7 @@ Item {
     }
 
     IpcHandler {
-        target: "mei.system-update"
+        target: "tenkai.system-update"
         function refresh(): void { router.systemRefresh() }
     }
 

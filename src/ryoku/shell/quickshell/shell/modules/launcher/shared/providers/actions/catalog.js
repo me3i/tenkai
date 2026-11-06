@@ -1,5 +1,5 @@
 // The system-action catalog: each entry is a command the launcher can fire,
-// wired to a real Mei helper (ryoku-shell, ryoku-cmd-*). Data only,
+// wired to a real Tenkai helper (ryoku-shell, ryoku-cmd-*). Data only,
 // so the set is validated in a node test and the provider stays a thin mapper.
 // `exec` is an argv array run with execDetached. Categories group the action-mode
 // tabs (System / Appearance / Tools / Media / Settings). An optional `caps` names
@@ -32,8 +32,8 @@ var CATALOG = [
     { id: "recognize-music",  name: "Recognize Music",    category: "Media",      icon: "music",       exec: ["ryoku-cmd-songrec"] },
     { id: "media-visualizer", name: "Audio Visualizer",   category: "Media",      icon: "wave",        exec: ["ryoku-shell", "visualizer-overlay"] },
 
-    { id: "open-settings",    name: "Mei Settings",     category: "Settings",   icon: "settings",    exec: ["sh", "-c", "flock -n -o /tmp/mei-hub.lock qs -c hub"] },
-    { id: "keybind-legend",   name: "Keybind Reference",  category: "Settings",   icon: "keyboard",    exec: ["sh", "-c", "flock -n -o /tmp/mei-keys.lock qs -c keys"] },
+    { id: "open-settings",    name: "Tenkai Settings",     category: "Settings",   icon: "settings",    exec: ["sh", "-c", "flock -n -o /tmp/tenkai-hub.lock qs -c hub"] },
+    { id: "keybind-legend",   name: "Keybind Reference",  category: "Settings",   icon: "keyboard",    exec: ["sh", "-c", "flock -n -o /tmp/tenkai-keys.lock qs -c keys"] },
     { id: "reload-shell",     name: "Reload Shell",       category: "Settings",   icon: "refresh",     exec: ["ryoku-shell", "reload"] }
 ];
 

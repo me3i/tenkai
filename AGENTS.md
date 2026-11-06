@@ -1,8 +1,8 @@
-# AGENTS.md — Mei (reduced Ryoku shell, personal build)
+# AGENTS.md — Tenkai (reduced Ryoku shell, personal build)
 
-Mei is a reduced, modular, standalone shell built by **copying and trimming the real
+Tenkai is a reduced, modular, standalone shell built by **copying and trimming the real
 upstream Ryoku source** (https://github.com/Ryoku-dev/ryoku). It must run on the owner's
-existing Arch + Hyprland session (user `mei`). Priorities, in order:
+existing Arch + Hyprland session (user `tenkai`). Priorities, in order:
 
 1. Visual quality and animations, 2. reuse original code, 3. works independently on the
 existing system, 4. strict no-bloat reduction, 5. modular, 6. measured performance.
@@ -10,36 +10,36 @@ existing system, 4. strict no-bloat reduction, 5. modular, 6. measured performan
 ## Layout
 
 - `upstream/` — private clone of Ryoku at a pinned commit. **READ-ONLY. Never edit.**
-- `src/` — the Mei tree (copies/adaptations from upstream live here).
+- `src/` — the Tenkai tree (copies/adaptations from upstream live here).
 - `docs/` — install/verify runbooks: `LIVE-CHECKLIST.md`, `LIVE-TEST.md`, `MODULES.md`,
   `ROLLBACK.md`, `revert-to-previous-shell.sh`, `tests/`, `baseline/` snapshots (not tracked).
-- `mei` — control script (`baseline`, `verify-untouched`, `status`, `run`, `stop`, `test`).
+- `tenkai` — control script (`baseline`, `verify-untouched`, `status`, `run`, `stop`, `test`).
 - `.run/` — all runtime state: XDG overrides (`config/`, `cache/`, `state/`, `data/`), Go dirs
-  (`go/`), sockets, pids. Git-ignored. **Deleting `~/projects/mei` must be a complete rollback**;
-  nothing Mei-related may live elsewhere.
+  (`go/`), sockets, pids. Git-ignored. **Deleting `~/projects/tenkai` must be a complete rollback**;
+  nothing Tenkai-related may live elsewhere.
 
 ## Non-negotiable safety rules
 
-1. Nothing outside `~/projects/mei` may be created, modified or killed by anything Mei-related.
+1. Nothing outside `~/projects/tenkai` may be created, modified or killed by anything Tenkai-related.
    Never touch `~/.config/quickshell`, `~/.config/hypr`, autostart entries, or the live session.
 2. No sudo, no installs, no system-wide changes. Before any install, list the exact commands
    and wait for explicit approval.
 3. Never run Ryoku installer/distro tooling (`cli/`, `installation/`), never enable systemd
    units, never add keybinds to the real Hyprland config, never change startup entries.
-4. Live-session isolation: Mei never runs in the owner's live session during development.
-   Tests run only in a nested Hyprland window launched inside `dbus-run-session` with Mei's own
-   config. `./mei test` must refuse to start if the nested `HYPRLAND_INSTANCE_SIGNATURE` equals
+4. Live-session isolation: Tenkai never runs in the owner's live session during development.
+   Tests run only in a nested Hyprland window launched inside `dbus-run-session` with Tenkai's own
+   config. `./tenkai test` must refuse to start if the nested `HYPRLAND_INSTANCE_SIGNATURE` equals
    the baseline one. Every `hyprctl` call in tests targets the nested instance explicitly.
-5. Process safety: never `pkill`/`killall`/`qs kill` by name. `./mei` records the PIDs it
-   started in `.run/pids`; `./mei stop` only signals recorded PIDs whose `/proc/<pid>/cmdline`
-   contains `$MEI_DIR`.
+5. Process safety: never `pkill`/`killall`/`qs kill` by name. `./tenkai` records the PIDs it
+   started in `.run/pids`; `./tenkai stop` only signals recorded PIDs whose `/proc/<pid>/cmdline`
+   contains `$TENKAI_DIR`.
 6. Resource caps: test sessions under `systemd-run --user --scope -p MemoryMax=3G
    -p CPUQuota=200%` when available, else `nice`/`ulimit`. Compile with `nice -n 10` and `-j2`;
    Go/C++ builds only inside the project.
 7. Shared hardware: audio and brightness act on real hardware — small steps, restore original
    values. Network is read-only status. Suspend/poweroff/reboot/logout/lock are stubbed in test
    mode. Notification/tray tests fire inside the nested session only.
-8. After every test run `./mei verify-untouched`; it must PASS (live config hashes identical to
+8. After every test run `./tenkai verify-untouched`; it must PASS (live config hashes identical to
    `docs/baseline/`).
 9. Nested testing cannot prove 144 Hz smoothness or real GPU behaviour — those go to the owner
    via `docs/LIVE-TEST.md`. Never start a second shell in the real session, never run a
@@ -57,12 +57,12 @@ record: why it is needed, RAM/CPU cost, and the process/daemon it spawns. If in 
 - Top bar (qsbar), workspaces, launcher, control sidebar / quick settings, clock/date, audio,
   brightness, network, battery, system tray, notifications.
 - Wallpaper selector + matugen theming.
-- `ryoku-shell` Go daemon, trimmed to the components Mei keeps.
+- `ryoku-shell` Go daemon, trimmed to the components Tenkai keeps.
 - **Animations**: full motion language (durations, easing curves, transitions, popout/pill/blob
   behaviour), kept centralised so timing can be tweaked in one place. Never flattened.
 - **Settings app**: reuse Ryoku Settings' look and UI framework, but only Appearance and Shell
   pages. **Settings must never write or generate Hyprland config** (disable hub `settings.lua`
-  generation and every hypr write). Mei reads Hyprland state only. Settings persist to Mei's own
+  generation and every hypr write). Tenkai reads Hyprland state only. Settings persist to Tenkai's own
   config dir.
 
 ## Workflow

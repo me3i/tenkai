@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
-# Terminal role (Ryoku's ryoku-app, ported as mei-app). Assumes ./mei run is up.
+# Terminal role (Ryoku's ryoku-app, ported as tenkai-app). Assumes ./tenkai run is up.
 #
-#  - mei-app is on the session PATH
-#  - `mei-app terminal -- <prog>` opens a kitty window on the nested display and
+#  - tenkai-app is on the session PATH
+#  - `tenkai-app terminal -- <prog>` opens a kitty window on the nested display and
 #    runs <prog> inside it (the marker file proves the inner command ran)
 #  - desktop.json's desktop.apps.terminal is honoured (title probe)
 #  - a Terminal=true launcher entry (htop) launches through the same chain
 #  - an unknown role fails cleanly
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 STAMP="$(date +%H%M%S)"
 LOG="$RUN/logs/terminal-check-$STAMP.log"
-mkdir -p "$RUN/logs" "$RUN/shots" "$RUN/state/mei"
+mkdir -p "$RUN/logs" "$RUN/shots" "$RUN/state/tenkai"
 exec > >(tee -a "$LOG") 2>&1
 
 fail=0
@@ -20,19 +20,19 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
 # A two-word command in a variable does not survive "$VK" (quoting keeps it one
 # word), so this is a function. The guard pins the display to the nested .r.
-VK() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
+VK() { "$TENKAI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
 
 SIG=""; QS=""
 for _ in $(seq 1 120); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done
@@ -40,7 +40,7 @@ done
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 WL_NAME="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WL_NAME"
-APP="$RUN/bin/mei-app"
+APP="$RUN/bin/tenkai-app"
 
 env_app() {
   env HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" \
@@ -71,10 +71,10 @@ close_kitty() {
 }
 
 echo "=== the role launcher is installed ==="
-if [ -x "$APP" ]; then ok "mei-app on the session PATH ($APP -> $(readlink -f "$APP"))"; else bad "mei-app missing at $APP"; fi
+if [ -x "$APP" ]; then ok "tenkai-app on the session PATH ($APP -> $(readlink -f "$APP"))"; else bad "tenkai-app missing at $APP"; fi
 
-echo; echo "=== 1. direct: mei-app terminal -- <prog> ==="
-M1="$RUN/state/mei/terminal-direct-$STAMP.txt"; rm -f "$M1"
+echo; echo "=== 1. direct: tenkai-app terminal -- <prog> ==="
+M1="$RUN/state/tenkai/terminal-direct-$STAMP.txt"; rm -f "$M1"
 env_app terminal -- sh -c "printf 'direct-ok %s\\n' \"\$(id -un)\" > '$M1'; sleep 30" \
   > "$RUN/logs/terminal-direct-$STAMP.out" 2>&1 &
 DPID1=$!
@@ -92,12 +92,12 @@ close_kitty
 kill -TERM "$DPID1" 2>/dev/null || true
 
 echo; echo "=== 2. desktop.json's terminal choice is honoured ==="
-STORE="$RUN/config/mei/desktop.json"
-STORE_BAK="$RUN/state/mei/desktop.json.terminal-bak"
+STORE="$RUN/config/tenkai/desktop.json"
+STORE_BAK="$RUN/state/tenkai/desktop.json.terminal-bak"
 [ -f "$STORE" ] && cp -f "$STORE" "$STORE_BAK"
 mkdir -p "$(dirname "$STORE")"
-printf '%s\n' '{"desktop":{"apps":{"terminal":"kitty --title MEI_STORE_PROBE"}}}' > "$STORE"
-M2="$RUN/state/mei/terminal-store-$STAMP.txt"; rm -f "$M2"
+printf '%s\n' '{"desktop":{"apps":{"terminal":"kitty --title TENKAI_STORE_PROBE"}}}' > "$STORE"
+M2="$RUN/state/tenkai/terminal-store-$STAMP.txt"; rm -f "$M2"
 env_app terminal -- sh -c "printf 'store-ok\\n' > '$M2'; sleep 30" \
   > "$RUN/logs/terminal-store-$STAMP.out" 2>&1 &
 DPID2=$!
@@ -106,7 +106,7 @@ sleep 1
 SKPID="$(H -j clients 2>/dev/null | jq -r '.[] | select(.class=="kitty") | .pid' | head -1)"
 SCMD="$(tr '\0' ' ' < "/proc/${SKPID:-0}/cmdline" 2>/dev/null)"
 case "$SCMD" in
-  *MEI_STORE_PROBE*) ok "the configured command ran (cmdline: $SCMD)" ;;
+  *TENKAI_STORE_PROBE*) ok "the configured command ran (cmdline: $SCMD)" ;;
   *) bad "store command not in the kitty cmdline: '$SCMD'" ;;
 esac
 [ -s "$M2" ] && ok "the configured terminal still ran the inner command" || bad "store inner command did not run"
@@ -120,7 +120,7 @@ if [ "$(layers_launcher)" != "0" ]; then
   VK 1 >/dev/null 2>&1
   for _ in $(seq 1 20); do [ "$(layers_launcher)" = "0" ] && break; sleep 0.25; done
 fi
-H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null 2>&1
+H dispatch 'hl.dsp.global("tenkai:launcher")' >/dev/null 2>&1
 ln=0
 for _ in $(seq 1 40); do ln="$(layers_launcher)"; [ "$ln" = "1" ] && break; sleep 0.3; done
 if [ "$ln" != "1" ]; then
@@ -157,10 +157,10 @@ echo "$OUT" | grep -q 'no default for role' && ok "clear error message: $OUT" ||
 [ "$(kitty_count)" = 0 ] && ok "no stray terminal window" || bad "kitty count $(kitty_count) after cleanup"
 
 echo; echo "=== shell log clean for this feature ==="
-if tail -80 "$RUN/state/mei/surfaces/shell.log" 2>/dev/null | grep -qiE 'mei-app.*(not found|error)|AppLaunch.*(Cannot|undefined)'; then
-  bad "shell log mentions a mei-app/AppLaunch error"
+if tail -80 "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null | grep -qiE 'tenkai-app.*(not found|error)|AppLaunch.*(Cannot|undefined)'; then
+  bad "shell log mentions a tenkai-app/AppLaunch error"
 else
-  ok "no mei-app/AppLaunch errors in the shell log"
+  ok "no tenkai-app/AppLaunch errors in the shell log"
 fi
 
 echo

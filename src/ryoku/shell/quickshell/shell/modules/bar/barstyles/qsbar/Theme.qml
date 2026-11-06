@@ -11,13 +11,13 @@ Item {
     id: theme
     // The single qsbar bar system; the bar form lives in `barShellStyle`.
 
-    property string omarchyCurrentRoot: Quickshell.env("HOME") + "/.config/mei/current"
-    property string omarchyInstallRoot: Quickshell.env("HOME") + "/.local/share/mei"
+    property string omarchyCurrentRoot: Quickshell.env("HOME") + "/.config/tenkai/current"
+    property string omarchyInstallRoot: Quickshell.env("HOME") + "/.local/share/tenkai"
     property bool omarchyCurrentRootResolved: false
     readonly property string themeNamePath: omarchyCurrentRoot + "/theme.name"
-    readonly property string colorsPath: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/mei/colors.json"
-    readonly property string shellConfigPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/shell.json"
-    readonly property string themeJsonPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/theme.json"
+    readonly property string colorsPath: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/tenkai/colors.json"
+    readonly property string shellConfigPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/shell.json"
+    readonly property string themeJsonPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/theme.json"
     // Palette resolution state (the desktop Scheme's chain): the live wallpaper
     // roles, the fixed named scheme, the follow-the-wallpaper master, and the
     // compiled base captured before the daemon's first write so turning the
@@ -446,7 +446,7 @@ Item {
             var man = p.manifest || ({})
             var pl = p.placement || ({})
             var psi = _sectionIndexOf(L, p.id)
-            // `official` is the manifest's own claim; Mei's plugins ship it
+            // `official` is the manifest's own claim; Tenkai's plugins ship it
             // true, so anything else is a community widget and the panel parts it.
             out.push({
                 id: p.id, gid: "",
@@ -605,10 +605,10 @@ Item {
         }
     }
 
-    readonly property string _pluginShellDir: Quickshell.env("MEI_SHELL_DIR")
+    readonly property string _pluginShellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string _pluginPlaceTool: (_pluginShellDir && _pluginShellDir.length > 0)
-        ? _pluginShellDir + "/quickshell/plugins/mei-plugins-place"
-        : "mei-plugins-place"
+        ? _pluginShellDir + "/quickshell/plugins/tenkai-plugins-place"
+        : "tenkai-plugins-place"
     function _placePlugin(args) { Quickshell.execDetached([_pluginPlaceTool].concat(args)) }
 
     function activatePopupScreen(screen) {
@@ -2149,31 +2149,31 @@ Item {
     property bool stayAwake: false            // idle lock disabled / stay-awake indicator
     readonly property bool hypridleAwake: stayAwake // compatibility alias for older modules
     property bool _idleBackendChecked: false
-    property bool _idleMeiShellBackend: false
-    property bool _idleMeiShellSystem: false
+    property bool _idleTenkaiShellBackend: false
+    property bool _idleTenkaiShellSystem: false
     property bool _omarchyBackendReprobePending: false
     property int _omarchyBackendRetryIndex: 0
     readonly property var _omarchyBackendRetryDelays: [2000, 5000, 15000]
-    readonly property string omarchyShellConfigPath: Quickshell.env("HOME") + "/.config/mei/shell.json"
-    readonly property string idleStatePath: Quickshell.env("HOME") + "/.local/state/mei/indicators/stay-awake"
+    readonly property string omarchyShellConfigPath: Quickshell.env("HOME") + "/.config/tenkai/shell.json"
+    readonly property string idleStatePath: Quickshell.env("HOME") + "/.local/state/tenkai/indicators/stay-awake"
     property bool notifSilenced: false        // notification do-not-disturb mode
     property bool _notifBackendChecked: false
-    property bool _notifMeiShellBackend: false
-    property bool _notifMeiShellSystem: false
+    property bool _notifTenkaiShellBackend: false
+    property bool _notifTenkaiShellSystem: false
     // Whether `makoctl` (the external mako DND source used in Omarchy-compat mode)
-    // is on PATH. Mei runs its own notification server and never ships mako, so
+    // is on PATH. Tenkai runs its own notification server and never ships mako, so
     // this stays false there and the makoctl DND probe is skipped instead of
     // failing to spawn on every status refresh (endless "binary not found" log
     // spam). Detected once by makoDetectProc below.
     property bool _makoAvailable: false
-    readonly property string notificationsStatePath: Quickshell.env("HOME") + "/.local/state/mei/notifications.json"
+    readonly property string notificationsStatePath: Quickshell.env("HOME") + "/.local/state/tenkai/notifications.json"
     property bool screenRecording: false
     property int screenRecordingElapsed: 0
     property string _screenRecordingPid: ""
     property string _screenRecordingElapsedProbePid: ""
     property int _screenRecordingBaseElapsed: 0
     property real _screenRecordingBaseMs: 0
-    readonly property string screenRecordingStatePath: "/tmp/mei-screenrecord-filename"
+    readonly property string screenRecordingStatePath: "/tmp/tenkai-screenrecord-filename"
     property bool _recordingRefreshPending: false
     property string voxState: "idle"          // idle/recording/transcribing
     property string voxHint: ""
@@ -2183,7 +2183,7 @@ Item {
 
     function refreshIdleStatus() {
         if (!_idleBackendChecked) return
-        if (_idleMeiShellSystem) {
+        if (_idleTenkaiShellSystem) {
             idleStateFile.reload()
             return
         }
@@ -2193,7 +2193,7 @@ Item {
         refreshIdleStatus()
         refreshNotificationStatus()
     }
-    function reprobeMeiShellBackends() {
+    function reprobeTenkaiShellBackends() {
         if (idleBackendProc.running || notifBackendProc.running) {
             _omarchyBackendReprobePending = true
             return
@@ -2202,19 +2202,19 @@ Item {
         idleBackendProc.running = true
         notifBackendProc.running = true
     }
-    function finishMeiBackendReprobe() {
+    function finishTenkaiBackendReprobe() {
         if (idleBackendProc.running || notifBackendProc.running) return
         if (_omarchyBackendReprobePending) {
             omarchyBackendProbeDebounce.restart()
             return
         }
-        scheduleMeiBackendRetry()
+        scheduleTenkaiBackendRetry()
     }
     function omarchyBackendRetryNeeded() {
-        return (_idleMeiShellSystem && !_idleMeiShellBackend)
-            || (_notifMeiShellSystem && !_notifMeiShellBackend)
+        return (_idleTenkaiShellSystem && !_idleTenkaiShellBackend)
+            || (_notifTenkaiShellSystem && !_notifTenkaiShellBackend)
     }
-    function scheduleMeiBackendRetry() {
+    function scheduleTenkaiBackendRetry() {
         if (!omarchyBackendRetryNeeded()) {
             omarchyBackendRetryTimer.stop()
             _omarchyBackendRetryIndex = 0
@@ -2226,7 +2226,7 @@ Item {
         _omarchyBackendRetryIndex++
         omarchyBackendRetryTimer.restart()
     }
-    function resetMeiBackendProbes() {
+    function resetTenkaiBackendProbes() {
         omarchyBackendRetryTimer.stop()
         _omarchyBackendRetryIndex = 0
         omarchyBackendProbeDebounce.restart()
@@ -2243,13 +2243,13 @@ Item {
     }
     function refreshNotificationStatus() {
         if (!_notifBackendChecked) return
-        if (_notifMeiShellSystem) {
+        if (_notifTenkaiShellSystem) {
             notificationsStateFile.reload()
             return
         }
-        // No Mei notification backend: read DND from mako, but only if it is
+        // No Tenkai notification backend: read DND from mako, but only if it is
         // actually installed. Without this guard the Process fails to spawn on
-        // every refresh (mako is not a Mei dependency), spamming the log.
+        // every refresh (mako is not a Tenkai dependency), spamming the log.
         if (_makoAvailable && !dndProc.running) dndProc.running = true
     }
     function refreshRecordingStatus() {
@@ -2297,55 +2297,55 @@ Item {
 
     Process {
         id: idleBackendProc
-        command: ["bash", "-c", "root=${MEI_PATH:-/usr/share/ryoku}; [[ -f $root/shell/plugins/services/idle/manifest.json ]] || exit 2; command -v true >/dev/null 2>&1 && MEI_PATH=$root true idle status >/dev/null 2>&1"]
+        command: ["bash", "-c", "root=${TENKAI_PATH:-/usr/share/ryoku}; [[ -f $root/shell/plugins/services/idle/manifest.json ]] || exit 2; command -v true >/dev/null 2>&1 && TENKAI_PATH=$root true idle status >/dev/null 2>&1"]
         running: true
         onExited: (exitCode) => {
-            theme._idleMeiShellSystem = exitCode !== 2
-            theme._idleMeiShellBackend = exitCode === 0
+            theme._idleTenkaiShellSystem = exitCode !== 2
+            theme._idleTenkaiShellBackend = exitCode === 0
             theme._idleBackendChecked = true
             theme.refreshIdleStatus()
-            theme.finishMeiBackendReprobe()
+            theme.finishTenkaiBackendReprobe()
         }
     }
 
     FileView {
         id: idleStateFile
         path: theme.idleStatePath
-        watchChanges: theme._idleMeiShellSystem
+        watchChanges: theme._idleTenkaiShellSystem
         printErrors: false
         onFileChanged: idleStateFile.reload()
         onLoaded: {
-            if (theme._idleMeiShellSystem) theme.stayAwake = true
+            if (theme._idleTenkaiShellSystem) theme.stayAwake = true
         }
         onLoadFailed: {
-            if (theme._idleMeiShellSystem) theme.stayAwake = false
+            if (theme._idleTenkaiShellSystem) theme.stayAwake = false
         }
     }
 
     Process {
         id: notifBackendProc
-        command: ["bash", "-c", "root=${MEI_PATH:-/usr/share/ryoku}; [[ -f $root/shell/plugins/notifications/manifest.json ]] || exit 2; command -v true >/dev/null 2>&1 && MEI_PATH=$root true notifications ping 2>/dev/null | grep -Fxq ok"]
+        command: ["bash", "-c", "root=${TENKAI_PATH:-/usr/share/ryoku}; [[ -f $root/shell/plugins/notifications/manifest.json ]] || exit 2; command -v true >/dev/null 2>&1 && TENKAI_PATH=$root true notifications ping 2>/dev/null | grep -Fxq ok"]
         running: true
         onExited: (exitCode) => {
-            theme._notifMeiShellSystem = exitCode !== 2
-            theme._notifMeiShellBackend = exitCode === 0
+            theme._notifTenkaiShellSystem = exitCode !== 2
+            theme._notifTenkaiShellBackend = exitCode === 0
             theme._notifBackendChecked = true
             theme.refreshNotificationStatus()
-            theme.finishMeiBackendReprobe()
+            theme.finishTenkaiBackendReprobe()
         }
     }
 
     FileView {
         id: notificationsStateFile
         path: theme.notificationsStatePath
-        watchChanges: theme._notifMeiShellSystem
+        watchChanges: theme._notifTenkaiShellSystem
         printErrors: false
         onFileChanged: notificationsStateFile.reload()
         onLoaded: {
-            if (theme._notifMeiShellSystem) theme.parseNotificationsState(notificationsStateFile.text())
+            if (theme._notifTenkaiShellSystem) theme.parseNotificationsState(notificationsStateFile.text())
         }
         onLoadFailed: {
-            if (theme._notifMeiShellSystem) theme.notifSilenced = false
+            if (theme._notifTenkaiShellSystem) theme.notifSilenced = false
         }
     }
 
@@ -2353,13 +2353,13 @@ Item {
         id: omarchyBackendProbeDebounce
         interval: 250
         repeat: false
-        onTriggered: theme.reprobeMeiShellBackends()
+        onTriggered: theme.reprobeTenkaiShellBackends()
     }
 
     Timer {
         id: omarchyBackendRetryTimer
         repeat: false
-        onTriggered: theme.reprobeMeiShellBackends()
+        onTriggered: theme.reprobeTenkaiShellBackends()
     }
 
     Timer {
@@ -2368,7 +2368,7 @@ Item {
         repeat: false
         onTriggered: {
             theme._omarchyBackendRetryIndex = Math.max(1, theme._omarchyBackendRetryIndex)
-            theme.reprobeMeiShellBackends()
+            theme.reprobeTenkaiShellBackends()
         }
     }
 
@@ -2379,7 +2379,7 @@ Item {
         printErrors: false
         onFileChanged: {
             omarchyShellConfigFile.reload()
-            theme.resetMeiBackendProbes()
+            theme.resetTenkaiBackendProbes()
         }
     }
 
@@ -2388,13 +2388,13 @@ Item {
         command: ["pgrep", "-x", "hypridle"]
         running: false
         onExited: (exitCode) => {
-            if (!theme._idleMeiShellSystem) theme.stayAwake = exitCode !== 0
+            if (!theme._idleTenkaiShellSystem) theme.stayAwake = exitCode !== 0
         }
     }
 
     // One-shot: is makoctl on PATH? Gates the DND probe above so a box without
-    // mako (every Mei box) never tries to spawn it. Re-runs when the backend is
-    // reprobed via resetMeiBackendProbes(), so installing mako is picked up.
+    // mako (every Tenkai box) never tries to spawn it. Re-runs when the backend is
+    // reprobed via resetTenkaiBackendProbes(), so installing mako is picked up.
     Process {
         id: makoDetectProc
         command: ["sh", "-c", "command -v makoctl"]
@@ -2410,11 +2410,11 @@ Item {
         command: ["makoctl", "mode"]
         running: false
         onExited: (exitCode) => {
-            if (exitCode !== 0 && !theme._notifMeiShellSystem) theme.notifSilenced = false
+            if (exitCode !== 0 && !theme._notifTenkaiShellSystem) theme.notifSilenced = false
         }
         stdout: StdioCollector {
             onStreamFinished: {
-                if (!theme._notifMeiShellSystem) theme.notifSilenced = this.text.indexOf("do-not-disturb") >= 0
+                if (!theme._notifTenkaiShellSystem) theme.notifSilenced = this.text.indexOf("do-not-disturb") >= 0
             }
         }
     }
@@ -2524,7 +2524,7 @@ Item {
     // battery presence (laptop) - drives the Battery indicator tile's visibility (shown only
     // where a battery exists, like Brightness uses hasBacklight). Direct UPower check, event-driven.
     readonly property bool hasBattery: UPower.displayDevice !== null && UPower.displayDevice.isLaptopBattery
-    // NetworkManager active (Mei 4.0) → the panel's iwctl scan/connect won't work,
+    // NetworkManager active (Tenkai 4.0) → the panel's iwctl scan/connect won't work,
     // so it shows an "open nmtui" button instead of an empty list
     property bool useNM: false
     Process {
@@ -2534,12 +2534,12 @@ Item {
     }
 
     // ── wifi/bluetooth settings launchers ──
-    // Both open Mei Hub's Connections page (Wi-Fi, Bluetooth and Hotspot all
+    // Both open Tenkai Hub's Connections page (Wi-Fi, Bluetooth and Hotspot all
     // live there); the daemon spawns or navigates the single Hub instance. This
     // replaces the old terminal launchers (impala / bluetui / bluetoothctl) that
     // predate the Hub owning connection settings.
-    readonly property string launchWifiCmd: "mei-shell hub open connections"
-    readonly property string launchBtCmd:   "mei-shell hub open connections"
+    readonly property string launchWifiCmd: "tenkai-shell hub open connections"
+    readonly property string launchBtCmd:   "tenkai-shell hub open connections"
     property bool modPower:      false   // default off (toggle in ControlPanel)
     property bool modBluetooth:  false   // default off (toggle in ControlPanel)
     property bool modBrightness: true
@@ -2628,8 +2628,8 @@ Item {
     // ── picker visual style (theme/wallpaper/screenshot/video pickers) ──
     property string pickerStyle: "tanzaku"   // "tanzaku", "hearthstone", "carousel"
     property string launcherLogoMode: "text"     // "text" or "icon"
-    property string launcherLogoText: "mei"      // "mei", "hyprland", "arch", ...
-    property string launcherLogoIcon: "mei"      // see launcherLogoIconGlyph()
+    property string launcherLogoText: "tenkai"      // "tenkai", "hyprland", "arch", ...
+    property string launcherLogoIcon: "tenkai"      // see launcherLogoIconGlyph()
     // Legacy launcher-logo text values migrated to the current text mode.
     readonly property var legacyLogoTextValues: ["omarchy", "hyprland"]
     property bool   weatherImperial: false   // false = °C / km·h, true = °F / mph
@@ -3000,20 +3000,20 @@ Item {
         persistWidgetsToConfig()
     }
 
-    // Mei's own marks, plus the neighbours whose wordmarks we actually ship.
+    // Tenkai's own marks, plus the neighbours whose wordmarks we actually ship.
     // "omarchy" is deliberately absent from both lists: its mark is a Private Use
     // Area glyph in a font we do not ship, and it was also the dead default these
     // ids carried while the launcher drew a hardcoded mark. Leaving it out makes
-    // every one of those stale records fail validation and land on "mei", so an
+    // every one of those stale records fail validation and land on "tenkai", so an
     // existing desktop keeps its own brand instead of being silently rebranded.
-    readonly property var launcherLogoTextOptions: ["mei", "hyprland", "arch", "omacom", "linux", "nixos", "debian", "fedora", "gentoo", "void", "wayland", "sway", "gnome", "dwm"]
-    readonly property var launcherLogoIconOptions: ["mei", "mei", "hyprland", "arch", "grid", "spark", "power", "dragon", "mark", "nix", "branch", "rebel", "ubuntu", "debian", "fedora", "gentoo", "void", "artix", "manjaro", "suse", "alpine", "endeavour", "garuda", "cachyos", "freebsd", "apple", "raspi", "elementary", "gnome", "alma", "centos", "devuan", "arco", "ferris", "codeberg", "gitea", "tux", "android", "mint", "kali", "popos", "zorin", "plasma", "wayland", "docker", "github", "git", "gitlab", "python", "rust", "go", "node", "react", "vue", "kube", "vim", "neovim", "firefox", "chrome", "java", "js", "ts", "cpp", "ruby", "php", "swift", "kotlin", "lua", "haskell", "blender", "figma", "redis", "postgres", "steam", "spotify", "discord", "telegram", "slack", "empire", "jedi", "sith", "mandalorian", "firstorder", "deathstar", "spaceinvaders", "ghost", "pokeball", "pokemon", "gamepad", "retropad", "d20", "playstation", "xbox", "switch", "minecraft", "wizard", "dungeon", "sword", "shield", "crown", "skull", "crossbones", "ninja", "robot", "alien", "knight", "paw", "masks", "theater", "film", "spade", "superpowers", "reddit", "twitch"]
+    readonly property var launcherLogoTextOptions: ["tenkai", "hyprland", "arch", "omacom", "linux", "nixos", "debian", "fedora", "gentoo", "void", "wayland", "sway", "gnome", "dwm"]
+    readonly property var launcherLogoIconOptions: ["tenkai", "tenkai", "hyprland", "arch", "grid", "spark", "power", "dragon", "mark", "nix", "branch", "rebel", "ubuntu", "debian", "fedora", "gentoo", "void", "artix", "manjaro", "suse", "alpine", "endeavour", "garuda", "cachyos", "freebsd", "apple", "raspi", "elementary", "gnome", "alma", "centos", "devuan", "arco", "ferris", "codeberg", "gitea", "tux", "android", "mint", "kali", "popos", "zorin", "plasma", "wayland", "docker", "github", "git", "gitlab", "python", "rust", "go", "node", "react", "vue", "kube", "vim", "neovim", "firefox", "chrome", "java", "js", "ts", "cpp", "ruby", "php", "swift", "kotlin", "lua", "haskell", "blender", "figma", "redis", "postgres", "steam", "spotify", "discord", "telegram", "slack", "empire", "jedi", "sith", "mandalorian", "firstorder", "deathstar", "spaceinvaders", "ghost", "pokeball", "pokemon", "gamepad", "retropad", "d20", "playstation", "xbox", "switch", "minecraft", "wizard", "dungeon", "sword", "shield", "crown", "skull", "crossbones", "ninja", "robot", "alien", "knight", "paw", "masks", "theater", "film", "spade", "superpowers", "reddit", "twitch"]
     // id -> glyph codepoint for every option. The brand/OS/dev marks are real
     // Nerd Font glyphs (font-logos, devicons, font-awesome), so nothing is
-    // hand-drawn; mei/ryoku use a mono "mark" seal so no CJK font is required.
+    // hand-drawn; tenkai/ryoku use a mono "mark" seal so no CJK font is required.
     // The picker and the bar both resolve through here.
     readonly property var launcherLogoIconCodes: ({
-        "mei": 0xEE99, "mei": 0xEE99, "hyprland": 0xF359, "arch": 0xE732, "grid": 0xEEED, "spark": 0xE6A4, "power": 0xF011, "dragon": 0x2EEF, "mark": 0xEE99, "nix": 0xF313, "branch": 0xE666, "rebel": 0xF1D0,
+        "tenkai": 0xEE99, "tenkai": 0xEE99, "hyprland": 0xF359, "arch": 0xE732, "grid": 0xEEED, "spark": 0xE6A4, "power": 0xF011, "dragon": 0x2EEF, "mark": 0xEE99, "nix": 0xF313, "branch": 0xE666, "rebel": 0xF1D0,
         "ubuntu": 0xF31B, "debian": 0xF306, "fedora": 0xF30A, "gentoo": 0xF30D, "void": 0xF32E, "artix": 0xF31F, "manjaro": 0xF312, "suse": 0xF314, "alpine": 0xF300, "endeavour": 0xF322, "garuda": 0xF337, "cachyos": 0xF385, "freebsd": 0xF30C, "apple": 0xF302, "raspi": 0xF315, "elementary": 0xF309, "gnome": 0xF361, "alma": 0xF31D, "centos": 0xF304, "devuan": 0xF307, "arco": 0xF346, "ferris": 0xF323, "codeberg": 0xF330, "gitea": 0xF339, "tux": 0xF31A, "android": 0xE70E, "mint": 0xF30E, "kali": 0xF327, "popos": 0xF32A, "zorin": 0xF32F, "plasma": 0xF332, "wayland": 0xF367, "docker": 0xF308,
         "github": 0xE709, "git": 0xE702, "gitlab": 0xE7EB, "python": 0xE73C, "rust": 0xE7A8, "go": 0xE724, "node": 0xE719, "react": 0xE7BA, "vue": 0xE8DC, "kube": 0xE81D, "vim": 0xE7C5, "neovim": 0xE83A, "firefox": 0xE745, "chrome": 0xE743, "java": 0xE738, "js": 0xE781, "ts": 0xE8CA, "cpp": 0xE7A3, "ruby": 0xE739, "php": 0xE73D, "swift": 0xE755, "kotlin": 0xE81B, "lua": 0xE826, "haskell": 0xE777, "blender": 0xE766, "figma": 0xE7DA, "redis": 0xE76D, "postgres": 0xE76E, "steam": 0xF1B6, "spotify": 0xF1BC, "discord": 0xF1FF, "telegram": 0xF2C6, "slack": 0xF198,
         "empire": 0xF1D1, "jedi": 0xEECC, "sith": 0xEDDC, "mandalorian": 0xEDD9, "firstorder": 0xF2B0, "deathstar": 0xF08D8, "spaceinvaders": 0xF0BC9, "ghost": 0xEEFE, "pokeball": 0xF041D, "pokemon": 0xF0A09, "gamepad": 0xF11B, "retropad": 0xF0B82, "d20": 0xEEF5, "playstation": 0xED18, "xbox": 0xED3E, "switch": 0xF07E1, "minecraft": 0xF0373, "wizard": 0xEF01, "dungeon": 0xEEFA, "sword": 0xF04E5, "shield": 0xED25, "crown": 0xEDEB, "skull": 0xEE15, "crossbones": 0xEF0E, "ninja": 0xF0774, "robot": 0xEE0D, "alien": 0xF089A, "knight": 0xED63, "paw": 0xF1B0, "masks": 0xF0D02, "theater": 0xEEB6, "film": 0xF008, "spade": 0xF08D1, "superpowers": 0xF2DD, "reddit": 0xF1A1, "twitch": 0xF1E8
@@ -3032,11 +3032,11 @@ Item {
     function launcherLogoTextLabel(id) {
         return String(id).toUpperCase()
     }
-    // omarchy's U+E900 needs a font Mei doesn't ship, so it's absent here and
-    // any stale "omarchy" icon id falls back to mei via the validators below.
+    // omarchy's U+E900 needs a font Tenkai doesn't ship, so it's absent here and
+    // any stale "omarchy" icon id falls back to tenkai via the validators below.
     function launcherLogoIconGlyph(id) {
         var c = launcherLogoIconCodes[id]
-        return String.fromCodePoint(c !== undefined ? c : launcherLogoIconCodes["mei"])
+        return String.fromCodePoint(c !== undefined ? c : launcherLogoIconCodes["tenkai"])
     }
     function launcherLogoIconFont(id) {
         return mono
@@ -3044,7 +3044,7 @@ Item {
     function launcherLogoIconSize(id) {
         if (id === "arch") return 17
         if (id === "dragon") return 16
-        if (id === "mei" || id === "mei") return 15
+        if (id === "tenkai" || id === "tenkai") return 15
         return 16
     }
     function launcherLogoIconXOffset(id) {
@@ -3204,7 +3204,7 @@ Item {
     // control-center toggle only reached the local cache and was overridden by a
     // stale Bar Studio value on the next reload (the widgets reset). shell.json has
     // one writer, the daemon; reach it over the settings.patch seam Weather uses.
-    readonly property string _cfgSockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string _cfgSockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
     function persistWidgetsToConfig() {
         var cur = Config.qsbar || ({})
         var q = ({})
@@ -3270,7 +3270,7 @@ Item {
     }
 
     // ── Bar Studio bridge ──
-    // Mei Hub (Bar Studio) writes a `qsbar` map into shell.json; the Config
+    // Tenkai Hub (Bar Studio) writes a `qsbar` map into shell.json; the Config
     // singleton watches it, so these settings apply live and win over the local
     // widget cache. Only keys the user set are present; the rest keep defaults.
     function applyStudioSettings() {
@@ -3405,7 +3405,7 @@ Item {
 
     function gotoWorkspace(id) { Wm.focusWorkspace(id) }
 
-    // Bumped by the mei.system-update IPC after a system update finishes so the
+    // Bumped by the tenkai.system-update IPC after a system update finishes so the
     // clock's UpdateWidget re-polls its status instead of waiting for its cycle.
     property int updateRefreshTick: 0
 
@@ -3413,11 +3413,11 @@ Item {
     property bool trayVisible: false
     onTrayVisibleChanged: popupOpened("trayVisible")
     property var trayPinned: []
-    // MEI: screen x of the tray icon row's centre, published by TrayWidget.
+    // TENKAI: screen x of the tray icon row's centre, published by TrayWidget.
     // trayBarX/trayCaretBarX are bar-local caret values, so the themed menu and
     // the qsbar test IPC need their own mapped anchor.
     property real trayAnchorX: 0
-    // MEI: a tray item's icon shows in the bar by default. Upstream starts
+    // TENKAI: a tray item's icon shows in the bar by default. Upstream starts
     // trayPinned empty, which hides every icon behind the "more" toggle, so a
     // fresh session shows no tray at all and the keep-list tray is invisible.
     // Each service is auto-pinned once; an explicit unpin afterwards is not
@@ -3586,10 +3586,10 @@ Item {
     Process {
         id: omarchyCurrentRootProbe
         command: ["bash", "-c",
-            "state=\"$HOME/.local/state/mei/current\"; legacy=\"$HOME/.config/mei/current\"; " +
+            "state=\"$HOME/.local/state/tenkai/current\"; legacy=\"$HOME/.config/tenkai/current\"; " +
             "if command -v true >/dev/null 2>&1 && [ -d \"$state\" ] && [ -d /usr/share/ryoku ]; then printf '%s\\t%s\\n' \"$state\" /usr/share/ryoku; " +
-            "elif [ -d \"$legacy\" ]; then printf '%s\\t%s\\n' \"$legacy\" \"$HOME/.local/share/mei\"; " +
-            "else printf '%s\\t%s\\n' \"$legacy\" \"$HOME/.local/share/mei\"; fi"]
+            "elif [ -d \"$legacy\" ]; then printf '%s\\t%s\\n' \"$legacy\" \"$HOME/.local/share/tenkai\"; " +
+            "else printf '%s\\t%s\\n' \"$legacy\" \"$HOME/.local/share/tenkai\"; fi"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -3615,7 +3615,7 @@ Item {
         }
     }
 
-    // Mei writes theme.name immediately after the complete theme directory
+    // Tenkai writes theme.name immediately after the complete theme directory
     // swap, before its slower application retint commands and final hooks.
     FileView {
         id: currentThemeNameWatcher

@@ -129,7 +129,7 @@ Item {
     // ---- load ---------------------------------------------------------------
     Process {
         id: getProc
-        command: ["mei-hub", "fastfetch", "get"]
+        command: ["tenkai-hub", "fastfetch", "get"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -210,7 +210,7 @@ Item {
     }
     Process {
         id: resetProc
-        command: ["mei-hub", "fastfetch", "reset"]
+        command: ["tenkai-hub", "fastfetch", "reset"]
         onExited: function (code) { if (code === 0) getProc.running = true; }
     }
     // ---- edit helpers (reassign model so bindings + dirty re-evaluate) -------
@@ -271,14 +271,14 @@ Item {
         return "file://" + s;
     }
 
-    // ready-made emblems for the picker: the Mei brand marks, the shipped
+    // ready-made emblems for the picker: the Tenkai brand marks, the shipped
     // ryodecors (our decor), and whatever the store has installed into
     // ryoemblems. Picking one sets the source directly (no copy); "Your image"
     // imports a file since it can live anywhere. Paths keep a leading ~ so the
     // config stays portable.
     property var installedArt: []
     readonly property var brandArt: [
-        { "name": "MEI", "path": "~/.local/share/ryoku/assets/brand/fastfetch-emblem.png" },
+        { "name": "TENKAI", "path": "~/.local/share/ryoku/assets/brand/fastfetch-emblem.png" },
         { "name": "MARK", "path": "~/.local/share/ryoku/assets/brand/logo-mark.png" },
         { "name": "LAOCOON", "path": "~/Pictures/ryodecors/laocoon.png" },
         { "name": "DAVID", "path": "~/Pictures/ryodecors/david.png" },
@@ -391,7 +391,7 @@ Item {
         }
     }
     function previewNow() {
-        previewProc.command = ["mei-hub", "fastfetch", "preview", JSON.stringify(pg.model)];
+        previewProc.command = ["tenkai-hub", "fastfetch", "preview", JSON.stringify(pg.model)];
         previewProc.running = true;
     }
     Process {
@@ -437,7 +437,7 @@ Item {
     function save() {
         throttle.stop();
         pg.previewPending = false;
-        saveProc.command = ["mei-hub", "fastfetch", "save", JSON.stringify(pg.model)];
+        saveProc.command = ["tenkai-hub", "fastfetch", "save", JSON.stringify(pg.model)];
         saveProc.running = true;
         pg.committed = pg.clone();
         pg.rev++;
@@ -474,7 +474,7 @@ Item {
     }
     function importLogo(path, kind) {
         importProc.pendingKind = kind;
-        importProc.command = ["mei-hub", "fastfetch", "import-logo", path];
+        importProc.command = ["tenkai-hub", "fastfetch", "import-logo", path];
         importProc.running = true;
     }
     function openLogoFile() {
@@ -513,7 +513,7 @@ Item {
     function setDither(v) {
         pg.storeStyleError = "";
         ditherProc.pendingOn = v;
-        ditherProc.command = ["mei-hub", "fastfetch", "dither-logo", v ? "on" : "off", pg.model.logo.source];
+        ditherProc.command = ["tenkai-hub", "fastfetch", "dither-logo", v ? "on" : "off", pg.model.logo.source];
         ditherProc.running = true;
     }
     // an imported emblem is the ryoku-logo.* the backend wrote into the fastfetch
@@ -532,7 +532,7 @@ Item {
     }
     function removeLogo() {
         pg.storeStyleError = "";
-        removeLogoProc.command = ["mei-hub", "fastfetch", "remove-logo"];
+        removeLogoProc.command = ["tenkai-hub", "fastfetch", "remove-logo"];
         removeLogoProc.running = true;
     }
 
@@ -965,7 +965,7 @@ Item {
                         }
                     }
 
-                    // your art: a gallery of ready emblems (the Mei brand marks
+                    // your art: a gallery of ready emblems (the Tenkai brand marks
                     // and our ryodecors) plus a browse/drop tile for your own
                     // image. Click a tile to set it; drop a file to import it.
                     DropArea {

@@ -55,7 +55,7 @@ Item {
     property string updatingId: ""    // the style whose update is in flight
 
     function browseBarStyles() {
-        // MEI: RyoStore (Mei's app store) is off the keep list -- disabled,
+        // TENKAI: RyoStore (Tenkai's app store) is off the keep list -- disabled,
         // not deleted. Original: Quickshell.execDetached(["ryostore","open","barstyles"]);
     }
 
@@ -81,7 +81,7 @@ Item {
     Process {
         id: styleProc
         command: ["ryostore", "catalog", "--category", "barstyles"]
-        // MEI: RyoStore is off the keep list; never shell out to it. Disabled,
+        // TENKAI: RyoStore is off the keep list; never shell out to it. Disabled,
         // not deleted (the whole BAR STYLE card is hidden below).
         running: false
         stdout: StdioCollector {
@@ -151,9 +151,9 @@ Item {
     ]
     // The running bar style, default the built-in frame style. The frame, rails
     // and zone editors below are Sumi's; a folder style owns its own layout.
-    // MEI: default qsbar, not sumi. The fallback fired whenever the hub could
+    // TENKAI: default qsbar, not sumi. The fallback fired whenever the hub could
     // not read the current id (no store yet, or a bare probe harness) and wrote
-    // "sumi" into the shipped settings, which made a fresh Mei start on the
+    // "sumi" into the shipped settings, which made a fresh Tenkai start on the
     // alternative left rail instead of the keep-list top bar.
     readonly property string activeStyle: page.fval("barStyle", "qsbar")
     readonly property bool sumiActive: page.activeStyle === "sumi"
@@ -221,7 +221,7 @@ Item {
     }
     FileView {
         id: shellJsonFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/shell.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/shell.json"
         watchChanges: true
         printErrors: false
         onFileChanged: reload()
@@ -235,7 +235,7 @@ Item {
         }
     }
     function openQsBarSettings() {
-        Quickshell.execDetached(["mei-shell", "bar", "settings"]);
+        Quickshell.execDetached(["tenkai-shell", "bar", "settings"]);
     }
 
     CatalogLabels { id: labels }
@@ -329,8 +329,8 @@ Item {
             // ── BAR STYLE: which bar the desktop draws ───────────────────────
             SettingCard {
                 id: styleSect
-                // MEI: this card is fed by RyoStore's `barstyles` catalogue (a
-                // network store not shipped with Mei), so it is off the keep
+                // TENKAI: this card is fed by RyoStore's `barstyles` catalogue (a
+                // network store not shipped with Tenkai), so it is off the keep
                 // list. Hidden, not deleted; restore by dropping `visible:false`.
                 visible: false
                 // The primary choice of the page takes the band across the

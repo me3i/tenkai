@@ -43,7 +43,7 @@ Singleton {
 
     // --- Session-action confirmation (contract 13 sec 2c, 8) ---------------
     // A frame-bar logout/reboot/shutdown click asks for confirmation on its own
-    // monitor; the per-screen MeiConfirmationDialog runs the action through
+    // monitor; the per-screen TenkaiConfirmationDialog runs the action through
     // SessionActions only on the positive press. Singleton-level so any monitor can raise it.
     property string sessionAction: ""            // "" | "logout" | "reboot" | "shutdown"
     property string sessionActionMonitor: ""

@@ -31,7 +31,7 @@ import "schema/VisualsPage.js" as VisualsSchema
 import "ReloadCoverModel.js" as ReloadCoverModel
 import Ryoku.FrameBars
 
-// Mei Settings, assembled. The rail owns navigation and global search; the
+// Tenkai Settings, assembled. The rail owns navigation and global search; the
 // head, cells and tabs are drawn once by SchemaPage from a page's schema; the
 // pinned side is the feedback loop (live preview, the dirty-state plate, the
 // pending-write diff); the action bar is the one surface whose absence eats an
@@ -50,10 +50,10 @@ Rectangle {
     focus: true
 
     // ── which page ───────────────────────────────────────────────────────
-    property string section: "global"   // MEI: first kept page (Window Manager is disabled)
+    property string section: "global"   // TENKAI: first kept page (Window Manager is disabled)
     // remember the last section so a reopen lands where you left, not the default.
     // Read once at startup by `sectionGet` below; written here on every change.
-    onSectionChanged: Quickshell.execDetached(["mei-hub", "config", "set", "section", hub.section])
+    onSectionChanged: Quickshell.execDetached(["tenkai-hub", "config", "set", "section", hub.section])
     // A Hub that remembered the retired `windows` section, or a deep link that
     // still names it, lands on the compositor page that now holds those rows
     // rather than a blank pane.
@@ -84,7 +84,7 @@ Rectangle {
     // deep knobs across every schema page. persisted like `section`, restored at
     // startup by `advancedGet` below.
     property bool advanced: false
-    onAdvancedChanged: Quickshell.execDetached(["mei-hub", "config", "set", "advanced", hub.advanced ? "1" : "0"])
+    onAdvancedChanged: Quickshell.execDetached(["tenkai-hub", "config", "set", "advanced", hub.advanced ? "1" : "0"])
 
     // The full catalogue. `wired` marks the pages whose content and
     // persistence are ported; the rest render an honest porting plate rather
@@ -99,10 +99,10 @@ Rectangle {
     // deep per-page knobs inside a schema page, never whole sections, so a page
     // stays calm until asked. Compositor-owned pages sit together under one group
     // so a compositor's settings live in one place, not sprinkled through the list.
-    // MEI: eleven pages ship (General, Appearance, Visuals, Bar, Launcher,
+    // TENKAI: eleven pages ship (General, Appearance, Visuals, Bar, Launcher,
     // Motion, Fastfetch, Window Manager, Displays, Keybinds, Connections).
     // Window Manager, Displays and Keybinds are PRACTICAL: each change is saved
-    // under XDG_CONFIG_HOME/mei and applied to the running compositor with
+    // under XDG_CONFIG_HOME/tenkai and applied to the running compositor with
     // hyprctl, so ~/.config/hypr is never written. Connections drives
     // NetworkManager/BlueZ over their own tools, which touch no compositor
     // config. Every other section is disabled, not deleted: the original groups
@@ -155,7 +155,7 @@ Rectangle {
     // names the thing; the kanji is its seal. The two scripts sitting together
     // is the texture, and every gloss is the real word, never decoration:
     // 外観 = appearance, 接続 = connections, 演算 = compute (Machine), and so on.
-    // Mei: the rail shows the Latin name only (no kanji), so the seal column is
+    // Tenkai: the rail shows the Latin name only (no kanji), so the seal column is
     // empty. The original kanji glosses are kept, disabled, below -- re-enable by
     // replacing the empty map with this block:
     // readonly property var jpName: ({
@@ -494,7 +494,7 @@ Rectangle {
                 if (groups[g].items[i].key === s) return groups[g].items[i];
         return null;
     }
-    // MEI: only sections present in the (trimmed) rail may open, so a section
+    // TENKAI: only sections present in the (trimmed) rail may open, so a section
     // persisted by an older Hub cannot resurrect a disabled page.
     function sectionAvailable(s) { var it = hub.itemFor(s); return it ? hub.needsMet(it) : false; }
     // Whether the active provider backs at least one setting on this page, tested
@@ -557,7 +557,7 @@ Rectangle {
         "mirror": false, "segments": 10, "fps": 30,
         "adaptive": true, "smoothing": 0.5, "gain": 1.0, "peaks": false,
         "spin": 0, "x": 0, "y": 0.58, "w": 1, "h": 0.42, "grow": "up", "angle": 0, "tiltX": 0, "tiltY": 0,
-        "markText": "M", "markImage": "", "markTint": true, "name": "Mei",
+        "markText": "M", "markImage": "", "markTint": true, "name": "Tenkai",
         "reloadCover": ReloadCoverModel.empty(),
         "language": "Auto", "barStyle": "qsbar", "obi": {}, "nacre": NacreConfig.defaultConfig(), "qsbar": {}, "dock": {},
         "clipboard.widthPercent": 65, "clipboard.heightPercent": 42, "clipboard.bottomPercent": 0,
@@ -743,11 +743,11 @@ Rectangle {
         }
         hub.committed = JSON.parse(JSON.stringify(hub.draft));
         // language rides the normal Save: the file it just wrote (shell.json) is
-        // watched by every Mei surface's shared I18n, so the whole desktop
+        // watched by every Tenkai surface's shared I18n, so the whole desktop
         // retranslates. Set it here too so this window switches deterministically.
         if (files.shell) I18n.configLang = hub.committed.language || "Auto";
         if (hub.hyprChanges().length) {
-            hyprSave.command = ["mei-hub", "desktop", "save", JSON.stringify(hub.hyprDraft)];
+            hyprSave.command = ["tenkai-hub", "desktop", "save", JSON.stringify(hub.hyprDraft)];
             hyprSave.running = true;
             hub.hyprCommitted = JSON.parse(JSON.stringify(hub.hyprDraft));
         }
@@ -759,7 +759,7 @@ Rectangle {
         hub.draft = JSON.parse(JSON.stringify(hub.committed));
         hub.restoreLiveUnsaved();
         hub.hyprDraft = JSON.parse(JSON.stringify(hub.hyprCommitted));
-        if (hub.wmLoaded) { hyprRestore.command = ["mei-hub", "desktop", "restore"]; hyprRestore.running = true; }
+        if (hub.wmLoaded) { hyprRestore.command = ["tenkai-hub", "desktop", "restore"]; hyprRestore.running = true; }
         hub.revertPage();
         hub.requestReloadCoverPrune(hub.committed.reloadCover);
     }
@@ -768,7 +768,7 @@ Rectangle {
         hub.pristine = false;
         hub.draft = JSON.parse(JSON.stringify(hub.defs));
         if (Object.keys(hub.hyprDefaults).length) hub.hyprDraft = JSON.parse(JSON.stringify(hub.hyprDefaults));
-        // MEI: the Shell Motion card writes theme.motion.* straight to the daemon
+        // TENKAI: the Shell Motion card writes theme.motion.* straight to the daemon
         // (Settings.patch, "live") because the draft/save ledger does not carry
         // those keys. Reset must therefore restore that subtree too, or "reset"
         // would leave the shell's motion changed.
@@ -778,8 +778,8 @@ Rectangle {
     property string reloadCoverCleanupError: ""
     property string reloadCoverPruneWanted: ""
     function requestReloadCoverPrune(value) {
-        // MEI: the reload-cover asset store is off the keep list and lives outside
-        // Mei's own config dir, so Settings never prunes or writes it. The original
+        // TENKAI: the reload-cover asset store is off the keep list and lives outside
+        // Tenkai's own config dir, so Settings never prunes or writes it. The original
         // body is kept, disabled, in the comment below.
         // reloadCoverPruneWanted = ReloadCoverModel.path(value);
         // if (!reloadCoverPrune.running)
@@ -793,7 +793,7 @@ Rectangle {
         onTriggered: {
             if (reloadCoverPrune.running)
                 return;
-            var command = ["mei-hub", "reload-cover", "prune"];
+            var command = ["tenkai-hub", "reload-cover", "prune"];
             if (hub.reloadCoverPruneWanted !== "")
                 command.push(hub.reloadCoverPruneWanted);
             reloadCoverPrune.keep = hub.reloadCoverPruneWanted;
@@ -837,7 +837,7 @@ Rectangle {
     Component.onCompleted: rebase()
     Process {
         id: sectionGet
-        command: ["mei-hub", "config", "get", "section"]
+        command: ["tenkai-hub", "config", "get", "section"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -850,14 +850,14 @@ Rectangle {
     }
     Process {
         id: advancedGet
-        command: ["mei-hub", "config", "get", "advanced"]
+        command: ["tenkai-hub", "config", "get", "advanced"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: { if (this.text.trim() === "1") hub.advanced = true; }
         }
     }
 
-    property string cfgDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei"
+    property string cfgDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai"
 
     // shell.json is owned by the ryoku-shell settings daemon; the Hub reads it
     // through the `settings` topic and writes it only through settings.patch
@@ -926,7 +926,7 @@ Rectangle {
             property string markText: "M"
             property string markImage: ""
             property bool markTint: true
-            property string name: "Mei"
+            property string name: "Tenkai"
             property var reloadCover: ReloadCoverModel.empty()
         }
     }
@@ -950,7 +950,7 @@ Rectangle {
     signal revertPage()
     signal invalidatePageWork()
 
-    // MEI: the compositor store is Mei's own. `desktop get` returns Mei's saved
+    // TENKAI: the compositor store is Tenkai's own. `desktop get` returns Tenkai's saved
     // runtime overrides (hypr-advanced.json + keybinds.json) over the provider's
     // defaults, and save/preview/restore persist those files and apply through
     // hyprctl — no settings.lua, rebinds.lua or user_edits is written. Loading it
@@ -958,7 +958,7 @@ Rectangle {
     // values the user saved.
     Process {
         id: hyprGet
-        command: ["mei-hub", "desktop", "get"]
+        command: ["tenkai-hub", "desktop", "get"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -973,7 +973,7 @@ Rectangle {
     }
     Process {
         id: hyprDefaultsGet
-        command: ["mei-hub", "desktop", "defaults"]
+        command: ["tenkai-hub", "desktop", "defaults"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: { try { hub.hyprDefaults = JSON.parse(this.text); } catch (e) {} }
@@ -990,7 +990,7 @@ Rectangle {
         id: hyprPreviewThrottle
         interval: 140
         onTriggered: {
-            hyprPreview.command = ["mei-hub", "desktop", "preview", JSON.stringify(hub.hyprDraft)];
+            hyprPreview.command = ["tenkai-hub", "desktop", "preview", JSON.stringify(hub.hyprDraft)];
             hyprPreview.running = true;
         }
     }
@@ -998,10 +998,10 @@ Rectangle {
     Process { id: hyprRestore; onRunningChanged: if (!running && hub.quitting) Qt.quit() }
     function requestQuit() {
         if (hub.quitting) return;
-        // MEI: the reload-cover asset store is off the keep list and lives outside
-        // Mei's config dir, so quitting never prunes it. Disabled, not deleted.
+        // TENKAI: the reload-cover asset store is off the keep list and lives outside
+        // Tenkai's config dir, so quitting never prunes it. Disabled, not deleted.
         // if (brandFV.loaded) {
-        //     var cleanup = ["mei-hub", "reload-cover", "prune"];
+        //     var cleanup = ["tenkai-hub", "reload-cover", "prune"];
         //     var keep = ReloadCoverModel.path(hub.committed.reloadCover);
         //     if (keep !== "")
         //         cleanup.push(keep);
@@ -1013,7 +1013,7 @@ Rectangle {
         var restored = hub.restoreLiveUnsaved();
         if (hub.wmLoaded && hub.hyprChanges().length) {
             hub.quitting = true;
-            hyprRestore.command = ["mei-hub", "desktop", "restore"];
+            hyprRestore.command = ["tenkai-hub", "desktop", "restore"];
             hyprRestore.running = true;
         } else if (restored) {
             // hold the door one beat so the control socket flushes the patches
@@ -1128,7 +1128,7 @@ Rectangle {
                         spacing: 1
                         anchors.verticalCenter: parent.verticalCenter
                         Text {
-                            text: I18n.tr("MEI"); color: Tokens.ink; font.family: Tokens.ui
+                            text: I18n.tr("TENKAI"); color: Tokens.ink; font.family: Tokens.ui
                             font.pixelSize: 14; font.weight: Font.Medium; font.letterSpacing: 2.4
                         }
                         Text {
@@ -1464,7 +1464,7 @@ Rectangle {
         anchors { top: parent.top; right: parent.right }
         anchors.topMargin: Tokens.s4; anchors.rightMargin: Tokens.s6
         z: 60
-        // MEI: the Updates page is off the keep list. Disabled, not deleted.
+        // TENKAI: the Updates page is off the keep list. Disabled, not deleted.
         visible: false
         width: ubLabel.implicitWidth + Tokens.s4 * 2
         height: 30
@@ -1832,7 +1832,7 @@ Rectangle {
                     spacing: Tokens.s2
                     Text {
                         width: fcol.width
-                        text: I18n.tr("Each page's settings live in one full file below: the complete config you edit in place (the GUI writes the very same file). The shipped base underneath refreshes on update; your file wins. Run `mei reset <path>` to drop an override.")
+                        text: I18n.tr("Each page's settings live in one full file below: the complete config you edit in place (the GUI writes the very same file). The shipped base underneath refreshes on update; your file wins. Run `tenkai reset <path>` to drop an override.")
                         color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: 11; wrapMode: Text.WordWrap
                     }
                     Repeater {

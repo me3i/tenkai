@@ -24,7 +24,7 @@ Item {
     property var plugins: []
     property var pluginIds: []
 
-    readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
+    readonly property string _shellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string _script: (_shellDir && _shellDir.length > 0)
         ? _shellDir + "/quickshell/plugins/discover.sh"
         : (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config"))
@@ -96,7 +96,7 @@ Item {
 
     FileView {
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config"))
-            + "/mei/plugins.json"
+            + "/tenkai/plugins.json"
         watchChanges: true
         printErrors: false
         onFileChanged: root.reload()
@@ -105,7 +105,7 @@ Item {
     // A store install/remove bumps the revision; re-scan so a freshly installed
     // bar plugin appears without a shell restart.
     FileView {
-        path: root._stateHome + "/mei/store/revision.json"
+        path: root._stateHome + "/tenkai/store/revision.json"
         watchChanges: true
         atomicWrites: true
         printErrors: false

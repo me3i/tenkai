@@ -48,10 +48,10 @@ var (
 // open them by path. Empty when no home/cache dir is resolvable.
 func soundCacheDir() string {
 	if d := os.Getenv("XDG_CACHE_HOME"); d != "" {
-		return filepath.Join(d, "mei", "sounds")
+		return filepath.Join(d, "tenkai", "sounds")
 	}
 	if h := os.Getenv("HOME"); h != "" {
-		return filepath.Join(h, ".cache", "mei", "sounds")
+		return filepath.Join(h, ".cache", "tenkai", "sounds")
 	}
 	return ""
 }

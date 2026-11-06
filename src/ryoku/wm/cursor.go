@@ -11,7 +11,7 @@ const CursorThemeDynamic = "DYNAMIC"
 
 // CursorThemeMaterial is the concrete theme behind the sentinel. The
 // ryoku-cursor-material package installs it and its recolor tool.
-const CursorThemeMaterial = "Bibata-Material-Mei"
+const CursorThemeMaterial = "Bibata-Material-Tenkai"
 
 // ResolveCursorTheme maps the stored theme onto one installed on disk.
 // Anything that is not the sentinel passes through untouched.

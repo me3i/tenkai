@@ -30,7 +30,7 @@ Singleton {
     // The equalizer's filter pair (see ryoku-eq). WirePlumber splices it in front
     // of the real device and never treats it as a default node, so it is plumbing
     // rather than a device or an app: listing it would show the speakers twice in
-    // the mixer and offer a "Mei Equalizer" output nobody should pick. Matched on
+    // the mixer and offer a "Tenkai Equalizer" output nobody should pick. Matched on
     // node.name, a constant, so this never reads an untracked property.
     function isShellFilter(n) {
         return ((n && n.name) + "").indexOf("ryoku_equalizer") === 0;

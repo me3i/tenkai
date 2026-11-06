@@ -301,7 +301,7 @@ Scope {
             visible: !overlay.monFullscreen
             Keys.onEscapePressed: if (frameMenus.keyboardMode === "exclusive") frameMenus.closeAll()
 
-            // Shared blob field for retained Mei-owned credential, voice,
+            // Shared blob field for retained Tenkai-owned credential, voice,
             // stash, capture, and rail-card popouts plus RecordHud.
             BlobGroup {
                 id: blobGroup
@@ -400,10 +400,10 @@ Scope {
                     function onSurfaceRequested(id, mon, ctx) {
                         if (mon !== "" && mon !== (root.modelData ? root.modelData.name : ""))
                             return;
-                        // MEI: the external ryogami wall-ui picker is not part of
+                        // TENKAI: the external ryogami wall-ui picker is not part of
                         // this build (the daemon's `ui` verb refuses), so a
                         // wallpaper surface request opens the in-shell picker the
-                        // qsbar style hosts (Super+P / `mei:wallpaper-menu`). A
+                        // qsbar style hosts (Super+P / `tenkai:wallpaper-menu`). A
                         // style without one drops the request.
                         if (id === "wallpaper") {
                             if (barStyleLoader.item)

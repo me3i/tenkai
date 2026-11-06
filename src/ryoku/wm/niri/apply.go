@@ -15,7 +15,7 @@ import (
 // express; defaults hands the Hub the baseline it overlays user values on. niri
 // watches its own config, so ReloadNeeded is always false and there is no reload
 // action; with --preview apply writes nothing and only reports the losses, which
-// is what `mei wm use niri` shows a user as the cost of switching.
+// is what `tenkai wm use niri` shows a user as the cost of switching.
 
 // runApply renders the store into settings.kdl + rebinds.kdl and prints an
 // ApplyReport. With --preview it writes nothing (empty Written) but still walks
@@ -157,7 +157,7 @@ var appearanceEmitted = map[string]bool{
 func appearanceReason(leaf string) string {
 	switch {
 	case strings.HasPrefix(leaf, "blur"):
-		return "niri 26.04's window blur renders translucent windows opaque, so Mei leaves it off."
+		return "niri 26.04's window blur renders translucent windows opaque, so Tenkai leaves it off."
 	case leaf == "shadowPower":
 		return "niri's shadow block has no sharpness or falloff field."
 	case leaf == "shadowSharp":

@@ -147,7 +147,7 @@ func clipCacheDir() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
-	return filepath.Join(base, "mei", "clipboard")
+	return filepath.Join(base, "tenkai", "clipboard")
 }
 
 // clipStateDir holds the persisted history: the entry index and one file of
@@ -158,7 +158,7 @@ func clipStateDir() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return filepath.Join(base, "mei", "clipboard")
+	return filepath.Join(base, "tenkai", "clipboard")
 }
 
 func (s *clipState) indexPath() string { return filepath.Join(s.stateDir, "index.json") }

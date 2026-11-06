@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Live-trial self-monitor: Mei's CPU and RSS every 5 s, into .run/logs.
+"""Live-trial self-monitor: Tenkai's CPU and RSS every 5 s, into .run/logs.
 
-Reads .run/live-pids (the pids ./mei live recorded) and walks their descendants
+Reads .run/live-pids (the pids ./tenkai live recorded) and walks their descendants
 through /proc parent links, so it sees the daemon, the shell, the WM provider
 and ryogami without knowing their names. The numbers are the live counterpart
 of the nested Phase 10A table, so the two can be compared directly.
@@ -13,8 +13,8 @@ import sys
 import time
 from datetime import datetime
 
-MEI = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-RUN = os.path.join(MEI, ".run")
+TENKAI = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+RUN = os.path.join(TENKAI, ".run")
 PIDFILE = os.path.join(RUN, "live-pids")
 STAMP = datetime.now().strftime("%Y%m%d-%H%M%S")
 LOG = os.path.join(RUN, "logs", "live-monitor-%s.log" % STAMP)
@@ -87,10 +87,10 @@ def label_for(pid):
             if "/hub/quickshell" in a:
                 return "hub-qs"
         return "qs"
-    if exe == "mei-shell":
-        return "mei-shell"
-    if exe == "mei-wm-hyprland":
-        return "mei-wm"
+    if exe == "tenkai-shell":
+        return "tenkai-shell"
+    if exe == "tenkai-wm-hyprland":
+        return "tenkai-wm"
     if exe == "ryogami":
         return "ryogami"
     return exe
@@ -136,7 +136,7 @@ def main():
     with open(CSV, "w", encoding="utf-8") as fh:
         fh.write("time,label,pid,cpu_percent,rss_kb,pss_kb,threads\n")
     with open(LOG, "w", encoding="utf-8") as fh:
-        fh.write("# Mei live self-monitor, every %.0f s\n" % INTERVAL)
+        fh.write("# Tenkai live self-monitor, every %.0f s\n" % INTERVAL)
         fh.write("# time label pid cpu%% rss_kB pss_kB threads\n")
     print("live-monitor: %s" % LOG, flush=True)
     prev = {}

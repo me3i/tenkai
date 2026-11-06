@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Where Mei keeps things, resolved once for every surface that needs to know.
+// Where Tenkai keeps things, resolved once for every surface that needs to know.
 //
 // The recordings directory used to be worked out in three places that disagreed:
 // ryoku-cmd-screenrecord resolved it properly, the pill's deck hardcoded
@@ -51,7 +51,7 @@ Singleton {
 
     FileView {
         id: cfgFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (paths.home + "/.config")) + "/mei/recording.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (paths.home + "/.config")) + "/tenkai/recording.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

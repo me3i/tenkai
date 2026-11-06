@@ -1232,7 +1232,7 @@ Item {
             width: parent.width
             horizontalAlignment: Text.AlignHCenter
             text: Needle.ready
-                ? I18n.tr("It knows this machine, your desktop, and the Mei source. Drop in an image to ask about it.")
+                ? I18n.tr("It knows this machine, your desktop, and the Tenkai source. Drop in an image to ask about it.")
                 : I18n.tr("Rashin needs an AI to answer. Set it up once and the needle is ready.")
             wrapMode: Text.WordWrap
             color: Theme.inkOn(Theme.effectiveSurface, Theme.onSurfaceVariant, 3.0)
@@ -1334,13 +1334,13 @@ Item {
                     anchors.fill: parent
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
-                    onClicked: Quickshell.execDetached(["mei-shell", "hub", "open", "rashin"])
+                    onClicked: Quickshell.execDetached(["tenkai-shell", "hub", "open", "rashin"])
                 }
             }
             Text {
                 width: parent.width
                 horizontalAlignment: Text.AlignHCenter
-                text: I18n.tr("Or add an API key to ~/.config/mei/rashin.env")
+                text: I18n.tr("Or add an API key to ~/.config/tenkai/rashin.env")
                 wrapMode: Text.WordWrap
                 color: Theme.inkOn(Theme.effectiveSurface, Theme.outlineVariant, 3.0)
                 font.family: Theme.mono

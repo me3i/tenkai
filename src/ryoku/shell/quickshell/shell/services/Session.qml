@@ -22,7 +22,7 @@ Singleton {
 
     // ── who ──────────────────────────────────────────────────────────────
     readonly property string user: Quickshell.env("USER") || Quickshell.env("LOGNAME") || "user"
-    property string host: "mei"
+    property string host: "tenkai"
 
     // ── uptime ───────────────────────────────────────────────────────────
     property real uptimeSecs: 0
@@ -74,7 +74,7 @@ Singleton {
     }
     FileView {
         id: wallFile
-        path: s.stateDir + "/mei-wallpaper"
+        path: s.stateDir + "/tenkai-wallpaper"
         blockLoading: true
         watchChanges: true
         printErrors: false

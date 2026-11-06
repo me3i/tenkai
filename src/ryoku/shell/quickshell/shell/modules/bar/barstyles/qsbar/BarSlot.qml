@@ -931,7 +931,7 @@ PanelWindow {
             readonly property real barContentRightInset: barSlot.root.v2IconGroupPadding
             readonly property real trayCaretX: statusRow.x + statusTrayRow.x + trayWidget.x + trayWidget.width / 2
             readonly property real notifCaretX: statusRow.x + statusTrayRow.x + notifWidget.x + notifWidget.width / 2
-            // MEI: do not gate visibility on implicitWidth. That is circular:
+            // TENKAI: do not gate visibility on implicitWidth. That is circular:
             // an invisible parent forces its children invisible, the Row then
             // measures 0, and the status slot (tray + bell) never expands when
             // the first tray item arrives. Visibility follows the module flag;
@@ -1683,7 +1683,7 @@ PanelWindow {
                                 ? pluginHostRoot.entry.placement.settings : ({})
                             readonly property string pluginDir: pluginHostRoot.entry ? pluginHostRoot.entry.dir : ""
                             readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state"))
-                                + "/mei/plugins/" + slot.pluginId
+                                + "/tenkai/plugins/" + slot.pluginId
                             readonly property bool panelOpen: barSlot.root.pluginPanelId === slot.pluginId
                             readonly property bool hasPanel: !!(pluginHostRoot.entry && pluginHostRoot.entry.manifest
                                 && pluginHostRoot.entry.manifest.entryPoints

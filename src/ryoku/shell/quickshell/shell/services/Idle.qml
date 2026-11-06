@@ -5,19 +5,19 @@ import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
 
-// Mei's idle: dim, DPMS off and suspend, with the inhibitors honoured.
+// Tenkai's idle: dim, DPMS off and suspend, with the inhibitors honoured.
 //
 // The idle source is the compositor's own idle-notify, so a video player that
 // holds an idle-inhibit keeps the desktop awake exactly as it should.
 //
-// The thresholds live in Mei's own config (idle.json), so they are the user's
+// The thresholds live in Tenkai's own config (idle.json), so they are the user's
 // to set and not baked into the code. Defaults: dim after 120 s, DPMS off
 // after 360 s, suspend after 600 s.
 Singleton {
     id: root
 
-    readonly property string cfgDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei"
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string cfgDir: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     property var cfg: ({ "enabled": true, "dim": 120, "dpms": 360, "suspend": 600, "dimPercent": 40 })
 

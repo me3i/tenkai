@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-// Mei's shipped legend for the test: keybinds() reads this. SUPER+Q (close) is
+// Tenkai's shipped legend for the test: keybinds() reads this. SUPER+Q (close) is
 // the chord the imported config shadows.
 const fxBinds = `local mod = "SUPER"
 local ok, rebinds = pcall(require, "rebinds")
@@ -30,7 +30,7 @@ hl.bind(K(mod .. " + Return"), hl.dsp.exec_cmd("ryoku-app terminal")) -- termina
 const fxHypr = `$mainMod = SUPER
 
 # apps
-bind = $mainMod, Q, exec, foot           # shadows Mei's close
+bind = $mainMod, Q, exec, foot           # shadows Tenkai's close
 bind = $mainMod SHIFT, E, exec, thunar   # clean
 bind = $mainMod, T, togglefloating       # ingestable dispatcher
 bind = $mainMod, G, exec, gimp           # duplicate 1
@@ -153,8 +153,8 @@ func TestScanResultModel(t *testing.T) {
 	if shadow == nil || shadow.Kind != "shipped" {
 		t.Fatalf("q+super conflict = %+v, want kind shipped", shadow)
 	}
-	if shadow.Mei.Action != "close" {
-		t.Errorf("shadow ryoku.action = %q, want close", shadow.Mei.Action)
+	if shadow.Tenkai.Action != "close" {
+		t.Errorf("shadow ryoku.action = %q, want close", shadow.Tenkai.Action)
 	}
 	if !strings.Contains(shadow.Mine.Raw, "exec, foot") {
 		t.Errorf("shadow mine.raw = %q, want the foot bind", shadow.Mine.Raw)
@@ -219,7 +219,7 @@ func TestApplyIngestsAndUnbinds(t *testing.T) {
 	dec := decisions{
 		Source:    src,
 		Apps:      allApps(),
-		Conflicts: map[string]json.RawMessage{"q+super": json.RawMessage(`"mine"`), "g+super": json.RawMessage(`"mei"`)},
+		Conflicts: map[string]json.RawMessage{"q+super": json.RawMessage(`"mine"`), "g+super": json.RawMessage(`"tenkai"`)},
 	}
 	res, err := applyImport(dec)
 	if err != nil {
@@ -382,9 +382,9 @@ func TestNormCombo(t *testing.T) {
 	}
 }
 
-// a conflict defaulting to "mei" (absent from decisions) drops the imported
-// bind and adds no unbind, so Mei's shipped chord is untouched.
-func TestApplyDefaultKeepsMei(t *testing.T) {
+// a conflict defaulting to "tenkai" (absent from decisions) drops the imported
+// bind and adds no unbind, so Tenkai's shipped chord is untouched.
+func TestApplyDefaultKeepsTenkai(t *testing.T) {
 	importHome(t)
 	src := importSource(t)
 	dec := decisions{Source: src, Apps: map[string]appDecision{"hyprland": {Include: true}}}
@@ -393,12 +393,12 @@ func TestApplyDefaultKeepsMei(t *testing.T) {
 		t.Fatal(err)
 	}
 	if res.Unbinds != 0 {
-		t.Errorf("unbinds = %d, want 0 (default keeps Mei)", res.Unbinds)
+		t.Errorf("unbinds = %d, want 0 (default keeps Tenkai)", res.Unbinds)
 	}
 	d, _ := readJSONMap(desktopStorePath())["desktop"].(map[string]any)
 	blob, _ := json.Marshal(d)
 	if strings.Contains(string(blob), `"value":"foot"`) {
-		t.Error("the shadowing foot bind was ingested despite defaulting to mei")
+		t.Error("the shadowing foot bind was ingested despite defaulting to tenkai")
 	}
 }
 
@@ -453,7 +453,7 @@ func TestTranslateBinds(t *testing.T) {
 }
 
 // "use mine" on a shadow whose dispatcher cannot be translated must NOT unbind
-// the shipped chord (that would leave a dead key); it keeps Mei's and records
+// the shipped chord (that would leave a dead key); it keeps Tenkai's and records
 // the imported bind as unresolved instead.
 func TestApplyMineUnknownDispatcherNoUnbind(t *testing.T) {
 	importHome(t)

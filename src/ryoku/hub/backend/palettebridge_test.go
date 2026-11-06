@@ -30,7 +30,7 @@ func TestPaletteBridgeSourceRequiresRecipe(t *testing.T) {
 }
 
 func TestPaletteBridgeInstallUsesTypedCommand(t *testing.T) {
-	t.Skip("palette-bridge is disabled in Mei (127.0.0.1:47616 bridge off the keep list)")
+	t.Skip("palette-bridge is disabled in Tenkai (127.0.0.1:47616 bridge off the keep list)")
 	source := makePaletteBridgeSource(t, "install.sh")
 	original := paletteBridgeRun
 	t.Cleanup(func() { paletteBridgeRun = original })

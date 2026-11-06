@@ -12,7 +12,7 @@ import (
 )
 
 // osd.go feeds the brightness OSD. The volume and mic OSDs read PipeWire
-// directly in QML, where Mei already owns the audio graph, so their change
+// directly in QML, where Tenkai already owns the audio graph, so their change
 // events and value are observable without the daemon. Brightness has no such
 // QML-observable source: the media keys and the `brightness` verb both drive
 // ryoku-cmd-brightness straight to the backlight, so the daemon watches the
@@ -33,13 +33,13 @@ type osdState struct {
 // the brightness verb) converges, so it owns both halves: save on change,
 // restore before the session's first read.
 func backlightLevelPath() string {
-	return filepath.Join(stateDir(), "mei", "backlight")
+	return filepath.Join(stateDir(), "tenkai", "backlight")
 }
 
 // saveBacklight records the raw sysfs level. Best-effort: a read-only state
 // dir costs persistence, not the session.
 func saveBacklight(level int) {
-	dir := filepath.Join(stateDir(), "mei")
+	dir := filepath.Join(stateDir(), "tenkai")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return
 	}

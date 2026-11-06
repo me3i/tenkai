@@ -11,18 +11,18 @@ import ".."
 // Visuals: the compositor's visual surface — blur, shadow, gaps, borders,
 // corner rounding and the screen shader — as a live settings page.
 //
-// CRITICAL: Mei never writes the Hyprland config (~/.config/hypr). Every
+// CRITICAL: Tenkai never writes the Hyprland config (~/.config/hypr). Every
 // change is a runtime-only Lua evaluation call into the compositor
 // (`hyprctl eval 'hl.config({...})'`; the legacy `hyprctl keyword` verb was
-// removed from Hyprland's Lua IPC, this is the same door Mei's provider
+// removed from Hyprland's Lua IPC, this is the same door Tenkai's provider
 // uses for screenShader/followMouse). A Hyprland reload re-reads
-// decoration.lua/hyprland.lua and resets the runtime from them; Mei
+// decoration.lua/hyprland.lua and resets the runtime from them; Tenkai
 // re-applies this page's persisted values from the daemon at boot
 // (reapplyVisualOverrides in ryoku/shell/ipc/daemon.go), so nothing is lost.
 //
-// The page's only writer is hypr-visual.json under Mei's own config dir
-// (XDG_CONFIG_HOME/mei/hypr-visual.json; in every Mei session that is
-// .run/config/mei/hypr-visual.json, not the owner's real ~/.config/mei).
+// The page's only writer is hypr-visual.json under Tenkai's own config dir
+// (XDG_CONFIG_HOME/tenkai/hypr-visual.json; in every Tenkai session that is
+// .run/config/tenkai/hypr-visual.json, not the owner's real ~/.config/tenkai).
 // FileView.writeAdapter() serialises the whole JsonAdapter, which is the
 // Hub's one atomic write path. The file is the ONLY persisted state; the
 // compositor is actuated separately and is always the one true readof the
@@ -58,7 +58,7 @@ Item {
     property var committed: ({})
     property var draft: ({})
 
-    readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/hypr-visual.json"
+    readonly property string configPath: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/hypr-visual.json"
     readonly property string homePath: Quickshell.env("HOME") || ""
 
     function clone(o) { var r = {}; for (var k in o) r[k] = o[k]; return r; }
@@ -343,7 +343,7 @@ Item {
         }
         Text {
             width: Math.min(parent.width, 720)
-            text: I18n.tr("Blur, shadow, gaps, borders, corner rounding and the screen shader. Applied live, saved to Mei's own hypr-visual.json — your Hyprland config is never written. A Hyprland reload resets the runtime; Mei re-applies this file at startup.")
+            text: I18n.tr("Blur, shadow, gaps, borders, corner rounding and the screen shader. Applied live, saved to Tenkai's own hypr-visual.json — your Hyprland config is never written. A Hyprland reload resets the runtime; Tenkai re-applies this file at startup.")
             color: Tokens.inkMuted; font.family: Tokens.ui
             font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
         }
@@ -633,7 +633,7 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
             }
             Text {
-                text: I18n.tr("LIVE — APPLIED TO THE COMPOSITOR, SAVED TO MEI'S hypr-visual.json")
+                text: I18n.tr("LIVE — APPLIED TO THE COMPOSITOR, SAVED TO TENKAI'S hypr-visual.json")
                 color: Tokens.inkMuted
                 font.family: Tokens.ui; font.pixelSize: Tokens.fMicro
                 font.weight: Font.Medium; font.letterSpacing: Tokens.trackLabel

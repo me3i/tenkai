@@ -14,10 +14,10 @@ import (
 	"time"
 )
 
-// shellDir (MEI_SHELL_DIR): run components straight out of a repo checkout
+// shellDir (TENKAI_SHELL_DIR): run components straight out of a repo checkout
 // (qs -p <dir>/quickshell/<name>) instead of an installed config under
 // ~/.config. empty in a deployed setup.
-var shellDir = os.Getenv("MEI_SHELL_DIR")
+var shellDir = os.Getenv("TENKAI_SHELL_DIR")
 
 var frameBarMenuIDs = map[string]bool{
 	"quick-settings": true,
@@ -110,7 +110,7 @@ func pillSockPath() string {
 	if dir == "" {
 		dir = "/tmp"
 	}
-	return filepath.Join(dir, "mei-pill.sock")
+	return filepath.Join(dir, "tenkai-pill.sock")
 }
 
 // pillSocketCall writes one command line to the pill socket and reports whether
@@ -311,7 +311,7 @@ var (
 // /proc.
 const lockClientPattern = "quickshell.*(quickshell-lockscreen|qylock-next/lockscreen).*/lock_shell[.]qml"
 
-// lockSession locks the screen with qylock, the in-session lock Mei ships.
+// lockSession locks the screen with qylock, the in-session lock Tenkai ships.
 // The shell has no lock surface of its own.
 func lockSession() string {
 	if err := ensureSessionLocked(time.Now().Add(lockWait)); err != nil {

@@ -34,7 +34,7 @@ import "modules/confirm"
 import Ryoku.Ui.Singletons
 
 /**
- * The single resident Mei shell instance.
+ * The single resident Tenkai shell instance.
  *
  * One ShellRoot for the whole desktop. It brings the shared service singletons
  * online, holds the per-monitor ShellState every surface binds its visibility
@@ -91,10 +91,10 @@ ShellRoot {
         ControlCenterHost { }
     }
 
-    readonly property string reloadStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-reload-cover.json"
-    readonly property string reloadCoverBin: Quickshell.env("MEI_SHELL_DIR")
-        ? Quickshell.env("MEI_SHELL_DIR") + "/scripts/mei-reload-cover"
-        : "mei-reload-cover"
+    readonly property string reloadStatePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-reload-cover.json"
+    readonly property string reloadCoverBin: Quickshell.env("TENKAI_SHELL_DIR")
+        ? Quickshell.env("TENKAI_SHELL_DIR") + "/scripts/tenkai-reload-cover"
+        : "tenkai-reload-cover"
     property string reloadToken: ""
     property bool reloadFinishSent: false
     property bool reloadReleaseArmed: false
@@ -160,7 +160,7 @@ ShellRoot {
     // (login already parsed the right value); only a later profile change reloads.
     FileView {
         id: hyprPerf
-        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/mei/hypr-perf.json"
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/tenkai/hypr-perf.json"
         printErrors: false
         property bool armed: false
         onSaved: if (hyprPerf.armed) Wm.reloadConfig("")
@@ -264,7 +264,7 @@ ShellRoot {
             }
 
             // The frame bar (Phase 2): reads its own reveal from this slice.
-            // MEI: gated, so bar=false creates no bar window at all (not just a
+            // TENKAI: gated, so bar=false creates no bar window at all (not just a
             // hidden one). LazyLoader is the pattern the other toggle surfaces
             // here already use.
             LazyLoader {
@@ -465,7 +465,7 @@ ShellRoot {
                 property bool open: ShellState.sessionAction !== ""
                 activeAsync: open || confirmHold.running
                 onOpenChanged: if (!open && active) confirmHold.restart()
-                MeiConfirmationDialog {
+                TenkaiConfirmationDialog {
                     modelData: perScreen.modelData
                     action: ShellState.sessionActionMonitor === perScreen.modelData.name ? ShellState.sessionAction : ""
                     message: ShellState.sessionMessage
@@ -586,7 +586,7 @@ ShellRoot {
     // spawn drive the identical transition. Names match the compositor binds.
     CustomShortcut {
         name: "barToggle"
-        description: I18n.tr("Toggle the Mei frame bar on the active monitor")
+        description: I18n.tr("Toggle the Tenkai frame bar on the active monitor")
         onPressed: root.toggleSurface("barToggle")
     }
     CustomShortcut {

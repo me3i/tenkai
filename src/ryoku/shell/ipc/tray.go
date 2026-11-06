@@ -25,7 +25,7 @@ import (
 //
 // Divergence from the reference (recorded per contract 04): the reference never
 // reads an item's attention icon, so an item that asks for attention keeps its
-// ordinary icon. Mei prefers the attention icon while Status is NeedsAttention
+// ordinary icon. Tenkai prefers the attention icon while Status is NeedsAttention
 // so the state is actually visible; see resolveTrayIcon.
 
 const (
@@ -122,7 +122,7 @@ type trayState struct {
 func (d *daemon) startTray() {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
-		log.Printf("mei-shell: system tray disabled: %v", err)
+		log.Printf("tenkai-shell: system tray disabled: %v", err)
 		return
 	}
 	t := &trayState{
@@ -214,7 +214,7 @@ func trayCacheDir() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
-	return filepath.Join(base, "mei", "tray")
+	return filepath.Join(base, "tenkai", "tray")
 }
 
 // --- exported D-Bus surface (watcher + properties) ---
@@ -599,7 +599,7 @@ func (t *trayState) nameOwner(name string) string {
 // the item's own icon_theme_path first (an item-supplied search dir), then the
 // ambient theme; failing a name, the pixmap nearest the target size is converted
 // ARGB to RGBA; failing that, a generic executable icon. When the item needs
-// attention its attention icon is preferred (the Mei divergence).
+// attention its attention icon is preferred (the Tenkai divergence).
 func resolveTrayIcon(in trayIconInput, exists func(string) bool) trayIcon {
 	name := in.IconName
 	pixmaps := in.IconPixmaps

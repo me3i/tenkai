@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal StatusNotifierItem + dbusmenu for the Mei tray test.
+"""Minimal StatusNotifierItem + dbusmenu for the Tenkai tray test.
 
 Registers on whatever bus DBUS_SESSION_BUS_ADDRESS names -- the nested private
 bus only. It starts no app, opens no socket and touches no service: it just
@@ -23,7 +23,7 @@ from gi.repository import GLib
 ITEM_IFACE = "org.kde.StatusNotifierItem"
 MENU_IFACE = "com.canonical.dbusmenu"
 PROPS_IFACE = "org.freedesktop.DBus.Properties"
-BUS_NAME = "org.kde.StatusNotifierItem.meitest"  # overridden by --bus-name
+BUS_NAME = "org.kde.StatusNotifierItem.tenkaitest"  # overridden by --bus-name
 ITEM_PATH = "/StatusNotifierItem"
 MENU_PATH = "/MenuBar"
 
@@ -31,8 +31,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--icon-name", default="dialog-information")
 parser.add_argument("--pixmap", action="store_true")
 parser.add_argument("--event-log", required=True)
-parser.add_argument("--title", default="Mei Tray Test")
-parser.add_argument("--bus-name", default="org.kde.StatusNotifierItem.meitest")
+parser.add_argument("--title", default="Tenkai Tray Test")
+parser.add_argument("--bus-name", default="org.kde.StatusNotifierItem.tenkaitest")
 parser.add_argument("--no-register", action="store_true",
                     help="publish the objects without calling the watcher (reply probe)")
 args = parser.parse_args()
@@ -55,7 +55,7 @@ def props():
     icon_name = "" if args.pixmap else args.icon_name
     return {
         "Category": dbus.String("ApplicationStatus", variant_level=1),
-        "Id": dbus.String("mei-tray-test", variant_level=1),
+        "Id": dbus.String("tenkai-tray-test", variant_level=1),
         "Title": dbus.String(args.title, variant_level=1),
         "Status": dbus.String("Active", variant_level=1),
         "IconName": dbus.String(icon_name, variant_level=1),
@@ -67,7 +67,7 @@ def props():
         "OverlayIconPixmap": dbus.Array([], signature="(iiay)"),
         "ToolTip": dbus.Struct(
             (dbus.String(""), dbus.Array([], signature="(iiay)"),
-             dbus.String(args.title), dbus.String("Mei tray acceptance item")),
+             dbus.String(args.title), dbus.String("Tenkai tray acceptance item")),
             signature="sa(iiay)ss", variant_level=1),
         "ItemIsMenu": dbus.Boolean(True, variant_level=1),
         "Menu": dbus.ObjectPath(MENU_PATH, variant_level=1),

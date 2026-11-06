@@ -27,9 +27,9 @@ Item {
     readonly property string providerName: Settings.provider
     readonly property string pTitle: pg.providerName !== "" ? pg.cap(pg.providerName) : I18n.tr("Window Manager")
     readonly property string pEyebrow: I18n.tr("COMPOSITOR")
-    readonly property string pBlurb: I18n.tr("How windows look and behave here. Changes apply live and are saved to Mei's own config, never to your Hyprland files.")
+    readonly property string pBlurb: I18n.tr("How windows look and behave here. Changes apply live and are saved to Tenkai's own config, never to your Hyprland files.")
 
-    // Prefer the live read: the shared store is empty in Mei, so hu.hyprVal
+    // Prefer the live read: the shared store is empty in Tenkai, so hu.hyprVal
     // would leave every row blank. Reading the running compositor is the whole
     // point; a store value (never present here) would only ever be stale.
     function hv(path) { return pg.live[path] !== undefined ? pg.live[path] : (pg.hub ? pg.hub.hyprVal(path) : undefined) }
@@ -38,10 +38,10 @@ Item {
     // ── live values ──────────────────────────────────────────────────────
     // Every row opens on what the compositor actually runs: the map below fills
     // the same dotted keys from `hyprctl getoption`. An edit goes through
-    // hub.hyprEdit (the shared draft), Save calls `mei-hub desktop save`, which
-    // persists to mei/hypr-advanced.json and applies each key with
+    // hub.hyprEdit (the shared draft), Save calls `tenkai-hub desktop save`, which
+    // persists to tenkai/hypr-advanced.json and applies each key with
     // `hl.config` through hyprctl; boot re-applies the file. No Hyprland config
-    // is written, so a reload resets the runtime until Mei starts again.
+    // is written, so a reload resets the runtime until Tenkai starts again.
     property var live: ({})
     readonly property var liveOptions: ({
         "desktop.appearance.gapsIn": "general:gaps_in",

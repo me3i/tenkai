@@ -97,7 +97,7 @@ func paletteBridgeManagedFiles() map[string]bool {
 	if state == "" {
 		state = filepath.Join(paletteBridgeHome(), ".local", "state")
 	}
-	b, err := os.ReadFile(filepath.Join(state, "mei", "palette-bridge", "owned-files.tsv"))
+	b, err := os.ReadFile(filepath.Join(state, "tenkai", "palette-bridge", "owned-files.tsv"))
 	if err != nil {
 		return map[string]bool{}
 	}
@@ -115,7 +115,7 @@ func paletteBridgeStatusFor(source string) paletteBridgeStatus {
 	managed := paletteBridgeManagedFiles()
 	spotify := filepath.Join(config, "spicetify", "Extensions", "ryoku-wallpaper-colors.js")
 	vesktop := filepath.Join(config, "vesktop", "themes", "midnight-ryoku.theme.css")
-	zen := filepath.Join(config, "mei", "user_edits", "matugen", "templates", "zen.css")
+	zen := filepath.Join(config, "tenkai", "user_edits", "matugen", "templates", "zen.css")
 	_, binErr := exec.LookPath("ryoku-palette-bridge")
 	_, sourceErr := paletteBridgeSource(source, "install.sh", "install-integrations.sh")
 	client := http.Client{Timeout: 350 * time.Millisecond}
@@ -155,12 +155,12 @@ func paletteBridgeIntegrationID(id string) bool {
 }
 
 func runPaletteBridge(args []string) error {
-	// MEI: the palette bridge (a 127.0.0.1:47616 HTTP listener that fans the
+	// TENKAI: the palette bridge (a 127.0.0.1:47616 HTTP listener that fans the
 	// palette into browser/app themes) is off the keep list. This verb is
 	// refused outright -- not even `status` -- so the hub can never install,
 	// enable or restart its systemd user unit against the real user manager.
 	// Disabled, not deleted: remove this guard to restore it.
-	return fmt.Errorf("palette-bridge: disabled in Mei (the 127.0.0.1:47616 bridge and its systemd unit are off the keep list)")
+	return fmt.Errorf("palette-bridge: disabled in Tenkai (the 127.0.0.1:47616 bridge and its systemd unit are off the keep list)")
 }
 
 func runPaletteBridgeOriginal(args []string) error {

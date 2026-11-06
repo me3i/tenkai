@@ -151,7 +151,7 @@ Item {
         presetProc.running = true;
     }
     function reloadCpu() {
-        cpuCapsProc.command = ["mei-hub", "cpu", "caps", pg.cpuProfile];
+        cpuCapsProc.command = ["tenkai-hub", "cpu", "caps", pg.cpuProfile];
         cpuCapsProc.running = true;
     }
     function editProfile(name) {
@@ -160,7 +160,7 @@ Item {
     }
     function cpuSet(scope, id, value) {
         pg.cpuError = "";
-        cpuSetProc.command = ["mei-hub", "cpu", "set", scope, id, "" + value];
+        cpuSetProc.command = ["tenkai-hub", "cpu", "set", scope, id, "" + value];
         cpuSetProc.running = true;
     }
     function act(cmd) {
@@ -170,47 +170,47 @@ Item {
     }
     function setMode(m) {
         pg.modeWarn = "";
-        modeSetProc.command = ["mei-hub", "gpu", "mode", "set", m];
+        modeSetProc.command = ["tenkai-hub", "gpu", "mode", "set", m];
         modeSetProc.running = true;
     }
     function setMux(m) {
         pg.muxError = "";
-        muxSetProc.command = ["mei-hub", "gpu", "mux", "set", m];
+        muxSetProc.command = ["tenkai-hub", "gpu", "mux", "set", m];
         muxSetProc.running = true;
     }
     function cpuSwitch(name) {
         pg.cpuError = "";
-        cpuSwitchProc.command = ["mei-hub", "cpu", "switch", name];
+        cpuSwitchProc.command = ["tenkai-hub", "cpu", "switch", name];
         cpuSwitchProc.running = true;
     }
     function tuneSet(gpu, id, value) {
         pg.tuneError = "";
-        tuneSetProc.command = ["mei-hub", "gpu", "tune", "set", gpu, id, "" + value];
+        tuneSetProc.command = ["tenkai-hub", "gpu", "tune", "set", gpu, id, "" + value];
         tuneSetProc.running = true;
     }
     function tuneReset() {
         pg.tuneError = "";
-        tuneSetProc.command = ["mei-hub", "gpu", "tune", "reset"];
+        tuneSetProc.command = ["tenkai-hub", "gpu", "tune", "reset"];
         tuneSetProc.running = true;
     }
     function applyPreset(name) {
         pg.tuneError = "";
-        tuneSetProc.command = ["mei-hub", "gpu", "tune", "preset", "apply", name];
+        tuneSetProc.command = ["tenkai-hub", "gpu", "tune", "preset", "apply", name];
         tuneSetProc.running = true;
     }
     function savePreset(name) {
         if (name.trim() === "")
             return;
         pg.namingPreset = false;
-        presetSaveProc.command = ["mei-hub", "gpu", "tune", "preset", "save", name.trim()];
+        presetSaveProc.command = ["tenkai-hub", "gpu", "tune", "preset", "save", name.trim()];
         presetSaveProc.running = true;
     }
     function deletePreset(name) {
-        presetSaveProc.command = ["mei-hub", "gpu", "tune", "preset", "delete", name];
+        presetSaveProc.command = ["tenkai-hub", "gpu", "tune", "preset", "delete", name];
         presetSaveProc.running = true;
     }
     function reviewEnable() {
-        planProc.command = ["mei-hub", "gpu", "apply", "enable", "--dry-run"];
+        planProc.command = ["tenkai-hub", "gpu", "apply", "enable", "--dry-run"];
         planProc.running = true;
     }
     function enableInTerminal() {
@@ -231,7 +231,7 @@ Item {
     // ── backends ─────────────────────────────────────────────────────────────
     Process {
         id: capsProc
-        command: ["mei-hub", "gpu", "caps"]
+        command: ["tenkai-hub", "gpu", "caps"]
         stdout: StdioCollector { id: capsOut }
         stderr: StdioCollector { id: capsErr }
         onExited: (code) => {
@@ -249,7 +249,7 @@ Item {
     }
     Process {
         id: modeProc
-        command: ["mei-hub", "gpu", "mode", "get"]
+        command: ["tenkai-hub", "gpu", "mode", "get"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try { pg.mode = JSON.parse(this.text).mode; } catch (e) {}
@@ -258,7 +258,7 @@ Item {
     }
     Process {
         id: tuneProc
-        command: ["mei-hub", "gpu", "tune", "caps"]
+        command: ["tenkai-hub", "gpu", "tune", "caps"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try { pg.tune = JSON.parse(this.text) || []; } catch (e) { pg.tune = []; }
@@ -267,7 +267,7 @@ Item {
     }
     Process {
         id: presetProc
-        command: ["mei-hub", "gpu", "tune", "preset", "list"]
+        command: ["tenkai-hub", "gpu", "tune", "preset", "list"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try { pg.presets = JSON.parse(this.text) || []; } catch (e) { pg.presets = []; }
@@ -286,7 +286,7 @@ Item {
     }
     Process {
         id: muxProc
-        command: ["mei-hub", "gpu", "mux", "get"]
+        command: ["tenkai-hub", "gpu", "mux", "get"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try { pg.mux = JSON.parse(this.text) || {}; } catch (e) { pg.mux = {}; }
@@ -329,7 +329,7 @@ Item {
     }
     Process {
         id: cpuActiveProc
-        command: ["mei-hub", "cpu", "active"]
+        command: ["tenkai-hub", "cpu", "active"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -610,10 +610,10 @@ done
                     Btn { text: I18n.tr("Retry"); primary: true; onAct: pg.reload() }
                 }
 
-                // ── MEI RENDERS ON ──
+                // ── TENKAI RENDERS ON ──
                 SettingCard {
                     width: gfxCol.colWidth
-                    title: I18n.tr("MEI RENDERS ON")
+                    title: I18n.tr("TENKAI RENDERS ON")
                     // Hybrid/Performance/Passthrough only mean something with a
                     // second GPU to switch between; a single-GPU box always renders
                     // on its one GPU, so hide the switcher rather than lock it.
@@ -1092,7 +1092,7 @@ done
                         Btn {
                             visible: pg.caps.enabled === true
                             text: I18n.tr("Disable passthrough")
-                            onAct: pg.act(["mei-hub", "gpu", "apply", "disable"])
+                            onAct: pg.act(["tenkai-hub", "gpu", "apply", "disable"])
                         }
                         Btn {
                             visible: pg.caps.enabled !== true && pg.caps.verdict !== "incapable" && !pg.planning && !pg.enabling

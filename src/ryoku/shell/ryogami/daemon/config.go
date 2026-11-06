@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// config mirrors the Rust daemon's ~/.config/mei/ryogami.json: only the keys
+// config mirrors the Rust daemon's ~/.config/tenkai/ryogami.json: only the keys
 // the Go daemon consumes are modeled; unknown keys pass through untouched on
 // the persist path because the file is rewritten by targeted patches only.
 type config struct {
@@ -39,7 +39,7 @@ func home() string {
 	return h
 }
 
-// stateHome resolves XDG_STATE_HOME (~/.local/state fallback): where Mei's
+// stateHome resolves XDG_STATE_HOME (~/.local/state fallback): where Tenkai's
 // cross-process state files live, including the legacy ryoku-wallpaper path the
 // wallpaper readers (rice capture, the overview backdrop, the Super+W on-air
 // dot, the shell's palette bridge) watch to learn what is on screen.
@@ -50,14 +50,14 @@ func stateHome() string {
 	return filepath.Join(home(), ".local", "state")
 }
 
-func meiConfigDir() string {
+func tenkaiConfigDir() string {
 	if d := os.Getenv("XDG_CONFIG_HOME"); d != "" {
-		return filepath.Join(d, "mei")
+		return filepath.Join(d, "tenkai")
 	}
-	return filepath.Join(home(), ".config", "mei")
+	return filepath.Join(home(), ".config", "tenkai")
 }
 
-func configPath() string { return filepath.Join(meiConfigDir(), "ryogami.json") }
+func configPath() string { return filepath.Join(tenkaiConfigDir(), "ryogami.json") }
 
 func loadConfig() config {
 	var c config
@@ -95,7 +95,7 @@ func (c config) videoDir() string {
 	if p := resolvePath(c.Paths.VideoWallpaper); p != "" {
 		return p
 	}
-	// Mei keeps clips in ~/Pictures/livewalls (the switcher and the old live
+	// Tenkai keeps clips in ~/Pictures/livewalls (the switcher and the old live
 	// stack both scanned it); fall back to the shared wallpaper dir only when
 	// that folder is absent, mirroring upstream's shared-dir default.
 	if live := filepath.Join(home(), "Pictures", "livewalls"); dirExists(live) {
@@ -152,7 +152,7 @@ func persistVideoFrame(sec float64) {
 		return
 	}
 	raw["matugen"] = b
-	_ = os.MkdirAll(meiConfigDir(), 0o755)
+	_ = os.MkdirAll(tenkaiConfigDir(), 0o755)
 	out, err := json.MarshalIndent(raw, "", "  ")
 	if err != nil {
 		return
@@ -170,7 +170,7 @@ func persistResourceTier(tier string) {
 		return
 	}
 	raw["resource_tier"] = b
-	_ = os.MkdirAll(meiConfigDir(), 0o755)
+	_ = os.MkdirAll(tenkaiConfigDir(), 0o755)
 	out, err := json.MarshalIndent(raw, "", "  ")
 	if err != nil {
 		return
@@ -186,7 +186,7 @@ func saveRaw(path string, b []byte) {
 	_ = os.Rename(tmp, path)
 }
 
-// contentFit reads the shell's wallpaper fill mode from mei's shell.json,
+// contentFit reads the shell's wallpaper fill mode from tenkai's shell.json,
 // mirroring the Rust daemon: the shell owns that preference, the daemon only
 // echoes it into published frames.
 func contentFit() string {
@@ -196,7 +196,7 @@ func contentFit() string {
 			Fit string `json:"content_fit"`
 		} `json:"wallpaper"`
 	}
-	loadJSON(filepath.Join(meiConfigDir(), "shell.json"), &shell)
+	loadJSON(filepath.Join(tenkaiConfigDir(), "shell.json"), &shell)
 	switch shell.Wallpaper.Fit {
 	case "Contain", "Cover", "Fill", "ScaleDown", "Center", "Tile":
 		return shell.Wallpaper.Fit
@@ -225,17 +225,17 @@ func wallPrefs() wallTune {
 			TransWidth *int    `json:"video_transcode_width"`
 		} `json:"wallpaper"`
 	}
-	// MEI: stills only. video_enabled is forced off here and cannot be turned
+	// TENKAI: stills only. video_enabled is forced off here and cannot be turned
 	// back on from shell.json; applyWallpaper also refuses a video path, and the
 	// video player is never started. Disabled, not deleted.
 	p := wallTune{Engine: "ryogami", Enabled: false, TransFps: 24, TransWidth: 1920}
-	loadJSON(filepath.Join(meiConfigDir(), "shell.json"), &shell)
+	loadJSON(filepath.Join(tenkaiConfigDir(), "shell.json"), &shell)
 	if shell.Wallpaper.Engine != nil {
 		if e := *shell.Wallpaper.Engine; e == "in_shell" {
 			p.Engine = "in_shell"
 		}
 	}
-	// MEI: `shell.wallpaper.video_enabled` is deliberately NOT read: live video
+	// TENKAI: `shell.wallpaper.video_enabled` is deliberately NOT read: live video
 	// is off the keep list. Restoring this block (and applyWallpaper's guard)
 	// re-enables it.
 	if shell.Wallpaper.Transcode != nil {

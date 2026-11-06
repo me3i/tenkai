@@ -44,7 +44,7 @@ Singleton {
     // is kept.
     function modelsKey(key) { return !key || root.deadKeys.indexOf(key) < 0; }
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     // Nested read by dotted path; undefined for any missing segment.
     function get(path) {

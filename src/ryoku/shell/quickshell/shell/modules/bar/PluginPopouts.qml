@@ -53,13 +53,13 @@ Item {
     readonly property real maskBodyW: first ? first.maskW : 0
     readonly property real maskBodyH: first ? first.maskH : 0
 
-    readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
+    readonly property string _shellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string _script: (_shellDir && _shellDir.length > 0)
         ? _shellDir + "/quickshell/plugins/discover.sh"
         : (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/quickshell/plugins/discover.sh"
     readonly property string _stateHome: Quickshell.env("XDG_STATE_HOME")
         || (Quickshell.env("HOME") + "/.local/state")
-    readonly property string _revision: root._stateHome + "/mei/store/revision.json"
+    readonly property string _revision: root._stateHome + "/tenkai/store/revision.json"
 
     function reload() { discoverProc.running = false; discoverProc.running = true; }
     function syncPlugins(all) {
@@ -94,7 +94,7 @@ Item {
     }
 
     FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/plugins.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/plugins.json"
         watchChanges: true
         printErrors: false
         onFileChanged: root.reload()

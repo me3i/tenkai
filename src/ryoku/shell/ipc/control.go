@@ -22,7 +22,7 @@ import (
 // barEdges are the four frame edges plus "all". The reference offered per-edge
 // toggles and a toggle/reveal/hide-all trio whose -x flag excluded bars marked
 // hidden-by-default; that flag's meaning was inverted from its name (with -x set
-// it acted ONLY on reveal-by-default bars). Mei drops the flag for an explicit
+// it acted ONLY on reveal-by-default bars). Tenkai drops the flag for an explicit
 // edge list, so "all" is every edge (the reference's default, non-excluding
 // path) and a named edge is just that one.
 var barEdges = map[string]bool{"top": true, "bottom": true, "left": true, "right": true, "all": true}
@@ -92,9 +92,9 @@ func (d *daemon) brightness(sub string) string {
 	}
 	// A harness seam: the idle module dims and restores the panel, and a
 	// nested test must never touch the owner's backlight. With
-	// MEI_BRIGHTNESS_FAKE set, the step is written to that file instead of the
+	// TENKAI_BRIGHTNESS_FAKE set, the step is written to that file instead of the
 	// hardware.
-	if fake := os.Getenv("MEI_BRIGHTNESS_FAKE"); fake != "" {
+	if fake := os.Getenv("TENKAI_BRIGHTNESS_FAKE"); fake != "" {
 		cur := 0
 		if b, err := os.ReadFile(fake); err == nil {
 			cur, _ = strconv.Atoi(strings.TrimSpace(string(b)))
@@ -162,7 +162,7 @@ func (d *daemon) brightnessRestore() string {
 // brightnessLevel is the panel's current brightness as a percentage, honouring
 // the harness seam so a nested test never reads (or writes) the real panel.
 func (d *daemon) brightnessLevel() int {
-	if fake := os.Getenv("MEI_BRIGHTNESS_FAKE"); fake != "" {
+	if fake := os.Getenv("TENKAI_BRIGHTNESS_FAKE"); fake != "" {
 		if b, err := os.ReadFile(fake); err == nil {
 			if v, err := strconv.Atoi(strings.TrimSpace(string(b))); err == nil {
 				return v
@@ -214,8 +214,8 @@ func (d *daemon) menuClose() string {
 // barToggle drives the per-edge bar reveal state (bar toggle/reveal/
 // hide, per edge or across all).
 //
-// mei: the shell exposes no setBar IPC function. Its bar reveal is a single
-// whole-bar toggle driven in-process by the global:mei:barToggle keybind
+// tenkai: the shell exposes no setBar IPC function. Its bar reveal is a single
+// whole-bar toggle driven in-process by the global:tenkai:barToggle keybind
 // (CustomShortcut -> ShellState.barRevealed), with no per-edge reveal/hide
 // grammar. This CLI verb still emits setBar on the shell target, so it is a
 // no-op pending the retire phase (add a shell IPC fn there, or drop the verb).
@@ -225,7 +225,7 @@ func (d *daemon) barToggle(edge, action string) string {
 	return shellIpc("setBar", d.activeMonitor(), edge, action)
 }
 
-// hub opens or closes Mei Hub, which replaces the reference settings window.
+// hub opens or closes Tenkai Hub, which replaces the reference settings window.
 // The Hub is one app: Bar Studio and every other page are sections inside it,
 // reached by in-app navigation, never separate processes. Open on a running
 // Hub navigates (when a section is named) and raises the window; open on a
@@ -273,8 +273,8 @@ func (d *daemon) hub(sub, section string) string {
 			// one detached grandchild (ryostore, a kitty, xdg-open) then held
 			// the lock for the rest of the session and every later open
 			// silently did nothing. The lock lives under XDG_RUNTIME_DIR (inside
-			// the project under Mei's redirected runtime dir), never /tmp.
-			argv := append([]string{"-n", "-o", filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "mei-hub.lock"), "qs"}, hubSelect()...)
+			// the project under Tenkai's redirected runtime dir), never /tmp.
+			argv := append([]string{"-n", "-o", filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "tenkai-hub.lock"), "qs"}, hubSelect()...)
 			cmd := exec.Command("flock", argv...)
 			if err := cmd.Start(); err != nil {
 				return

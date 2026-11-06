@@ -324,11 +324,11 @@ func (s *sleepCycle) protect() bool {
 func (s *sleepCycle) protectLocked() bool {
 	active := s.sessionActive()
 	if err := acquireSleepInhibitor(s.block); err != nil {
-		s.logf("mei-shell: sleep block inhibitor unavailable: %v", err)
+		s.logf("tenkai-shell: sleep block inhibitor unavailable: %v", err)
 		return false
 	}
 	if err := acquireSleepInhibitor(s.delay); err != nil {
-		s.logf("mei-shell: sleep delay inhibitor unavailable: %v", err)
+		s.logf("tenkai-shell: sleep delay inhibitor unavailable: %v", err)
 		return false
 	}
 	if s.sessionActive() != active {
@@ -338,7 +338,7 @@ func (s *sleepCycle) protectLocked() bool {
 		return s.protected()
 	}
 	if err := s.lock(s.now().Add(lockBudget(s.delay.limit()))); err != nil {
-		s.logf("mei-shell: inactive session lock is not compositor-secure; retaining sleep block: %v", err)
+		s.logf("tenkai-shell: inactive session lock is not compositor-secure; retaining sleep block: %v", err)
 		return false
 	}
 
@@ -377,14 +377,14 @@ func (s *sleepCycle) handleLocked(sleeping bool) bool {
 			// A delay inhibitor has a finite ceiling. Recover the hard block as
 			// well, so failed re-verification cannot authorize insecure sleep.
 			if blockErr := acquireSleepInhibitor(s.block); blockErr != nil {
-				s.logf("mei-shell: suspend lock was not compositor-secure and sleep block recovery failed: %v (block: %v)", err, blockErr)
+				s.logf("tenkai-shell: suspend lock was not compositor-secure and sleep block recovery failed: %v (block: %v)", err, blockErr)
 			} else {
-				s.logf("mei-shell: suspend lock was not compositor-secure; retaining delay and block inhibitors: %v", err)
+				s.logf("tenkai-shell: suspend lock was not compositor-secure; retaining delay and block inhibitors: %v", err)
 			}
 			return false
 		}
 		s.delay.release()
-		s.logf("mei-shell: suspend lock is compositor-secure")
+		s.logf("tenkai-shell: suspend lock is compositor-secure")
 		return true
 	}
 	s.setSleeping(false)
@@ -492,7 +492,7 @@ func (s *sleepCycle) requestSuspendContext(requestCtx context.Context) error {
 	defer cancel()
 	if err := s.suspend(ctx); err != nil {
 		if !s.protectLocked() {
-			s.logf("mei-shell: suspend failed and sleep protection could not be restored")
+			s.logf("tenkai-shell: suspend failed and sleep protection could not be restored")
 			s.requestProtectionRetry()
 		}
 		return fmt.Errorf("request suspend: %w", err)
@@ -702,7 +702,7 @@ func runSleepSignals(
 				retryC = retry.C
 				continue
 			}
-			cycle.logf("mei-shell: sleep protection restored")
+			cycle.logf("tenkai-shell: sleep protection restored")
 			retry = nil
 			retryC = nil
 		case sig, ok := <-sigs:
@@ -929,7 +929,7 @@ func (d *daemon) superviseSleepWake() {
 				guard.release()
 			}
 			if time.Since(lastFailureLog) >= 2*time.Second {
-				log.Printf("mei-shell: sleep guard reconnect pending: %v", err)
+				log.Printf("tenkai-shell: sleep guard reconnect pending: %v", err)
 				lastFailureLog = time.Now()
 			}
 			timer := time.NewTimer(sleepReconnectStep)
@@ -955,7 +955,7 @@ func (d *daemon) superviseSleepWake() {
 			guard.release()
 			return
 		}
-		log.Printf("mei-shell: sleep guard reconnecting: %v", err)
+		log.Printf("tenkai-shell: sleep guard reconnecting: %v", err)
 		if errors.Is(err, errLogin1OwnerRestart) {
 			// The old FDs died with logind, but its phase and suspend-clock
 			// baseline still identify a missed resume on the replacement.
@@ -1000,7 +1000,7 @@ func (d *daemon) releaseQylockUnlockGuardWhenReady() {
 				continue
 			}
 			if err := qylockUnlockGuardStop(unit); err != nil {
-				log.Printf("mei-shell: release qylock unlock sleep guard: %v", err)
+				log.Printf("tenkai-shell: release qylock unlock sleep guard: %v", err)
 			}
 		}
 	}
@@ -1015,11 +1015,11 @@ func (d *daemon) startSleepWake() {
 }
 
 func applyWakeLighting(ctx context.Context) {
-	hub := "mei-hub"
-	if p, err := exec.LookPath("mei-hub"); err == nil {
+	hub := "tenkai-hub"
+	if p, err := exec.LookPath("tenkai-hub"); err == nil {
 		hub = p
 	} else if exe, err := os.Executable(); err == nil {
-		cand := filepath.Join(filepath.Dir(exe), "mei-hub")
+		cand := filepath.Join(filepath.Dir(exe), "tenkai-hub")
 		if fi, err := os.Stat(cand); err == nil && fi.Mode()&0o111 != 0 {
 			hub = cand
 		} else {
@@ -1030,14 +1030,14 @@ func applyWakeLighting(ctx context.Context) {
 	}
 	if err := exec.CommandContext(ctx, hub, "lighting", "apply").Run(); err != nil &&
 		ctx.Err() == nil {
-		log.Printf("mei-shell: restore lighting after wake: %v", err)
+		log.Printf("tenkai-shell: restore lighting after wake: %v", err)
 	}
 }
 
 func outputStatePaths() (string, string) {
-	dir := filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "mei-idle-output")
+	dir := filepath.Join(os.Getenv("XDG_RUNTIME_DIR"), "tenkai-idle-output")
 	if os.Getenv("XDG_RUNTIME_DIR") == "" {
-		dir = filepath.Join(os.TempDir(), "mei-idle-output")
+		dir = filepath.Join(os.TempDir(), "tenkai-idle-output")
 	}
 	return filepath.Join(dir, "lock"), filepath.Join(dir, "generation")
 }
@@ -1079,7 +1079,7 @@ func (d *daemon) holdAwake(ctx context.Context) {
 		generation = readOutputGeneration(path)
 		return nil
 	}); err != nil {
-		log.Printf("mei-shell: open output transition state: %v", err)
+		log.Printf("tenkai-shell: open output transition state: %v", err)
 		return
 	}
 
@@ -1121,7 +1121,7 @@ func (d *daemon) holdAwake(ctx context.Context) {
 			return
 		}
 		if err != nil {
-			log.Printf("mei-shell: wake output power: %v", err)
+			log.Printf("tenkai-shell: wake output power: %v", err)
 		}
 		remaining = time.Until(deadline)
 		if remaining <= 0 {
@@ -1152,6 +1152,6 @@ func (d *daemon) holdAwake(ctx context.Context) {
 		}
 		return nil
 	}); err != nil {
-		log.Printf("mei-shell: finish output transition: %v", err)
+		log.Printf("tenkai-shell: finish output transition: %v", err)
 	}
 }

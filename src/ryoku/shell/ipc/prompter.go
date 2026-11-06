@@ -67,24 +67,24 @@ type prompter struct {
 func startKeyringPrompter() *prompter {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
-		log.Printf("mei-shell: keyring prompter disabled: %v", err)
+		log.Printf("tenkai-shell: keyring prompter disabled: %v", err)
 		return nil
 	}
 	p := &prompter{conn: conn, prompts: map[dbus.ObjectPath]*promptSession{}}
 	p.onShow = p.pushPrompt
 	if err := conn.Export(p, dbus.ObjectPath(prompterPath), prompterIface); err != nil {
-		log.Printf("mei-shell: keyring prompter disabled: %v", err)
+		log.Printf("tenkai-shell: keyring prompter disabled: %v", err)
 		_ = conn.Close()
 		return nil
 	}
 	reply, err := conn.RequestName(prompterName, dbus.NameFlagReplaceExisting|dbus.NameFlagDoNotQueue)
 	if err != nil {
-		log.Printf("mei-shell: keyring prompter disabled: %v", err)
+		log.Printf("tenkai-shell: keyring prompter disabled: %v", err)
 		_ = conn.Close()
 		return nil
 	}
 	if reply != dbus.RequestNameReplyPrimaryOwner {
-		log.Printf("mei-shell: keyring prompter disabled: %s already owned", prompterName)
+		log.Printf("tenkai-shell: keyring prompter disabled: %s already owned", prompterName)
 		_ = conn.Close()
 		return nil
 	}
@@ -244,7 +244,7 @@ func (p *prompter) pushPrompt(id int, ptype string, props map[string]interface{}
 	}
 	b, err := json.Marshal(payload)
 	if err != nil {
-		log.Printf("mei-shell: keyring prompt payload: %v", err)
+		log.Printf("tenkai-shell: keyring prompt payload: %v", err)
 		return
 	}
 	shellIpc("keyringPrompt", string(b))
@@ -258,7 +258,7 @@ func (p *prompter) callReady(sess *promptSession, reply string, props map[string
 	defer cancel()
 	obj := p.conn.Object(sess.sender, sess.callback)
 	if call := obj.CallWithContext(ctx, callbackReady, 0, reply, props, exchange); call.Err != nil {
-		log.Printf("mei-shell: keyring PromptReady: %v", call.Err)
+		log.Printf("tenkai-shell: keyring PromptReady: %v", call.Err)
 	}
 }
 

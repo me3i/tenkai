@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 // QML view of the daemon `osd` topic. The volume and mic OSDs read PipeWire
-// directly (Mei owns the audio graph in QML), but brightness has no
+// directly (Tenkai owns the audio graph in QML), but brightness has no
 // QML-observable source: the media keys and the brightness verb both drive the
 // backlight directly, so the daemon watches the primary backlight and pushes
 // {brightness:{seq,value}} here. The brightness OSD shows when `brightnessSeq`
@@ -15,7 +15,7 @@ Singleton {
 
     property real brightness: 0
     property int brightnessSeq: 0
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     function apply(line) {
         try {

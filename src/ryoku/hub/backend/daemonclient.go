@@ -4,7 +4,7 @@ package main
 // Anything the daemon owns (clipboard history, the live power profile, and
 // whatever else moves behind the socket) must be read and written THROUGH the
 // daemon, never by a second writer beside it: the daemon banks the user's
-// profile pick, restores it across reboots, and re-applies the Mei CPU
+// profile pick, restores it across reboots, and re-applies the Tenkai CPU
 // definition after power-profiles-daemon settles, and a raw
 // `powerprofilesctl set` from the Hub would skip all of that.
 
@@ -27,9 +27,9 @@ func daemonCall(method string, args any, out any) error {
 	if base == "" {
 		base = os.TempDir()
 	}
-	conn, err := net.DialTimeout("unix", filepath.Join(base, "mei-shell.sock"), 3*time.Second)
+	conn, err := net.DialTimeout("unix", filepath.Join(base, "tenkai-shell.sock"), 3*time.Second)
 	if err != nil {
-		return fmt.Errorf("the shell daemon is not answering; is the Mei session running?")
+		return fmt.Errorf("the shell daemon is not answering; is the Tenkai session running?")
 	}
 	defer conn.Close()
 	_ = conn.SetDeadline(time.Now().Add(3 * time.Second))

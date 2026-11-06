@@ -6,8 +6,8 @@
 # windows and no test surface there. The main phase9.sh pass stays on
 # workspace 1 for speed.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
@@ -21,13 +21,13 @@ bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 # Clean stale state from prior gates (same fix as F2 isolation bug)
 rm -rf "$RUN/r/quickshell/by-id"/* 2>/dev/null || true
-# Ensure clean exit: stop any leftover Mei session
- trap 'cd /home/mei/projects/mei 2>/dev/null; ./mei stop >/dev/null 2>&1' EXIT
+# Ensure clean exit: stop any leftover Tenkai session
+ trap 'cd /home/tenkai/projects/tenkai 2>/dev/null; ./tenkai stop >/dev/null 2>&1' EXIT
 # Resolve nested session signature from the actual session directory
-# (same pattern as launcher-check.sh: discover after ./mei run)
+# (same pattern as launcher-check.sh: discover after ./tenkai run)
 SIG=""
 H() {
-  local rt="${RT:-$MEI/.r}" sig="${SIG:-}"
+  local rt="${RT:-$TENKAI/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
@@ -35,29 +35,29 @@ H() {
 IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
 
 cleanup() {
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
 }
 trap cleanup EXIT
 
 echo; echo "=== verify-untouched BEFORE ==="
-VB="$( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
-      XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )"
+VB="$( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
+      XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )"
 echo "  $VB"
 case "$VB" in *PASS*) ok "verify-untouched before" ;; *) bad "verify-untouched before did not PASS" ;; esac
 
-if [ -f "$RUN/pids" ] || pgrep -f "^$RUN/bin/mei-shell daemon" >/dev/null 2>&1; then
-  bad "a Mei session is already running; refusing to start another"
+if [ -f "$RUN/pids" ] || pgrep -f "^$RUN/bin/tenkai-shell daemon" >/dev/null 2>&1; then
+  bad "a Tenkai session is already running; refusing to start another"
   echo "RESULT: FAIL"; exit 1
 fi
 
 echo; echo "=== launch nested session ==="
-( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
 
 # Discover the nested Hyprland instance signature — only accept the
 # session F1 itself started, never a leftover from a prior gate.
-# Compare the hypr directory before and after ./mei run.
+# Compare the hypr directory before and after ./tenkai run.
 BEFORE=$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | sort)
-./mei run > /dev/null 2>&1 &
+./tenkai run > /dev/null 2>&1 &
 for _ in $(seq 1 120); do
   AFTER=$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | sort)
   NEW=$(comm -13 <(echo "$BEFORE") <(echo "$AFTER") | head -1)
@@ -72,38 +72,38 @@ ok "nested instance reachable ($SIG)"
 
 # Bounded wait, 120 s: the bar compiles its QML on a cold start, so the shell
 # (and the bar's first IPC to Hyprland, which fills its workspace list) appears
-# well after ./mei run returns. If the bar's workspace list is still empty after
+# well after ./tenkai run returns. If the bar's workspace list is still empty after
 # 120 s that is a startup failure, not a race, and the diagnostics say why.
 QS=""
 for _ in $(seq 1 400); do
-  QS=$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
+  QS=$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
   [ -n "$QS" ] && break
   sleep 0.3
 done
 if [ -z "$QS" ]; then
   bad "bar shell process not seen after 120 s"
   echo "--- diagnostics ---"
-  ps -eo pid,args | grep -F "$MEI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  ps -eo pid,args | grep -F "$TENKAI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
   echo "--- shell log tail ---"
-  tail -30 "$RUN/state/mei/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
+  tail -30 "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
   echo "RESULT: FAIL"; exit 1
 fi
 # Bounded wait, 120 s: the bar compiles its QML on a cold start, so the shell
 # (and the bar's first IPC to Hyprland, which fills its workspace list) appears
-# well after ./mei run returns. If the bar's workspace list is still empty after
+# well after ./tenkai run returns. If the bar's workspace list is still empty after
 # 120 s that is a startup failure, not a race, and the diagnostics say why.
 QS=""
 for _ in $(seq 1 400); do
-  QS=$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
+  QS=$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
   [ -n "$QS" ] && break
   sleep 0.3
 done
 if [ -z "$QS" ]; then
   bad "bar shell process not seen after 120 s"
   echo "--- diagnostics ---"
-  ps -eo pid,args | grep -F "$MEI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  ps -eo pid,args | grep -F "$TENKAI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
   echo "--- shell log tail ---"
-  tail -30 "$RUN/state/mei/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
+  tail -30 "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
   echo "RESULT: FAIL"; exit 1
 fi
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
@@ -137,15 +137,15 @@ done
   sig="${HYPRLAND_INSTANCE_SIGNATURE:-}"
 if [ -z "$WS_LIST" ]; then
   echo "FAIL    bar's workspace list empty after 120 s"
-  echo "---- ps (hyprland + qs + mei):"
-  ps -eo pid,cmd | grep -E "hyprland|qs -c|mei-" | grep -v grep || echo "(no process matches)"
+  echo "---- ps (hyprland + qs + tenkai):"
+  ps -eo pid,cmd | grep -E "hyprland|qs -c|tenkai-" | grep -v grep || echo "(no process matches)"
   echo "---- hyprctl workspaces (what Hyprland thinks):"
   hyprctl workspaces -j 2>/dev/null | head -c 500
   echo
   echo "---- shell log tail:"
-  tail -30 "$RUN/state/mei/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
+  tail -30 "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
   echo "---- daemon log tail:"
-  tail -30 "$RUN/state/mei/shell.log" 2>/dev/null || echo "(no daemon log)"
+  tail -30 "$RUN/state/tenkai/shell.log" 2>/dev/null || echo "(no daemon log)"
   echo "RESULT: FAIL"; exit 1
 fi
 echo "note    bar workspace list after wait: ${WS_LIST}"
@@ -180,8 +180,8 @@ note "bar workspace list after the sweep: ${barall:-?}"
 echo; echo "=== stop and verify-untouched AFTER ==="
 cleanup
 trap - EXIT
-VA="$( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
-      XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )"
+VA="$( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
+      XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )"
 echo "  $VA"
 case "$VA" in *PASS*) ok "verify-untouched after" ;; *) bad "verify-untouched after did not PASS" ;; esac
 

@@ -31,7 +31,7 @@ func configPath() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei", "hub.toml")
+	return filepath.Join(base, "tenkai", "hub.toml")
 }
 
 func normalizeSection(section string) string {

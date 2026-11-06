@@ -28,11 +28,11 @@ func (d *daemon) startWM() {
 		if err := d.wmc.Act(wm.Action(a.Action), a.Args...); err != nil {
 			return nil, err
 		}
-		log.Printf("mei-shell: wm.act %s %s", a.Action, strings.Join(a.Args, " "))
+		log.Printf("tenkai-shell: wm.act %s %s", a.Action, strings.Join(a.Args, " "))
 		return map[string]any{"ok": true}, nil
 	})
 	go d.watchWindowManager()
-	// Mei's persisted runtime overrides (displays, advanced settings, keybinds)
+	// Tenkai's persisted runtime overrides (displays, advanced settings, keybinds)
 	// are applied at boot and again here, once the compositor is ready: an
 	// early hl.bind is dropped by the config load that finishes afterwards.
 	go d.reapplyOverridesWhenReady()

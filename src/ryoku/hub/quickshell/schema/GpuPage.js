@@ -7,7 +7,7 @@
 var rows = [
     {
         "tab": "",
-        "group": "MEI RENDERS ON",
+        "group": "TENKAI RENDERS ON",
         "key": "AQ_DRM_DEVICES",
         "label": "Graphics mode",
         "desc": "Which GPU renders the desktop; next login",
@@ -246,7 +246,7 @@ var rows = [
     },
     {
         "tab": "",
-        "group": "MEI RENDERS ON",
+        "group": "TENKAI RENDERS ON",
         "key": "",
         "label": "Graphics mode explainer",
         "desc": "",

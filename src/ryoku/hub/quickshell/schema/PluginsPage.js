@@ -1,6 +1,6 @@
 .pragma library
 
-// PluginsPage as data: the Hyprland compositor plugins Mei bundles, one tab
+// PluginsPage as data: the Hyprland compositor plugins Tenkai bundles, one tab
 // each, paired with the status and rebuild card the page draws for it. The tab
 // titles are the names `ryoku-hub desktop plugins list` reports. The settings
 // rows now live with the provider (ryoku-wm-hyprland schema, page "plugins"), so

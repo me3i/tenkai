@@ -25,7 +25,7 @@ const (
 	orgbClient   = "ryoku-hub"
 )
 
-// packet ids (NetworkProtocol.h). Only the ones Mei needs.
+// packet ids (NetworkProtocol.h). Only the ones Tenkai needs.
 const (
 	pktControllerCount   = 0
 	pktControllerData    = 1
@@ -51,7 +51,7 @@ const (
 	modeAutomaticSave  = 1 << 9
 )
 
-// direction values (RGBController.h MODE_DIRECTION_*), by the name Mei stores.
+// direction values (RGBController.h MODE_DIRECTION_*), by the name Tenkai stores.
 var orgbDirections = []struct {
 	Name string
 	Flag uint32

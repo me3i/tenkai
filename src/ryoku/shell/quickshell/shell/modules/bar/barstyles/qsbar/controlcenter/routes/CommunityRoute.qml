@@ -6,15 +6,15 @@ import "../../modules"
 import Ryoku.Ui
 import Ryoku.Ui.Singletons
 
-// Community route (有志): every bar plugin installed from outside Mei, kept
+// Community route (有志): every bar plugin installed from outside Tenkai, kept
 // apart from the shipped set so a widget someone else wrote is never mixed in
-// with the built-ins, under a plain warning that Mei does not review it. The
+// with the built-ins, under a plain warning that Tenkai does not review it. The
 // same CcWidgetList sheet as Widgets, so a community widget is shown, tuned and
 // coloured exactly like a built-in; each row also names its author and can
 // EXPORT it (a Ryostore-shaped folder), SHARE it (the catalogue pull request)
 // or REMOVE it. Those run the plugin CLI here, with the result printed in a
 // console strip, so a bad URL or a missing preview is never silent. Below the
-// sheet, the two ways in: a git URL or a local folder handed to `mei plugin
+// sheet, the two ways in: a git URL or a local folder handed to `tenkai plugin
 // add --bar`, and Ryostore's plugin shelf.
 Item {
     id: page
@@ -39,7 +39,7 @@ Item {
 
     // ── the plugin CLI, run here so its result is visible ──
     // One job at a time; the console strip shows what is running, then the
-    // command's last lines. `mei plugin add` clones/copies, validates and
+    // command's last lines. `tenkai plugin add` clones/copies, validates and
     // installs without running anything from the plugin; --bar places it on the
     // bar, which re-derives on the plugins.json change.
     property string jobLabel: ""
@@ -82,13 +82,13 @@ Item {
         if (u === "") return
         // a folder typed the shell way: no shell runs here, so expand it
         if (u.indexOf("~/") === 0) u = Quickshell.env("HOME") + u.substring(1)
-        page.run(I18n.tr("Adding %1").arg(u), ["mei", "plugin", "add", u, "--bar", "--yes"])
+        page.run(I18n.tr("Adding %1").arg(u), ["tenkai", "plugin", "add", u, "--bar", "--yes"])
         gitField.text = ""
     }
-    function exportPlugin(id) { page.run(I18n.tr("Exporting %1").arg(id), ["mei", "plugin", "export", id]) }
-    function sharePlugin(id)  { page.run(I18n.tr("Sharing %1").arg(id), ["mei", "plugin", "share", id]) }
+    function exportPlugin(id) { page.run(I18n.tr("Exporting %1").arg(id), ["tenkai", "plugin", "export", id]) }
+    function sharePlugin(id)  { page.run(I18n.tr("Sharing %1").arg(id), ["tenkai", "plugin", "share", id]) }
     function removePlugin(id) {
-        page.run(I18n.tr("Removing %1").arg(id), ["mei", "plugin", "remove", id])
+        page.run(I18n.tr("Removing %1").arg(id), ["tenkai", "plugin", "remove", id])
         if (page.selId === id) page.selId = ""
     }
 
@@ -137,7 +137,7 @@ Item {
                             id: warnText
                             anchors.verticalCenter: parent.verticalCenter
                             width: parent.width - Tokens.fRow - parent.spacing
-                            text: I18n.tr("Community plugin. Mei does not review or maintain it: it runs inside your shell with your permissions, so inspect its code before you trust it.")
+                            text: I18n.tr("Community plugin. Tenkai does not review or maintain it: it runs inside your shell with your permissions, so inspect its code before you trust it.")
                             color: Tokens.inkDim
                             font.family: Tokens.ui
                             font.pixelSize: Tokens.fSmall

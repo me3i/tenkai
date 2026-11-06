@@ -27,7 +27,7 @@ Item {
             "horizonMode": "auto", "horizonColor": "#ffc777"
         })
     readonly property string launcherRoot: {
-        var shellDir = String(Quickshell.env("MEI_SHELL_DIR") || "");
+        var shellDir = String(Quickshell.env("TENKAI_SHELL_DIR") || "");
         if (shellDir.length > 0)
             return shellDir + "/quickshell/shell/modules/launcher";
         // Deployed Hub QML loads from a qrc namespace, so Qt.resolvedUrl gives no
@@ -152,7 +152,7 @@ Item {
 
     FileView {
         id: cfg
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/launcher.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/launcher.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -401,7 +401,7 @@ Item {
                         onToggled: (v) => pg.edit("showGreeting", v)
                     }
                 }
-                /* MEI: weather is off the keep list (no daemon weather, no
+                /* TENKAI: weather is off the keep list (no daemon weather, no
                    network). These two rows controlled a widget that can no
                    longer appear. Disabled, not deleted -- restore by
                    removing this comment marker.

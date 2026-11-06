@@ -4,7 +4,7 @@
 #   usage: leak-monitor.sh <pidfile> <stopfile> <logfile>
 #   env:   NESTED_RT, LIVE_RT, LIVE_WL, LEAK_LIVE_PIDS (optional override)
 #
-# Reads the recorded Mei PIDs (the pidfile written by `mei run`) and walks
+# Reads the recorded Tenkai PIDs (the pidfile written by `tenkai run`) and walks
 # /proc/<pid>/stat parent links to include every descendant of the recorded
 # nested launcher and nested compositor. It reads only /proc/<pid>/environ,
 # /proc/<pid>/stat and /proc/<pid>/cmdline. It never calls hyprctl and never
@@ -19,30 +19,30 @@
 # the live environment only to start the nested session, and the nested
 # compositor opens the live display as a Wayland client by design. The
 # launcher's own dbus-daemon and session.sh wrapper are launch infrastructure
-# (not Mei UI/daemon processes) and are logged as INFRA; their runtime is not
+# (not Tenkai UI/daemon processes) and are logged as INFRA; their runtime is not
 # treated as a leak because they carry the host environment into the session.
-# The compositor's non-Mei startup probes (Hyprland runs `sh -c lspci ...` and
+# The compositor's non-Tenkai startup probes (Hyprland runs `sh -c lspci ...` and
 # similar before it sets the nested display) are logged as COMPOSITOR-HOSTDISPLAY
-# and allowed the host display path, but not a live runtime. Every Mei component
-# descendant, including qs, mei-shell, ryogami, mei-hub and mei-wm-hyprland, is
+# and allowed the host display path, but not a live runtime. Every Tenkai component
+# descendant, including qs, tenkai-shell, ryogami, tenkai-hub and tenkai-wm-hyprland, is
 # checked strictly on every scan, even if it appears below the compositor.
 #
 # Exit 0 only if the stop file appears with no violation; exit 1 otherwise.
 set -uo pipefail
 
 PIDFILE="${1:?pidfile}"; STOP="${2:?stopfile}"; LOG="${3:?logfile}"
-NESTED_RT="${NESTED_RT:-$HOME/projects/mei/.r}"
+NESTED_RT="${NESTED_RT:-$HOME/projects/tenkai/.r}"
 LIVE_RT="${LIVE_RT:-/run/user/$(id -u)}"
 LIVE_WL="${LIVE_WL:-wayland-1}"
 RUN_DIR="${NESTED_RT%/*}/.run"
-MEI_DIR="${RUN_DIR%/.run}"
+TENKAI_DIR="${RUN_DIR%/.run}"
 : > "$LOG"
 
 live_shell="$(busctl --user list --no-legend 2>/dev/null | awk '$1=="org.freedesktop.Notifications"{print $2; exit}')"
 live_hypr="$(ps -eo pid=,args= 2>/dev/null | awk '$2=="Hyprland" && $0 !~ /-c /{print $1; exit}')"
 LIVE_PIDS="${LEAK_LIVE_PIDS:-$live_shell $live_hypr}"
 
-# The owners of the well-known names on the LIVE session bus. A Mei process
+# The owners of the well-known names on the LIVE session bus. A Tenkai process
 # holding one of them would be taking a name away from the live session, which
 # is the same class of leak as a live runtime or a live display. (The names the
 # idle module offers, org.freedesktop.ScreenSaver among them, belong to the
@@ -122,7 +122,7 @@ is_descendant() { # $1 pid, $2 root; true if root is an ancestor
   return 1
 }
 
-is_launch_infra() { # $1 pid: launcher's D-Bus/session wrapper, not Mei UI
+is_launch_infra() { # $1 pid: launcher's D-Bus/session wrapper, not Tenkai UI
   local pid="$1" cmd
   case "${COMM_OF[$pid]:-}" in
     dbus-daemon) return 0 ;;
@@ -134,14 +134,14 @@ is_launch_infra() { # $1 pid: launcher's D-Bus/session wrapper, not Mei UI
   return 1
 }
 
-is_mei_component() { # $1 pid: qs / daemon / ryogami / hub / wm watcher
+is_tenkai_component() { # $1 pid: qs / daemon / ryogami / hub / wm watcher
   local pid="$1" cmd
   case "${COMM_OF[$pid]:-}" in
-    qs|mei-shell|mei-shell-daemon|mei-hub|ryogami|mei-wm-hyprland) return 0 ;;
+    qs|tenkai-shell|tenkai-shell-daemon|tenkai-hub|ryogami|tenkai-wm-hyprland) return 0 ;;
   esac
   cmd="$(tr '\0' ' ' < "/proc/$pid/cmdline" 2>/dev/null)"
   case "$cmd" in
-    *"$RUN_DIR/bin/"*|*"$MEI_DIR/src/"*) return 0 ;;
+    *"$RUN_DIR/bin/"*|*"$TENKAI_DIR/src/"*) return 0 ;;
   esac
   return 1
 }
@@ -165,8 +165,8 @@ build_scope() {
   load_table
   for pid in "${!PARENT_OF[@]}"; do
     # Check the compositor tree first: every compositor child is also a
-    # launcher descendant, but its non-Mei startup probes need the compositor
-    # display allowance. Mei components stay strict via is_mei_component.
+    # launcher descendant, but its non-Tenkai startup probes need the compositor
+    # display allowance. Tenkai components stay strict via is_tenkai_component.
     for name in $COMPOSITOR_ROOTS; do
       if is_descendant "$pid" "$name"; then
         CHECK[$pid]="${COMM_OF[$pid]:-?}"
@@ -224,7 +224,7 @@ check_pid() { # $1 pid, $2 name
 
   if [ "$kind" = "infra" ]; then
     if [ -z "${seen_infra[$pid]:-}" ]; then
-      printf 'INFRA pid=%s name=%s runtime=%s (launcher D-Bus/session wrapper; not a Mei UI process)\n' \
+      printf 'INFRA pid=%s name=%s runtime=%s (launcher D-Bus/session wrapper; not a Tenkai UI process)\n' \
         "$pid" "$name" "${ERT:-unset}" >> "$LOG"
       seen_infra[$pid]=1
     fi
@@ -247,9 +247,9 @@ check_pid() { # $1 pid, $2 name
     "$LIVE_RT"/*)
       if [ "$kind" = "compositor" ]; then
         :
-      elif [ "$kind" = "compositor-desc" ] && ! is_mei_component "$pid"; then
+      elif [ "$kind" = "compositor-desc" ] && ! is_tenkai_component "$pid"; then
         if [ -z "${seen_comp_probe[$pid]:-}" ]; then
-          printf 'COMPOSITOR-HOSTDISPLAY pid=%s name=%s (non-Mei compositor startup probe)\n' \
+          printf 'COMPOSITOR-HOSTDISPLAY pid=%s name=%s (non-Tenkai compositor startup probe)\n' \
             "$pid" "$name" >> "$LOG"
           seen_comp_probe[$pid]=1
         fi

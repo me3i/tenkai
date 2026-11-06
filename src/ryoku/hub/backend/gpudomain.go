@@ -150,7 +150,7 @@ func buildDomainXML(s vmSpec) string {
 		p("      <relaxed state='on'/>\n      <vapic state='on'/>\n      <spinlocks state='on' retries='8191'/>\n")
 		p("      <vpindex state='on'/>\n      <runtime state='on'/>\n      <synic state='on'/>\n")
 		p("      <stimer state='on'/>\n      <reset state='on'/>\n      <frequencies state='on'/>\n")
-		p("      <tlbflush state='on'/>\n      <ipi state='on'/>\n      <vendor_id state='on' value='meivm'/>\n")
+		p("      <tlbflush state='on'/>\n      <ipi state='on'/>\n      <vendor_id state='on' value='tenkaivm'/>\n")
 		p("    </hyperv>\n")
 		p("    <kvm>\n      <hidden state='on'/>\n    </kvm>\n")
 		p("    <vmport state='off'/>\n")
@@ -190,7 +190,7 @@ func buildDomainXML(s vmSpec) string {
 		p("    <disk type='file' device='cdrom'>\n      <driver name='qemu' type='raw'/>\n      <source file='%s'/>\n      <target dev='sdb' bus='sata'/>\n      <readonly/>\n    </disk>\n", s.VirtioISO)
 	}
 	// the dGPU and its sibling functions (audio, USB-C) as vfio hostdevs. managed
-	// no: the Mei libvirt hook binds them to vfio-pci on start and back on stop.
+	// no: the Tenkai libvirt hook binds them to vfio-pci on start and back on stop.
 	for _, fn := range hostdevFunctions(s.GPU) {
 		p("    <hostdev mode='subsystem' type='pci' managed='no'>\n      <source>\n        %s\n      </source>\n    </hostdev>\n", pciSourceAddress(fn))
 	}

@@ -131,7 +131,7 @@ func (n *nightlightState) tickSchedule() {
 		err = n.intent("off")
 	}
 	if err != nil {
-		log.Printf("mei-shell: night light schedule tick failed: %v", err)
+		log.Printf("tenkai-shell: night light schedule tick failed: %v", err)
 		return // retry on the next tick: do not record an action that did not land
 	}
 	n.schedMu.Lock()

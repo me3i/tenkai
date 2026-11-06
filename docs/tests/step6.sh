@@ -2,7 +2,7 @@
 # Phase 6 step 6 acceptance: notifications.
 #  - exactly one NotificationServer (services/Notifs.qml); the qsbar panel no
 #    longer owns a server or writes ~/.cache/qs-rise-notifications.json
-#  - Mei owns org.freedesktop.Notifications on the NESTED private bus, and the
+#  - Tenkai owns org.freedesktop.Notifications on the NESTED private bus, and the
 #    live bus still shows the baseline PID as the owner
 #  - notify-send from inside the nested session: popup, urgency levels, long
 #    body, actions, icon
@@ -10,14 +10,14 @@
 #  - dismiss / clear work; no notification state outside the fake HOME
 #  - no outbound; clean stop
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"
-RT="$MEI/.r"
-SHELL_DIR="$MEI/src/ryoku/shell/quickshell/shell"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"
+RT="$TENKAI/.r"
+SHELL_DIR="$TENKAI/src/ryoku/shell/quickshell/shell"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 LIVE_BUS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$HOST_XDG/bus}"
-SHELLJSON="$RUN/config/mei/shell.json"
+SHELLJSON="$RUN/config/tenkai/shell.json"
 BASELINE_NAME="org.freedesktop.Notifications"
 LOG="$RUN/logs/step6-$(date +%H%M%S).log"
 mkdir -p "$RUN/shots" "$RUN/icons"
@@ -70,22 +70,22 @@ hash_real | tee "$RUN/step6-real-before.txt"
 
 # The owner's own shell owns these paths and keeps writing them: its matugen
 # cache, its wallpaper daemon's state, Quickshell's own cache and the old
-# installer's stamp. Mei must never add to them; the listing below is taken
-# before the test so "new" means "Mei created it", not "it already existed".
+# installer's stamp. Tenkai must never add to them; the listing below is taken
+# before the test so "new" means "Tenkai created it", not "it already existed".
 LIVE_OWNED='^\.cache/(ryoku|matugen)(/|$)|^\.cache/ryogami-wall|^\.cache/quickshell/ryoku|^\.cache/ryoku-shell-install'
 home_listing() {
   find "$HOME/.cache" "$HOME/.local/state" "$HOME/.local/share" "$HOME/.config" \
     -mindepth 1 -maxdepth 3 2>/dev/null | sed "s|^$HOME/||" \
-    | grep -iE '(^|/)(mei|ryoku|ryogami)([._-]|$)' | grep -vE "$LIVE_OWNED" | sort
+    | grep -iE '(^|/)(tenkai|ryoku|ryogami)([._-]|$)' | grep -vE "$LIVE_OWNED" | sort
 }
 home_listing > "$RUN/step6-home-before.txt"
 
 echo; echo "=== verify-untouched BEFORE ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -1
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" verify-untouched 2>&1 | tail -1
 
 # ── 3. start the nested session ──────────────────────────────────────────────
-echo; echo "=== starting ./mei run ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run || { bad "mei run failed"; exit 1; }
+echo; echo "=== starting ./tenkai run ==="
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || { bad "tenkai run failed"; exit 1; }
 
 BASELINE_SIG="$(sed -n 's/^BASELINE_SIG="\(.*\)"$/\1/p' "$RUN/session.sh")"
 SIG=""; QS=""
@@ -95,8 +95,8 @@ for _ in $(seq 1 120); do
   [ -n "$SIG" ] && [ -n "$QS" ] && break
   sleep 0.5
 done
-[ -n "$SIG" ] && [ -n "$QS" ] || { bad "session did not come up"; "$MEI/mei" stop; exit 1; }
-[ "$SIG" = "$BASELINE_SIG" ] && { bad "nested signature equals the baseline"; "$MEI/mei" stop; exit 1; }
+[ -n "$SIG" ] && [ -n "$QS" ] || { bad "session did not come up"; "$TENKAI/tenkai" stop; exit 1; }
+[ "$SIG" = "$BASELINE_SIG" ] && { bad "nested signature equals the baseline"; "$TENKAI/tenkai" stop; exit 1; }
 ok "nested Hyprland signature differs from the live baseline"
 
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
@@ -131,23 +131,23 @@ NESTED_BUS="$(cat "$RUN/bus" 2>/dev/null)"
 if [ -n "$NESTED_BUS" ] && [ "$NESTED_BUS" != "$LIVE_BUS" ]; then
   ok "nested private bus differs from the live bus (${NESTED_BUS%%guid=*}…)"
 else
-  bad "nested bus address missing or identical to the live bus"; "$MEI/mei" stop; exit 1
+  bad "nested bus address missing or identical to the live bus"; "$TENKAI/tenkai" stop; exit 1
 fi
 NESTED_OWNER="$(bus_pid "$NESTED_BUS" "$BASELINE_NAME" || true)"
 LIVE_OWNER="$(bus_pid "$LIVE_BUS" "$BASELINE_NAME" || true)"
-LIVE_BASE="$(awk -v n="$BASELINE_NAME" '$1==n {print $2}' "$MEI/docs/baseline/dbus-watched.tsv" | head -1)"
+LIVE_BASE="$(awk -v n="$BASELINE_NAME" '$1==n {print $2}' "$TENKAI/docs/baseline/dbus-watched.tsv" | head -1)"
 note "nested owner PID = ${NESTED_OWNER:-none}   (nested shell pid $QS)"
 note "live   owner PID = ${LIVE_OWNER:-none}   (baseline ${LIVE_BASE:-unknown})"
-[ "$NESTED_OWNER" = "$QS" ] && ok "Mei owns $BASELINE_NAME on the nested bus (pid $NESTED_OWNER)" \
+[ "$NESTED_OWNER" = "$QS" ] && ok "Tenkai owns $BASELINE_NAME on the nested bus (pid $NESTED_OWNER)" \
   || bad "nested $BASELINE_NAME owner is '$NESTED_OWNER', expected the nested shell pid $QS"
 # The baseline pid is a snapshot, not a contract: if the owner's shell
 # restarts, its child legitimately re-takes the live name. What matters is
-# that Mei never holds it -- a restart is verify-untouched's business (it
+# that Tenkai never holds it -- a restart is verify-untouched's business (it
 # attributes the new child to the live unit through /proc/<pid>/cgroup).
 if [ -n "$LIVE_OWNER" ] && [ "$LIVE_OWNER" = "$QS" ]; then
-  bad "Mei's nested shell ($QS) holds the live $BASELINE_NAME name"
+  bad "Tenkai's nested shell ($QS) holds the live $BASELINE_NAME name"
 else
-  ok "live $BASELINE_NAME is not held by Mei (owner ${LIVE_OWNER:-none}; a live restart may move it)"
+  ok "live $BASELINE_NAME is not held by Tenkai (owner ${LIVE_OWNER:-none}; a live restart may move it)"
 fi
 
 echo; echo "=== server identity + capabilities (nested bus) ==="
@@ -173,7 +173,7 @@ note "before any notification: popups=$P0 history=$H0"
 [ "$P0" = 0 ] && [ "$H0" = 0 ] && ok "shell starts with an empty notification state" || bad "non-empty notification state at start"
 
 echo; echo "=== TEST: a plain notification ==="
-NS -a MeiTest -i "$ICON" -u normal "Mei popup test" "A short body from notify-send." || bad "notify-send failed"
+NS -a TenkaiTest -i "$ICON" -u normal "Tenkai popup test" "A short body from notify-send." || bad "notify-send failed"
 sleep 1
 P1="$(SJ popups)"; H1="$(SJ history)"
 [ "$H1" = 1 ] && ok "history has 1 entry" || bad "history=$H1, expected 1"
@@ -182,7 +182,7 @@ shot 03-normal-popup
 
 echo; echo "=== TEST: urgency levels (low, normal, critical) ==="
 for u in low critical; do
-  NS -a MeiTest -u "$u" "Urgency $u" "same body, different urgency" || bad "notify-send -u $u failed"
+  NS -a TenkaiTest -u "$u" "Urgency $u" "same body, different urgency" || bad "notify-send -u $u failed"
 done
 sleep 1
 H2="$(SJ history)"
@@ -192,7 +192,7 @@ shot 04-urgency
 
 echo; echo "=== TEST: a long body ==="
 LONG="$(python3 -c 'print("This is a deliberately long notification body. "*8)')"
-NS -a MeiTest -u normal "Long body" "$LONG" || bad "notify-send (long body) failed"
+NS -a TenkaiTest -u normal "Long body" "$LONG" || bad "notify-send (long body) failed"
 sleep 1
 H3="$(SJ history)"
 [ "$H3" = 4 ] && ok "long body accepted (history=4)" || bad "history=$H3, expected 4"
@@ -217,7 +217,7 @@ echo; echo "=== TEST: DND ==="
 IPC dnd true >/dev/null; sleep 0.3
 [ "$(SJ dnd)" = "True" ] && ok "DND is on (Notifs.dnd=true)" || bad "DND did not turn on: $(SJ dnd)"
 DP="$(SJ popups)"; DH="$(SJ history)"
-NS -a MeiTest -u critical "While DND" "must not pop" || bad "notify-send during DND failed"
+NS -a TenkaiTest -u critical "While DND" "must not pop" || bad "notify-send during DND failed"
 sleep 1
 DP2="$(SJ popups)"; DH2="$(SJ history)"
 [ "$DP2" = "$DP" ] && ok "popup suppressed while DND is on (popups stayed $DP)" || bad "popup appeared during DND: $DP -> $DP2"
@@ -225,7 +225,7 @@ DP2="$(SJ popups)"; DH2="$(SJ history)"
 shot 09-dnd-suppressed
 IPC dnd false >/dev/null; sleep 0.3
 [ "$(SJ dnd)" = "False" ] && ok "DND is off again" || bad "DND did not turn off: $(SJ dnd)"
-NS -a MeiTest -u normal "After DND" "must pop now" || bad "notify-send after DND failed"
+NS -a TenkaiTest -u normal "After DND" "must pop now" || bad "notify-send after DND failed"
 sleep 1
 DP3="$(SJ popups)"
 [ "${DP3:-0}" -gt "${DP2:-0}" ] && ok "popups resume when DND is off ($DP2 -> $DP3)" || bad "no popup after DND off ($DP2 -> $DP3)"
@@ -233,7 +233,7 @@ shot 10-after-dnd
 
 echo; echo "=== TEST: persistent (expire_timeout 0) ==="
 HB2="$(SJ history)"; PB2="$(SJ popups)"
-NS -a MeiTest -u normal -t 0 "Persistent" "expire_timeout 0: must never self-expire" || bad "notify-send -t 0 failed"
+NS -a TenkaiTest -u normal -t 0 "Persistent" "expire_timeout 0: must never self-expire" || bad "notify-send -t 0 failed"
 sleep 1
 [ "$(SJ history)" = "$HB2" ] && ok "expire_timeout 0 stays out of history ($HB2)" || bad "history moved to $(SJ history), expected $HB2"
 [ "$(SJ popups)" -gt "$PB2" ] && ok "the persistent card is on screen (popups $PB2 -> $(SJ popups))" || bad "popups=$PB2, the persistent card did not appear"
@@ -247,7 +247,7 @@ echo; echo "=== TEST: actions ==="
 # notify-send -A implies --wait, so it only returns when the action is invoked:
 # run it in the background and invoke through the same call the card's button makes.
 ACTOUT="$RUN/step6-action.out"; rm -f "$ACTOUT"
-DBUS_SESSION_BUS_ADDRESS="$NESTED_BUS" timeout 40 notify-send -a MeiTest -t 0 --print-id --wait \
+DBUS_SESSION_BUS_ADDRESS="$NESTED_BUS" timeout 40 notify-send -a TenkaiTest -t 0 --print-id --wait \
   -A "default=Open" -A "later=Later" "Action test" "two actions" > "$ACTOUT" 2>&1 &
 ACTPID=$!
 sleep 1.5
@@ -280,21 +280,21 @@ else
   ok "no qs-rise-notifications file anywhere under the fake HOME"
 fi
 found_real="$(home_listing | grep -vxF -f "$RUN/step6-home-before.txt" 2>/dev/null || true)"
-[ -z "$found_real" ] && ok "no mei/ryoku/ryogami entry appeared outside the project during the test" || { bad "new entries outside the project:"; printf '            %s\n' "$found_real"; }
+[ -z "$found_real" ] && ok "no tenkai/ryoku/ryogami entry appeared outside the project during the test" || { bad "new entries outside the project:"; printf '            %s\n' "$found_real"; }
 
 echo; echo "=== OUTBOUND ==="
 sleep 1
-for p in "$QS" "$(pgrep -f "$RUN/bin/mei-shell daemon" | head -1)"; do
+for p in "$QS" "$(pgrep -f "$RUN/bin/tenkai-shell daemon" | head -1)"; do
   [ -n "$p" ] || continue
   ss -tunp 2>/dev/null | grep -qE "pid=$p," && { bad "pid $p owns a tcp/udp socket:"; ss -tunp | grep -E "pid=$p,"; } || ok "pid $p owns no tcp/udp socket"
 done
 
 # ── 6. stop + verify ─────────────────────────────────────────────────────────
 echo; echo "=== SHUTDOWN ==="
-"$MEI/mei" stop
+"$TENKAI/tenkai" stop
 sleep 2
-stray="$(pgrep -af "$RUN/bin/mei-shell|$SHELL_DIR|$RUN/bin/ryogami|$RUN/bin/mei-hub" | grep -v pgrep || true)"
-[ -z "$stray" ] && ok "clean shutdown: no stray Mei processes" || { bad "stray processes:"; printf '            %s\n' "$stray"; }
+stray="$(pgrep -af "$RUN/bin/tenkai-shell|$SHELL_DIR|$RUN/bin/ryogami|$RUN/bin/tenkai-hub" | grep -v pgrep || true)"
+[ -z "$stray" ] && ok "clean shutdown: no stray Tenkai processes" || { bad "stray processes:"; printf '            %s\n' "$stray"; }
 
 echo; echo "=== REAL-PATH HASHES AFTER ==="
 if diff -q <(cat "$RUN/step6-real-before.txt") <(hash_real) >/dev/null; then
@@ -309,7 +309,7 @@ echo; echo "=== verify-untouched AFTER (this is the live-owner check) ==="
 # name to a child of the live unit, and verify-untouched attributes that now
 # (the /proc/<pid>/cgroup walk). Gate on its exit code instead of keeping a
 # second, narrower copy of the same check here.
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" verify-untouched 2>&1 | tail -2
 [ "${PIPESTATUS[0]}" = 0 ] && ok "verify-untouched: the live session is unchanged (a live restart is attributed, not failed)" \
   || bad "verify-untouched failed after the test"
 

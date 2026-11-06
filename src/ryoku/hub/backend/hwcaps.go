@@ -53,7 +53,7 @@ type Capability struct {
 	Chassis     string  `json:"chassis"` // laptop | desktop
 	Mux         string  `json:"mux"`     // none | present-igpu | present-dgpu | unknown
 	Cpu         string  `json:"cpu"`
-	Host        *GPU    `json:"host"`        // the GPU Mei keeps
+	Host        *GPU    `json:"host"`        // the GPU Tenkai keeps
 	Passthrough *GPU    `json:"passthrough"` // the candidate dGPU for the VM
 	Enabled     bool    `json:"enabled"`     // the passthrough stack is installed
 	Strategy    string  `json:"strategy"`    // live-bind | relogin-then-bind | mux-reboot | setup | none
@@ -260,7 +260,7 @@ func buildChecks(in capInputs, host, pass *GPU) (checks []Check, hardFail bool) 
 		case in.chassis == "laptop":
 			add(Check{ID: "display-owner", Level: "warn", Label: "Display", Value: "dGPU drives the panel", Hint: "Your screen is wired to the discrete GPU. Switch to Hybrid GPU mode in the BIOS/firmware (look for GPU Mode, MUX, or Hybrid/Optimus) and reboot, so the built-in GPU drives it."})
 		case host != nil && host.DrivesDisplay:
-			add(Check{ID: "display-owner", Level: "warn", Label: "Display", Value: "dGPU drives a monitor", Hint: "Mei moves to the other GPU on the next login."})
+			add(Check{ID: "display-owner", Level: "warn", Label: "Display", Value: "dGPU drives a monitor", Hint: "Tenkai moves to the other GPU on the next login."})
 		default:
 			hardFail = true
 			add(Check{ID: "display-owner", Level: "fail", Label: "Display", Value: "only display is on the dGPU", Hint: "Connect a monitor to the other GPU, or the host would go headless."})
@@ -594,7 +594,7 @@ func kvmfrPresent(root string) bool {
 
 func hookInstalled(root string) bool {
 	b, err := os.ReadFile(filepath.Join(root, "etc/libvirt/hooks/qemu"))
-	return err == nil && (strings.Contains(string(b), "Managed by Mei") || strings.Contains(string(b), "Managed by Ryoku"))
+	return err == nil && (strings.Contains(string(b), "Managed by Tenkai") || strings.Contains(string(b), "Managed by Ryoku"))
 }
 
 func lookPath(name string) bool {

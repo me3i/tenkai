@@ -29,7 +29,7 @@ import (
 //	desktop variants <layout>   kb variants for a layout
 //	desktop plugins <verb>      the compositor plugin subsystem
 
-func desktopStorePath() string { return filepath.Join(meiConfigDir(), "desktop.json") }
+func desktopStorePath() string { return filepath.Join(tenkaiConfigDir(), "desktop.json") }
 
 // hyprConfigDir is the compositor config tree the import layerer still writes a
 // user.lua block into; the generated config is the provider's.
@@ -80,11 +80,11 @@ func wmSplit() (string, map[string]bool) {
 	return wmSplitNS, wmSplitSet
 }
 
-// errWMWriteDisabled refuses every mutating compositor verb. Mei's Settings app
-// persists only to Mei's own config dir (via the shell daemon's settings seam and
+// errWMWriteDisabled refuses every mutating compositor verb. Tenkai's Settings app
+// persists only to Tenkai's own config dir (via the shell daemon's settings seam and
 // the brand/visualiser/launcher JSON files); it never writes Hyprland config.
 func errWMWriteDisabled(verb string) error {
-	return fmt.Errorf("desktop %s: disabled in Mei (Settings never writes compositor config)", verb)
+	return fmt.Errorf("desktop %s: disabled in Tenkai (Settings never writes compositor config)", verb)
 }
 
 func runDesktop(args []string) error {
@@ -100,31 +100,31 @@ func runDesktop(args []string) error {
 		return forwardSchema()
 	case "unhonored":
 		return forwardUnhonored()
-	// MEI: the compositor write chain is severed. Mei ships no window-manager page
+	// TENKAI: the compositor write chain is severed. Tenkai ships no window-manager page
 	// and Settings must never write Hyprland config (settings.lua / rebinds.lua /
 	// user_edits), so every mutating desktop verb is refused. The implementations
 	// below (saveDesktop/previewDesktop/restoreDesktop/setRebind) are kept, unused,
 	// ready to be restored by returning them to the switch.
-	// MEI: save/preview/restore persist to Mei's own store and apply through
-	// hyprctl (mei_runtime.go). No settings.lua / rebinds.lua / user_edits is
+	// TENKAI: save/preview/restore persist to Tenkai's own store and apply through
+	// hyprctl (tenkai_runtime.go). No settings.lua / rebinds.lua / user_edits is
 	// written; the provider's ApplyOutputs/Apply path is never reached.
 	case "save":
 		if len(args) < 2 {
 			return fmt.Errorf("desktop save needs a JSON payload")
 		}
-		return applyMeiDesktop(args[1], true)
+		return applyTenkaiDesktop(args[1], true)
 	case "preview":
 		if len(args) < 2 {
 			return fmt.Errorf("desktop preview needs a JSON payload")
 		}
-		return applyMeiDesktop(args[1], false)
+		return applyTenkaiDesktop(args[1], false)
 	case "restore":
-		return restoreMeiDesktop()
+		return restoreTenkaiDesktop()
 	case "set-rebind":
 		if len(args) < 3 {
 			return fmt.Errorf("set-rebind needs a default and a chosen chord")
 		}
-		return setMeiRebind(args[1], args[2])
+		return setTenkaiRebind(args[1], args[2])
 	case "plugins":
 		return pluginsDesktop(args[1:])
 	case "cursors":
@@ -142,7 +142,7 @@ func runDesktop(args []string) error {
 		}
 		return applyScheme(args[1])
 	case "ryoku-theme":
-		return applyMeiTheme()
+		return applyTenkaiTheme()
 	case "theme-apps":
 		if len(args) < 2 {
 			return printJSON(map[string]bool{"themeApps": currentThemeApps()})
@@ -173,21 +173,21 @@ func runDesktop(args []string) error {
 // getDesktop returns the stored values overlaid on the provider defaults, so
 // every leaf the GUI shows is present even before a save.
 func getDesktop() error {
-	// MEI: the pages open on Mei's saved runtime overrides, not on a config the
+	// TENKAI: the pages open on Tenkai's saved runtime overrides, not on a config the
 	// provider generated.
-	return printJSON(meiDesktopStore())
+	return printJSON(tenkaiDesktopStore())
 }
 
-// setMeiRebind patches one entry of the rebind map in keybinds.json and re-applies
+// setTenkaiRebind patches one entry of the rebind map in keybinds.json and re-applies
 // the binds, so a separate app (ryoshot) can change its launch chord without
 // becoming a second writer of the store.
-func setMeiRebind(def, chosen string) error {
+func setTenkaiRebind(def, chosen string) error {
 	def = strings.TrimSpace(def)
 	chosen = strings.TrimSpace(chosen)
 	if def == "" {
 		return fmt.Errorf("set-rebind: empty default chord")
 	}
-	k := readMeiKeybinds()
+	k := readTenkaiKeybinds()
 	if chosen == "" || chosen == def {
 		delete(k.Rebinds, def)
 	} else {
@@ -316,7 +316,7 @@ func previewDesktop(raw string) error {
 	// reload drops the marker and reverts to disk -- an unsaved quit still
 	// means unsaved.
 	b, _ := json.Marshal(map[string]any{"pid": os.Getppid(), "draft": m})
-	_ = os.MkdirAll(meiConfigDir(), 0o755)
+	_ = os.MkdirAll(tenkaiConfigDir(), 0o755)
 	_ = os.WriteFile(desktopPreviewPath(), b, 0o600)
 	return nil
 }
@@ -326,7 +326,7 @@ func previewDesktop(raw string) error {
 // config, so a config-only reload re-reads disk and silently drops it. The
 // daemon re-asserts the draft after every such reload while the Hub that owns
 // it is alive.
-func desktopPreviewPath() string { return filepath.Join(meiConfigDir(), ".desktop-preview.json") }
+func desktopPreviewPath() string { return filepath.Join(tenkaiConfigDir(), ".desktop-preview.json") }
 
 // restoreDesktop reverts the live session to the saved config: a reload resets
 // every keyword, and the cursor is re-asserted since it is imperative state a
@@ -408,8 +408,8 @@ func pluginsDesktop(args []string) error {
 // applyDesktop re-authors the compositor config from desktop.json and reloads.
 // The common "regenerate live" path for the theme, rice and import writers.
 //
-// MEI: severed. This is the one function that materialises Hyprland config
-// (settings.lua / rebinds.lua / user_edits) and reloads the compositor. Mei's
+// TENKAI: severed. This is the one function that materialises Hyprland config
+// (settings.lua / rebinds.lua / user_edits) and reloads the compositor. Tenkai's
 // Settings app must never do either, so it does nothing. Disabled, not deleted --
 // restore by returning the body:
 //
@@ -423,7 +423,7 @@ func applyDesktop() error {
 }
 
 // reloadDesktop reloads the compositor config in place.
-// MEI: severed (no hyprctl reload from Settings). Disabled, not deleted:
+// TENKAI: severed (no hyprctl reload from Settings). Disabled, not deleted:
 // func reloadDesktop() { _ = desktopClient().Act(wm.ActionConfigReload) }
 func reloadDesktop() {}
 
@@ -601,8 +601,8 @@ func setHyprSections(sections map[string]any) error {
 // withDesktopLock serializes read-modify-write of desktop.json against the GUI
 // save, so a concurrent write cannot drop the other's change.
 func withDesktopLock(fn func() error) error {
-	_ = os.MkdirAll(meiConfigDir(), 0o755)
-	f, err := os.OpenFile(filepath.Join(meiConfigDir(), ".desktop.lock"), os.O_CREATE|os.O_RDWR, 0o644)
+	_ = os.MkdirAll(tenkaiConfigDir(), 0o755)
+	f, err := os.OpenFile(filepath.Join(tenkaiConfigDir(), ".desktop.lock"), os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return fn()
 	}
@@ -652,21 +652,21 @@ func atomicWrite(path string, b []byte, mode os.FileMode) error {
 // anim-preset: the active animation personality. A plain file the animation
 // module reads at load; set writes it and reloads.
 var animPresets = map[string]bool{
-	"mei": true, "dusky": true, "bounce": true, "fade": true, "fast": true,
+	"tenkai": true, "dusky": true, "bounce": true, "fade": true, "fast": true,
 	"mechanical": true, "minimal": true, "rage": true, "slowmotion": true,
 	"air": true, "hallucination": true, "exaggerated": true, "disable": true,
 }
 
-func animPresetPath() string { return filepath.Join(meiConfigDir(), "anim-preset") }
+func animPresetPath() string { return filepath.Join(tenkaiConfigDir(), "anim-preset") }
 
 func currentAnimPreset() string {
 	b, err := os.ReadFile(animPresetPath())
 	if err != nil {
-		return "mei"
+		return "tenkai"
 	}
 	name := strings.TrimSpace(string(b))
 	if !animPresets[name] {
-		return "mei"
+		return "tenkai"
 	}
 	return name
 }

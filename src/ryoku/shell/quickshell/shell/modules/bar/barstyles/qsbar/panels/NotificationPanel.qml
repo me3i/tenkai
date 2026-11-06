@@ -23,13 +23,13 @@ PanelWindow {
     readonly property int gap: 6
 
     // ── data comes from the one shell-wide server ──────────────────────────
-    // MEI: this flyout used to own a second NotificationServer *and* a private
+    // TENKAI: this flyout used to own a second NotificationServer *and* a private
     // ~/.cache/qs-rise-notifications.json cache, so two servers raced for
     // org.freedesktop.Notifications and the popups could disagree with this
     // list. The single server lives in services/Notifs.qml; this panel is now a
     // view over Notifs.history (newest first; transient and expire_timeout 0
     // excluded there). No cache: the queue dies with the process, and nothing
-    // outside ~/projects/mei is written.
+    // outside ~/projects/tenkai is written.
     readonly property var pending: Services.Notifs.history
     readonly property int unreadCount: Services.Notifs.history.length
     // scrollable list height cap, clamped to the monitor

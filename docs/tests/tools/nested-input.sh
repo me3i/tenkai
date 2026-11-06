@@ -5,7 +5,7 @@
 # script. It refuses to run unless the display it is pointed at is the
 # NESTED one:
 #
-#   - the socket has to resolve inside Mei's own nested runtime directory
+#   - the socket has to resolve inside Tenkai's own nested runtime directory
 #     (.r, the XDG_RUNTIME_DIR the nested session runs under), and
 #   - it must not be the live display recorded in the baseline, and it must
 #     not live under the live runtime directory.
@@ -18,9 +18,9 @@
 #        WAYLAND_DISPLAY (which is then checked against the live one)
 set -uo pipefail
 here="$(cd "$(dirname "$0")" && pwd)"
-MEI="$(cd "$here/../../.." && pwd)"
-NESTED_RT="$MEI/.r"
-BASELINE="$MEI/docs/baseline/env.txt"
+TENKAI="$(cd "$here/../../.." && pwd)"
+NESTED_RT="$TENKAI/.r"
+BASELINE="$TENKAI/docs/baseline/env.txt"
 
 die(){ echo "nested-input: REFUSED: $*" >&2; exit 3; }
 

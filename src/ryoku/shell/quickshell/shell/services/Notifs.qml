@@ -227,7 +227,7 @@ Singleton {
         });
     }
 
-    // MEI: the server is created only while the notifications module is on.
+    // TENKAI: the server is created only while the notifications module is on.
     // A Loader, not an `enabled` flag: NotificationServer has no enable property
     // and merely instantiating it claims org.freedesktop.Notifications.
     readonly property alias server: serverLoader.item

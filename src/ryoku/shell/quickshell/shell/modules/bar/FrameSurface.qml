@@ -5,7 +5,7 @@ import "popouts"
 import "panel"
 import shell.services
 
-// One Mei-owned surface riding the shared Popout. Credential prompts, voice,
+// One Tenkai-owned surface riding the shared Popout. Credential prompts, voice,
 // stash, capture, and small rail cards mount on demand.
 Popout {
     id: root

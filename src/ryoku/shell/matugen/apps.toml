@@ -1,7 +1,7 @@
 [config]
 
-# Mei Arch Matugen App Templates
-# Configured and toggled via Mei Settings (Hub) -> Appearance -> Matugen
+# Tenkai Arch Matugen App Templates
+# Configured and toggled via Tenkai Settings (Hub) -> Appearance -> Matugen
 
 [templates.gtk3]
 input_path = "~/.config/matugen/templates/gtk3-colors.css"
@@ -90,7 +90,7 @@ output_path = "~/.config/tmux/ryoku-colors.conf"
 input_path = "~/.config/matugen/templates/sidra.css"
 output_path = "~/.config/Sidra/custom.css"
 
-# Ryotunes (the native music client) reads its palette as a Mei skin: matugen
+# Ryotunes (the native music client) reads its palette as a Tenkai skin: matugen
 # renders the skin manifest into the user skins dir, where the client's Skin
 # singleton picks it up as the "matugen" skin (the Settings "System" source).
 [templates.ryotunes]

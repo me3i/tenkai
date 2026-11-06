@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
-# The checks behind Mei's acceptance gate (the safety, quality and document
+# The checks behind Tenkai's acceptance gate (the safety, quality and document
 # gates). Every one of them can fail: the ones that look at files are proven
-# able to fail by ./mei accept --prove.
+# able to fail by ./tenkai accept --prove.
 #
 #   usage: accept-safety.sh <gate> [extra-file]
 set -uo pipefail
-MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-RUN="$MEI/.run"
-cd "$MEI" || exit 1
+TENKAI="$(cd "$(dirname "$0")/../.." && pwd)"
+RUN="$TENKAI/.run"
+cd "$TENKAI" || exit 1
 
 gate="${1:-}"
 extra="${2:-}"
@@ -17,26 +17,26 @@ ok(){ echo "ok: $*"; }
 case "$gate" in
 
 s1) # the live session is untouched
-  ./mei verify-untouched | tail -2
+  ./tenkai verify-untouched | tail -2
   [ "${PIPESTATUS[0]}" = 0 ] || fail "verify-untouched failed"
   ok "the live session is untouched"
   ;;
 
 s2) # no personal values in the tracked tree
-  ./mei scrub-check || fail "scrub-check failed"
+  ./tenkai scrub-check || fail "scrub-check failed"
   ok "the tracked tree carries nothing personal"
   ;;
 
-s3) # no Mei process holds the live runtime or the live display
+s3) # no Tenkai process holds the live runtime or the live display
   bash docs/tests/leak-check.sh || fail "the leak check found something"
-  ok "nothing of Mei's holds the live runtime or the live display"
+  ok "nothing of Tenkai's holds the live runtime or the live display"
   ;;
 
 s4) # no process is ever signalled by name
   # The gate's own files carry the words it looks for (that is the proof it
   # can fail), and a comment may name them; a real call is what is forbidden.
-  hits="$(grep -rnE '\b(pkill|killall|pidof)\b' --include='*.sh' --include='mei' \
-            --include='*.py' docs mei 2>/dev/null \
+  hits="$(grep -rnE '\b(pkill|killall|pidof)\b' --include='*.sh' --include='tenkai' \
+            --include='*.py' docs tenkai 2>/dev/null \
             | grep -vE 'docs/tests/accept(-safety)?\.sh:' \
             | grep -vE '^[^:]+:[0-9]+:[[:space:]]*#' | head -5)"
   [ -z "$hits" ] || fail "a script signals a process by name: $hits"
@@ -54,8 +54,8 @@ s5) # the guarded input tool refuses the live display
 
 s6) # no outbound connection, no listening socket
   bash docs/tests/picker-outbound.sh || fail "a wallpaper source reaches out"
-  # a nested session, and then: no TCP socket of Mei's, and no listener
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei run ) >/dev/null 2>&1
+  # a nested session, and then: no TCP socket of Tenkai's, and no listener
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./tenkai run ) >/dev/null 2>&1
   sleep 12
   pids="$(cat "$RUN/pids" 2>/dev/null | awk '{print $1}' | tr '\n' ' ')"
   tcp=""
@@ -64,17 +64,17 @@ s6) # no outbound connection, no listening socket
     tcp="$tcp $(find "/proc/$p/fd" -mindepth 1 -maxdepth 1 -exec readlink {} + 2>/dev/null | grep -c 'socket:' || true)"
   done
   listeners="$(ss -tulnp 2>/dev/null | grep -cE "pid=($(echo $pids | tr ' ' '|'))" || true)"
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei stop ) >/dev/null 2>&1
-  [ "${listeners:-0}" = "0" ] || fail "a Mei process listens on a TCP or UDP socket"
-  ok "Mei listens on nothing and reaches out to nothing"
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./tenkai stop ) >/dev/null 2>&1
+  [ "${listeners:-0}" = "0" ] || fail "a Tenkai process listens on a TCP or UDP socket"
+  ok "Tenkai listens on nothing and reaches out to nothing"
   ;;
 
 s7) # a clean stop leaves nothing behind
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./tenkai stop ) >/dev/null 2>&1
   sleep 2
   stray="$(pgrep -f "quickshell/shell/shell.qml" 2>/dev/null | head -3)"
-  [ -z "$stray" ] || fail "a Mei process is still running: $stray"
-  for f in "$RUN"/state/mei/*.lock "$RUN"/pids/*.lock; do
+  [ -z "$stray" ] || fail "a Tenkai process is still running: $stray"
+  for f in "$RUN"/state/tenkai/*.lock "$RUN"/pids/*.lock; do
     [ -e "$f" ] && fail "a lock file was left behind: $f"
   done
   ok "the stop left nothing behind"
@@ -82,7 +82,7 @@ s7) # a clean stop leaves nothing behind
 
 s8) # nothing is written outside the project
   # the nested session's own paths must all be inside the project
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei run ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./tenkai run ) >/dev/null 2>&1
   sleep 10
   p="$(pgrep -f 'quickshell/shell/shell.qml' | head -1)"
   bad=""
@@ -90,12 +90,12 @@ s8) # nothing is written outside the project
     for v in HOME XDG_CONFIG_HOME XDG_CACHE_HOME XDG_STATE_HOME XDG_DATA_HOME XDG_RUNTIME_DIR; do
       val="$(tr '\0' '\n' < "/proc/$p/environ" | sed -n "s/^$v=//p" | head -1)"
       case "$val" in
-      "$MEI"/*|"$MEI") ;;
+      "$TENKAI"/*|"$TENKAI") ;;
       *) bad="$bad $v=$val" ;;
       esac
     done
   fi
-  ( cd "$MEI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" ./tenkai stop ) >/dev/null 2>&1
   [ -z "$bad" ] || fail "the nested session writes outside the project:$bad"
   ok "every path the nested session uses is inside the project"
   ;;
@@ -111,16 +111,16 @@ q1) # the code is clean
   ( cd src/ryoku/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go build -o /dev/null ./... >/dev/null 2>&1 ) || fail "go build failed"
   ( cd src/ryoku/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go test ./... >"$RUN/logs/accept-go-test.log" 2>&1 ) || fail "go test failed (see $RUN/logs/accept-go-test.log)"
   if command -v shellcheck >/dev/null 2>&1; then
-    shellcheck -S warning mei docs/tests/*.sh >"$RUN/logs/accept-shellcheck.log" 2>&1 || fail "shellcheck found something (see $RUN/logs/accept-shellcheck.log)"
+    shellcheck -S warning tenkai docs/tests/*.sh >"$RUN/logs/accept-shellcheck.log" 2>&1 || fail "shellcheck found something (see $RUN/logs/accept-shellcheck.log)"
     ok "shellcheck is clean"
   else
     echo "note: shellcheck is not installed, so that part of the gate was not run"
   fi
-  # R5: no matugen spawn may omit Mei's -c config. The session's .run/bin shim
+  # R5: no matugen spawn may omit Tenkai's -c config. The session's .run/bin shim
   # enforces the same rule at runtime (it injects the config and refuses a path
   # outside the project); this is the static half, and it is proved able to fail
   # by handing it a doctored spawn (docs/tests/matugen-calls.sh <file>).
-  bash "$MEI/docs/tests/matugen-calls.sh" || fail "a matugen call does not carry Mei's -c config"
+  bash "$TENKAI/docs/tests/matugen-calls.sh" || fail "a matugen call does not carry Tenkai's -c config"
   ok "the code is clean"
   ;;
 
@@ -136,7 +136,7 @@ q2) # no dead code, no personal strings, no ryoku names outside the allowed ones
   # live Hyprland layer rules point at, so renaming it would need a config
   # change that is out of bounds.
   stray="$(grep -rn 'ryoku' --include='*.qml' --include='*.go' --include='*.sh' \
-             src docs/tests mei 2>/dev/null \
+             src docs/tests tenkai 2>/dev/null \
              | grep -vE 'docs/tests/accept-safety\.sh:' \
              | grep -vE 'ryoku[-./]|[/\{]ryoku|\*ryoku\*|ryoku\||Ryoku\.Ui|ryoku\.ui' \
              | head -8)"

@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	bashLoader = `[ -r "$HOME/.config/bash/mei.bash" ] && . "$HOME/.config/bash/ryoku.bash"`
-	zshLoader  = `[ -r "$HOME/.config/zsh/mei.zsh" ] && . "$HOME/.config/zsh/ryoku.zsh"`
+	bashLoader = `[ -r "$HOME/.config/bash/tenkai.bash" ] && . "$HOME/.config/bash/ryoku.bash"`
+	zshLoader  = `[ -r "$HOME/.config/zsh/tenkai.zsh" ] && . "$HOME/.config/zsh/ryoku.zsh"`
 )
 
 var accountShells = map[string]string{
@@ -111,7 +111,7 @@ func ensureLoaderLast(path, line string) (bool, error) {
 	if string(next) == string(old) {
 		return false, nil
 	}
-	tmp := path + ".mei-tmp"
+	tmp := path + ".tenkai-tmp"
 	if err := os.WriteFile(tmp, next, mode); err != nil {
 		return false, err
 	}
@@ -158,7 +158,7 @@ func setZshPrompt(home, prompt string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	tmp := path + ".mei-tmp"
+	tmp := path + ".tenkai-tmp"
 	if err := os.WriteFile(tmp, []byte(prompt+"\n"), 0o644); err != nil {
 		return err
 	}
@@ -179,13 +179,13 @@ func passwdShell(path, username string) (string, error) {
 	return "", fmt.Errorf("user %s not found", username)
 }
 
-// errShellWriteDisabled refuses every mutating shell-pref verb. Mei's Settings
+// errShellWriteDisabled refuses every mutating shell-pref verb. Tenkai's Settings
 // shows the current login shell and the zsh prompt READ-ONLY: `shell set` writes
 // rc files in HOME and escalates to chsh (the LOGIN SHELL in /etc/passwd), and
-// `shell prompt` rewrites the user's rc files. Neither is a Settings write Mei
+// `shell prompt` rewrites the user's rc files. Neither is a Settings write Tenkai
 // may make. Reading (get) is unaffected.
 func errShellWriteDisabled(verb string) error {
-	return fmt.Errorf("shell %s: disabled in Mei (Settings shows the login shell read-only)", verb)
+	return fmt.Errorf("shell %s: disabled in Tenkai (Settings shows the login shell read-only)", verb)
 }
 
 func runShellPref(args []string) error {
@@ -217,9 +217,9 @@ func runShellPref(args []string) error {
 		if len(args) != 2 {
 			return fmt.Errorf("shell set needs fish, bash, or zsh")
 		}
-		// MEI: refused. `shell set` runs ensureShellLoaders (writes rc files in
+		// TENKAI: refused. `shell set` runs ensureShellLoaders (writes rc files in
 		// HOME) and escalateSelf("shell","apply") -> chsh, i.e. it changes the
-		// LOGIN SHELL in /etc/passwd. Mei's Settings shows the current shell
+		// LOGIN SHELL in /etc/passwd. Tenkai's Settings shows the current shell
 		// read-only, so this must never run. The body below is kept, unused,
 		// ready to be restored by deleting this return.
 		return errShellWriteDisabled("set")
@@ -227,13 +227,13 @@ func runShellPref(args []string) error {
 		if len(args) != 2 {
 			return fmt.Errorf("shell prompt needs starship or oh-my-zsh")
 		}
-		// MEI: refused too - setZshPrompt writes the user's rc files.
+		// TENKAI: refused too - setZshPrompt writes the user's rc files.
 		return errShellWriteDisabled("prompt")
 	case "apply":
 		if len(args) != 2 || os.Geteuid() != 0 {
 			return fmt.Errorf("shell apply requires privileged fish, bash, or zsh")
 		}
-		// MEI: refused even privileged, so no path can reach chsh/usermod. The
+		// TENKAI: refused even privileged, so no path can reach chsh/usermod. The
 		// implementation is kept as applyShellPrivileged below, unused, ready to
 		// be restored by returning it to this case.
 		return errShellWriteDisabled("apply")
@@ -244,7 +244,7 @@ func runShellPref(args []string) error {
 
 // applyShellPrivileged is the original `shell apply` body: it validates the
 // choice, resolves the invoking user through PKEXEC_UID and runs
-// `usermod -s <shell>`, i.e. it rewrites the login shell in /etc/passwd. Mei
+// `usermod -s <shell>`, i.e. it rewrites the login shell in /etc/passwd. Tenkai
 // refuses the verb (see errShellWriteDisabled) and keeps this here, unused, so
 // the original behaviour can be restored by returning it to the switch.
 func applyShellPrivileged(key string) error {
@@ -276,7 +276,7 @@ func syncSessionShell(path string) {
 	// env config and a reload makes newly spawned processes read it.
 	persistShellEnv(path)
 	_ = applyDesktop()
-	_ = runSessionCommand("mei", "reload")
+	_ = runSessionCommand("tenkai", "reload")
 }
 
 // persistShellEnv upserts SHELL into desktop.env under the store lock.

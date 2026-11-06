@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Live config for the wallpaper clock. Mei Settings, desktop dragging and the
+// Live config for the wallpaper clock. Tenkai Settings, desktop dragging and the
 // right-click menu share widgets.json; FileView watches it so every surface
 // follows the next write. Placement is a compass anchor or free monitor pixels.
 Singleton {
@@ -119,12 +119,12 @@ Singleton {
     property alias notesColor2:   adapter.notesColor2
     property alias notesGradient: adapter.notesGradient
 
-    // brand: the desktop's mark + name, user-overridable from Mei Settings ->
+    // brand: the desktop's mark + name, user-overridable from Tenkai Settings ->
     // Shell -> Global. a small cross-cutting identity master (like theme.json).
     // markText is the glyph/short-text seal (default 力); markImage an optional
     // image path that wins over the text; markTint recolours a single-colour
-    // image to the accent; name is the wordmark ("Mei") shown in chrome copy.
-    // Mei's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
+    // image to the accent; name is the wordmark ("Tenkai") shown in chrome copy.
+    // Tenkai's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
     property alias markText:  brandAdapter.markText
     property alias markImage: brandAdapter.markImage
     property alias markTint:  brandAdapter.markTint
@@ -170,7 +170,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/widgets.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/widgets.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -283,7 +283,7 @@ Singleton {
     // pill seeds it; these defaults cover its absence, so no seed is written here.
     FileView {
         id: brandFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/brand.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/brand.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -294,7 +294,7 @@ Singleton {
             property string markText: "M"
             property string markImage: ""
             property bool markTint: true
-            property string name: "Mei"
+            property string name: "Tenkai"
         }
     }
 

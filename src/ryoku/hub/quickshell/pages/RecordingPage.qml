@@ -375,14 +375,14 @@ Item {
 
     // Whether apps can actually be offered a source to pick. Screen sharing can
     // be entirely dead with nothing on screen to show for it, so ask the portal
-    // and say so; the repair lives in mei doctor.
+    // and say so; the repair lives in tenkai doctor.
     property bool shareKnown: false
     property bool shareReady: false
     property string shareDetail: ""
     property bool repairing: false
     Process {
         id: shareInfo
-        command: ["mei-hub", "share", "status"]
+        command: ["tenkai-hub", "share", "status"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -399,7 +399,7 @@ Item {
     }
     Process {
         id: shareRepair
-        command: ["mei", "doctor"]
+        command: ["tenkai", "doctor"]
         stdout: StdioCollector { onStreamFinished: shareInfo.running = true }
         stderr: StdioCollector { onStreamFinished: shareInfo.running = true }
         onExited: pg.repairing = false
@@ -457,7 +457,7 @@ Item {
         }
         Text {
             width: Math.min(parent.width, 720)
-            text: I18n.tr("How Mei records: quality, encoder, and where files land.")
+            text: I18n.tr("How Tenkai records: quality, encoder, and where files land.")
             color: Tokens.inkMuted; font.family: Tokens.ui
             font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
         }

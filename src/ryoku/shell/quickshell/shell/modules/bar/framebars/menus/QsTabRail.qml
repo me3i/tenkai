@@ -56,8 +56,8 @@ Item {
         anchors.horizontalCenter: parent.horizontalCenter
         spacing: 6
 
-        // Mei: lens/OCR/QR/colour-picker are disabled (not deleted). They spawn
-        // ryoku-cmd-* helpers Mei does not build, so they would be dead buttons.
+        // Tenkai: lens/OCR/QR/colour-picker are disabled (not deleted). They spawn
+        // ryoku-cmd-* helpers Tenkai does not build, so they would be dead buttons.
         // RailIconBtn {
         //     icon: "search"; tipText: I18n.tr("Lens search")
         //     onClicked: { Quickshell.execDetached(["ryoku-cmd-google-lens"]); root.requestClose(); }
@@ -71,8 +71,8 @@ Item {
         //     onClicked: { Quickshell.execDetached(["ryoku-cmd-qr-scan"]); root.requestClose(); }
         // }
         RailIconBtn {
-            icon: "settings"; tipText: I18n.tr("Mei Settings")
-            onClicked: { Quickshell.execDetached(["mei-shell", "hub", "open"]); root.requestClose(); }
+            icon: "settings"; tipText: I18n.tr("Tenkai Settings")
+            onClicked: { Quickshell.execDetached(["tenkai-shell", "hub", "open"]); root.requestClose(); }
         }
         // RailIconBtn {
         //     icon: "colorize"; tipText: I18n.tr("Pick a color")

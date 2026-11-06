@@ -56,9 +56,9 @@ type outputRow struct {
 	SdrBrightness float64  `json:"sdrBrightness"`
 }
 
-// MEI: the mutating verbs no longer touch the provider (which writes
-// monitors.lua). They persist to Mei's own displays.json and apply the layout to
-// the running compositor with `hl.monitor` through hyprctl (mei_runtime.go), so
+// TENKAI: the mutating verbs no longer touch the provider (which writes
+// monitors.lua). They persist to Tenkai's own displays.json and apply the layout to
+// the running compositor with `hl.monitor` through hyprctl (tenkai_runtime.go), so
 // the page is practical and ~/.config/hypr is never written. The provider is
 // still read for enumeration and profile matching only.
 func runOutputs(args []string) error {
@@ -129,7 +129,7 @@ func applyOutputs(raw string) error {
 	if err != nil {
 		return err
 	}
-	// Persist the layout as Mei's active one, then apply it live. The greeter
+	// Persist the layout as Tenkai's active one, then apply it live. The greeter
 	// hand-off is not published: it writes outside the project.
 	return applyDisplays(layout, true)
 }
@@ -190,7 +190,7 @@ type outputProfile struct {
 	Matches bool   `json:"matches"`
 }
 
-func profilesDir() string { return filepath.Join(meiConfigDir(), "output-profiles") }
+func profilesDir() string { return filepath.Join(tenkaiConfigDir(), "output-profiles") }
 
 // profileName rejects a name that would escape the profiles dir, since it comes
 // from a text field.
@@ -217,7 +217,7 @@ func saveProfile(name, raw string) error {
 	d := readDisplaysDoc()
 	d.Profiles[n] = layout
 	d.Layout = layout
-	if err := writeJSONFile(meiDisplaysPath(), d); err != nil {
+	if err := writeJSONFile(tenkaiDisplaysPath(), d); err != nil {
 		return err
 	}
 	return applyDisplays(layout, false)
@@ -238,7 +238,7 @@ func rmProfile(name string) error {
 	}
 	d := readDisplaysDoc()
 	delete(d.Profiles, n)
-	if err := writeJSONFile(meiDisplaysPath(), d); err != nil {
+	if err := writeJSONFile(tenkaiDisplaysPath(), d); err != nil {
 		return err
 	}
 	return printJSON(map[string]bool{"removed": true})

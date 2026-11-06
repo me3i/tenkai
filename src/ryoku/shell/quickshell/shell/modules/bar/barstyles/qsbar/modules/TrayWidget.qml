@@ -10,11 +10,11 @@ Item {
 
     implicitWidth: trayRow.implicitWidth
     implicitHeight: 28
-    // MEI: the Repeater is fed from this array, refreshed in onItemsChanged.
+    // TENKAI: the Repeater is fed from this array, refreshed in onItemsChanged.
     // Binding the model straight at the services singleton resolved to an empty
     // array in the bar instance and never re-fired (measured n=1, row width 0).
     property var trayModel: []
-    // MEI: no `visible` gate. Upstream used `visible: trayRow.implicitWidth > 0`,
+    // TENKAI: no `visible` gate. Upstream used `visible: trayRow.implicitWidth > 0`,
     // which is circular: the bar collapses an empty slot (width 0, opacity 0),
     // so the row measured 0 even after an item arrived, the widget stayed
     // invisible, and the whole status cluster (tray + bell) stayed collapsed.
@@ -41,7 +41,7 @@ Item {
                 // 22px action cell plus the surrounding Row's 2px cluster gap.
                 implicitWidth: root.v2ActionIconCellWidth
                 implicitHeight: 28
-                // MEI: the model below holds only pinned services (refreshTrayModel),
+                // TENKAI: the model below holds only pinned services (refreshTrayModel),
                 // so the cell is always drawn. The old per-delegate binding
                 // `root.trayPinned.indexOf(modelData.service) >= 0` evaluated before
                 // modelData was readable and never recovered, so a pinned pixmap
@@ -69,7 +69,7 @@ Item {
                         if (e.button === Qt.LeftButton)
                             Tray.activate(modelData.service)
                         else if (e.button === Qt.RightButton) {
-                            // MEI: right click opens the item's own menu, the
+                            // TENKAI: right click opens the item's own menu, the
                             // call the tray panel makes. Upstream toggled
                             // pin/unpin here, which left an item that publishes
                             // a dbusmenu with no way to open it from the bar;
@@ -155,7 +155,7 @@ Item {
             }
         }
     }
-    // MEI: pin a service the first time it appears, so its icon is drawn
+    // TENKAI: pin a service the first time it appears, so its icon is drawn
     // without a trip through the panel (Theme.trayAutoPin), then re-measure the
     // anchor once the slot has expanded.
     function refreshTrayModel() {
@@ -183,7 +183,7 @@ Item {
         }
     }
 
-    // MEI: publish this row's screen-x centre for the themed tray menu and the
+    // TENKAI: publish this row's screen-x centre for the themed tray menu and the
     // qsbar test IPC. The width changes when an icon appears/disappears, which
     // is exactly when the anchor moves.
     function publishAnchor() {

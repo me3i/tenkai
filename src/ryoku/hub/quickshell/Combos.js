@@ -60,7 +60,7 @@ function customCount(customRows, norm) {
     return n;
 }
 
-// classify custom row i: "" none, "shipped" shadows a Mei bind, "duplicate"
+// classify custom row i: "" none, "shipped" shadows a Tenkai bind, "duplicate"
 // repeats another custom one. `shipped` is a shippedKeys() set.
 function rowConflict(customRows, i, shipped) {
     customRows = customRows || [];

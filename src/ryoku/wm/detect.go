@@ -98,7 +98,7 @@ func LeafScriptsDir(name string) string {
 }
 
 // configEntries is the file each provider's config tree is read from: the one
-// whose absence means the compositor boots its own defaults instead of Mei's
+// whose absence means the compositor boots its own defaults instead of Tenkai's
 // tree (no keybinds, no autostart). Named per provider because it is the
 // provider's own file, in its own format.
 var configEntries = map[string]string{
@@ -207,12 +207,12 @@ func ResetPaths(name string) []string {
 // reshuffle between runs.
 func Providers() []string { return []string{ProviderHyprland, ProviderNiri} }
 
-// Detect resolves the active provider: MEI_WM so a developer can drive one
+// Detect resolves the active provider: TENKAI_WM so a developer can drive one
 // without that session, then a live session handle, then XDG_CURRENT_DESKTOP,
 // then a config tree.
 func Detect() Detection {
-	if forced := strings.TrimSpace(os.Getenv("MEI_WM")); forced != "" {
-		return Detection{Name: forced, Live: liveFor(forced), Source: "MEI_WM"}
+	if forced := strings.TrimSpace(os.Getenv("TENKAI_WM")); forced != "" {
+		return Detection{Name: forced, Live: liveFor(forced), Source: "TENKAI_WM"}
 	}
 	for _, p := range envProviders {
 		if h := os.Getenv(p.env); h != "" && handleAlive(p.socket(h)) {

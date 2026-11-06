@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Test-only control-sidebar / quick-settings acceptance for the nested session.
-# Lives in docs/tests (versioned). Assumes ./mei run already started the session.
+# Lives in docs/tests (versioned). Assumes ./tenkai run already started the session.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"
-export XDG_RUNTIME_DIR="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"
+export XDG_RUNTIME_DIR="$TENKAI/.r"
 export WAYLAND_DISPLAY=wayland-1
 SIG=""
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
@@ -31,10 +31,10 @@ trap restore_bl EXIT
 note "brightness before: get=${BL_GET:-?} max=${BL_MAX:-?}"
 
 for _ in $(seq 1 60); do
-  pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" >/dev/null && break
+  pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" >/dev/null && break
   sleep 0.4
 done
-QS=$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
+QS=$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
 [ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; exit 1; }
 
 for _ in $(seq 1 60); do
@@ -55,19 +55,19 @@ MON=$(H -j monitors | jq -r '.[0].name' 2>/dev/null)
   ok "nested output enlarged to 1600x1000 (monitor $MON)" || note "could not enlarge nested output"
 
 for _ in $(seq 1 60); do
-  H globalshortcuts 2>/dev/null | grep -q 'mei:quicksettings' && break
+  H globalshortcuts 2>/dev/null | grep -q 'tenkai:quicksettings' && break
   sleep 0.5
 done
-H globalshortcuts 2>/dev/null | grep -q 'mei:quicksettings' \
-  && ok "global shortcut mei:quicksettings registered" \
-  || { bad "mei:quicksettings shortcut never registered"; exit 1; }
+H globalshortcuts 2>/dev/null | grep -q 'tenkai:quicksettings' \
+  && ok "global shortcut tenkai:quicksettings registered" \
+  || { bad "tenkai:quicksettings shortcut never registered"; exit 1; }
 sleep 1
 
 namespaces() { H -j layers | jq -r '[.[] | .levels[]? | .[]? | .namespace] | unique | join(",")' 2>/dev/null; }
 before_ns=$(namespaces)
 
 # open through the compositor global shortcut (same path as SUPER+ESCAPE)
-H dispatch global mei:quicksettings >/dev/null
+H dispatch global tenkai:quicksettings >/dev/null
 sleep 2
 grim -o WAYLAND-1 "$RUN/shots/qs-$(date +%H%M%S)-open.png" 2>/dev/null
 after_ns=$(namespaces)
@@ -75,12 +75,12 @@ note "layer namespaces before: $before_ns"
 note "layer namespaces after:  $after_ns"
 
 # close it again
-H dispatch global mei:quicksettings >/dev/null
+H dispatch global tenkai:quicksettings >/dev/null
 sleep 1.5
 grim -o WAYLAND-1 "$RUN/shots/qs-$(date +%H%M%S)-closed.png" 2>/dev/null
 
 # ---- audio: nested runtime has no PipeWire socket ----------------------------
-if [ -S "$MEI/.r/pipewire-0" ] || [ -S "$MEI/.r/pulse/native" ]; then
+if [ -S "$TENKAI/.r/pipewire-0" ] || [ -S "$TENKAI/.r/pulse/native" ]; then
   bad "a PipeWire/Pulse socket exists in the nested runtime"
 else
   ok "audio UNVERIFIED: no PipeWire socket in the nested runtime (expected)"
@@ -121,7 +121,7 @@ else
 fi
 
 # ---- process / network hygiene -----------------------------------------------
-c=$(pgrep -fc "qs -p $MEI/src/ryoku/shell/quickshell/shell")
+c=$(pgrep -fc "qs -p $TENKAI/src/ryoku/shell/quickshell/shell")
 [ "$c" = "1" ] && ok "exactly one shell instance" || bad "qs instance count: $c"
 
 for helper in ryoku-cmd-google-lens ryoku-cmd-ocr ryoku-cmd-qr-scan ryoku-cmd-color-picker; do
@@ -135,7 +135,7 @@ else
   ok "shell has no tcp/udp sockets"
 fi
 
-if grep -qiE 'is not a type|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Failed to load' "$RUN/state/mei/surfaces/shell.log" 2>/dev/null; then
+if grep -qiE 'is not a type|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Failed to load' "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null; then
   bad "QML error lines in shell log"
 else
   ok "no QML load/type errors"

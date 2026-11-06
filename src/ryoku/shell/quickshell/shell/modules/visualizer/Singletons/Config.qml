@@ -5,13 +5,13 @@ import Quickshell
 import Quickshell.Io
 
 // Live config for the desktop visualiser. One or more visualisers can share the
-// desktop: the PRIMARY is the flat top-level config (the one Mei Settings'
+// desktop: the PRIMARY is the flat top-level config (the one Tenkai Settings'
 // Visualizer tab still edits and reset-to-defaults mirrors), and any EXTRAS ride
 // an `extras` list, each a full per-viz object. `active` is the instance the
 // on-desktop editor is tuning. The renderer paints `list` (primary + extras);
 // the editor reads/writes the active instance through here.
 //
-// JSON at ~/.config/mei/visualizer.json, watched, so a save in Settings (or a
+// JSON at ~/.config/tenkai/visualizer.json, watched, so a save in Settings (or a
 // Super+M toggle) retunes the running spectrum on the next file event. Fractions
 // are of the monitor, matching how the spectrum sizes itself.
 Singleton {
@@ -332,7 +332,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/visualizer.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/visualizer.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

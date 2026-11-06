@@ -91,13 +91,13 @@ func isDay(fallback bool) bool {
 	return fallback
 }
 
-// shellSocketPath is mei-shell's control socket, where the weather topic lives.
+// shellSocketPath is tenkai-shell's control socket, where the weather topic lives.
 func shellSocketPath() string {
 	dir := os.Getenv("XDG_RUNTIME_DIR")
 	if dir == "" {
 		dir = "/tmp"
 	}
-	return filepath.Join(dir, "mei-shell.sock")
+	return filepath.Join(dir, "tenkai-shell.sock")
 }
 
 // poolFor returns the active pool directory for the current phase.

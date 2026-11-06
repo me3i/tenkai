@@ -112,7 +112,7 @@ Item {
 
     Process {
         id: clipStatsProc
-        command: ["mei-hub", "clipboard", "stats"]
+        command: ["tenkai-hub", "clipboard", "stats"]
         stdout: StdioCollector { id: clipStatsOut }
         stderr: StdioCollector { id: clipStatsErr }
         onExited: (code) => {
@@ -135,7 +135,7 @@ Item {
     // command instead of two racing ones.
     Process {
         id: clipPruneProc
-        command: ["mei-hub", "clipboard", "prune"]
+        command: ["tenkai-hub", "clipboard", "prune"]
         stdout: StdioCollector { id: clipPruneOut }
         stderr: StdioCollector { id: clipPruneErr }
         onExited: (code) => {
@@ -157,8 +157,8 @@ Item {
     SchemaPage {
         id: sp
         anchors.fill: parent
-        // MEI: the Clipboard tab and the boot "reload cover" are off the keep list
-        // (Mei keeps Appearance = brand + visualiser + wallpaper). Disabled, not
+        // TENKAI: the Clipboard tab and the boot "reload cover" are off the keep list
+        // (Tenkai keeps Appearance = brand + visualiser + wallpaper). Disabled, not
         // deleted: the rows stay in DesktopPage.js; restore by using
         // DesktopSchema.rows directly.
         schema: DesktopSchema.rows.filter(r => r.tab !== "Clipboard" && r.key !== "reloadCover")

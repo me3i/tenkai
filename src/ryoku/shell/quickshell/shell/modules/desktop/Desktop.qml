@@ -23,7 +23,7 @@ import "../wallpaper" as WallpaperMod
 // monitor by the main shell, carrying the clock. only clicks on bare wallpaper
 // land here, so windows above keep their input. drag = move (snaps to the
 // fade-in grid), right-click a widget = its menu, right-click empty = global
-// menu. every knob is live from Config; drag, menus and Mei Settings all
+// menu. every knob is live from Config; drag, menus and Tenkai Settings all
 // write the same file, so surfaces retune with no reload.
 Scope {
     id: root
@@ -299,14 +299,14 @@ Scope {
     }
 
     // Resolve the placement helper the way Registry resolves discover.sh: in a
-    // dev run MEI_SHELL_DIR points at the shell tree and the tool is NOT on
-    // PATH, so a bare "mei-plugins-place" Process silently no-ops and every
+    // dev run TENKAI_SHELL_DIR points at the shell tree and the tool is NOT on
+    // PATH, so a bare "tenkai-plugins-place" Process silently no-ops and every
     // drag / resize / lock / hide / settings write is lost. Packaged installs
-    // (no MEI_SHELL_DIR) ship it to /usr/bin, where the bare name resolves.
-    readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
+    // (no TENKAI_SHELL_DIR) ship it to /usr/bin, where the bare name resolves.
+    readonly property string _shellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string placeTool: (root._shellDir && root._shellDir.length > 0)
-        ? root._shellDir + "/quickshell/plugins/mei-plugins-place"
-        : "mei-plugins-place"
+        ? root._shellDir + "/quickshell/plugins/tenkai-plugins-place"
+        : "tenkai-plugins-place"
 
     // hand the keyboard back after a widget text field releases its grab. the
     // widget layer never unmaps, and dropping an exclusive grab on a mapped
@@ -1063,7 +1063,7 @@ Scope {
                     const x = (dw.x !== undefined) ? dw.x : 80;
                     const y = (dw.y !== undefined) ? dw.y : 80;
                     const lk = (dw.locked === true);
-                    // scale only: opacity arg omitted -> mei-plugins-place keeps it.
+                    // scale only: opacity arg omitted -> tenkai-plugins-place keeps it.
                     sizeProc.command = [root.placeTool, id, "desktopWidget",
                         "" + x, "" + y, "" + sc, "" + lk];
                     sizeProc.running = true;
@@ -1175,7 +1175,7 @@ Scope {
             }
         }
 
-        // position/scale writeback for plugin tiles. mei-plugins-place
+        // position/scale writeback for plugin tiles. tenkai-plugins-place
         // merges free x/y (+ optional scale/locked) into plugins.json;
         // Registry's file-watch then retunes every surface.
         Process { id: persist }

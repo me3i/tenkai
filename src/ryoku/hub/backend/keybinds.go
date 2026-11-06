@@ -6,7 +6,7 @@ import (
 
 // The keybind legend the Hub keybinds page and the Super+K cheatsheet draw. It
 // is the effective legend the active window-manager provider reports through the
-// seam: the shipped Mei catalogue resolved against the user's rebinds, each
+// seam: the shipped Tenkai catalogue resolved against the user's rebinds, each
 // row struck or annotated where the running compositor cannot honour it, then
 // that compositor's own exclusive binds and the user's custom binds. The
 // provider owns the parse now, so the two surfaces read one source instead of

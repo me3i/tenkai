@@ -60,7 +60,7 @@ Singleton {
     // and offers no way to set one per config. The title is the only thing
     // that tells them apart, so it maps to the desktop entry id the dock
     // groups, launches and draws them by; anything else keeps its class.
-    readonly property var quickshellApps: ({ "Mei Settings": "ryoku-hub", "Ryostore": "ryostore", "ryovm": "ryovm" })
+    readonly property var quickshellApps: ({ "Tenkai Settings": "ryoku-hub", "Ryostore": "ryostore", "ryovm": "ryovm" })
     function classOf(w) {
         if (!w) return "";
         const cls = w.appId;
@@ -157,7 +157,7 @@ Singleton {
     // The daemon's control socket, connected only when there is something to say.
     Socket {
         id: cfgCtl
-        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
         property string queued: ""
         function flushQueued() {
             if (cfgCtl.queued.length === 0)

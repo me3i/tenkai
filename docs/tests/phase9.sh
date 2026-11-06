@@ -6,12 +6,12 @@
 #
 # Every sub-harness starts and stops its own nested session and runs
 # verify-untouched itself. The cold start moves (never deletes)
-# .run/state, .run/cache, .run/config/mei and the fake-HOME cache/state
+# .run/state, .run/cache, .run/config/tenkai and the fake-HOME cache/state
 # (including qsbar's quickshell_widgets_v2 visibility cache) to
 # .run/backup-<stamp>, and restores them on exit.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
@@ -30,20 +30,20 @@ note(){ echo "NOTE        $*"; }
 
 # ── cold start ──────────────────────────────────────────────────────────────
 echo "=== cold start (backup $BK) ==="
-# Any Mei qs attached to the live runtime is ours and must go before we start.
-for p in $(pgrep -f "^qs -p $MEI/" 2>/dev/null); do
+# Any Tenkai qs attached to the live runtime is ours and must go before we start.
+for p in $(pgrep -f "^qs -p $TENKAI/" 2>/dev/null); do
   prt="$(tr '\0' '\n' < /proc/$p/environ 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p')"
   [ -z "$prt" ] && continue
   if [ "$prt" != "$RT" ]; then
-    echo "NOTE        killing leaked Mei qs $p (runtime ${prt:-unset})"
+    echo "NOTE        killing leaked Tenkai qs $p (runtime ${prt:-unset})"
     kill -TERM "$p" 2>/dev/null || true
   fi
 done
-if pgrep -f "^qs -p $MEI/src/ryoku/shell|^$RUN/bin/mei-shell daemon" >/dev/null 2>&1; then
+if pgrep -f "^qs -p $TENKAI/src/ryoku/shell|^$RUN/bin/tenkai-shell daemon" >/dev/null 2>&1; then
   bad "a nested session is already running; refusing to cold-start over it"
   echo "RESULT: FAIL"; exit 1
 fi
-for d in state cache config/mei home/.cache/mei home/.cache/quickshell_widgets_v2 home/.local/state/mei; do
+for d in state cache config/tenkai home/.cache/tenkai home/.cache/quickshell_widgets_v2 home/.local/state/tenkai; do
   if [ -e "$RUN/$d" ]; then
     mkdir -p "$BK/$(dirname "$d")"
     mv "$RUN/$d" "$BK/$d"
@@ -59,9 +59,9 @@ restore() {
     LEAK_PID=""
   fi
   [ "${KEEP:-0}" = 1 ] && return
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
   sleep 2
-  for d in state cache config/mei home/.cache/mei home/.cache/quickshell_widgets_v2 home/.local/state/mei; do
+  for d in state cache config/tenkai home/.cache/tenkai home/.cache/quickshell_widgets_v2 home/.local/state/tenkai; do
     rm -rf "${RUN:?}/${d:?}"
     if [ -e "$BK/$d" ]; then
       mkdir -p "$RUN/$(dirname "$d")"
@@ -86,7 +86,7 @@ hash_real() {
 }
 hash_hypr() { find "$HOME/.config/hypr" -type f -print0 2>/dev/null | sort -z | xargs -0 sha256sum 2>/dev/null | sha256sum | awk '{print $1}'; }
 live_owners() { busctl --user list --no-legend 2>/dev/null | awk '$1=="org.freedesktop.Notifications"||$1=="org.kde.StatusNotifierWatcher"{print $1"="$2}' | sort; }
-home_names() { find "$HOME" -xdev -mindepth 1 \( -iname '*mei*' -o -iname '*ryoku*' -o -iname '*ryogami*' \) -not -path "$MEI*" 2>/dev/null | sort; }
+home_names() { find "$HOME" -xdev -mindepth 1 \( -iname '*tenkai*' -o -iname '*ryoku*' -o -iname '*ryogami*' \) -not -path "$TENKAI*" 2>/dev/null | sort; }
 
 hash_real > "$BK/real-before.txt"
 hash_hypr > "$BK/hypr-before.txt"
@@ -97,14 +97,14 @@ note "live D-Bus owners: $(tr '\n' ' ' < "$BK/owners-before.txt")"
 
 # ── item 17: leak guard (self-test, then whole-run monitor) ─────────────────
 echo; echo "=== 17a. leak guard self-test (deliberate live-runtime process) ==="
-if bash "$MEI/docs/tests/leak-check.sh"; then
+if bash "$TENKAI/docs/tests/leak-check.sh"; then
   ok "leak guard fails a deliberate live-runtime launch"
 else
   bad "leak guard self-test did not fail the broken launch"
 fi
 rm -f "$LEAK_STOP"
 NESTED_RT="$RT" LIVE_RT="$HOST_XDG" LIVE_WL="$HOST_WL" \
-  bash "$MEI/docs/tests/leak-monitor.sh" "$RUN/pids" "$LEAK_STOP" "$LEAK_LOG" >/dev/null 2>&1 &
+  bash "$TENKAI/docs/tests/leak-monitor.sh" "$RUN/pids" "$LEAK_STOP" "$LEAK_LOG" >/dev/null 2>&1 &
 LEAK_PID=$!
 note "leak monitor started (pid $LEAK_PID, log $LEAK_LOG)"
 
@@ -127,20 +127,20 @@ run_one() { # $1 = item key, $2 = label, $3 = command...
 }
 
 run_one core  "items 1,2,3,4,10,11,12: launch, bar, launcher, sidebar, dependency, shutdown, idle" \
-  bash "$MEI/docs/tests/phase9-core.sh"
+  bash "$TENKAI/docs/tests/phase9-core.sh"
 if [ "${ONLY:-all}" = core ]; then
   echo; echo "ONLY=core: stopping before the item harnesses"
 else
 run_one item8 "item 8: Settings (5 pages, persistence across restart, reset)" \
-  bash "$MEI/docs/tests/step4.sh"
+  bash "$TENKAI/docs/tests/step4.sh"
 run_one item7 "item 7: wallpaper set, reveal, recolour" \
-  bash "$MEI/docs/tests/step5.sh"
+  bash "$TENKAI/docs/tests/step5.sh"
 run_one item5 "item 5: notifications (popup, DND, actions, dismiss, clear)" \
-  bash "$MEI/docs/tests/step6.sh"
+  bash "$TENKAI/docs/tests/step6.sh"
 run_one item6 "item 6: tray (add, click, menu, remove)" \
-  bash "$MEI/docs/tests/step7.sh"
+  bash "$TENKAI/docs/tests/step7.sh"
 run_one item9 "item 9: every module off, and the 3-off combo" \
-  bash "$MEI/docs/tests/phase8.sh"
+  bash "$TENKAI/docs/tests/phase8.sh"
 fi
 
 # ── item 17: stop the whole-run leak monitor ────────────────────────────────
@@ -149,7 +149,7 @@ touch "$LEAK_STOP"
 wait "$LEAK_PID"; LEAK_RC=$?
 LEAK_PID=""
 if [ "$LEAK_RC" = 0 ]; then
-  ok "no recorded Mei process used the live runtime or a live parent"
+  ok "no recorded Tenkai process used the live runtime or a live parent"
 else
   bad "live-runtime leak detected (see $LEAK_LOG)"
   grep '^LEAK' "$LEAK_LOG" 2>/dev/null | head -5 | sed 's/^/  | /'
@@ -177,11 +177,11 @@ else
   bad "14 live D-Bus owners changed"; diff -u "$BK/owners-before.txt" "$BK/owners-after.txt" | sed 's/^/  /'
 fi
 if diff -u "$BK/home-names-before.txt" "$BK/home-names-after.txt" >/dev/null; then
-  ok "15 no new mei/ryoku/ryogami name under the real HOME"
+  ok "15 no new tenkai/ryoku/ryogami name under the real HOME"
 else
   bad "15 new names under the real HOME"; diff -u "$BK/home-names-before.txt" "$BK/home-names-after.txt" | sed 's/^/  /'
 fi
-echo "  verify-untouched: $( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )"
+echo "  verify-untouched: $( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )"
 
 # ── table ────────────────────────────────────────────────────────────────────
 echo; echo "================ PHASE 9 TABLE ================"
@@ -210,7 +210,7 @@ row "15" "no new names under real HOME"               "$(diff -q "$BK/home-names
 term="$(grep -o 'TERMINAL-CHECK: [A-Z]*' "${SRC[core]:-}" 2>/dev/null | tail -1 | awk '{print $2}')"
 [ "$term" = PASS ] && term=TESTED
 row "16" "terminal role for Terminal=true apps"       "${term:-UNVERIFIED}" "${SRC[core]:-}"
-row "17" "no Mei process on the live runtime"          "$([ "$LEAK_RC" = 0 ] && echo TESTED || echo FAIL)" "$LEAK_LOG"
+row "17" "no Tenkai process on the live runtime"          "$([ "$LEAK_RC" = 0 ] && echo TESTED || echo FAIL)" "$LEAK_LOG"
 
 echo
 [ "$fail" = 0 ] && echo "RESULT: PASS" || echo "RESULT: FAIL"

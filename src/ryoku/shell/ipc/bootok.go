@@ -9,11 +9,11 @@ import (
 )
 
 // bootOKDir is where a session records that the desktop came up in this boot:
-// a sticky, world-writable directory the mei package ships through
+// a sticky, world-writable directory the tenkai package ships through
 // tmpfiles, so an unprivileged session can write its own marker and the
-// root-side boot guard (mei boot-guard, ryoku-boot-guard.service) can read
+// root-side boot guard (tenkai boot-guard, ryoku-boot-guard.service) can read
 // it on the next boot. One file per uid; the content is the boot id.
-const bootOKDir = "/var/lib/mei/boot"
+const bootOKDir = "/var/lib/tenkai/boot"
 
 // bootOKSettle is how long the shell must stay up before the boot counts as
 // good: past the supervisor's crash window with margin, short enough that a

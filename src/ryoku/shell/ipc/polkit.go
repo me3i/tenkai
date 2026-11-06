@@ -32,7 +32,7 @@ import (
 // back. On SUCCESS the helper itself (running privileged) has already told polkitd
 // the authorization was gained, so the agent only reports the outcome.
 //
-// SAFETY: registration is gated behind MEI_POLKIT_AGENT=1. Only one agent may
+// SAFETY: registration is gated behind TENKAI_POLKIT_AGENT=1. Only one agent may
 // hold a session at a time, and the full PAM flow cannot be exercised without a
 // live privileged action, so the daemon does not silently take the session's
 // polkit slot. With the flag set it registers (and fails closed if another agent
@@ -156,7 +156,7 @@ type polkitAgent struct {
 }
 
 // startPolkit registers the polkit topic and control calls unconditionally, then
-// registers the D-Bus agent only when MEI_POLKIT_AGENT=1 (see SAFETY above).
+// registers the D-Bus agent only when TENKAI_POLKIT_AGENT=1 (see SAFETY above).
 func (d *daemon) startPolkit() {
 	a := &polkitAgent{topic: d.registerTopic("polkit")}
 	d.polkit = a
@@ -177,27 +177,27 @@ func (d *daemon) startPolkit() {
 		return map[string]any{"ok": true}, nil
 	})
 
-	if os.Getenv("MEI_POLKIT_AGENT") != "1" {
-		log.Printf("mei-shell: polkit agent not registered (set MEI_POLKIT_AGENT=1 to enable)")
+	if os.Getenv("TENKAI_POLKIT_AGENT") != "1" {
+		log.Printf("tenkai-shell: polkit agent not registered (set TENKAI_POLKIT_AGENT=1 to enable)")
 		return
 	}
 	if _, err := os.Stat(polkitHelperPath); err != nil {
-		log.Printf("mei-shell: polkit agent disabled: helper %s missing: %v", polkitHelperPath, err)
+		log.Printf("tenkai-shell: polkit agent disabled: helper %s missing: %v", polkitHelperPath, err)
 		return
 	}
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
-		log.Printf("mei-shell: polkit agent disabled: %v", err)
+		log.Printf("tenkai-shell: polkit agent disabled: %v", err)
 		return
 	}
 	a.conn = conn
 	if err := conn.Export(a, dbus.ObjectPath(polkitAgentPath), polkitAgentIface); err != nil {
-		log.Printf("mei-shell: polkit agent export failed: %v", err)
+		log.Printf("tenkai-shell: polkit agent export failed: %v", err)
 		return
 	}
 	subject, err := polkitSessionSubject(conn)
 	if err != nil {
-		log.Printf("mei-shell: polkit agent disabled: no session subject: %v", err)
+		log.Printf("tenkai-shell: polkit agent disabled: no session subject: %v", err)
 		return
 	}
 	locale := polkitLocale()
@@ -205,11 +205,11 @@ func (d *daemon) startPolkit() {
 		polkitAuthorityIface+".RegisterAuthenticationAgent", 0, subject, locale, polkitAgentPath)
 	if call.Err != nil {
 		// Fails closed: another agent already holds the session's slot, so the
-		// existing agent keeps working and Mei does not fight it.
-		log.Printf("mei-shell: polkit agent not registered (slot held?): %v", call.Err)
+		// existing agent keeps working and Tenkai does not fight it.
+		log.Printf("tenkai-shell: polkit agent not registered (slot held?): %v", call.Err)
 		return
 	}
-	log.Printf("mei-shell: polkit agent registered")
+	log.Printf("tenkai-shell: polkit agent registered")
 }
 
 // BeginAuthentication is polkitd asking the user to authenticate. It blocks (in
@@ -244,7 +244,7 @@ func (a *polkitAgent) BeginAuthentication(actionID, message, iconName string, de
 			return dbus.NewError(polkitErrorFailed, []interface{}{polkitCancelled})
 		}
 		if err != nil {
-			log.Printf("mei-shell: polkit conversation: %v", err)
+			log.Printf("tenkai-shell: polkit conversation: %v", err)
 		}
 		if ok {
 			return nil
@@ -348,7 +348,7 @@ func (a *polkitAgent) converse(username, cookie string, p *polkitPrompt) (bool, 
 			default:
 				// Unrecognized lines are surfaced as info, matching the
 				// reference's tolerance, and logged for diagnosis.
-				log.Printf("mei-shell: polkit helper said %q", line)
+				log.Printf("tenkai-shell: polkit helper said %q", line)
 				a.setInfo(unescapeGStr(line))
 			}
 		case pw := <-respCh:

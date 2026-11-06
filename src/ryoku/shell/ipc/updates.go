@@ -12,7 +12,7 @@ import (
 
 // updates.go runs the background update check the Hub's Updates section and the
 // bar's update glyph read, so a check happens whether or not the Hub is open.
-// It polls `mei status --json` on the configured cadence (hub.toml
+// It polls `tenkai status --json` on the configured cadence (hub.toml
 // update_interval), publishes the frame on the "updates" topic, and caches it.
 type updatesState struct {
 	topic *stateTopic
@@ -68,7 +68,7 @@ func (s *updatesState) run() {
 func (s *updatesState) check() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
-	out, err := exec.CommandContext(ctx, "mei", "status", "--json").Output()
+	out, err := exec.CommandContext(ctx, "tenkai", "status", "--json").Output()
 	if err != nil || len(out) == 0 {
 		return
 	}
@@ -112,11 +112,11 @@ func hubConfigPath() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei", "hub.toml")
+	return filepath.Join(base, "tenkai", "hub.toml")
 }
 
 func writeUpdateCache(b []byte) {
-	dir := filepath.Join(matugenCacheHome(), "mei")
+	dir := filepath.Join(matugenCacheHome(), "tenkai")
 	if os.MkdirAll(dir, 0o755) != nil {
 		return
 	}

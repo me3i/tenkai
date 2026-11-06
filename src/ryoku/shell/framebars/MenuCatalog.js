@@ -19,7 +19,7 @@ const widgets = {
     "layout-switcher": { id: "layout-switcher", nested: false },
     "quick-actions": { id: "quick-actions", nested: false }
 };
-// Mei: only "home" (audio, brightness, network status, battery, clock/date) is a
+// Tenkai: only "home" (audio, brightness, network status, battery, clock/date) is a
 // live tab. The other modules are disabled, not deleted: their QML files stay in
 // quicksettings/, but they are left out of this catalog, so a persisted
 // shell.json listing them normalises back to home (FrameBars.quickSettingsModulesFor).

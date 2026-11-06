@@ -1,10 +1,10 @@
 [Desktop Entry]
 Type=Application
-Name=Mei Settings
+Name=Tenkai Settings
 GenericName=Settings
-Comment=Configure the Mei desktop: appearance, bar and launcher
-Exec=mei-shell hub open
+Comment=Configure the Tenkai desktop: appearance, bar and launcher
+Exec=tenkai-shell hub open
 Terminal=false
-Icon=mei-hub
+Icon=tenkai-hub
 Categories=Settings;DesktopSettings;
-Keywords=hub;settings;preferences;mei;configure;appearance;bar;launcher;motion;
+Keywords=hub;settings;preferences;tenkai;configure;appearance;bar;launcher;motion;

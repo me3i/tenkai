@@ -21,7 +21,7 @@ import (
 // resolution cover image the track's own metadata can reach, and its
 // synchronized lyrics. QML owns the player pick (services/Media.qml) and pushes
 // the bare track on "music.track"; the daemon resolves art and lyrics, caches
-// both under ~/.cache/mei/music, and streams the result on the "music" state
+// both under ~/.cache/tenkai/music, and streams the result on the "music" state
 // topic, so no QML surface makes an HTTP request itself (docs/conventions.md).
 //
 // Providers are keyless and public: LRCLIB for lyrics, Deezer then iTunes for a
@@ -138,7 +138,7 @@ func musicCacheDir() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
-	return filepath.Join(base, "mei", "music")
+	return filepath.Join(base, "tenkai", "music")
 }
 
 // setTrack adopts a new track: an unchanged key is a no-op (every shell surface
@@ -256,7 +256,7 @@ func (s *musicState) setArt(gen int, path, status string) {
 }
 
 // resolveCanvas matches the track's Spotify id to a local backdrop the user
-// keeps in ~/.config/mei/canvas/<id>.<ext> (a downloaded Canvas clip, or any
+// keeps in ~/.config/tenkai/canvas/<id>.<ext> (a downloaded Canvas clip, or any
 // loop): the "canvas" backdrop mode plays it per song. No id, or no file,
 // leaves the field empty and the surface falls back to the cover.
 func (s *musicState) resolveCanvas(gen int, t musicTrack) {
@@ -294,13 +294,13 @@ func (s *musicState) setCanvas(gen int, url string) {
 	s.publish()
 }
 
-// canvasDir is the user's Canvas library, beside the other mei config.
+// canvasDir is the user's Canvas library, beside the other tenkai config.
 func canvasDir() string {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei", "canvas")
+	return filepath.Join(base, "tenkai", "canvas")
 }
 
 // spotifyTrackID pulls the base62 id out of the track's page URL or MPRIS uri
@@ -709,7 +709,7 @@ func musicLocalArt(raw string) (string, bool) {
 	return path, true
 }
 
-// MEI: remote artwork is off the keep list and the daemon is local-only, so the
+// TENKAI: remote artwork is off the keep list and the daemon is local-only, so the
 // cover download is compiled out (no net/http import in this file). A cover
 // already in the cache is still returned; nothing new is fetched.
 func (s *musicState) cacheArt(remote string) (string, error) {
@@ -717,7 +717,7 @@ func (s *musicState) cacheArt(remote string) (string, error) {
 	if info, err := os.Stat(path); err == nil && info.Size() >= musMinArtBytes {
 		return path, nil
 	}
-	return "", fmt.Errorf("mei: outbound network disabled")
+	return "", fmt.Errorf("tenkai: outbound network disabled")
 }
 
 // musicIsImage sniffs the magic bytes: YouTube answers a missing thumbnail size
@@ -821,10 +821,10 @@ func musicCatalogQuery(title, artist, album string) string {
 	return strings.Join(parts, " ")
 }
 
-// MEI: lyrics/canvas lookups are compiled out with the rest of the outbound
+// TENKAI: lyrics/canvas lookups are compiled out with the rest of the outbound
 // path; nothing is fetched over the network.
 func (s *musicState) getJSON(rawURL string, out any) error {
-	return fmt.Errorf("mei: outbound network disabled")
+	return fmt.Errorf("tenkai: outbound network disabled")
 }
 
 // musicParseLRC turns an LRC document into sorted timed lines. A line can carry

@@ -1,6 +1,6 @@
-# MODULES — Mei's switchboard
+# MODULES — Tenkai's switchboard
 
-One file, `.run/config/mei/shell.json` in a test session and `~/.config/mei/shell.json`
+One file, `.run/config/tenkai/shell.json` in a test session and `~/.config/tenkai/shell.json`
 in a real one. It already held the theme and motion block; the `modules` map is new.
 A **missing key means ON**, so any older shell.json keeps every module.
 
@@ -13,7 +13,7 @@ A **missing key means ON**, so any older shell.json keeps every module.
     "notifications": true,  // NotificationServer, owns org.freedesktop.Notifications
     "tray": true,           // daemon StatusNotifierWatcher host + tray panel rows
     "wallpaper": true,      // ryogami process + wallpaper menu
-    "settings": true        // mei-hub (the 5-page Settings app)
+    "settings": true        // tenkai-hub (the 5-page Settings app)
   },
   "theme": {                // was already in the schema (settings.go)
     "theme": "Default",     // "Default" | "Wallpaper" | a static catalog name
@@ -39,8 +39,8 @@ places that must agree:
 | `control_center` | `shell.qml:467`/`:477`/`:484` + `:751` + `daemon.go:114` + the new `modules/controlcenter/ControlCenterHost.qml` | `quicksettings` and `screenshot` commands are swallowed. With the bar off the panel is hosted by the shell's own host (see below) |
 | `notifications` | `services/Notifs.qml:233-236` (`Loader.active`) | no `NotificationServer` object → no D-Bus name |
 | `tray` | `daemon.go:91` (`moduleDisabled`) + `:478` (bootstrap) | no `StatusNotifierWatcher` host |
-| `wallpaper` | `mei:588` (session template) + `shell.qml:467`/`:751` + `daemon.go:114` | ryogami is not started; wallpaper menu is swallowed |
-| `settings` | `daemon.go:1244` (`hub` verb) | `mei-shell hub …` refuses; no hub process |
+| `wallpaper` | `tenkai:588` (session template) + `shell.qml:467`/`:751` + `daemon.go:114` | ryogami is not started; wallpaper menu is swallowed |
+| `settings` | `daemon.go:1244` (`hub` verb) | `tenkai-shell hub …` refuses; no hub process |
 | `theme.theme`, `theme.matugen.*` | `settings.go:1106` (`onChange` → `scheduleTheme`) | re-themes live when shell.json is saved |
 | `theme.motion.scale` / `.reduce` | `services/Motion.qml:15` and `:21` via `Config.theme` (`Config.qml:54`) | multiplies/collapses all central timings live |
 
@@ -75,7 +75,7 @@ module matrix still passes with the change (50 TESTED, 0 FAIL).
 Edit the file (or have a script edit it) and save:
 
 ```bash
-jq '.modules.launcher = false' ~/.config/mei/shell.json > /tmp/s && mv /tmp/s ~/.config/mei/shell.json
+jq '.modules.launcher = false' ~/.config/tenkai/shell.json > /tmp/s && mv /tmp/s ~/.config/tenkai/shell.json
 ```
 
 Restart semantics (measured in `docs/tests/phase8.sh`, scenario S10):
@@ -86,7 +86,7 @@ Restart semantics (measured in `docs/tests/phase8.sh`, scenario S10):
 | `tray` | **restart** — the watcher stays claimed until the daemon restarts (S10) |
 | `bar`, `control_center`, `notifications` | live by the same `LazyLoader`/`Loader` bindings as the launcher; only the launcher path is timed in S10 |
 | `wallpaper` | **restart** — ryogami is started by the session script, not the shell |
-| `settings` | next `mei-shell hub …` call (the verb checks per call) |
+| `settings` | next `tenkai-shell hub …` call (the verb checks per call) |
 
 To turn something back on, set it to `true` (or delete the key) and restart the
 session. Nothing else is generated or rewritten.
@@ -97,7 +97,7 @@ session. Nothing else is generated or rewritten.
 bash docs/tests/phase8.sh            # one nested session per scenario, verify-untouched at both ends
 ```
 
-It rewrites only `.run/config/mei/shell.json`, starts a session per scenario and
+It rewrites only `.run/config/tenkai/shell.json`, starts a session per scenario and
 asserts: bar layer present/absent (`hyprctl layers`), launcher surface count,
 screen pixel diff below the bar for the control centre, D-Bus owners on the
 nested bus, `ryogami` process presence, hub verb output, stray processes after
@@ -114,7 +114,7 @@ stop. Evidence lands in `.run/logs/phase8-*.log` and `.run/shots/phase8-*.png`.
 ## Swap a theme
 
 1. Set `theme.theme` in shell.json:
-   - `"Default"` — Mei's built-in dynamic default (orange accents, shipped look)
+   - `"Default"` — Tenkai's built-in dynamic default (orange accents, shipped look)
    - `"Wallpaper"` — derive every colour from the current wallpaper
    - a static name from `src/ryoku/shell/ipc/themes_gen.go`: `Catppuccin Mocha`,
      `Dracula`, `Everforest Dark Medium`, `Gruvbox Dark Medium`, `Kanagawa Wave`,
@@ -129,7 +129,7 @@ stop. Evidence lands in `.run/logs/phase8-*.log` and `.run/shots/phase8-*.png`.
 A simple clock-style widget in the right group. No daemon, no D-Bus, no new
 process; it is a QML Item inside the existing bar window.
 
-**1. The widget** — `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/modules/MeiClock.qml`:
+**1. The widget** — `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/modules/TenkaiClock.qml`:
 
 ```qml
 import QtQuick
@@ -169,8 +169,8 @@ Item {
 
 ```qml
     Component {
-        id: compMeiClock
-        MeiClock {
+        id: compTenkaiClock
+        TenkaiClock {
             root: barSlot.root
             readonly property real barContentLeftInset: 9
             readonly property real barContentRightInset: 9
@@ -182,7 +182,7 @@ and add it to the registry (line 1250):
 
 ```qml
         "G15": compBluetooth, "G16": compCpuTemperature, "G17": compGpu,
-        "G18": compStorage, "G19": compLayout, "G20": compMeiClock
+        "G18": compStorage, "G19": compLayout, "G20": compTenkaiClock
 ```
 
 **3. Place it** in a free right-group slot (`rightModel`, line 2136): replace one
@@ -195,11 +195,11 @@ and add it to the registry (line 1250):
 **4. Make it toggleable** in Settings → Bar by adding to `.../qsbar/core/widgets.json`:
 
 ```json
-  { "id": "meiclock", "gid": "G20", "label": "Mei clock", "visKey": "meiclock" }
+  { "id": "tenkaiclock", "gid": "G20", "label": "Tenkai clock", "visKey": "tenkaiclock" }
 ```
 
 The Settings card reads that file; `visKey` is the per-widget visibility key the
-bar already stores. **5.** Restart the session (`./mei stop && ./mei run`). QML is
+bar already stores. **5.** Restart the session (`./tenkai stop && ./tenkai run`). QML is
 loaded from source, so no build step. To remove the widget, delete the
 `ListElement` (or set the visibility key off) — the rest can stay.
 

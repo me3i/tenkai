@@ -1,0 +1,2695 @@
+#!/usr/bin/env bash
+# tenkai — control script for the Tenkai project (~/projects/tenkai)
+#
+# SAFETY CONTRACT
+#   * Reads live-session state only (pgrep/ps/busctl/qs list). Never dispatches anything.
+#   * Writes only under ~/projects/tenkai.
+#   * Never kills a process whose /proc/<pid>/cmdline does not contain the project path.
+#   * `test` refuses to run until Phase 6 implements the nested-session launcher, and will
+#     refuse to start if it detects the live-session signature.
+#
+# Subcommands:
+#   baseline [--force]      capture the read-only snapshot of the live session into docs/baseline/
+#   verify-untouched [--strict]
+#                           re-hash the watched config/cache trees and re-check live-session state.
+#                           Watched trees: ~/.config/{quickshell,hypr} (live shell/compositor) plus
+#                           ~/.config/{kitty,btop,qt6ct,gtk-3.0,gtk-4.0} (exactly what matugen /
+#                           Ryoku theming would write, so any leak is caught) plus the live caches
+#                           ~/.cache/ryoku and ~/.cache/matugen.
+#                           Config-hash diffs under any ~/.config tree are fatal. The two cache
+#                           trees are a printed, counted WARN: they are rewritten every few seconds
+#                           by the LIVE desktop's own music/clipboard/palette/matugen services
+#                           (owner decision 2026-10-31, revised 2026-11-04).
+#                           Any change under the watched ~/.config trees, and any changed path
+#                           outside both the config and cache sets, stays fatal, and
+#                           `./tenkai verify-prove` shows both halves can fail.
+#                           A change of owner PID for a watched well-known D-Bus name
+#                           (Notifications, tray watcher, ScreenSaver, secrets, pipewire/pulse,
+#                           portals) is resolved ON THE BUS (GetNameOwner ->
+#                           GetConnectionUnixProcessID), because busctl's own column prints "-"
+#                           across PID namespaces. A change whose new PID is the MainPID of a
+#                           live systemd user unit is external churn: printed with the unit and
+#                           WARN (owner decision 2026-10-31). Any change that cannot be
+#                           attributed that way is fatal. Connection IDs (:1.NNN) and app-owned
+#                           names (steam, protonvpn, kitty, firefox, …) are ignored. Other
+#                           process diffs are informational unless --strict.
+#   verify-prove            prove the verify checks can still fail: doctored hash lists and
+#                           doctored owner tables go through the real functions (the only live
+#                           query is the read-only systemd lookup the attribution itself uses).
+#                           Exits non-zero if a check would accept what it must reject.
+#   env-check [--prove]     launch NOTHING: run the session script's own 'env -i' scrub and print
+#                           the resulting environment names plus the command -v resolution of every
+#                           inventoried command (tenkai | shadow | system). FAILs on a forbidden env
+#                           name (RYOKU_*, QS_*, HYPRLAND_*, SYSTEMD_*, RYOGAMI_*, the live Qt
+#                           theming hook, any XDG_* the session does not set itself) or on a
+#                           resolution outside .run/bin and the fixed system list. --prove injects
+#                           a fake ryoku-* binary on a throwaway PATH and requires the rules to
+#                           fail, then removes it and requires them to pass.
+#   status                  show whether a Tenkai test session started by this script is running
+#   run | stop | test       start / stop the nested session, or run it under the full harness
+#   live --profile overlay|full [--list]
+#                           join the OWNER's real session for the live trial.
+#                           overlay: Tenkai runs beside the current shell with only
+#                             the launcher, control centre and Settings (no D-Bus
+#                             name, no screen edge, no wallpaper). It prints what
+#                             it will claim and checks that the live shell owns
+#                             none of it.
+#                           full: replaces the current shell. Refuses while the
+#                             old shell still owns the notification or tray name,
+#                             prints what it will do and waits for YES.
+#                           --list: print the claim table and exit (read-only;
+#                             joins nothing, starts nothing).
+#                           Never started by the harness: the owner runs it.
+#   start [--fallback "cmd"] [--real-power]
+#                           the NON-interactive start for an autostart line. It asks
+#                           nothing, does nothing if Tenkai already runs, runs the
+#                           same collision preflight as `live --profile full` and
+#                           exits non-zero (without touching anything) when the
+#                           old shell still owns the notification or tray name.
+#                           --fallback runs a command once if Tenkai does not come
+#                           up, and only when no Tenkai process is left. --real-power
+#                           leaves TENKAI_STUB_POWER unset, so logout, reboot and
+#                           suspend are real; the default stays stubbed.
+#   scrub-check            grep the TRACKED tree for anything personal: the
+#                           built-in patterns plus the terms in
+#                           .local/scrub-terms.txt (not tracked). Prints every
+#                           hit and exits non-zero if there is one
+#   export-clean <dir>     copy the tracked, scrubbed files into <dir> for the
+#                           public repository. It refuses to copy anything if
+#                           the scrub check finds a hit. Git history is NOT
+#                           rewritten: see docs/PUBLISH-NOTES.md
+#   live-stop              stop only Tenkai's own live pids and their descendants
+#                           (walked through /proc parent links) and restore what
+#                           the live run changed.
+#   live-status            show the live session, its profile and its monitor log
+#   wallpaper <path|next|prev|random>
+#                           change the nested session's wallpaper through the ryogami CLI with
+#                           Tenkai's confined HOME/XDG env. Use this, never the binary directly:
+#                           the daemons refuse to start unless HOME is .run/home.
+set -euo pipefail
+
+# `less` is NOT installed on this host. Any git call that would page (log, diff,
+# show) would otherwise fail with "error: cannot run less". Force cat everywhere,
+# and document this so ad-hoc git use also passes --no-pager.
+export GIT_PAGER=cat
+export PAGER=cat
+
+TENKAI_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+RUN_DIR="$TENKAI_DIR/.run"
+DOCS_DIR="$TENKAI_DIR/docs"
+BASE_DIR="$DOCS_DIR/baseline"
+BASE_FILE="$DOCS_DIR/baseline.txt"
+PID_FILE="$RUN_DIR/pids"
+LIVE_PID_FILE="$RUN_DIR/live-pids"
+LIVE_PROFILE_FILE="$RUN_DIR/live-profile"
+# The self-monitor is a test tool, not part of Tenkai: it lives in its own file so
+# that "is Tenkai running?" and "is every Tenkai process gone?" mean what they say.
+LIVE_TOOLS_FILE="$RUN_DIR/live-tools"
+
+# Builds stay inside the project (AGENTS.md: Go/C++ builds only inside the
+# project). `go` is invoked by this script's children (the acceptance gate runs
+# go vet/build/test), so both caches are pinned under .run and the live user's
+# ~/.cache/go-build is never written by anything Tenkai-related. GOPROXY=off and
+# GOTOOLCHAIN=local keep every build offline: no module or toolchain fetch.
+export GOCACHE="$RUN_DIR/go/cache"
+export GOPATH="$RUN_DIR/go"
+export GOFLAGS="${GOFLAGS:--mod=vendor}"
+export GOPROXY="${GOPROXY:-off}"
+export GOTOOLCHAIN="${GOTOOLCHAIN:-local}"
+
+# The previous shell lives in a local, untracked file: the public repository
+# must not name anyone's setup. A missing value is never guessed; the callers
+# say so and do nothing.
+local_conf() { # $1 = key -> the value, or nothing
+  local f="$TENKAI_DIR/.local/tenkai.local.env" key="$1" line
+  [ -f "$f" ] || return 1
+  line="$(grep -E "^${key}=" "$f" 2>/dev/null | tail -1 || true)"
+  [ -n "$line" ] || return 1
+  printf '%s' "${line#*=}" | sed 's/^"//; s/"$//; s/^\x27//; s/\x27$//'
+}
+local_prev_shell_name(){ local_conf TENKAI_PREV_SHELL_NAME; }
+local_prev_shell_start(){ local_conf TENKAI_PREV_SHELL_START; }
+local_prev_shell_stop(){ local_conf TENKAI_PREV_SHELL_STOP; }
+LIVE_BACKUP_DIR="$RUN_DIR/live-backup"
+
+die()  { printf 'tenkai: %s\n' "$*" >&2; exit 1; }
+note() { printf '%s\n' "$*"; }
+
+# Pattern of live-session processes Tenkai must never disturb.
+# The live processes the baseline compares against. The previous shell's own
+# process name comes from the local config, so the public repository never names
+# anyone's setup; without it, only the generic names are watched.
+PREV_PROC="$(local_conf TENKAI_PREV_SHELL_PROC || true)"
+PROC_PATTERN="quickshell|Hyprland|hyprpaper|swww|swaybg|mpvpaper|hypridle|hyprlock|cliphist|clipman|copyq|wl-clipboard|wl-paste"
+[ -n "$PREV_PROC" ] && PROC_PATTERN="$PROC_PATTERN|$PREV_PROC"
+
+# Well-known session-bus names whose owner must not change while Tenkai runs. Only
+# these are compared (one line each); unique connection IDs (:1.NNN) and app-owned
+# names churn whenever any app starts. A change of owner PID here is fatal.
+DBUS_WATCH_RE='^org[.]freedesktop[.](Notifications|ScreenSaver|secrets)$'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]kde[.]StatusNotifierWatcher$'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]portal[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]impl[.]portal[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]pipewire[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]pulseaudio[.]'
+DBUS_WATCH_RE="$DBUS_WATCH_RE"'|^org[.]freedesktop[.]ReserveDevice1[.]'
+
+# R1 — PATH isolation. A Tenkai session's PATH is .run/bin first, then this fixed
+# system list. The caller's PATH is never inherited: the live session's PATH
+# holds ~/.local/bin and /usr/bin, and BOTH contain real live-desktop helpers
+# under the very names Tenkai's copied code still calls (90 ryoku*/ryogami* names
+# in /usr/bin). A nested process that resolved one of those would run the live
+# system's copy with Tenkai's environment and could write the owner's real config.
+TENKAI_SYSTEM_PATH="/usr/local/bin:/usr/bin:/bin"
+
+# Names Tenkai owns. Three kinds live here: binaries the Phase-6 build writes into
+# .run/bin (tenkai-shell, tenkai-hub, tenkai-wm-hyprland, ryogami), scripts that are
+# symlinked straight from src/ (tenkai-app, tenkai-screenshot and
+# ryoku-cmd-brightness, the one upstream helper Tenkai ships verbatim), and the
+# matugen shim this script writes (R5: only a matugen running with Tenkai's -c
+# config and Tenkai's state dirs may run). These are the only names allowed to
+# resolve to a working program inside .run/bin.
+TENKAI_OWNED_BINS="tenkai-shell tenkai-hub tenkai-wm-hyprland ryogami tenkai-app tenkai-screenshot ryoku-cmd-brightness ryoku-app ryoku-summon ryoku-volume ryoku-restart-audio matugen"
+
+# The external commands (besides the three classes above) that the kept QML, the
+# Go daemons, the project scripts and the session script itself spawn — the exact
+# union gathered in Stage 1 by grepping src/ for exec.Command / Process command
+# arrays / execDetached, by reading the four project scripts, and by reading the
+# session script. They are ordinary system tools: env-check requires each to
+# resolve inside .run/bin or the fixed system list, never to ~/.local/bin or
+# anywhere else the live session's PATH could lead. A name that is simply not
+# installed reports MISSING and does not fail the check (the call sites handle
+# their absence); a name that resolves somewhere disallowed always fails.
+TENKAI_SYSTEM_TOOLS="Hyprland bash basename brightnessctl busctl cat chmod chown cliphist comm
+  cp curl cut date dbus-daemon ddcutil df diff dirname env ffmpeg file find flock foot
+  fprintd-list git gsettings grep grim head hyprctl id jq kill kitty ln ls makoctl magick
+  mkdir modinfo modprobe nice nl notify-send nvidia-smi openrgb awk pacman pactl paste pgrep
+  pkg-config pkexec printf ps python3 qs quickshell rsvg-convert sed seq setsid sh snapper
+  sort strip systemctl tail timeout touch tr true uname uniq usermod virsh voxtype wc
+  wl-copy wl-paste wpctl xargs xdg-open yes zenity playerctl nmcli rfkill qmk_hid slurp
+  systemd-run fastfetch luac gpk python3 diff realpath readlink sha256sum sleep"
+
+# Every ryoku-family program name the kept QML, Go and project scripts can
+# execute (exec.Command / Process command arrays / execDetached, vendor and
+# tests excluded, plus the two bare-name fallbacks that are used when
+# TENKAI_SHELL_DIR is empty: services/Equalizer.qml:21, modules/stage/…/StageBackend.qml:16).
+tenkai_family_names() {
+  { grep -rhoE 'exec\.Command(Context)?\([^)]*"[^"]+"' --exclude-dir=vendor --exclude='*_test.go' \
+        --include='*.go' "$TENKAI_DIR/src" 2>/dev/null | grep -oE '"[^"]+"'
+    grep -rhoE '(command:[[:space:]]*\[?[[:space:]]*|execDetached\([[:space:]]*)"[^"]+"' \
+        --include='*.qml' "$TENKAI_DIR/src" 2>/dev/null | grep -oE '"[^"]+"'
+    printf '%s\n' ryoku-eq ryostage
+  } | tr -d '"' | grep -E '^(ryoku|ryogami|ryostore|ryostage)[a-zA-Z0-9._+-]*$' | sort -u || true
+}
+
+# The family names Tenkai does NOT own: the live system's /usr/bin has a real
+# program for each one, so .run/bin must carry an inert stub for it instead.
+tenkai_shadow_names() {
+  local n owned
+  owned=" ${TENKAI_OWNED_BINS} "
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    case "$owned" in *" $n "*) continue ;; esac
+    printf '%s\n' "$n"
+  done < <(tenkai_family_names)
+}
+
+tenkai_write_stub() { # $1 = path in .run/bin — an inert stand-in for a live-system helper
+  cat > "$1" <<'STUB'
+#!/bin/sh
+# tenkai-stub: this name is a live-desktop helper that Tenkai does not ship.
+# The stub exists only so the name resolves inside .run/bin and can never
+# reach the live system's binary of the same name (R1). It runs nothing.
+# env-check treats this marker as the proof of ownership: any file under
+# .run/bin that matches the ryoku/ryogami family without it is a FAIL.
+echo "tenkai: ${0##*/} is not provided by Tenkai (live-system helper disabled)" >&2
+exit 127
+STUB
+  chmod 755 "$1"
+}
+
+tenkai_write_matugen_shim() { # $1 = path for .run/bin/matugen — R5 runtime enforcement
+  cat > "$1" <<'MATUGEN'
+#!/bin/sh
+# tenkai-matugen-shim — the only matugen a Tenkai session may run (R5).
+#
+# Enforced here, at runtime, for every caller (daemon, hub, QML, scripts, tests):
+#   1. Tenkai's own HOME and XDG state dirs must be in force, so a palette pass can
+#      only ever write inside the project (.run). Otherwise: refuse.
+#   2. The config must be Tenkai's: a caller that passes -c has to point INSIDE the
+#      project (a live ~/.config/matugen path is refused), and a caller that
+#      omits -c gets Tenkai's own config injected — no run can fall back to the
+#      default config location outside the project.
+# The real binary is a fixed absolute path; PATH is never searched for it.
+set -u
+me="$(readlink -f -- "$0" 2>/dev/null || printf '%s' "$0")"
+bindir="$(dirname -- "$me")"                 # <project>/.run/bin
+run="$(dirname -- "$bindir")"                # <project>/.run
+proj="$(dirname -- "$run")"                  # <project>
+REAL=/usr/bin/matugen
+die() { echo "tenkai: matugen shim: $*" >&2; exit 1; }
+
+[ -n "${HOME:-}" ] || die "HOME is unset"
+case "$HOME" in "$proj"/*) ;; *) die "HOME=$HOME is not the project's fake home" ;; esac
+for v in XDG_CONFIG_HOME XDG_CACHE_HOME XDG_STATE_HOME XDG_DATA_HOME; do
+  val="$(printenv "$v" 2>/dev/null || true)"
+  [ -n "$val" ] || die "$v is unset (Tenkai's state dirs must be set)"
+  case "$val" in "$proj"/*) ;; *) die "$v=$val is outside the project" ;; esac
+done
+
+have_c=0; cfgval=""; prev=""
+for a in "$@"; do
+  if [ "$prev" = "-c" ] || [ "$prev" = "--config" ]; then cfgval="$a"; have_c=1; fi
+  prev="$a"
+done
+if [ "$have_c" = 1 ]; then
+  rcfg="$(readlink -f -- "$cfgval" 2>/dev/null || printf '%s' "$cfgval")"
+  case "$rcfg" in "$proj"/*) ;; *) die "-c points outside the project: $cfgval" ;; esac
+  [ -f "$rcfg" ] || die "config does not exist: $rcfg"
+  exec "$REAL" "$@"
+fi
+tenkai_cfg="${XDG_CONFIG_HOME}/tenkai/matugen/config.toml"
+[ -f "$tenkai_cfg" ] || die "Tenkai's config is missing: $tenkai_cfg"
+exec "$REAL" -c "$tenkai_cfg" "$@"
+MATUGEN
+  chmod 755 "$1"
+}
+
+tenkai_seed_matugen() { # $1 = the cache dir this session's palette pass writes into
+  # Tenkai's matugen config plus the ONE template Tenkai renders: kitty. Neither end of
+  # the template block can be baked into the shipped config.toml (both follow the
+  # running session's XDG dirs), so the block is appended here with both paths
+  # expanded, and Tenkai's copy of the template is placed beside it. The output is
+  # under the cache dir the session was given, so a nested palette pass writes
+  # nothing outside the project, and a live one writes ~/.cache/tenkai only.
+  local cache="${1:?no cache dir given}" cfg="$RUN_DIR/config/tenkai/matugen"
+  mkdir -p "$cfg/templates" "$cache/tenkai"
+  cp -f "$TENKAI_DIR/src/ryoku/shell/matugen/templates/kitty-colors.conf" \
+        "$cfg/templates/kitty-colors.conf"
+  {
+    cat "$TENKAI_DIR/src/ryoku/shell/matugen/config.toml"
+    printf '\n[templates.kitty]\ninput_path = "%s"\noutput_path = "%s"\n' \
+      "$cfg/templates/kitty-colors.conf" "$cache/tenkai/kitty-colors.conf"
+  } > "$cfg/config.toml"
+}
+
+tenkai_provision_bin() { # build the .run/bin shadow: project copies + stubs + inventory
+  mkdir -p "$RUN_DIR/bin"
+  local n src
+  # 1. Tenkai-owned scripts: always (re)linked to the source in the project, so a
+  #    stale copy can never sit in front of the source.
+  # The ryoku-* names here are the helpers the bundled Hyprland binds exec
+  # (modules/binds.lua). Tenkai ships them so a box without Ryoku installed still
+  # has a working key, and linking them also keeps a nested session from
+  # resolving the live system's /usr/bin copy of the same name.
+  for n in tenkai-app tenkai-screenshot ryoku-cmd-brightness \
+           ryoku-app ryoku-summon ryoku-volume ryoku-restart-audio; do
+    src="$TENKAI_DIR/src/ryoku/shell/scripts/$n"
+    [ -f "$src" ] || continue
+    ln -sfn "$src" "$RUN_DIR/bin/$n"
+  done
+  # 1b. R5: matugen is shadowed by Tenkai's shim, so every palette run carries Tenkai's
+  #     -c config and Tenkai's state dirs, whatever the caller was written to do.
+  tenkai_write_matugen_shim "$RUN_DIR/bin/matugen"
+  # 1c. The nested tests type through .run/tools/vkbd/vkbd (an evdev key code
+  #     in, a pressed key out). The source is versioned with the harnesses; the
+  #     link is what they call, and nested-input.sh pins every call to .r.
+  mkdir -p "$RUN_DIR/tools/vkbd"
+  if [ -f "$TENKAI_DIR/docs/tests/tools/vkbd.sh" ]; then
+    chmod 755 "$TENKAI_DIR/docs/tests/tools/vkbd.sh" 2>/dev/null || true
+    ln -sfn "$TENKAI_DIR/docs/tests/tools/vkbd.sh" "$RUN_DIR/tools/vkbd/vkbd"
+  fi
+  # 2. Shadow stubs for every family name Tenkai does not own, so no nested
+  #    process can resolve a live helper by that name.
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    tenkai_write_stub "$RUN_DIR/bin/$n"
+  done < <(tenkai_shadow_names)
+  # 3. Defence against anything else that landed in .run/bin: a family-named
+  #    file that is neither Tenkai-owned nor one of our stubs is overwritten.
+  local f base
+  for f in "$RUN_DIR"/bin/*; do
+    [ -e "$f" ] || continue
+    base="${f##*/}"
+    case "$base" in ryoku*|ryogami*|ryostore*|ryostage*)
+      case " ${TENKAI_OWNED_BINS} " in *" $base "*) continue ;; esac
+      grep -q 'tenkai-stub: this name is a live-desktop helper' "$f" 2>/dev/null || tenkai_write_stub "$f"
+      ;; esac
+  done
+  # 4. The inventory the session's env-check reads: name<TAB>class
+  #    (tenkai = must resolve inside .run/bin as a real program,
+  #     shadow = must resolve inside .run/bin to one of our stubs,
+  #     system = .run/bin or the fixed system list only).
+  {
+    while IFS= read -r n; do [ -n "$n" ] && printf '%s\ttenkai\n' "$n"; done \
+      < <(printf '%s\n' $TENKAI_OWNED_BINS | sort -u)
+    while IFS= read -r n; do [ -n "$n" ] && printf '%s\tshadow\n' "$n"; done \
+      < <(tenkai_shadow_names)
+    while IFS= read -r n; do [ -n "$n" ] && printf '%s\tsystem\n' "$n"; done \
+      < <(printf '%s\n' $TENKAI_SYSTEM_TOOLS | tr -s ' \n' '\n\n' | sort -u)
+  } | sort -u > "$RUN_DIR/env-inventory.tsv"
+}
+
+
+session_bus() {
+  local bus="${DBUS_SESSION_BUS_ADDRESS:-}"
+  if [ -n "$bus" ]; then printf '%s' "$bus"; return 0; fi
+  local p=""
+  p="$(pgrep -u "$(id -u)" -x pipewire 2>/dev/null | head -n1 || true)"
+  if [ -n "$p" ] && [ -r "/proc/$p/environ" ]; then
+    bus="$(tr '\0' '\n' < "/proc/$p/environ" | sed -n 's/^DBUS_SESSION_BUS_ADDRESS=//p' | head -n1)"
+    [ -n "$bus" ] && { printf '%s' "$bus"; return 0; }
+  fi
+  return 1
+}
+
+# Trees whose state is hashed by the baseline. They are hashed together but they
+# do NOT have the same severity, because only one of them is a leak target.
+#
+# FATAL — the ~/.config trees: these are exactly what matugen / Ryoku theming
+# writes (kitty/btop/qt6ct/gtk templates), so any change here is a leak and fails
+# verify-untouched — UNLESS the new bytes are provably a live Ryoku template
+# output (see live_matugen_template_change). A genuine Tenkai write cannot match a
+# live template, so the leak signal survives.
+# WARN — the live caches: ~/.cache/ryoku and ~/.cache/matugen are written every
+# few seconds by the LIVE desktop's own services (music lyrics + art, clipboard
+# thumbs, palette retints, matugen carrier). Changing them proves nothing about
+# Tenkai, so their churn is reported and counted but does not gate. A path outside
+# all three sets is still fatal.
+CONFIG_WATCH_DIRS=(
+  "$HOME/.config/quickshell"
+  "$HOME/.config/hypr"
+  "$HOME/.config/kitty"
+  "$HOME/.config/btop"
+  "$HOME/.config/qt6ct"
+  "$HOME/.config/gtk-3.0"
+  "$HOME/.config/gtk-4.0"
+  "$HOME/.cache/ryoku"
+  "$HOME/.cache/matugen"
+)
+# The WARN subset of CONFIG_WATCH_DIRS. Everything else in that list is fatal.
+CACHE_WARN_DIRS=(
+  "$HOME/.cache/ryoku"
+  "$HOME/.cache/matugen"
+)
+# Derived regex of the trailing-slash-prefixed warn paths, for the one grep that
+# classifies each changed path.
+cache_warn_re() {
+  local d out=""
+  for d in "${CACHE_WARN_DIRS[@]}"; do
+    out="${out:+$out|}$d/"
+  done
+  printf '%s' "$out"
+}
+
+# The LIVE Ryoku palette pass writes outside ~/.cache: its matugen config
+# (~/.config/matugen/config.toml, shipped in /usr/share/ryoku/config) renders a
+# few CORE desktop surfaces straight into ~/.config — the kitty terminal theme,
+# the btop theme and the Qt palette — whenever the owner changes wallpaper. Tenkai
+# must never write those (its own matugen config renders only the kitty template,
+# into ~/.cache/tenkai,
+# and its app fan-out is switched off in src/ryoku/shell/ipc/matugen.go), so a
+# change there has to be attributable before it is called a leak.
+#
+# Attribution is by CONTENT, not by path: the live config is re-rendered into a
+# scratch dir from the live palette carrier, and the file on disk must equal the
+# render byte for byte. A real Tenkai write cannot match a live template (it would
+# be Tenkai's own bytes or a Tenkai palette), so this cannot mask a leak; anything
+# short of equality stays fatal.
+LIVE_MATUGEN_CONFIGS=(
+  "$HOME/.config/matugen/config.toml"
+  "/usr/share/ryoku/config/matugen/config.toml"
+)
+# The palette the live desktop renders from: the shell's own colors.json.
+LIVE_MATUGEN_PALETTE="$HOME/.cache/ryoku/colors.json"
+
+# live_matugen_renders <path> -> 0 when the file on disk equals what the live
+# Ryoku palette pass renders for that path
+live_matugen_renders() {
+  local want="$1" cfg carrier scratch tmpl rc=1
+  command -v matugen >/dev/null 2>&1 || return 1
+  [ -f "$want" ] || return 1
+  # A carrier in matugen's json shape, built from the live palette the same way
+  # the daemon builds it (matugenCarrier, src/ryoku/shell/ipc/matugen.go).
+  carrier="$LIVE_MATUGEN_PALETTE"
+  [ -f "$carrier" ] || return 1
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/tenkai-livemtg.XXXXXX")" || return 1
+  # shellcheck disable=SC2064
+  trap "rm -rf '$scratch'" RETURN
+  build_live_carrier "$carrier" "$scratch/carrier.json" || { rm -rf "$scratch"; return 1; }
+  for cfg in "${LIVE_MATUGEN_CONFIGS[@]}"; do
+    [ -f "$cfg" ] || continue
+    # the single template block whose output_path resolves to this file
+    tmpl="$(live_matugen_template_for "$cfg" "$want")" || continue
+    [ -f "$tmpl" ] || continue
+    {
+      printf '[config]\n'
+      printf '[templates.t]\n'
+      printf 'input_path = "%s"\n' "$tmpl"
+      printf 'output_path = "%s/out"\n' "$scratch"
+    } > "$scratch/one.toml"
+    : > "$scratch/out"
+    matugen -c "$scratch/one.toml" json "$scratch/carrier.json" >/dev/null 2>&1 || continue
+    [ -f "$scratch/out" ] || continue
+    if cmp -s "$want" "$scratch/out"; then rc=0; break; fi
+  done
+  rm -rf "$scratch"
+  return "$rc"
+}
+
+# live_matugen_template_for <config> <output path> -> the template input_path of
+# the block in <config> whose output_path resolves to <output path>
+live_matugen_template_for() {
+  awk -v want="$2" -v home="$HOME" '
+    /^\[templates\./ { outp=""; inp=""; next }
+    /^input_path[ ]*=/  { inp=$0; sub(/^[^"]*"/,"",inp); sub(/".*$/,"",inp) }
+    /^output_path[ ]*=/ { outp=$0; sub(/^[^"]*"/,"",outp); sub(/".*$/,"",outp)
+                          gsub(/^~/, home, outp)
+                          if (outp == want && inp != "") { gsub(/^~/, home, inp); print inp; exit } }
+  ' "$1"
+}
+
+# build_live_carrier <flat palette json> <out> -> matugen's json carrier shape
+build_live_carrier() {
+  python3 - "$1" "$2" <<'PY' 2>/dev/null || return 1
+import json, colorsys, sys
+pal = json.load(open(sys.argv[1]))
+def entry(v):
+    h = v.lstrip('#')
+    r, g, b = int(h[0:2],16), int(h[2:4],16), int(h[4:6],16)
+    hh, ll, ss = colorsys.rgb_to_hls(r/255, g/255, b/255)
+    co = {"hex": v, "hex_stripped": h, "red": str(r), "green": str(g), "blue": str(b),
+          "rgb": f"{r}, {g}, {b}", "hue": str(int(round(hh*360))),
+          "saturation": str(int(round(ss*100))), "lightness": str(int(round(ll*100)))}
+    e = {"default": co, "dark": co, "light": co}
+    e.update(co)
+    return e
+colors = {}
+for k, v in pal.items():
+    if not isinstance(v, str) or len(v.lstrip('#')) != 6:
+        continue
+    colors[k] = entry(v)
+    colors[k+"_argb"] = entry("#ff"+v.lstrip('#'))
+json.dump({"colors": colors}, open(sys.argv[2], "w"))
+PY
+}
+
+# live_matugen_template_paths -> the ~/.config files the live config renders to
+live_matugen_template_paths() {
+  local cfg p out
+  for cfg in "${LIVE_MATUGEN_CONFIGS[@]}"; do
+    [ -f "$cfg" ] || continue
+    while IFS= read -r p; do
+      [ -n "$p" ] || continue
+      out="${p/#\~/$HOME}"
+      case "$out" in "$HOME/.config/"*) printf '%s\n' "$out" ;; esac
+    done < <(sed -n 's/^output_path = "\([^"]*\)".*/\1/p' "$cfg")
+  done | sort -u
+}
+
+capture_hashes() {  # $1 = output file
+  local d dirs=()
+  for d in "${CONFIG_WATCH_DIRS[@]}"; do
+    if [ -d "$d" ]; then dirs+=("$d"); fi
+  done
+  if [ "${#dirs[@]}" -eq 0 ]; then : > "$1"; return 0; fi
+  find "${dirs[@]}" -type f -print0 2>/dev/null \
+    | sort -z | xargs -0 -r sha256sum > "$1"
+}
+
+capture_symlinks() {  # $1 = output file
+  local d dirs=()
+  for d in "${CONFIG_WATCH_DIRS[@]}"; do
+    if [ -d "$d" ]; then dirs+=("$d"); fi
+  done
+  if [ "${#dirs[@]}" -eq 0 ]; then : > "$1"; return 0; fi
+  find "${dirs[@]}" -type l -printf '%p -> %l\n' 2>/dev/null \
+    | sort > "$1"
+}
+
+# Names that must never appear under the live user's data dirs. The filter is
+# anchored at the start of each path segment, not a bare substring: a substring
+# match flags ~/.config/google-chrome/TENKAIPreload, ~/.cache/fish/natenkai.fish,
+# ~/.local/share/Steam/friends/GameInviteNotification.res and
+# ~/.local/share/applications/mitenkainfo.cache, none of which are ours.
+NAME_SCAN_ROOTS=("$HOME/.cache" "$HOME/.local/state" "$HOME/.local/share" "$HOME/.config")
+NAME_SCAN_RE='(^|/)(tenkai|ryoku|ryogami)([._-]|$)'
+
+capture_names() {  # $1 = output file
+  local d roots=()
+  for d in "${NAME_SCAN_ROOTS[@]}"; do [ -d "$d" ] && roots+=("$d"); done
+  if [ "${#roots[@]}" -eq 0 ]; then : > "$1"; return 0; fi
+  # grep exits 1 on "no match", which under `set -o pipefail` would abort the
+  # whole script: an empty result is the healthy case, not an error.
+  find "${roots[@]}" -mindepth 1 -maxdepth 3 2>/dev/null \
+    | sed "s|^$HOME/||" | { grep -iE "$NAME_SCAN_RE" || true; } | sort -u > "$1"
+}
+
+capture_procs() {  # $1 = output file; stable, sorted snapshot
+  { pgrep -a -f "$PROC_PATTERN" 2>/dev/null | grep -v -e 'pgrep' -e '/projects/tenkai/' || true; } | sort -k2 > "$1"
+}
+
+capture_dbus() {  # $1 = output file
+  local bus=""
+  if bus="$(session_bus)"; then
+    DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager list 2>&1 \
+      | grep -v -E '^:[0-9.]+[[:space:]]+[0-9]+[[:space:]]+busctl ' > "$1" || true
+  else
+    echo "(session bus not reachable from this shell)" > "$1"
+  fi
+}
+
+# Reduce a `busctl list` stream (live or the frozen baseline file) to
+# "NAME<TAB>PID" for watched well-known names only.
+dbus_watch_filter() {
+  awk -v re="$DBUS_WATCH_RE" '$1 ~ re { print $1 "\t" $2 }' | sort -u
+}
+
+# Owner PID for a well-known name, resolved THROUGH the bus: GetNameOwner gives
+# the unique name, GetConnectionUnixProcessID the pid behind it. busctl's own
+# PID column stats /proc and prints "-" as soon as the caller sits in another
+# PID namespace, which made this whole comparison vacuous there (owner decision,
+# 2026-10-31: resolve it properly instead of trusting the column). Same call
+# sequence as docs/tests/step6.sh, --user instead of an explicit address.
+#   $1 = session bus address, $2 = well-known name  ->  pid, or "-"
+dbus_owner_pid() {
+  local bus="$1" name="$2" c pid
+  c="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call org.freedesktop.DBus \
+        /org/freedesktop/DBus org.freedesktop.DBus GetNameOwner s "$name" 2>/dev/null \
+      | awk -F'"' '{print $2}')"
+  [ -n "$c" ] || { printf '%s' "-"; return 0; }
+  pid="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call org.freedesktop.DBus \
+        /org/freedesktop/DBus org.freedesktop.DBus GetConnectionUnixProcessID s "$c" 2>/dev/null \
+      | awk '{print $2}')"
+  printf '%s' "${pid:--}"
+}
+
+capture_dbus_watched() {  # $1 = output file; watched names -> NAME<TAB>owner PID (from the bus)
+  local bus="" name
+  if bus="$(session_bus)"; then
+    : > "$1"
+    while IFS= read -r name; do
+      [ -n "$name" ] || continue
+      printf '%s\t%s\n' "$name" "$(dbus_owner_pid "$bus" "$name")" >> "$1"
+    done < <(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager list 2>/dev/null \
+               | grep -v -E '^:[0-9.]+[[:space:]]+[0-9]+[[:space:]]+busctl ' \
+               | dbus_watch_filter | cut -f1)
+    sort -u -o "$1" "$1"
+  else
+    echo "(session bus not reachable from this shell)" > "$1"
+  fi
+}
+
+# One line per watched name; returns 1 if any owner PID differs (always fatal).
+compare_dbus_watched() {  # $1 = baseline NAME<TAB>PID, $2 = current NAME<TAB>PID
+  local base="$1" cur="$2" name bpid cpid rc=0
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    bpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$base")"
+    cpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$cur")"
+    bpid="${bpid:--}"; cpid="${cpid:--}"
+    if [ "$bpid" = "$cpid" ]; then
+      printf '      OK      %-46s owner pid %s\n' "$name" "$cpid"
+    else
+      printf '      CHANGE  %-46s owner pid %s -> %s\n' "$name" "$bpid" "$cpid"
+      rc=1
+    fi
+  done < <(cut -f1 "$base" "$cur" | sort -u)
+  return "$rc"
+}
+
+# Attribution for a CHANGED owner (owner decision 2026-10-31, second call of the
+# day): the live shell's own services restart on their own — ryoku-idle flapped
+# six times in 1.5 s and retook org.freedesktop.ScreenSaver with a new pid while
+# nothing of Tenkai ran. A change whose NEW pid is provably the MainPID of a live
+# systemd user unit is external churn: printed, attributed, WARN. Every other
+# change — a pid no unit claims or systemd unreachable — stays FATAL, because
+# that is the direction Tenkai must never be wrong in (a Tenkai shell taking a name
+# would never be a live unit's MainPID).
+#
+# Revised 2026-11-02: "-" (the name has NO owner now) used to be fatal too, and
+# that was wrong. A name nothing owns cannot be a name Tenkai took: holding a name
+# requires holding it, and the bus would report a pid. What "-" reports is a
+# provider between instances (a portal restart). It is LAPSED below — printed,
+# never fatal — while a name held by an unclaimed pid still fails hard.
+live_unit_pids() { # -> "unit_id<TAB>mainpid", one line per live unit with a main process
+  local bus ids id path main
+  bus="$(session_bus || true)"; [ -n "$bus" ] || return 1
+  ids="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call \
+          org.freedesktop.systemd1 /org/freedesktop/systemd1 \
+          org.freedesktop.systemd1.Manager ListUnits 2>/dev/null \
+        | tr '"' '\n' | grep -E '\.service$' | sort -u || true)"
+  [ -n "$ids" ] || return 1
+  for id in $ids; do
+    path="/org/freedesktop/systemd1/unit/$(printf '%s' "$id" \
+      | sed -e 's/-/_2d/g' -e 's/\./_2e/g' -e 's/@/_40/g' -e 's/:/_3a/g')"
+    main="$(DBUS_SESSION_BUS_ADDRESS="$bus" busctl --user --no-pager call \
+             org.freedesktop.systemd1 "$path" org.freedesktop.DBus.Properties Get \
+             ss org.freedesktop.systemd1.Service MainPID 2>/dev/null | awk '{print $NF}')"
+    case "$main" in ''|0|-) continue ;; esac
+    printf '%s\t%s\n' "$id" "$main"
+  done
+}
+
+live_unit_for_pid() {
+  # $1 = pid -> owning unit, or nothing (exit 1). Two paths:
+  #   1. MainPID match  — the pid IS a live unit's MainPID  (unchanged)
+  #   2. cgroup member  — the pid lives inside a live unit's cgroup tree
+  #                       (a child of the MainPID), which is how the live
+  #                       shell spawns qs / ryogami / etc.
+  # Never attribute Tenkai's own processes:
+  #   - any process whose cgroup path contains $TENKAI_DIR
+  #   - any process inside a transient run-*.scope (systemd-run)
+  #   - the user manager itself (user@*.service)
+  local p="$1" cg unit
+  # Path 1: MainPID match (existing behavior; prove 8 depends on it)
+  unit="$(live_unit_pids | awk -F'\t' -v p="$p" '$2 == p { found = $1 } END { if (found) print found }')"
+  if [ -n "$unit" ]; then printf '%s\n' "$unit"; return 0; fi
+  # Path 2: cgroup membership
+  [ -r "/proc/$p/cgroup" ] || return 1
+  cg="$(head -1 "/proc/$p/cgroup" 2>/dev/null)"
+  [ -n "$cg" ] || return 1
+  # Refuse if this pid is anywhere inside Tenkai's own directory tree. The guard
+  # is skipped when TENKAI_DIR is empty: an unquoted-empty pattern would degrade
+  # to '*' and refuse every cgroup, blinding the attribution entirely.
+  if [ -n "${TENKAI_DIR:-}" ]; then
+    case "$cg" in *"$TENKAI_DIR"*) return 1 ;; esac
+  fi
+  # Refuse transient scopes (Tenkai's own systemd-run scope, or any transient)
+  case "$cg" in */run-*.scope/*|*/run-*.scope) return 1 ;; esac
+  # Take the DEEPEST .service element in the cgroup path
+  unit="$(printf '%s' "$cg" | tr '/' '\n' | grep -E '\.service$' | tail -1)"
+  [ -n "$unit" ] || return 1
+  # Refuse the user manager and system-level services
+  case "$unit" in
+    user@*.service) return 1 ;;
+    *.slice) return 1 ;;
+  esac
+  printf '%s\n' "$unit"
+  return 0
+}
+
+# Prints one line per changed owner with its verdict; returns 0 only when EVERY
+# change is attributable to a live system unit (=> WARN), 1 if any is not (=> FAIL).
+dbus_owner_changes_check() { # $1 baseline NAME<TAB>PID, $2 current NAME<TAB>PID
+  local base="$1" cur="$2" name bpid cpid unit rc=0
+  while IFS= read -r name; do
+    [ -n "$name" ] || continue
+    bpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$base")"
+    cpid="$(awk -F'\t' -v n="$name" '$1==n{print $2; exit}' "$cur")"
+    bpid="${bpid:--}"; cpid="${cpid:--}"
+    [ "$bpid" = "$cpid" ] && continue
+    # A name with NO owner is not a Tenkai takeover: taking a name means holding
+    # it, and "-" means nothing holds it. It means the provider is between
+    # instances -- xdg-document-portal restarted and was unowned for a moment
+    # on 2026-11-02, which is live churn, not a violation. The other direction
+    # (a name held by a pid no unit claims) stays fatal below.
+    if [ "$cpid" = "-" ]; then
+      printf '      LAPSED    %-44s %s -> -  (unowned right now: the provider is restarting; Tenkai holds nothing)\n' "$name" "$bpid"
+      continue
+    fi
+    unit="$(live_unit_for_pid "$cpid" || true)"
+    if [ -n "$unit" ]; then
+      printf '      EXTERNAL  %-44s %s -> %s  (%s)\n' "$name" "$bpid" "$cpid" "$unit"
+    else
+      printf '      UNATTRIB  %-44s %s -> %s  (no live system unit owns this pid)\n' "$name" "$bpid" "$cpid"
+      rc=1
+    fi
+  done < <(cut -f1 "$base" "$cur" | sort -u)
+  return "$rc"
+}
+
+capture_qs_instances() {  # $1 = output file
+  if command -v qs >/dev/null 2>&1; then
+    qs list > "$1" 2>&1 || true
+  else
+    echo "(qs CLI not found)" > "$1"
+  fi
+}
+
+cmd_baseline() {
+  local force=0
+  [ "${1:-}" = "--force" ] && force=1
+  if [ -f "$BASE_DIR/config-hashes.sha256" ] && [ "$force" = 0 ]; then
+    die "baseline already exists; re-baselining after Tenkai ran would bake in changes. Use './tenkai baseline --force' only if you changed your config intentionally."
+  fi
+  mkdir -p "$BASE_DIR" "$RUN_DIR"
+  local ts; ts="$(date -Is)"
+
+  capture_hashes   "$BASE_DIR/config-hashes.sha256"
+  capture_symlinks "$BASE_DIR/config-symlinks.txt"
+  capture_names    "$BASE_DIR/new-name-watch.txt"
+  capture_procs    "$BASE_DIR/session-processes.txt"
+  capture_dbus     "$BASE_DIR/dbus-names.txt"
+  # Owner PIDs resolved on the bus (a frozen busctl snapshot can only carry the
+  # name list; the pid has to be asked for while the owners are alive).
+  capture_dbus_watched "$BASE_DIR/dbus-watched.tsv"
+  capture_qs_instances "$BASE_DIR/quickshell-instances.txt"
+  ps -eo pid,ppid,user,args --sort=pid > "$BASE_DIR/ps-full.txt"
+
+  local bus=""; bus="$(session_bus || true)"
+  {
+    echo "captured: $ts"
+    printf 'WAYLAND_DISPLAY=%s\nHYPRLAND_INSTANCE_SIGNATURE=%s\nXDG_RUNTIME_DIR=%s\n' \
+      "${WAYLAND_DISPLAY:-UNSET}" "${HYPRLAND_INSTANCE_SIGNATURE:-UNSET}" "${XDG_RUNTIME_DIR:-UNSET}"
+    printf 'DBUS_SESSION_BUS_ADDRESS=%s\n' "${bus:-UNSET}"
+    echo "nproc: $(nproc)"
+    echo "mem: $(free -h | sed -n 2p)"
+    echo "systemd-run available: $(command -v systemd-run >/dev/null 2>&1 && echo yes || echo no)"
+    echo "hypr runtime instances:"
+    ls "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr" 2>/dev/null || true
+    echo "quickshell runtime dir:"
+    find "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/quickshell" -maxdepth 2 2>/dev/null || true
+  } > "$BASE_DIR/env.txt"
+
+  {
+    echo "# Tenkai baseline — read-only snapshot of the live session (pre-Tenkai state)"
+    echo "Captured: $ts"
+    echo
+    echo "Machine-readable snapshots (used by './tenkai verify-untouched'):"
+    echo "  docs/baseline/config-hashes.sha256   sha256 of every file under the watched trees"
+    echo "  docs/baseline/config-symlinks.txt    symlinks under the watched trees"
+    echo "                                       watched: ~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/{ryoku,matugen}"
+    echo "  docs/baseline/session-processes.txt  live shell/compositor/wallpaper/clipboard/idle processes"
+    echo "  docs/baseline/quickshell-instances.txt  output of 'qs list'"
+    echo "  docs/baseline/dbus-names.txt         full session bus listing (record only)"
+    echo "  docs/baseline/dbus-watched.tsv       watched well-known names + owner PID (verify checks these)"
+    echo "  docs/baseline/ps-full.txt            full process table snapshot"
+    echo "  docs/baseline/env.txt                environment + runtime dirs"
+    echo
+    echo "## environment"
+    cat "$BASE_DIR/env.txt"
+    echo
+    echo "## ~/.config/quickshell file count"
+    printf '  %s files\n' "$(find "$HOME/.config/quickshell" -type f 2>/dev/null | wc -l)"
+    echo "  (live shell does not use this dir; it runs from an explicit --path — see processes below)"
+    echo
+    echo "## quickshell processes"
+    pgrep -a -f quickshell | grep -v 'pgrep' || echo "  (none)"
+    echo
+    echo "## live session components"
+    cat "$BASE_DIR/session-processes.txt"
+    echo
+    echo "## D-Bus owners relevant to Tenkai (Notifications / tray / MPRIS)"
+    grep -E 'org\.freedesktop\.Notifications|StatusNotifier|MPRIS' "$BASE_DIR/dbus-names.txt" || echo "  (none matched)"
+    echo
+    echo "## usage"
+    echo "  After any Tenkai test: ./tenkai verify-untouched   (must PASS)"
+    echo "  Intentional config change: ./tenkai baseline --force"
+  } > "$BASE_FILE"
+
+  note "baseline written: $BASE_FILE"
+}
+
+# ~/.cache/ryoku is the LIVE desktop's own cache tree: its lyric cache, its
+# update-status cache, its tray icons, and the palette its own matugen writes
+# when the owner changes wallpaper. ~/.cache/matugen is its palette renderer's
+# output. Those files move with no Tenkai process involved, so a hash change there
+# cannot be attributed to Tenkai by hashes alone.
+# Owner decision 2026-10-31, revised 2026-11-04: the live caches churn on their
+# own, so a diff there says nothing about Tenkai — it is a printed, counted WARN
+# and never gates. EVERY watched ~/.config tree stays 100% fatal: that is
+# where a theming leak actually lands (the kitty/btop/qt6ct/gtk templates), and
+# the fake-HOME guards stop leaks upstream anyway; this is the backstop. Any
+# changed path outside both the config and cache sets is fatal too. Proved able
+# to fail by `./tenkai verify-prove`.
+
+hash_churn_classify() { # $1 baseline hashes, $2 current hashes -> 0 when no ~/.config file changed
+  local d="$RUN_DIR/churn.tmp" base="$1" cur="$2" warnre
+  warnre="$(cache_warn_re)"
+  rm -rf "$d"; mkdir -p "$d"
+  # sha256sum lines are: <64 hex><two spaces><path>
+  awk '{ print substr($0,67) "\t" substr($0,1,64) }' "$base" | sort > "$d/b"
+  awk '{ print substr($0,67) "\t" substr($0,1,64) }' "$cur"  | sort > "$d/c"
+  cut -f1 "$d/b" | sort > "$d/bp"
+  cut -f1 "$d/c" | sort > "$d/cp"
+  comm -23 "$d/bp" "$d/cp" > "$d/removed"
+  comm -13 "$d/bp" "$d/cp" > "$d/added"
+  join -t "$(printf '\t')" "$d/b" "$d/c" | awk -F'\t' '$2 != $3 { print $1 }' > "$d/modified"
+  { sed 's/^/added   /' "$d/added"
+    sed 's/^/edited  /' "$d/modified"
+    sed 's/^/deleted /' "$d/removed"
+  } > "$RUN_DIR/churn-changes.txt"
+  # A changed ~/.config file is attributable when its current bytes are what the
+  # LIVE Ryoku palette pass renders there (a wallpaper retint). Attribute first,
+  # then rebuild the added/edited/deleted lists from the pruned hash sets, so the
+  # fatal check below sees only what is left.
+  : > "$RUN_DIR/churn-attributed.txt"
+  local p f
+  for p in "$d/added" "$d/modified" "$d/removed"; do
+    [ -s "$p" ] || continue
+    while IFS= read -r f; do
+      case "$f" in
+        "$HOME"/.config/*)
+          if live_matugen_renders "$f"; then
+            printf 'attributed %s (live Ryoku matugen template output)\n' "$f" >> "$RUN_DIR/churn-attributed.txt"
+            grep -vF "$f	" "$d/b" > "$d/b.n" 2>/dev/null; mv "$d/b.n" "$d/b"
+            grep -vF "$f	" "$d/c" > "$d/c.n" 2>/dev/null; mv "$d/c.n" "$d/c"
+          fi
+          ;;
+      esac
+    done < "$p"
+  done
+  if [ -s "$RUN_DIR/churn-attributed.txt" ]; then
+    cut -f1 "$d/b" | sort > "$d/bp"
+    cut -f1 "$d/c" | sort > "$d/cp"
+    comm -23 "$d/bp" "$d/cp" > "$d/removed"
+    comm -13 "$d/bp" "$d/cp" > "$d/added"
+    join -t "$(printf '\t')" "$d/b" "$d/c" | awk -F'\t' '$2 != $3 { print $1 }' > "$d/modified"
+    { sed 's/^/added   /' "$d/added"
+      sed 's/^/edited  /' "$d/modified"
+      sed 's/^/deleted /' "$d/removed"
+    } > "$RUN_DIR/churn-changes.txt"
+  fi
+  # fatal: any change at all under a watched ~/.config tree (post-attribution)
+  if grep -q "^$HOME/\.config/" "$d/added" "$d/modified" "$d/removed" 2>/dev/null; then
+    rm -rf "$d"; return 1
+  fi
+  # fatal: any changed path that is not inside one of the WARN cache trees
+  if [ -n "$(sed 's/^[a-z]* *//' "$RUN_DIR/churn-changes.txt" | grep -vE "^($warnre)" || true)" ]; then
+    rm -rf "$d"; return 1
+  fi
+  # tolerated: every change is inside a live cache tree (report says how many of each)
+  rm -rf "$d"
+  return 0
+}
+
+cmd_verify_untouched() {
+  local strict=0
+  [ "${1:-}" = "--strict" ] && strict=1
+  [ -f "$BASE_DIR/config-hashes.sha256" ] || die "no baseline yet — run './tenkai baseline' first"
+  mkdir -p "$RUN_DIR"
+  local tmp="$RUN_DIR/verify.tmp"
+  rm -rf "$tmp"; mkdir -p "$tmp"
+  local rc=0 nadd=0 nedit=0 ndel=0 owner_out=""
+
+  capture_hashes "$tmp/config-hashes.sha256"
+  if diff -u "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256" > "$tmp/hashes.diff" 2>&1; then
+    note "OK    config hashes: all watched trees unchanged"
+    note "      (~/.config/{quickshell,hypr,kitty,btop,qt6ct,gtk-3.0,gtk-4.0} + ~/.cache/{ryoku,matugen})"
+  elif hash_churn_classify "$BASE_DIR/config-hashes.sha256" "$tmp/config-hashes.sha256"; then
+    nadd="$(grep -c '^added' "$RUN_DIR/churn-changes.txt" || true)"
+    nedit="$(grep -c '^edited' "$RUN_DIR/churn-changes.txt" || true)"
+    ndel="$(grep -c '^deleted' "$RUN_DIR/churn-changes.txt" || true)"
+    note "WARN  config hashes: live-cache churn, not attributable to Tenkai here:"
+    note "      $nadd added / $nedit edited / $ndel deleted under ${CACHE_WARN_DIRS[*]}"
+    note "      (the LIVE desktop's own caches: lyrics + art, clipboard thumbs, its palette,"
+    note "      the matugen carrier). Tenkai writes none of them — its HOME and XDG are"
+    note "      redirected into the project."
+    if [ -s "$RUN_DIR/churn-attributed.txt" ]; then
+      note "      Plus these ~/.config files, re-rendered byte-for-byte from the LIVE"
+      note "      Ryoku matugen config — a wallpaper retint, not a Tenkai write:"
+      sed 's/^/      /' "$RUN_DIR/churn-attributed.txt"
+    fi
+    note "      Every other watched ~/.config tree is unchanged — that is the fatal set."
+    sed 's/^/      /' "$RUN_DIR/churn-changes.txt"
+  else
+    note "FAIL  config hashes differ from baseline — investigate NOW (Tenkai must never write these):"
+    sed 's/^/      /' "$tmp/hashes.diff"
+    rc=1
+  fi
+  capture_symlinks "$tmp/config-symlinks.txt"
+  if ! diff -u "$BASE_DIR/config-symlinks.txt" "$tmp/config-symlinks.txt" > "$tmp/symlinks.diff" 2>&1; then
+    note "FAIL  symlinks under the watched trees differ from baseline:"
+    sed 's/^/      /' "$tmp/symlinks.diff"
+    rc=1
+  fi
+
+  if [ -f "$BASE_DIR/new-name-watch.txt" ]; then
+    capture_names "$tmp/new-name-watch.txt"
+    local added removed
+    added="$(comm -13 "$BASE_DIR/new-name-watch.txt" "$tmp/new-name-watch.txt" || true)"
+    removed="$(comm -23 "$BASE_DIR/new-name-watch.txt" "$tmp/new-name-watch.txt" || true)"
+    if [ -z "$added" ]; then
+      note "OK    no new tenkai/ryoku/ryogami entries under ~/.cache, ~/.local/{state,share}, ~/.config"
+    else
+      note "FAIL  NEW tenkai/ryoku/ryogami entries outside the project since baseline:"
+      printf '%s\n' "$added" | sed 's/^/      /'
+      rc=1
+    fi
+    [ -z "$removed" ] || { note "INFO  entries present at baseline but gone now (cleanup is fine):"; printf '%s\n' "$removed" | sed 's/^/      /'; }
+  else
+    note "INFO  baseline has no name snapshot; re-run './tenkai baseline --force' to add one"
+  fi
+
+  capture_procs "$tmp/session-processes.txt"
+  if diff -u "$BASE_DIR/session-processes.txt" "$tmp/session-processes.txt" > "$tmp/procs.diff" 2>&1; then
+    note "OK    session processes: same set as baseline"
+  else
+    note "INFO  session processes changed since baseline (restarts/PID churn are expected):"
+    sed 's/^/      /' "$tmp/procs.diff"
+    [ "$strict" = 1 ] && rc=1
+  fi
+
+  if [ -f "$BASE_DIR/dbus-watched.tsv" ]; then
+    cp "$BASE_DIR/dbus-watched.tsv" "$tmp/base-watched.tsv"
+  else
+    dbus_watch_filter < "$BASE_DIR/dbus-names.txt" > "$tmp/base-watched.tsv"
+  fi
+  capture_dbus_watched "$tmp/dbus-watched.tsv"
+  note "D-Bus well-known names Tenkai must not steal (owner PID must not change):"
+  owner_out=""
+  if compare_dbus_watched "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv"; then
+    note "OK    session bus: all watched names still owned by the same PID"
+  elif owner_out="$(dbus_owner_changes_check "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv")"; then
+    [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
+    note "WARN  every changed owner belongs to a LIVE system unit — its MainPID or a"
+    note "      process inside it (attributed above): external"
+    note "      churn, like the live idle service restarting and re-taking its name."
+  else
+    [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
+    note "FAIL  a watched D-Bus name changed owner and the new owner is NOT a live system unit"
+    note "      (a Tenkai shell must never take these):"
+    rc=1
+  fi
+
+  rm -rf "$tmp"
+  if [ "$rc" = 0 ]; then note "verify-untouched: PASS"; else note "verify-untouched: FAIL"; fi
+  return "$rc"
+}
+
+# ryogami's CLI is a client: it resolves the socket through XDG_RUNTIME_DIR and
+# writes its cache under HOME. Both must be the nested values, which is exactly
+# what this wrapper pins — step 5's incident was a direct binary call that
+# inherited the real HOME. The daemons now also refuse a non-nested HOME.
+cmd_wallpaper() {
+  [ "$#" -ge 1 ] || die "usage: ./tenkai wallpaper <image path | next | prev | random>"
+  [ -f "$PID_FILE" ] || die "no Tenkai session is running — start one with './tenkai run'"
+  [ -S "$TENKAI_DIR/.r/ryogami.sock" ] || die "no ryogami socket at .r/ryogami.sock — is the session up?"
+  local arg="$1" mode="set"
+  case "$arg" in
+    next|prev|random) mode="$arg" ;;
+    *)
+      [ -f "$arg" ] || die "no such image: $arg"
+      arg="$(realpath -- "$arg")"
+      ;;
+  esac
+  note "wallpaper: $mode $arg"
+  HOME="$RUN_DIR/home" \
+  TENKAI_HOME="$RUN_DIR/home" \
+  XDG_CONFIG_HOME="$RUN_DIR/config" \
+  XDG_CACHE_HOME="$RUN_DIR/home/.cache" \
+  XDG_STATE_HOME="$RUN_DIR/state" \
+  XDG_DATA_HOME="$RUN_DIR/data" \
+  XDG_RUNTIME_DIR="$TENKAI_DIR/.r" \
+  "$RUN_DIR/bin/ryogami" wallpaper "$mode" "$arg"
+}
+
+# Prove that the verify checks can still FAIL (every check must be shown
+# able to fail). Doctored inputs are fed through the real functions; no live
+# config is read, and the only live query is the read-only systemd user-manager
+# lookup the owner-change attribution itself uses. hash_churn_classify gets
+# fake hash lists, compare_dbus_watched and dbus_owner_changes_check get fake
+# owner tables. Exits 0 only when every expectation holds.
+cmd_verify_prove() {
+  local d="$RUN_DIR/prove" f1=0 f2=0 h c
+  rm -rf "$d"; mkdir -p "$d"
+  h="$(printf 'a%.0s' {1..64})"; c="$(printf 'b%.0s' {1..64})"
+  note "prove: hash_churn_classify — expectations (0 = live-cache churn tolerated, 1 = must fail)"
+  # (1) a new file in the live cache tree (a tray icon) -> tolerated (0)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b1"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.cache/ryoku/tray/icon-new.png" > "$d/c1"
+  if hash_churn_classify "$d/b1" "$d/c1"; then note "prove: OK  new live-cache file tolerated (rc 0)"; else note "prove: FAIL a new live-cache file was rejected"; f1=1; fi
+  # (2) an EDITED watched config file -> must fail (1)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b2"
+  printf '%s  %s\n' "$c" "$HOME/.config/kitty/kitty.conf" > "$d/c2"
+  if hash_churn_classify "$d/b2" "$d/c2"; then note "prove: FAIL an edited config file passed"; f1=1; else note "prove: OK  edited config file rejected (rc 1)"; fi
+  # (3) a DELETED watched config file -> must fail (1)
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.config/btop/btop.conf" > "$d/b3"
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/c3"
+  if hash_churn_classify "$d/b3" "$d/c3"; then note "prove: FAIL a deleted config file passed"; f1=1; else note "prove: OK  deleted config file rejected (rc 1)"; fi
+  # (4) a NEW watched config file -> must fail (1)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b4"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.config/qt6ct/qt6ct.conf" > "$d/c4"
+  if hash_churn_classify "$d/b4" "$d/c4"; then note "prove: FAIL a new config file passed"; f1=1; else note "prove: OK  new config file rejected (rc 1)"; fi
+  # (5) a changed path outside BOTH groups -> must fail (1) (defensive)
+  printf '%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" > "$d/b5"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.local/share/applications/x.desktop" > "$d/c5"
+  if hash_churn_classify "$d/b5" "$d/c5"; then note "prove: FAIL a path outside both groups passed"; f1=1; else note "prove: OK  path outside both groups rejected (rc 1)"; fi
+  # (6) a live-cache EDIT and DELETE (config untouched) -> tolerated (0), the wide exception as approved
+  printf '%s  %s\n%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.cache/ryoku/colors.json" "$h" "$HOME/.cache/ryoku/tones.json" > "$d/b6"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$c" "$HOME/.cache/ryoku/colors.json" > "$d/c6"
+  if hash_churn_classify "$d/b6" "$d/c6"; then note "prove: OK  live-cache edit+delete tolerated (rc 0)"; else note "prove: FAIL live-cache edit+delete was rejected"; f1=1; fi
+  # (7) the SECOND live cache (matugen carrier) churns too -> tolerated (0)
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$h" "$HOME/.cache/matugen/colors.json" > "$d/b7"
+  printf '%s  %s\n%s  %s\n' "$h" "$HOME/.config/kitty/kitty.conf" "$c" "$HOME/.cache/matugen/colors.json" > "$d/c7"
+  if hash_churn_classify "$d/b7" "$d/c7"; then note "prove: OK  matugen cache churn tolerated (rc 0)"; else note "prove: FAIL matugen cache churn was rejected"; f1=1; fi
+
+  note "prove: live-matugen attribution — expectations (0 = attributable, 1 = leak)"
+  # (8) a byte-identical live template render is attributable; a file that is not
+  #     one is a leak. Uses the real helper against the real live config, so this
+  #     also proves the render path still reproduces the live output.
+  local attrib_have=0 f
+  for f in "$HOME/.config/kitty/current-theme.conf" "$HOME/.config/btop/themes/ryoku.theme"; do
+    [ -f "$f" ] || continue
+    if live_matugen_renders "$f"; then attrib_have=1; fi
+    break
+  done
+  if [ "$attrib_have" = 1 ]; then note "prove: OK  a live matugen template output is attributable (rc 0)"
+  else note "prove: INFO no live template output present to attribute (skipped)"; fi
+  if live_matugen_renders "$TENKAI_DIR/docs/baseline/config-hashes.sha256"; then
+    note "prove: FAIL an arbitrary file was attributed to the live renderer"; f1=1
+  else note "prove: OK  an arbitrary file is NOT attributed (stays fatal)"; fi
+
+  note "prove: compare_dbus_watched — expectations (0 = same owner, 1 = changed owner)"
+  printf 'org.freedesktop.Notifications\t4447\n' > "$d/w1"
+  printf 'org.freedesktop.Notifications\t4447\n' > "$d/w2"
+  if compare_dbus_watched "$d/w1" "$d/w2"; then note "prove: OK  unchanged owner accepted (rc 0)"; else note "prove: FAIL unchanged owner rejected"; f2=1; fi
+  printf 'org.freedesktop.Notifications\t99999\n' > "$d/w3"
+  if compare_dbus_watched "$d/w1" "$d/w3"; then note "prove: FAIL a changed owner was accepted"; f2=1; else note "prove: OK  changed owner rejected (rc 1)"; fi
+
+  note "prove: dbus_owner_changes_check — expectations (0 = every change belongs to a live unit, 1 = unattributed)"
+  # (7) a changed owner no live unit claims -> FATAL (1); that is the direction
+  #     Tenkai can never be wrong in, so it must always be able to fail.
+  printf 'org.freedesktop.ScreenSaver\t140663\n' > "$d/a1"
+  printf 'org.freedesktop.ScreenSaver\t999999999\n' > "$d/a2"
+  if dbus_owner_changes_check "$d/a1" "$d/a2"; then note "prove: FAIL an unattributed owner change was accepted"; f2=1; else note "prove: OK  unattributed owner change rejected (rc 1)"; fi
+  # (8) a changed owner that IS a live unit's MainPID -> attributed (the WARN path)
+  local livepid=""
+  livepid="$(live_unit_pids | sed -n '1p' | cut -f2 || true)"
+  if [ -n "$livepid" ]; then
+    printf 'org.freedesktop.ScreenSaver\t1\n' > "$d/a3"
+    printf 'org.freedesktop.ScreenSaver\t%s\n' "$livepid" > "$d/a4"
+    if dbus_owner_changes_check "$d/a3" "$d/a4"; then note "prove: OK  a live unit's MainPID is attributed (WARN path reachable)"; else note "prove: FAIL a live unit pid was not attributed"; f2=1; fi
+  else
+    note "prove: note — no live unit pid discoverable here (systemd unreachable); owner changes stay fatal"
+  fi
+
+  if [ "$f1" = 0 ] && [ "$f2" = 0 ]; then
+    note "verify-prove: PASS (every check can fail)"
+    return 0
+  fi
+  note "verify-prove: FAIL (a check would not fail when it must)"
+  return 1
+}
+
+# ---------------- Stage 1 item 5: env-check -------------------------------
+# env-check launches NOTHING. It runs the session script's own scrub path only
+# (stage 1 builds the env -i vector, re-execs itself with TENKAI_ENV_SCRUBBED=1,
+# sees --env-check and exits before Hyprland, the daemon or any socket), prints
+# the sanitised environment names and every command resolution, then judges them
+# here:
+#   * a FORBIDDEN env name in the sanitised environment -> FAIL: RYOKU_*,
+#     QS_*, HYPRLAND_*, SYSTEMD_*, RYOGAMI_*, the live Qt theming hook
+#     (QT_QPA_PLATFORMTHEME), QT_PLUGIN_PATH, and any XDG_* outside the six the
+#     session sets itself;
+#   * a resolution outside the allowed directories -> FAIL: the tenkai and shadow
+#     classes must resolve inside .run/bin (a shadow name must also be one of
+#     our marked stubs, never a foreign file), and a system tool may resolve
+#     inside .run/bin or the fixed system list — nowhere else;
+#   * MISSING is printed but does not fail (optional helpers).
+# `./tenkai env-check --prove` shows both rules failing on doctored input.
+
+env_names_clean_check() { # stdin: env names -> rc0 only when no forbidden name is present
+  local n rc=0
+  while IFS= read -r n; do
+    [ -n "$n" ] || continue
+    case "$n" in
+      XDG_CONFIG_HOME|XDG_CACHE_HOME|XDG_STATE_HOME|XDG_DATA_HOME|XDG_RUNTIME_DIR|XDG_DATA_DIRS) continue ;;
+      RYOKU_*|QS_*|HYPRLAND_*|SYSTEMD_*|RYOGAMI_*|XDG_*|QT_QPA_PLATFORMTHEME|QT_PLUGIN_PATH)
+        printf '  FORBIDDEN  %s\n' "$n"
+        rc=1
+        ;;
+    esac
+  done
+  return "$rc"
+}
+
+env_rules_apply() { # stdin: name<TAB>class<TAB>resolution -> rc1 when any resolution is disallowed
+  local n cls res rc=0
+  while IFS=$'\t' read -r n cls res; do
+    [ -n "$n" ] || continue
+    res="${res:-MISSING}"
+    if [ "$res" = "MISSING" ]; then
+      printf '  MISSING    %-26s class=%s\n' "$n" "$cls"
+      continue
+    fi
+    case "$res" in
+      /*) ;; # an absolute path: the directory decides
+      *)  # command -v printed a bare word: the shell's own builtin/keyword
+        if [ "$cls" = "system" ]; then
+          printf '  OK(builtin) %-25s %s\n' "$n" "$cls"
+          continue
+        fi
+        printf '  FAIL       %-26s class=%s resolves to the shell itself (%s), not a file in .run/bin\n' "$n" "$cls" "$res"
+        rc=1
+        continue
+        ;;
+    esac
+    case "$cls" in
+      tenkai)
+        case "$res" in
+          "$RUN_DIR/bin"/*) printf '  OK         %-26s %s\n' "$n" "$res" ;;
+          *) printf '  FAIL       %-26s Tenkai-owned name resolves outside .run/bin: %s\n' "$n" "$res"; rc=1 ;;
+        esac ;;
+      shadow)
+        case "$res" in
+          "$RUN_DIR/bin"/*)
+            if grep -q 'tenkai-stub: this name is a live-desktop helper' "$res" 2>/dev/null; then
+              printf '  OK         %-26s %s (our stub)\n' "$n" "$res"
+            else
+              printf '  FAIL       %-26s %s is inside .run/bin but is NOT a Tenkai stub\n' "$n" "$res"
+              rc=1
+            fi ;;
+          *) printf '  FAIL       %-26s shadow name resolves outside .run/bin: %s\n' "$n" "$res"; rc=1 ;;
+        esac ;;
+      system)
+        case "$res" in
+          "$RUN_DIR/bin"/*|/usr/local/bin/*|/usr/bin/*|/bin/*) printf '  OK         %-26s %s\n' "$n" "$res" ;;
+          *) printf '  FAIL       %-26s system tool resolves outside the fixed list: %s\n' "$n" "$res"; rc=1 ;;
+        esac ;;
+      *)
+        printf '  FAIL       %-26s unknown inventory class %s\n' "$n" "$cls"
+        rc=1
+        ;;
+    esac
+  done
+  return "$rc"
+}
+
+env_resolve_under() { # $1 = PATH value, $2 = name -> what command -v says under that PATH
+  ( PATH="$1"; command -v "$2" 2>/dev/null ) || true
+}
+
+env_check_prove() {
+  local d="$RUN_DIR/envcheck-proof"
+  local fake="$d/fakebin" f1=0 f2=0 n res tsv
+  rm -rf "$d"; mkdir -p "$fake"
+  tenkai_provision_bin
+  # PROOF 1 — a fake ryoku-* binary on a throwaway PATH must be caught (and is
+  # removed again immediately afterwards, so the clean case can be shown too).
+  n="$(tenkai_shadow_names | sed -n '1p')"
+  [ -n "$n" ] || { note "env-check-prove: FAIL (no shadow name to test with)"; return 1; }
+  printf '#!/bin/sh\nexit 0\n' > "$fake/$n"; chmod 755 "$fake/$n"
+  res="$(env_resolve_under "$fake:$RUN_DIR/bin:$TENKAI_SYSTEM_PATH" "$n")"
+  note "env-check-prove: fake '$n' injected on a throwaway PATH -> resolves to ${res:-MISSING}"
+  if printf '%s\tshadow\t%s\n' "$n" "${res:-MISSING}" | env_rules_apply >/dev/null; then
+    note "env-check-prove: FAIL (the injected fake was accepted)"; f1=1
+  else
+    note "env-check-prove: OK    injected fake rejected (rc 1)"
+  fi
+  rm -f "$fake/$n"
+  res="$(env_resolve_under "$RUN_DIR/bin:$TENKAI_SYSTEM_PATH" "$n")"
+  if printf '%s\tshadow\t%s\n' "$n" "${res:-MISSING}" | env_rules_apply >/dev/null; then
+    note "env-check-prove: OK    after removal the clean resolution is accepted (rc 0)"
+  else
+    note "env-check-prove: FAIL (the clean resolution was rejected)"; f1=1
+  fi
+  # PROOF 2 — the forbidden-name rule must catch a synthetic forbidden name.
+  if printf 'HOME\nRYOKU_SYNTHETIC_FLAG\n' | env_names_clean_check >/dev/null; then
+    note "env-check-prove: FAIL (a forbidden env name was accepted)"; f2=1
+  else
+    note "env-check-prove: OK    synthetic forbidden env name rejected (rc 1)"
+  fi
+  if printf 'HOME\nTENKAI_TEST\nLANG\nXDG_CONFIG_HOME\n' | env_names_clean_check >/dev/null; then
+    note "env-check-prove: OK    allowed env names accepted (rc 0)"
+  else
+    note "env-check-prove: FAIL (allowed env names were rejected)"; f2=1
+  fi
+  rm -rf "$d"
+  if [ "$f1" = 0 ] && [ "$f2" = 0 ]; then
+    note "env-check-prove: PASS (both rules can fail)"
+    return 0
+  fi
+  note "env-check-prove: FAIL (a rule would not fail when it must)"
+  return 1
+}
+
+cmd_env_check() {
+  if [ "${1:-}" = "--prove" ]; then
+    env_check_prove
+    return $?
+  fi
+  # Provision (stubs + shim + inventory) and generate the session script, then
+  # run ONLY its scrub+print path: no compositor, no daemon, no socket.
+  tenkai_provision_bin
+  write_session_script "/run/user/$(id -u)/env-check-no-display" "ENV-CHECK-NO-DISPLAY"
+  local out names pathv tsv rc=0
+  if ! out="$(bash "$RUN_DIR/session.sh" --env-check 2>"$RUN_DIR/env-check.err")"; then
+    note "env-check: the session script failed inside its --env-check path:"
+    sed 's/^/  /' "$RUN_DIR/env-check.err" | head -20
+    return 1
+  fi
+  names="$(printf '%s\n' "$out" | sed -n '/^envcheck:names-begin$/,/^envcheck:names-end$/p' | sed '1d;$d')"
+  pathv="$(printf '%s\n' "$out" | sed -n 's/^envcheck:path\t//p')"
+  tsv="$(printf '%s\n' "$out" | awk -F'\t' '$1 == "envcheck:resolve" { print $2 "\t" $3 "\t" $4 }')"
+
+  note "env-check: sanitised environment — $(printf '%s\n' "$names" | grep -c . || true) names"
+  printf '%s\n' "$names" | sed 's/^/  /'
+  note "env-check: session PATH = $pathv"
+  note "env-check: forbidden-name rule"
+  local forbidden=""
+  if forbidden="$(printf '%s\n' "$names" | env_names_clean_check)"; then
+    note "  OK    no forbidden env name survived the scrub"
+  else
+    printf '%s\n' "$forbidden"
+    note "  FAIL  a forbidden env name survived the scrub"
+    rc=1
+  fi
+  note "env-check: command -v resolution of every inventoried command"
+  if printf '%s\n' "$tsv" | env_rules_apply; then
+    note "  OK    every resolution is inside .run/bin or the fixed system list"
+  else
+    note "  FAIL  a command resolved somewhere Tenkai must never use"
+    rc=1
+  fi
+  if [ "$rc" = 0 ]; then note "env-check: PASS"; else note "env-check: FAIL"; fi
+  return "$rc"
+}
+
+cmd_status() {
+  note "project:  $TENKAI_DIR"
+  if [ -f "$BASE_FILE" ]; then note "baseline: $(sed -n 's/^Captured: //p' "$BASE_FILE")"; else note "baseline: MISSING"; fi
+  if [ ! -f "$PID_FILE" ]; then
+    note "tenkai:      not running (no .run/pids; no test session started by ./tenkai)"
+    return 0
+  fi
+  local any=0
+  while read -r pid pgid rest; do
+    [ -n "${pid:-}" ] || continue
+    if [ -d "/proc/$pid" ]; then
+      local c
+      c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
+      if [[ "$c" == *"$TENKAI_DIR"* ]]; then
+        note "RUNNING   pid=$pid pgid=${pgid:-?}  $c"
+      else
+        note "STALE     pid=$pid exists but cmdline is not a Tenkai process — NOT touching it"
+      fi
+      any=1
+    fi
+  done < "$PID_FILE"
+  [ "$any" = 1 ] || note "tenkai:      not running (all recorded PIDs are gone)"
+}
+
+# Is this pid a process Tenkai itself started?  "The cmdline mentions the project
+# path" is NOT enough: a test harness's `tee -a .run/logs/...`, a `tail -f` on a
+# log, an editor opened on a project file, or this very shell all carry the path
+# and must never be signalled (AGENTS.md: only signal processes that are Tenkai's).
+# A Tenkai session process is therefore one of:
+#   * a program/script whose argv[0] lives inside the project (.run/bin/*,
+#     .run/session.sh, src/...), or
+#   * one of the few system programs the session spawns by name — qs,
+#     quickshell, Hyprland, Xwayland, bash, dbus-run-session, wl-paste, flock,
+#     matugen, ryogami, tenkai-* — AND at least one argument is a project path.
+# Log readers/writers and editors fail the program test, so they are left alone.
+tenkai_is_session_proc() { # $1 = pid -> 0 when it is a Tenkai session process
+  local pid="$1" a0
+  [ -r "/proc/$pid/cmdline" ] || return 1
+  # argv[0] only: /proc/<pid>/cmdline is NUL-separated and may be empty.
+  a0="$(tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | head -n1)"
+  [ -n "$a0" ] || return 1
+  case "$a0" in
+    "$TENKAI_DIR"/*) return 0 ;;
+  esac
+  case "${a0##*/}" in
+    qs|quickshell|Hyprland|Xwayland|dbus-run-session|bash|sh|wl-paste|flock|matugen|ryogami|tenkai-*) ;;
+    *) return 1 ;;
+  esac
+  tr '\0' '\n' < "/proc/$pid/cmdline" 2>/dev/null | grep -qF "$TENKAI_DIR"
+}
+
+# Processes that are provably part of a Tenkai session but are not recorded in
+# .run/pids — e.g. spawned by a test helper that outlived its recorded PIDs.
+# The script itself is skipped, and so are all of its ancestors: an invoking
+# `bash -c '... /home/tenkai/projects/tenkai ...'` carries the project path in its
+# cmdline and must never be signalled.
+tenkai_find_leaked() {
+  local self=$$ a=$$
+  local ancestors=("$self")
+  while [ -n "$a" ] && [ "$a" != 0 ]; do
+    a="$(ps -o ppid= -p "$a" 2>/dev/null | tr -d ' ')" || break
+    [ -n "$a" ] || break
+    ancestors+=("$a")
+    [ "$a" = 1 ] && break
+  done
+  for pid in $(pgrep -f "$TENKAI_DIR" 2>/dev/null); do
+    local anc skip=0
+    for anc in "${ancestors[@]}"; do
+      [ "$pid" = "$anc" ] && { skip=1; break; }
+    done
+    [ "$skip" = 1 ] && continue
+    tenkai_is_session_proc "$pid" && echo "$pid"
+  done
+  # The loop's status is its LAST iteration's, and cmd_stop runs under `set -e`:
+  # "no match" is the healthy answer, not an error.
+  return 0
+}
+
+cmd_stop() {
+  if [ ! -f "$PID_FILE" ]; then note "tenkai: nothing to stop (no .run/pids); still checking for leaked Tenkai processes"; else
+  while read -r pid pgid rest; do
+    [ -n "${pid:-}" ] || continue
+    [ -d "/proc/$pid" ] || continue
+    local c
+    c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
+    if [[ "$c" != *"$TENKAI_DIR"* ]]; then
+      note "SKIP  pid=$pid (cmdline does not contain project path)"
+      continue
+    fi
+    local pg="${pgid:-$pid}"
+    note "TERM  pid=$pid pgid=$pg  $c"
+    kill -TERM -- "-$pg" 2>/dev/null || kill -TERM "$pid" 2>/dev/null || true
+  done < "$PID_FILE"
+  local i=0
+  while [ "$i" -lt 10 ]; do
+    local alive=0
+    while read -r pid pgid rest; do
+      [ -n "${pid:-}" ] || continue
+      if [ -d "/proc/$pid" ]; then
+        local c; c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
+        [[ "$c" == *"$TENKAI_DIR"* ]] && alive=1
+      fi
+    done < "$PID_FILE"
+    [ "$alive" = 0 ] && break
+    sleep 1; i=$((i+1))
+  done
+  if [ "$i" -ge 10 ]; then
+    note "some Tenkai processes still alive; leaving them alone (manual inspection needed)"
+  else
+    note "tenkai: stopped; run './tenkai verify-untouched' to confirm the live session is untouched"
+  fi
+  rm -f "$PID_FILE"
+  fi
+  # Leak hunt: test/run-spawned processes that were never recorded in
+  # .run/pids still hold the project path in their cmdline.
+  local leaked; leaked="$(tenkai_find_leaked)"
+  if [ -n "$leaked" ]; then
+    note "leaked Tenkai processes not in .run/pids: $(echo "$leaked" | tr '\n' ' ')"
+    for pid in $leaked; do
+      note "TERM  leaked pid=$pid"
+      kill -TERM "$pid" 2>/dev/null || true
+    done
+    sleep 2
+    for pid in $leaked; do
+      tenkai_is_session_proc "$pid" || continue
+      note "KILL  leaked pid=$pid (survived TERM)"
+      kill -KILL "$pid" 2>/dev/null || true
+    done
+  else
+    note "no leaked Tenkai processes found"
+  fi
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Phase 6 nested-session launcher + test harness
+#
+# Everything below runs ONLY inside `dbus-run-session` with a fake HOME and
+# project XDG redirects; the live session is never touched. `run` launches and
+# leaves it up; `test` = guard + verify-untouched + run + checks + `stop` +
+# verify-untouched, reporting each checklist item TESTED/UNVERIFIED.
+# ─────────────────────────────────────────────────────────────────────────────
+
+baseline_hypr_sig() {
+  [ -f "$BASE_DIR/env.txt" ] || return 1
+  sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$BASE_DIR/env.txt" | head -n1
+}
+
+write_nested_conf() {
+  mkdir -p "$RUN_DIR/hypr"
+  # Lua, not hyprlang: Hyprland 0.56.2 still accepts the legacy .conf form but
+  # warns that 0.57 removes it, and the nested test would stop launching. Every
+  # call below is taken from Hyprland's own shipped example
+  # (/usr/share/hypr/hyprland.lua) or from upstream Ryoku's Lua modules — no
+  # invented API. Lives only in .run/hypr; never the owner's config.
+  [ -f "$RUN_DIR/hypr/nested.lua" ] && return 0
+  cat > "$RUN_DIR/hypr/nested.lua" <<'LUA'
+-- Tenkai nested test compositor. Never the owner's config.
+hl.config({
+    general = {
+        border_size = 1,
+        gaps_in = 4,
+        gaps_out = 8,
+        resize_on_border = true,
+    },
+    -- Upstream Ryoku's decoration.lua ships rounding = 0 (sharp windows); the
+    -- nested test compositor must render the same shapes the owner sees upstream.
+    decoration = { rounding = 0, rounding_power = 4 },
+    misc = {
+        disable_hyprland_logo = true,
+        force_default_wallpaper = 0,
+        -- Hyprland pops a notification ("started without start-hyprland") for
+        -- any instance not launched by the start-hyprland watchdog. The nested
+        -- test compositor is launched directly on purpose, so silence the notice
+        -- here, in the test config only. Verified against this binary:
+        -- `strings /usr/bin/Hyprland | grep disable_watchdog_warning`, and
+        -- `Hyprland --verify-config -c .run/hypr/nested.lua` -> config ok.
+        disable_watchdog_warning = true,
+    },
+})
+
+-- The nested output inherits the host window size, and with scale "auto" it
+-- came up at devicePixelRatio 2 (980x508 physical = 490x254 logical). qsbar
+-- hides low-priority slots on a narrow stage, which collapsed the status
+-- cluster (tray + bell). Pin scale 1 so the bar gets the full 980 logical px.
+-- Documented form: hl.monitor, from Hyprland's own hyprland.lua.
+hl.monitor({
+    output   = "",
+    mode     = "preferred",
+    position = "auto",
+    scale    = 1,
+})
+
+-- A few binds so the owner can drive the nested instance only.
+-- hyprctl here resolves the nested signature from this compositor's env.
+hl.bind("SUPER + Q", hl.dsp.exec_cmd("hyprctl dispatch exit"))
+hl.bind("SUPER + 1", hl.dsp.focus({ workspace = 1 }))
+hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }))
+hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }))
+hl.bind("SUPER + SPACE", hl.dsp.global("tenkai:launcher"))
+hl.bind("SUPER + ESCAPE", hl.dsp.global("tenkai:quicksettings"))
+-- The wallpaper picker the qsbar style hosts in-shell (the external ryogami
+-- picker is not part of this build). Same chord as Tenkai's own default bind.
+hl.bind("SUPER + P", hl.dsp.global("tenkai:wallpaper-menu"))
+hl.bind("CTRL + RETURN", hl.dsp.exec_cmd("kitty"))
+LUA
+}
+
+prepare_nested_home() {
+  mkdir -p "$RUN_DIR/home" "$RUN_DIR/config" "$RUN_DIR/cache" "$RUN_DIR/state" \
+           "$RUN_DIR/data" "$RUN_DIR/r" "$RUN_DIR/hypr" "$RUN_DIR/logs" "$RUN_DIR/bin" "$RUN_DIR/qml"
+  chmod 700 "$RUN_DIR/r"
+  # matugen: the config this session's palette pass reads, with kitty's colours
+  # landing in the nested fake home's cache (never the owner's ~/.config/kitty).
+  tenkai_seed_matugen "$RUN_DIR/home/.cache"
+  # Hyprland names its IPC sockets $XDG_RUNTIME_DIR/hypr/<signature>/.socket2.sock.
+  # The signature is 61 chars, so the full path must stay <= 107 bytes or the
+  # *event* socket is silently disabled ("Socket2 path is too long"). The
+  # project path is 22 chars, so .run/r cannot fit. Expose the same directory
+  # through a short symlink for the child's XDG_RUNTIME_DIR; all bytes still
+  # land under .run/r.
+  ln -sfn "$RUN_DIR/r" "$TENKAI_DIR/.r"
+  # The nested compositor creates its Wayland socket in the HOST's
+  # XDG_RUNTIME_DIR, not in $RUN_DIR/r. The session script inside the
+  # dbus-run-session scopes XDG_RUNTIME_DIR to .r, so the socket is
+  # invisible to the bar's workspaceState query. Expose it through a
+  # symlink in .run/r, exactly once: .r is a symlink itself, and .r/r
+  # is the real directory the shell and its children write to.
+  if [ ! -e "$RUN_DIR/r/wayland-1" ]; then
+    ln -s "$HOME/.run/user/$(id -u)/wayland-1" "$RUN_DIR/r/wayland-1"
+  fi
+  # Role launcher (AppLaunch.qml runs every Terminal=true entry through it).
+  # Symlinked, so the session always uses the source script.
+  if [ -f "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-app" ]; then
+    ln -sfn "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-app" "$RUN_DIR/bin/tenkai-app"
+  fi
+  # Screenshot helper: a local grim/slurp capture into the user's Pictures
+  # folder. No upload, no share service, no network call.
+  if [ -f "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-screenshot" ]; then
+    ln -sfn "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-screenshot" "$RUN_DIR/bin/tenkai-screenshot"
+  fi
+  # Brightness helper (tenkai-shell's `brightness` verb execs it by this upstream
+  # name; the script itself is copied from upstream and kept verbatim except
+  # for honest error reporting). Symlinked, so the session always uses source.
+  if [ -f "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness" ]; then
+    ln -sfn "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness" "$RUN_DIR/bin/ryoku-cmd-brightness"
+  fi
+  # R1: complete .run/bin — Tenkai's own scripts linked, every live-system helper
+  # name the kept code calls shadowed by an inert stub, inventory written for
+  # `./tenkai env-check`. Without this, `command -v ryoku-*` inside the session
+  # would find the live system's binary in /usr/bin.
+  tenkai_provision_bin
+
+  mkdir -p "$RUN_DIR/home/.config/fontconfig" "$RUN_DIR/home/Pictures"
+  if [ ! -f "$RUN_DIR/home/.config/fontconfig/fonts.conf" ]; then
+    cat > "$RUN_DIR/home/.config/fontconfig/fonts.conf" <<EOF
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">
+<fontconfig>
+  <include>/etc/fonts/fonts.conf</include>
+  <dir>$RUN_DIR/data/fonts</dir>
+</fontconfig>
+EOF
+  fi
+  # read-only view of the owner's wallpaper library inside the fake home
+  if [ -d "$HOME/Pictures/Wallpapers" ] && [ ! -e "$RUN_DIR/home/Pictures/Wallpapers" ]; then
+    ln -s "$HOME/Pictures/Wallpapers" "$RUN_DIR/home/Pictures/Wallpapers"
+  fi
+}
+
+# $1 = the LIVE wayland socket, used only as the guard ryogami refuses on;
+# $2 = the live baseline Hyprland signature. Neither is exported into the
+# session's display: the nested session runs strictly on its own runtime dir.
+write_session_script() {
+  cat > "$RUN_DIR/session.sh" <<SESSION
+#!/usr/bin/env bash
+set -uo pipefail
+TENKAI_DIR="__TENKAI_DIR__"
+BASELINE_SIG="__BASELINE_SIG__"
+RUN="\$TENKAI_DIR/.run"
+# --- R2: the environment is rebuilt from an explicit allow-list -------------
+# The live session exports RYOKU_*, QS_*, HYPRLAND_*, systemd and Qt theming
+# variables (RYOKU_POLKIT_AGENT=1 is exported by the live shell's unit today),
+# plus its own bus and its own display. None of that may reach a Tenkai session.
+# This first pass rebuilds the environment with 'env -i' from exactly the
+# values below and re-runs this same script with TENKAI_ENV_SCRUBBED=1; the second
+# pass starts from nothing and only sees what is named here.
+if [ "\${TENKAI_ENV_SCRUBBED:-0}" != "1" ]; then
+  _a=(env -i "TENKAI_ENV_SCRUBBED=1"
+      "HOME=\$RUN/home"
+      "XDG_CONFIG_HOME=\$RUN/config"
+      "XDG_CACHE_HOME=\$RUN/home/.cache"
+      "XDG_STATE_HOME=\$RUN/state"
+      "XDG_DATA_HOME=\$RUN/data"
+      "XDG_RUNTIME_DIR=\$TENKAI_DIR/.r"
+      "XDG_DATA_DIRS=$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
+      "FONTCONFIG_FILE=\$RUN/home/.config/fontconfig/fonts.conf"
+      "TENKAI_HOST_WAYLAND_SOCKET=__HOST_WAYLAND__"
+      "PATH=\$RUN/bin:$TENKAI_SYSTEM_PATH"
+      "QML2_IMPORT_PATH=\$RUN/qml"
+      "QML_IMPORT_PATH=\$RUN/qml"
+      "TENKAI_SHELL_DIR=\$TENKAI_DIR/src/ryoku/shell"
+      "QT_QPA_PLATFORM=wayland"
+      "QT_AUTO_SCREEN_SCALE_FACTOR=1"
+      "QSG_RENDER_LOOP=threaded")
+  # Fixed pass-throughs, matched BY NAME: the locale, the terminal identity the
+  # tools expect, the private bus address dbus-run-session just created, and
+  # every TENKAI_* seam (TENKAI_TEST, TENKAI_STUB_POWER, TENKAI_BRIGHTNESS_FAKE,
+  # TENKAI_ALLOW_LIVE_DISPLAY, TENKAI_BUS_ADDRESS, ...). Values are copied verbatim;
+  # RYOKU_*, QS_*, HYPRLAND_*, SYSTEMD_*, WAYLAND_DISPLAY and
+  # QT_QPA_PLATFORMTHEME are not in the list, so they are dropped here.
+  for _n in \$(env | cut -d= -f1); do
+    case "\$_n" in
+      LANG|LC_*|TERM|USER|LOGNAME|SHELL|MALLOC_CONF|DBUS_SESSION_BUS_ADDRESS|TENKAI_*)
+        [ "\$_n" = "TENKAI_ENV_SCRUBBED" ] && continue
+        _a+=("\$_n=\$(printenv "\$_n")") ;;
+    esac
+  done
+  exec "\${_a[@]}" bash "\$0" "\$@"
+fi
+# The live Wayland socket, handed in by ./tenkai run. ryogami refuses to start when
+# its own socket resolves to this path, so it can never paint the owner's session.
+export TENKAI_HOST_WAYLAND_SOCKET="__HOST_WAYLAND__"
+export HOME="\$RUN/home"
+export XDG_CONFIG_HOME="\$RUN/config"
+# Cache follows the fake HOME, so the palette lands exactly at
+# \$HOME/.cache/tenkai/{colors,tones}.json -- inside the project.
+export XDG_CACHE_HOME="\$HOME/.cache"
+export XDG_STATE_HOME="\$RUN/state"
+export XDG_DATA_HOME="\$RUN/data"
+# Read-only: the owner's real .desktop files, so the launcher lists the same
+# applications as the live session. Writes still go to the fake XDG_DATA_HOME.
+export XDG_DATA_DIRS="$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
+# Strict isolation: every nested process resolves its display, sockets and
+# pipewire from this session's own runtime dir. The live one is never used.
+export XDG_RUNTIME_DIR="\$TENKAI_DIR/.r"
+
+export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
+# R1: .run/bin first, then a fixed system list. The caller's PATH is NOT used:
+# the live session's PATH resolves the live system's ryoku*/ryogami* helpers.
+export PATH="\$RUN/bin:$TENKAI_SYSTEM_PATH"
+export QML2_IMPORT_PATH="\$RUN/qml"
+export QML_IMPORT_PATH="\$RUN/qml"
+export TENKAI_SHELL_DIR="\$TENKAI_DIR/src/ryoku/shell"
+# Test-mode stub: suppresses session power actions (QML SessionActions + the
+# tenkai-shell daemon). Nested tests only; a real run does not set this.
+# The test stub can be turned off only to prove the TENKAI_STUB_POWER guard; the
+# power actions are stubbed in every nested session either way, so a test that
+# loses TENKAI_TEST still cannot reboot the owner's machine.
+export TENKAI_TEST="\${TENKAI_TEST-1}"
+export TENKAI_STUB_POWER="\${TENKAI_STUB_POWER:-1}"
+export QSG_RENDER_LOOP=threaded
+# A nested surface must never fall back to the host X server: with no Wayland
+# socket, Qt exits instead of painting a stray window on the live desktop.
+export QT_QPA_PLATFORM=wayland
+# WAYLAND_DISPLAY is deliberately NOT exported here: it is set below from the
+# nested compositor's OWN socket, once that socket exists. Handing the live
+# socket down would put the compositor and every client on the owner's desktop.
+unset WAYLAND_DISPLAY
+unset TENKAI_POLKIT_AGENT HYPRLAND_INSTANCE_SIGNATURE
+unset XDG_VIDEOS_DIR XDG_PICTURES_DIR XDG_DOCUMENTS_DIR XDG_DOWNLOAD_DIR \\
+      XDG_MUSIC_DIR XDG_DESKTOP_DIR XDG_TEMPLATES_DIR XDG_PUBLICSHARE_DIR
+unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
+
+# Stage 1 item 5 (env-check): print the sanitised environment and the resolution
+# of every inventoried command, then exit 0. NOTHING is launched here — no
+# compositor, no daemon, no socket; this is the only path the env-check mode of
+# this script takes, and the rules that judge this output live in ./tenkai itself.
+if [ "\${1:-}" = "--env-check" ]; then
+  printf 'envcheck:names-begin\n'
+  env | cut -d= -f1 | sort
+  printf 'envcheck:names-end\n'
+  printf 'envcheck:path\t%s\n' "\$PATH"
+  if [ -f "\$RUN/env-inventory.tsv" ]; then
+    while IFS=\$'\t' read -r _n _c; do
+      [ -n "\$_n" ] || continue
+      _r="\$(command -v "\$_n" 2>/dev/null || true)"
+      printf 'envcheck:resolve\t%s\t%s\t%s\n' "\$_n" "\$_c" "\${_r:-MISSING}"
+    done < "\$RUN/env-inventory.tsv"
+  fi
+  printf 'envcheck:end\n'
+  exit 0
+fi
+
+log="\$RUN/logs"; pidfile="\$RUN/pids"
+# The private bus dbus-run-session gave us. Recorded so a harness on the host can
+# reach org.freedesktop.Notifications etc. on the *nested* bus only; the live
+# bus stays at its own address and is never touched.
+printf '%s\\n' "\${DBUS_SESSION_BUS_ADDRESS:-}" > "\$RUN/bus"
+note() { printf '%s\\n' "\$*" >> "\$log/session.log"; }
+record() { local p="\$1" n="\$2"; local pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\\t%s\\t%s\\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
+
+note "starting nested Hyprland (own output; live socket handed only to it)"
+# Isolation: the live socket is given to the COMPOSITOR PROCESS ONLY (inline,
+# never exported), and only so it can create an output of its own. Everything
+# else in the session -- daemon, shell, ryogami, apps -- resolves its display
+# from \$XDG_RUNTIME_DIR below, i.e. the session's own wayland socket.
+#
+# A strictly headless compositor would be better, but this Hyprland (0.57.1)
+# has no headless backend: the DRM backend cannot take a seat from inside the
+# owner's session and `AQ_BACKENDS=headless` aborts in CBackend::create()
+# (measured 2026-11-06, "no allocator available"). So the nested compositor
+# itself still needs a parent display; nothing else in the session ever sees it.
+WAYLAND_DISPLAY="\$TENKAI_HOST_WAYLAND_SOCKET" Hyprland -c "\$RUN/hypr/nested.lua" >> "\$log/hyprland.log" 2>&1 &
+HYPPID=\$!; record "\$HYPPID" hyprland-nested
+
+sig=""
+for i in \$(seq 1 150); do
+  d="\$(ls -d "\$XDG_RUNTIME_DIR"/hypr/*/ 2>/dev/null | head -n1 || true)"
+  [ -n "\$d" ] && { sig="\$(basename "\$d")"; break; }
+  kill -0 "\$HYPPID" 2>/dev/null || { note "Hyprland died before ready"; exit 1; }
+  sleep 0.2
+done
+[ -n "\$sig" ] || { note "no Hyprland instance appeared"; exit 1; }
+if [ -n "\$BASELINE_SIG" ] && [ "\$sig" = "\$BASELINE_SIG" ]; then
+  note "REFUSING: nested signature equals the live baseline (\$sig)"
+  kill -TERM "\$HYPPID" 2>/dev/null || true
+  exit 1
+fi
+export HYPRLAND_INSTANCE_SIGNATURE="\$sig"
+note "hyprland instance: \$sig (baseline \$BASELINE_SIG)"
+
+# The nested display is the compositor's own socket, resolved from this
+# session's runtime dir. If it never appears the session dies here instead of
+# falling back to the live socket.
+for i in \$(seq 1 100); do
+  w="\$(ls "\$XDG_RUNTIME_DIR"/wayland-* 2>/dev/null | head -n1 || true)"
+  [ -n "\$w" ] && { export WAYLAND_DISPLAY="\$(basename "\$w")"; break; }
+  sleep 0.2
+done
+[ -n "\${WAYLAND_DISPLAY:-}" ] || { note "no nested WAYLAND_DISPLAY appeared"; kill -TERM "\$HYPPID" 2>/dev/null || true; exit 1; }
+note "nested WAYLAND_DISPLAY=\$WAYLAND_DISPLAY (isolated runtime dir)"
+
+# Tenkai's matugen config is seeded by ./tenkai before the session starts
+# (tenkai_seed_matugen): the shipped file plus the kitty template block, with both
+# of its paths expanded for this session's XDG dirs. No post_hook, so the pass
+# writes that one file and nothing else.
+
+# Module switchboard: wallpaper=false starts no ryogami at all, so the nested
+# bus and process list have no wallpaper daemon to prove against.
+WALL_ON=\$(jq -r 'if .modules.wallpaper == null then true else .modules.wallpaper end' "\$XDG_CONFIG_HOME/tenkai/shell.json" 2>/dev/null || echo true)
+if [ "\$WALL_ON" != "false" ]; then
+  note "starting ryogami (stills only); live display guard = \$TENKAI_HOST_WAYLAND_SOCKET"
+  "\$RUN/bin/ryogami" daemon >> "\$log/ryogami.log" 2>&1 &
+  RPID=\$!; record "\$RPID" ryogami
+else
+  note "wallpaper module off: ryogami not started"
+  RPID=""
+fi
+
+note "starting tenkai-shell daemon"
+"\$RUN/bin/tenkai-shell" daemon >> "\$log/daemon.log" 2>&1 &
+DPID=\$!; record "\$DPID" tenkai-shell-daemon
+
+wait "\$HYPPID"
+note "Hyprland exited; terminating daemon"
+kill -TERM "\$DPID" 2>/dev/null || true
+wait "\$DPID" 2>/dev/null || true
+if [ -n "\$RPID" ]; then
+  kill -TERM "\$RPID" 2>/dev/null || true
+  wait "\$RPID" 2>/dev/null || true
+fi
+note "session done"
+SESSION
+  sed -i "s|__TENKAI_DIR__|$TENKAI_DIR|g; s|__HOST_WAYLAND__|$1|g; s|__BASELINE_SIG__|${2:-}|g" "$RUN_DIR/session.sh"
+  chmod +x "$RUN_DIR/session.sh"
+}
+
+# The acceptance gate: every machine-checkable criterion, one table.
+cmd_accept(){ docs/tests/accept.sh "$@"; }
+
+cmd_run() {
+  [ -x "$RUN_DIR/bin/tenkai-shell" ] || die "tenkai-shell not built — run the Phase 6 build first"
+  [ -d "$RUN_DIR/qml/Ryoku/Ui" ] || die "QML modules not assembled under .run/qml"
+
+  # Refuse to clobber a session that is still up.
+  if [ -f "$PID_FILE" ]; then
+    local alive=0 p
+    while read -r p _; do
+      [ -n "${p:-}" ] && [ -d "/proc/$p" ] && alive=1
+    done < "$PID_FILE"
+    [ "$alive" = 1 ] && die "a Tenkai session is already running (see .run/pids); run './tenkai stop' first"
+  fi
+
+  local bsig; bsig="$(baseline_hypr_sig || true)"
+  # The live socket is needed ONLY as the guard ryogami refuses on (it never
+  # becomes the session's WAYLAND_DISPLAY — the nested compositor is headless
+  # and every nested client resolves its own socket from .run/r).
+  local host_wl="${WAYLAND_DISPLAY:-}"
+  if [ -n "$host_wl" ] && [[ "$host_wl" != /* ]]; then
+    host_wl="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/$host_wl"
+  fi
+  [ -n "$host_wl" ] || die "no WAYLAND_DISPLAY in this shell — cannot name the live socket for the isolation guard"
+  [ -e "$host_wl" ] || die "WAYLAND_DISPLAY=$host_wl does not exist"
+
+  prepare_nested_home
+  write_nested_conf
+  write_session_script "$host_wl" "$bsig"
+  # Clean runtime previous runs left behind. Only reached when no session is
+  # running (checked below), so this never touches a live instance.
+  rm -rf "$RUN_DIR/r/hypr" "$RUN_DIR/r/quickshell"
+  rm -f "$RUN_DIR/r/tenkai-shell.sock" "$RUN_DIR/r/tenkai-shell.sock.lock" \
+        "$RUN_DIR/r/ryogami.sock" "$RUN_DIR/r/tenkai-hub.lock" \
+        "$RUN_DIR"/r/wayland-* 2>/dev/null || true
+  : > "$PID_FILE"
+  : > "$RUN_DIR/logs/session.log"
+  : > "$RUN_DIR/logs/hyprland.log"
+  : > "$RUN_DIR/logs/daemon.log"
+  : > "$RUN_DIR/logs/ryogami.log"
+
+  # The nested compositor runs headless on the session's own runtime dir; the
+  # session script scrubs the inherited signature and refuses to start the
+  # shell unless the nested instance is provably a different one.
+  local inner=(dbus-run-session -- bash "$RUN_DIR/session.sh")
+  local cap="none (systemd-run unavailable; process group only)"
+  # Test hook: run on a caller-supplied private bus instead of a fresh
+  # dbus-run-session one. Only docs/tests/phase8-handover.sh sets it, to prove
+  # the D-Bus name handover when an old owner stops before Tenkai starts. ./tenkai
+  # itself never sets TENKAI_BUS_ADDRESS.
+  if [ -n "${TENKAI_BUS_ADDRESS:-}" ]; then
+    inner=(env DBUS_SESSION_BUS_ADDRESS="$TENKAI_BUS_ADDRESS" bash "$RUN_DIR/session.sh")
+    note "using caller-supplied private bus (TENKAI_BUS_ADDRESS); no dbus-run-session"
+  fi
+  local runner=("${inner[@]}")
+  if command -v systemd-run >/dev/null 2>&1 && systemd-run --user --scope --quiet true >/dev/null 2>&1; then
+    runner=(systemd-run --user --scope --quiet \
+      -p MemoryMax=3G -p CPUQuota=200% -- \
+      "${inner[@]}")
+    cap="MemoryMax=3G CPUQuota=200% (systemd-run --user --scope)"
+  fi
+  setsid "${runner[@]}" >> "$RUN_DIR/logs/session.log" 2>&1 &
+  local lp=$!
+  printf '%s\t%s\tnested-launcher\n' "$lp" "$lp" >> "$PID_FILE"
+  note "nested session launched (launcher pid $lp)"
+  note "  cap: $cap"
+  note "  logs: $RUN_DIR/logs/{session,hyprland,daemon}.log"
+  note "  stop: ./tenkai stop"
+}
+
+nested_sig() {  # print the nested instance signature while it is up
+  local d; d="$(ls -d "$TENKAI_DIR/.r"/hypr/*/ 2>/dev/null | head -n1 || true)"
+  [ -n "$d" ] && basename "$d"
+}
+
+nested_hyprctl() {  # $1 = json flag, rest = argv; targeted at the nested instance only
+  local sig="$1"; shift
+  HYPRLAND_INSTANCE_SIGNATURE="$sig" XDG_RUNTIME_DIR="$TENKAI_DIR/.r" hyprctl "$@" 2>/dev/null
+}
+
+cmd_test() {
+  note "=== Phase 6 step-1 test: bar + workspaces (nested) ==="
+
+  # The decisive guard lives in session.sh: it compares the *nested* signature
+  # against the live baseline after the nested compositor starts, and refuses
+  # before the daemon/shell are ever launched.
+  local bsig; bsig="$(baseline_hypr_sig || true)"
+
+  note "--- verify-untouched BEFORE first launch ---"
+  cmd_verify_untouched || die "baseline already dirty before launch — stopping"
+  note
+
+  cmd_run
+
+  # wait for the nested instance + shell to come up
+  local sig="" i=0
+  while [ "$i" -lt 75 ]; do
+    sig="$(nested_sig || true)"
+    [ -n "$sig" ] && [ "$sig" != "$bsig" ] && break
+    sleep 0.4; i=$((i+1))
+  done
+  if [ -z "$sig" ] || [ "$sig" = "$bsig" ]; then
+    note "FAIL  nested Hyprland did not come up (see .run/logs/)"
+    cmd_stop || true
+    return 1
+  fi
+  note "nested instance: $sig"
+  [ "$sig" != "$bsig" ] && note "OK    guard: nested signature differs from live baseline"
+
+  # Persistent workspaces give the bar cells to draw: a real window per
+  # workspace keeps each one alive, then focus a middle one.
+  for w in 1 2 3; do
+    nested_hyprctl "$sig" dispatch workspace "$w" >/dev/null 2>&1 || true
+    nested_hyprctl "$sig" dispatch exec "kitty --hold -e true" >/dev/null 2>&1 || true
+    sleep 0.6
+  done
+  nested_hyprctl "$sig" dispatch workspace 2 >/dev/null 2>&1 || true
+
+  # let the daemon + qs settle
+  sleep 12
+
+  echo
+  echo "=== checklist ==="
+
+  # 1. bar renders — a mapped layer surface named by the shell + no QML load errors
+  local layers shelllog qml_err
+  layers="$(nested_hyprctl "$sig" -j layers || true)"
+  shelllog="$RUN_DIR/logs/shell.log"
+  for cand in "$RUN_DIR/state/tenkai/surfaces/shell.log" \
+              "$RUN_DIR/home/.local/state/tenkai/surfaces/shell.log"; do
+    [ -f "$cand" ] && { shelllog="$cand"; break; }
+  done
+  if printf '%s' "$layers" | grep -qiE 'ryoku|quickshell|tenkai'; then
+    note "TESTED      bar renders: layer surface(s) mapped in the nested compositor"
+    printf '%s' "$layers" | sed -E 's/.*"namespace": ?"([^"]+)".*/              layer: \1/;t;d' | sort -u | head
+  else
+    note "UNVERIFIED  bar renders: no shell layer surface seen via hyprctl -j layers yet"
+  fi
+  if [ -f "$shelllog" ]; then
+    qml_err="$(grep -ciE 'is not a type|is not installed|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Non-existent attached object|Failed to load|Cannot read property' "$shelllog" 2>/dev/null || true)"
+    qml_err="${qml_err:-0}"
+    if [ "$qml_err" = 0 ]; then
+      note "TESTED      shell QML log has no errors ($shelllog)"
+    else
+      note "UNVERIFIED  shell QML log has $qml_err suspicious lines — see $shelllog"
+      grep -iE 'is not a type|is not installed|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Non-existent attached object|Failed to load|Cannot read property' "$shelllog" 2>/dev/null | head -8 | sed 's/^/              /' || true
+    fi
+  else
+    note "UNVERIFIED  shell log not found yet (qs may still be compiling)"
+  fi
+
+  # 2. workspaces match nested Hyprland state
+  local ws ws_nested ws_topic
+  ws="$(nested_hyprctl "$sig" -j workspaces || true)"
+  ws_nested="$(printf '%s' "$ws" | jq 'length' 2>/dev/null || echo 0)"
+  ws_topic="$(timeout 2 socat - UNIX-CONNECT:"$TENKAI_DIR/.r/tenkai-shell.sock" <<< 'subscribe wm' 2>/dev/null | head -n1 | jq -r '.workspaces | length' 2>/dev/null || echo '?')"
+  if [ -n "$ws" ] && [ "$ws_nested" = "$ws_topic" ]; then
+    note "TESTED      workspaces: nested compositor=$ws_nested, daemon topic=$ws_topic (match)"
+  elif [ -n "$ws" ]; then
+    note "UNVERIFIED  workspaces: nested compositor=$ws_nested, daemon topic=$ws_topic (mismatch)"
+  else
+    note "UNVERIFIED  workspaces: no data from the nested instance"
+  fi
+  if command -v grim >/dev/null 2>&1; then
+    mkdir -p "$RUN_DIR/shots"
+    if XDG_RUNTIME_DIR="$TENKAI_DIR/.r" WAYLAND_DISPLAY=wayland-1 grim -o WAYLAND-1 "$RUN_DIR/shots/test-bar.png" 2>/dev/null; then
+      note "TESTED      pixel capture: .run/shots/test-bar.png ($(identify -format '%wx%h' "$RUN_DIR/shots/test-bar.png" 2>/dev/null))"
+    fi
+  fi
+
+  # 3. process hygiene
+  local daemon_pid; daemon_pid="$(pgrep -f "$RUN_DIR/bin/tenkai-shell daemon" | head -n1 || true)"
+  if [ -n "$daemon_pid" ]; then
+    note "TESTED      daemon up (pid $daemon_pid)"
+  else
+    note "UNVERIFIED  daemon not seen (see .run/logs/daemon.log)"
+  fi
+
+  # 4. zero outbound network from our processes
+  local ourpids outbound
+  ourpids="$(cat "$PID_FILE" 2>/dev/null | awk '{print $1}' | paste -sd, -)"
+  if command -v ss >/dev/null 2>&1 && [ -n "$ourpids" ]; then
+    outbound="$(ss -Htnp state established 2>/dev/null | grep -E "pid=(${ourpids//,/|})" || true)"
+    if [ -z "$outbound" ]; then
+      note "TESTED      zero outbound connections from Tenkai PIDs"
+    else
+      note "UNVERIFIED  outbound connections seen:"; printf '%s\n' "$outbound" | sed 's/^/              /'
+    fi
+  else
+    note "UNVERIFIED  network check skipped (ss unavailable)"
+  fi
+
+  echo
+  echo "=== stopping ==="
+  cmd_stop || true
+  sleep 2
+  local stray
+  stray="$(pgrep -af "$RUN_DIR/bin/tenkai-shell|quickshell/shell|tenkai-wm-hyprland" | grep -v pgrep || true)"
+  if [ -z "$stray" ]; then
+    note "TESTED      clean shutdown: no stray Tenkai processes"
+  else
+    note "UNVERIFIED  stray processes remain:"; printf '%s\n' "$stray" | sed 's/^/              /'
+  fi
+
+  echo
+  note "--- verify-untouched AFTER first launch ---"
+  if ! cmd_verify_untouched; then
+    note "FAIL  live config changed during the test — investigate immediately"
+    return 1
+  fi
+}
+
+# ---------------------------------------------------------------------------
+# LIVE TRIAL — owner-run. `./tenkai live` joins the owner's real session so Tenkai
+# can be tried on the live display. It is never started by the harness, it
+# never dispatches anything in the live compositor, and it claims only what
+# the chosen profile lists (printed before anything starts).
+#
+#   ./tenkai live --profile overlay   Tenkai runs beside the live shell: launcher,
+#                                  control centre and Settings only. No D-Bus
+#                                  names, no screen edge, no wallpaper.
+#   ./tenkai live --profile full      Tenkai replaces the live shell. Refuses while
+#                                  the old shell still owns the notification
+#                                  or tray names, prints what it will do and
+#                                  waits for YES.
+#   ./tenkai live-stop                stop only Tenkai's own recorded pids and their
+#                                  descendants, and restore what it changed.
+#   ./tenkai live-status              what is running, in which profile.
+# ---------------------------------------------------------------------------
+
+live_ppid() { # $1 = pid -> ppid (parsed after the comm, so a name with spaces is safe)
+  local s rest
+  s="$(cat "/proc/$1/stat" 2>/dev/null || true)"
+  [ -n "$s" ] || return 1
+  rest="${s##*) }"
+  printf '%s' "$rest" | awk '{print $2}'
+}
+
+live_descendants() { # $1 = root pid -> every descendant, deepest first
+  local root="$1" p ppid child
+  local -a map=() order=() kids=()
+  for p in /proc/[0-9]*; do
+    p="${p##*/}"
+    ppid="$(live_ppid "$p" 2>/dev/null || true)"
+    [ -n "$ppid" ] || continue
+    map+=("$p:$ppid")
+  done
+  # depth-first over the parent links, children before parents
+  local -a stack=("$root") seen=()
+  while [ ${#stack[@]} -gt 0 ]; do
+    p="${stack[${#stack[@]}-1]}"
+    stack=("${stack[@]:0:${#stack[@]}-1}")
+    kids=()
+    local entry
+    for entry in "${map[@]}"; do
+      child="${entry%%:*}"
+      [ "${entry##*:}" = "$p" ] && kids+=("$child")
+    done
+    local k
+    for k in "${kids[@]}"; do
+      local dup=0 s
+      for s in "${seen[@]}"; do [ "$s" = "$k" ] && dup=1; done
+      [ "$dup" = 1 ] && continue
+      seen+=("$k")
+      stack+=("$k")
+      order+=("$k")
+    done
+  done
+  # reverse: deepest first
+  local i
+  for (( i=${#order[@]}-1; i>=0; i-- )); do printf '%s\n' "${order[$i]}"; done
+}
+
+live_any_alive() { # $1 = pidfile
+  [ -f "$1" ] || return 1
+  local p
+  while read -r p _; do
+    [ -n "${p:-}" ] && [ -d "/proc/$p" ] && return 0
+  done < "$1"
+  return 1
+}
+
+live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
+  local profile="$1" rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  case "$profile" in
+  overlay)
+    # The names the shell registers with the compositor over the global-shortcuts
+    # protocol (shell.qml's CustomShortcut list). They are names only: the
+    # surfaces they open are gated by the module flags.
+    for sc in barToggle clipboard compress install launcher overview quicksettings screenshot stash visualizer visualizer-overlay visualizer-place wallpaper-menu; do
+      printf 'global-shortcut\ttenkai:%s\tshortcut name registered by the shell\n' "$sc"
+    done
+    printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-osd\tOSD, only on a brightness/volume change\n'
+    printf 'layer-namespace\tryoku-widgets\tthe transparent desktop-widget layer (always mapped)\n'
+    printf 'socket\t%s\ttenkai-shell control socket\n' "$rt/tenkai-shell.sock"
+    ;;
+  full)
+    for sc in barToggle clipboard compress install launcher overview quicksettings screenshot stash visualizer visualizer-overlay visualizer-place wallpaper-menu; do
+      printf 'global-shortcut\ttenkai:%s\tshortcut name registered by the shell\n' "$sc"
+    done
+    printf 'dbus-name\torg.freedesktop.Notifications\tnotification server\n'
+    printf 'dbus-name\torg.kde.StatusNotifierWatcher\ttray watcher\n'
+    printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
+    printf 'layer-namespace\tryoku-osd\tOSD surface\n'
+    printf 'layer-namespace\tryoku-frame\tthe bar (top edge)\n'
+    printf 'layer-namespace\tryoku-tray\tthe tray (edge panel)\n'
+    printf 'layer-namespace\tryoku-notifications\tnotification column (edge)\n'
+    printf 'layer-namespace\twallpaper-bg\tthe wallpaper\n'
+    printf 'socket\t%s\ttenkai-shell control socket\n' "$rt/tenkai-shell.sock"
+    printf 'socket\t%s\tryogami socket\n' "$rt/ryogami.sock"
+    ;;
+  esac
+}
+
+live_layer_namespaces() { # the namespaces the live compositor currently has
+  # The shape of `hyprctl -j layers` has changed between Hyprland versions, so
+  # this walks the whole tree and takes every dict that carries a namespace.
+  hyprctl -j layers 2>/dev/null | python3 -c "
+import json,sys
+try: d=json.load(sys.stdin)
+except Exception: sys.exit(0)
+def walk(node):
+    if isinstance(node, dict):
+        if node.get('namespace'):
+            print('%s\t%s' % (node['namespace'], node.get('pid', '?')))
+        for v in node.values():
+            walk(v)
+    elif isinstance(node, list):
+        for v in node:
+            walk(v)
+walk(d)
+" 2>/dev/null || true
+}
+
+live_dbus_owner() { # $1 = well-known name -> owning pid (or empty)
+  # The read must never abort the caller: a bus that is not reachable is
+  # simply "nobody owns it".
+  busctl --user list --no-pager 2>/dev/null | awk -v n="$1" '$1==n {print $2; exit}' || true
+}
+
+live_shortcut_owner() { # $1 = shortcut name -> "yes" if the live session has it
+  hyprctl globalshortcuts 2>/dev/null | grep -q "^$1 " && echo yes || echo ""
+  return 0
+}
+
+live_print_claims() { # $1 = profile, $2 = abort-any | abort-unexpected
+  local profile="$1" mode="${2:-abort-any}" kind name note owner collide=0
+  echo "=== what Tenkai will claim (profile: $profile) ==="
+  printf '%-16s %-34s %-26s %s\n' KIND NAME LIVE-SESSION-OWNS NOTES
+  while IFS=$'\t' read -r kind name note; do
+    owner="free"
+    case "$kind" in
+    dbus-name)     owner="$(live_dbus_owner "$name")" ;;
+    layer-namespace)
+      owner="$(live_layer_namespaces | awk -F'\t' -v n="$name" '$1==n {print $2; exit}')" ;;
+    socket)        [ -e "$name" ] && owner="present" ;;
+    global-shortcut) owner="$(live_shortcut_owner "$name")" ;;
+    esac
+    if [ -n "$owner" ] && [ "$owner" != "free" ]; then
+      # In the full profile these collisions are the point: the old shell must
+      # be stopped first, and the caller checks the two D-Bus names by hand.
+      case "$kind:$name" in
+      dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher) ;;
+      layer-namespace:wallpaper-bg|layer-namespace:ryoku-frame|layer-namespace:ryoku-tray|layer-namespace:ryoku-notifications) ;;
+      *) collide=1 ;;
+      esac
+      printf '%-16s %-34s %-26s %s\n' "$kind" "$name" "OWNED BY PID $owner" "$note"
+    else
+      printf '%-16s %-34s %-26s %s\n' "$kind" "$name" "free" "$note"
+    fi
+  done < <(live_claims "$profile")
+  echo
+  if [ "$collide" = 1 ]; then
+    echo "COLLISION: something above is already owned by the live session."
+  else
+    echo "No collision: every name, socket and layer namespace above is free."
+  fi
+  return $collide
+}
+
+live_write_modules() { # $1 = profile -> the module flags for this run
+  local profile="$1" f
+  mkdir -p "$RUN_DIR/config/tenkai" "$LIVE_BACKUP_DIR"
+  for f in shell.json visualizer.json keypresses.json; do
+    [ -f "$RUN_DIR/config/tenkai/$f" ] && cp -f "$RUN_DIR/config/tenkai/$f" "$LIVE_BACKUP_DIR/$f"
+  done
+  local modules='{"bar":true,"control_center":true,"launcher":true,"notifications":true,"settings":true,"tray":true,"wallpaper":true}'
+  if [ "$profile" = "overlay" ]; then
+    # Only the launcher, the control centre and Settings. No bar, no
+    # notifications, no tray, no wallpaper: none of those may touch the live
+    # session while the old shell is still running.
+    modules='{"bar":false,"control_center":true,"launcher":true,"notifications":false,"settings":true,"tray":false,"wallpaper":false}'
+  fi
+  if [ -f "$RUN_DIR/config/tenkai/shell.json" ]; then
+    python3 - "$RUN_DIR/config/tenkai/shell.json" "$modules" <<'PY'
+import json,sys
+path, mods = sys.argv[1], json.loads(sys.argv[2])
+d = json.load(open(path))
+d["modules"] = mods
+json.dump(d, open(path + ".tmp", "w"), indent=2)
+import os; os.replace(path + ".tmp", path)
+PY
+  else
+    printf '{\n  "modules": %s\n}\n' "$modules" > "$RUN_DIR/config/tenkai/shell.json"
+  fi
+  if [ "$profile" = "overlay" ]; then
+    # The visualiser is not a module flag: it is its own config. Off in
+    # overlay mode, because it paints a full-screen layer on the desktop.
+    printf '{\n    "enabled": false\n}\n' > "$RUN_DIR/config/tenkai/visualizer.json"
+  fi
+  echo "module flags for $profile: $modules"
+}
+
+write_live_session() { # $1 = profile, $2 = display, $3 = signature, $4 = runtime dir, $5 = real power (1 = power actions are live)
+  local profile="$1" wl="$2" sig="$3" rt="$4" real_power="${5:-0}" bus
+  bus="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$rt/bus}"
+  # R1 for the live profiles too: .run/bin must carry Tenkai's scripts and the
+  # shadow stubs before this session gets a PATH that starts with it, or the
+  # live system's ryoku* helpers would resolve from /usr/bin.
+  tenkai_provision_bin
+  # matugen: the same config, with kitty's colours rendering into the real cache
+  # (~/.cache/tenkai/kitty-colors.conf) -- the file the owner's kitty.conf includes.
+  tenkai_seed_matugen "$HOME/.cache"
+  # Every injected block is a SINGLE line: the substitution below is one sed
+  # expression, and a newline in a value would break it (the full profile's
+  # script was never substituted before this was noticed).
+  local ryogami='# wallpaper module is off in this profile: ryogami is not started'
+  local polkit='# the polkit agent is off in this profile: only the full profile registers one'
+  # The power actions are stubbed unless the owner asks for them to be real
+  # (--real-power). The default stays stubbed: a mis-click must not end the
+  # session. Lock is not a power action and is never stubbed.
+  local power='export TENKAI_STUB_POWER=1'
+  [ "$real_power" = "1" ] && power='# --real-power: the power actions are live'
+  if [ "$profile" = "full" ]; then
+    ryogami='export TENKAI_ALLOW_LIVE_DISPLAY=1; "$RUN/bin/ryogami" daemon >> "$log/live-ryogami.log" 2>&1 & RPID=$!; record "$RPID" ryogami'
+    # The agent registers only if the session's polkit slot is free; the daemon
+    # fails closed when another agent holds it, so a second agent can never
+    # appear.
+    polkit='export TENKAI_POLKIT_AGENT=1'
+  fi
+  cat > "$RUN_DIR/live-session.sh" <<SESSION
+#!/usr/bin/env bash
+set -uo pipefail
+TENKAI_DIR="__TENKAI_DIR__"
+RUN="\$TENKAI_DIR/.run"
+# Tenkai's own state stays inside the project: HOME and every XDG_* that Tenkai
+# writes to point at .run. The launcher's apps are handed the owner's real
+# environment through TENKAI_APP_HOME (tenkai-app re-exports it for the child).
+export HOME="\$RUN/home"
+export XDG_CONFIG_HOME="\$RUN/config"
+export XDG_CACHE_HOME="\$HOME/.cache"
+export XDG_STATE_HOME="\$RUN/state"
+export XDG_DATA_HOME="\$RUN/data"
+export XDG_DATA_DIRS="__REAL_DATA_DIRS__"
+export XDG_RUNTIME_DIR="$rt"
+export WAYLAND_DISPLAY="$wl"
+export HYPRLAND_INSTANCE_SIGNATURE="$sig"
+export DBUS_SESSION_BUS_ADDRESS="$bus"
+export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
+# R1: .run/bin first, then a fixed system list. The caller's PATH is NOT used:
+# the live session's PATH resolves the live system's ryoku*/ryogami* helpers.
+export PATH="\$RUN/bin:$TENKAI_SYSTEM_PATH"
+export QML2_IMPORT_PATH="\$RUN/qml"
+export QML_IMPORT_PATH="\$RUN/qml"
+export TENKAI_SHELL_DIR="\$TENKAI_DIR/src/ryoku/shell"
+export TENKAI_APP_HOME="__REAL_HOME__"
+export TENKAI_APP_XDG_RUNTIME_DIR="$rt"
+# A live run is not a test run: TENKAI_TEST is deliberately NOT set. But no power
+# action may end the owner's session by accident in the first trial: logout,
+# reboot, suspend and shutdown are all stubbed (TENKAI_STUB_POWER=1). Lock is not
+# a power action and stays real.
+__POWER__
+export QSG_RENDER_LOOP=threaded
+export QT_QPA_PLATFORM=wayland
+unset RYOKU_SHELL_DIR RYOKU_PATH RYOKU_WM
+
+log="\$RUN/logs"; pidfile="\$RUN/live-pids"
+note() { printf '%s\n' "\$*" >> "\$log/live-session.log"; }
+record() { local p="\$1" n="\$2" pg; pg="\$(ps -o pgid= -p "\$p" 2>/dev/null | tr -d ' ')"; printf '%s\t%s\t%s\n' "\$p" "\${pg:-\$p}" "\$n" >> "\$pidfile"; }
+
+note "starting Tenkai live session (profile __PROFILE__)"
+__RYOGAMI__
+__POLKIT__
+"\$RUN/bin/tenkai-shell" daemon >> "\$log/live-daemon.log" 2>&1 &
+DPID=\$!; record "\$DPID" tenkai-shell-daemon
+note "daemon pid \$DPID"
+trap 'kill -TERM \$DPID 2>/dev/null; [ -n "\${RPID:-}" ] && kill -TERM \$RPID 2>/dev/null; exit 0' TERM INT
+wait "\$DPID"
+note "daemon exited; live session done"
+SESSION
+  # The account's home, not $HOME: the live run may be started from a shell
+  # whose HOME is already Tenkai's confined one.
+  local real_home
+  real_home="$(getent passwd "$(id -u)" | cut -d: -f6)"
+  [ -n "$real_home" ] || real_home="$HOME"
+  # The substitution is done in python, not sed: a value may contain '&'
+  # (a shell redirect), and in a sed replacement '&' means "the whole match".
+  # That silently corrupted the full profile's script until the start test
+  # caught it.
+  python3 - "$RUN_DIR/live-session.sh" "$TENKAI_DIR" "$profile" "$ryogami" "$polkit" "$power" \
+    "$real_home" "$real_home/.local/share:$real_home/.local/share/flatpak/exports/share:/usr/local/share:/usr/share" <<'PY'
+import sys
+path = sys.argv[1]
+keys = ["__TENKAI_DIR__", "__PROFILE__", "__RYOGAMI__", "__POLKIT__", "__POWER__",
+        "__REAL_HOME__", "__REAL_DATA_DIRS__"]
+text = open(path).read()
+for key, value in zip(keys, sys.argv[2:]):
+    text = text.replace(key, value)
+open(path, "w").write(text)
+PY
+  if grep -q '__[A-Z_]*__' "$RUN_DIR/live-session.sh"; then
+    printf 'tenkai: the live session script still has a placeholder in it; refusing to start\n' >&2
+    grep -n '__[A-Z_]*__' "$RUN_DIR/live-session.sh" >&2
+    return 1
+  fi
+  chmod +x "$RUN_DIR/live-session.sh"
+}
+
+# live_all_gone reports whether every recorded Tenkai process is gone, descendants
+# included. The fallback must only run when this is true: two shells at once
+# would fight over the same names.
+live_all_gone() {
+  [ -f "$LIVE_PID_FILE" ] || return 0
+  local -a roots=() stack=()
+  local p _
+  while read -r p _; do
+    [ -n "${p:-}" ] && roots+=("$p")
+  done < "$LIVE_PID_FILE"
+  [ ${#roots[@]} -gt 0 ] || return 0
+
+  # One pass over /proc, with no subprocesses at all: a pid -> ppid table the
+  # walk below follows. The old version forked cat+awk for every process and
+  # re-scanned the whole table once per recorded pid, so a 15 s readiness loop
+  # in `tenkai start` ran for minutes -- which is why the start test hung.
+  local -A kidOf=()   # named apart from live_descendants' indexed kids: shellcheck
+                       # shares a variable's type across functions, and the -A here
+                       # made it read the indexed one as associative (SC2190)
+  local stat rest q pp
+  for p in /proc/[0-9]*; do
+    q="${p##*/}"
+    [ -r "$p/stat" ] || continue
+    IFS= read -r stat < "$p/stat" 2>/dev/null || continue
+    rest="${stat##*) }"
+    # after "comm) ": field 1 is the state, field 2 the ppid
+    pp="${rest#* }}"
+    pp="${pp%% *}"
+    [ -n "$pp" ] && kidOf["$pp"]+="$q "
+  done
+
+  stack=("${roots[@]}")
+  while [ ${#stack[@]} -gt 0 ]; do
+    p="${stack[0]}"; stack=("${stack[@]:1}")
+    [ -d "/proc/$p" ] && return 1
+    for pp in ${kidOf[$p]:-}; do
+      stack+=("$pp")
+    done
+  done
+  return 0
+}
+
+# live_ready reports whether Tenkai is up: its bar layer is mapped and it owns the
+# notification name. Both are read-only checks against the live session.
+live_ready() {
+  # The bar layer is mapped and the notification name belongs to one of Tenkai's
+  # own recorded processes. Both are read-only checks against the live session.
+  hyprctl -j layers 2>/dev/null | grep -q "ryoku-frame" || return 1
+  local owner p
+  owner="$(live_dbus_owner org.freedesktop.Notifications)"
+  [ -n "$owner" ] || return 1
+  while read -r p _; do
+    [ -n "${p:-}" ] && [ "$p" = "$owner" ] && return 0
+  done < "$LIVE_PID_FILE"
+  return 1
+}
+
+# cmd_start is the NON-interactive start for the autostart line. It never asks a
+# question, it is idempotent, it runs the same collision preflight as
+# `./tenkai live --profile full`, and it can fall back to the old shell if Tenkai does
+# not come up.
+cmd_start() {
+  local profile="full" fallback="" real_power=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --profile) profile="${2:-}"; shift 2 || true ;;
+      --fallback) fallback="${2:-}"; shift 2 || true ;;
+      --real-power) real_power=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      *) die "usage: ./tenkai start [--profile full] [--fallback \"command\"] [--real-power]" ;;
+    esac
+  done
+  case "$profile" in overlay|full) ;; *) die "usage: ./tenkai start [--profile full] ..." ;; esac
+
+  local stamp logf
+  stamp="$(date +%Y%m%d-%H%M%S)"
+  logf="$RUN_DIR/logs/tenkai-start-$stamp.log"
+  mkdir -p "$RUN_DIR/logs"
+  # The log is the record the owner reads if the start goes wrong.
+  exec > >(tee -a "$logf") 2>&1
+
+  note "tenkai start: profile=$profile real_power=$real_power stamp=$stamp"
+
+  # 0. idempotent: a running Tenkai is left alone.
+  if live_any_alive "$LIVE_PID_FILE"; then
+    note "Tenkai is already running; nothing to do"
+    return 0
+  fi
+  if live_any_alive "$PID_FILE"; then
+    note "a nested Tenkai session is running; refusing to start a live one"
+    return 1
+  fi
+
+  # 1. the live session we are joining
+  local wl="${WAYLAND_DISPLAY:-}" sig="${HYPRLAND_INSTANCE_SIGNATURE:-}" rt="${XDG_RUNTIME_DIR:-}"
+  [ -n "$wl" ] || { note "no WAYLAND_DISPLAY in this shell: the autostart line must run inside the session"; return 1; }
+  [ -n "$rt" ] || rt="/run/user/$(id -u)"
+  [ -e "$rt/$wl" ] || { note "the live wayland socket $rt/$wl is missing"; return 1; }
+  [ -n "$sig" ] || { note "no HYPRLAND_INSTANCE_SIGNATURE in this shell"; return 1; }
+  note "joining the live session: display=$wl signature=$sig runtime=$rt"
+
+  # 2. the preflight: in the full profile the old shell must be gone. This is
+  # where an autostart fails loudly instead of hanging.
+  if [ "$profile" = "full" ]; then
+    local n owner
+    for n in org.freedesktop.Notifications org.kde.StatusNotifierWatcher; do
+      owner="$(live_dbus_owner "$n")"
+      if [ -n "$owner" ]; then
+        note "REFUSING: PID $owner still owns $n."
+        note "  Stop the previous shell first (its stop command is in .local/tenkai.local.env), or use --fallback."
+        return 1
+      fi
+    done
+  fi
+  live_print_claims "$profile" abort-unexpected || {
+    note "REFUSING: Tenkai would claim something the live session already owns"
+    return 1
+  }
+
+  # 3. start
+  live_write_modules "$profile"
+  write_live_session "$profile" "$wl" "$sig" "$rt" "$real_power"
+  : > "$LIVE_PID_FILE"
+  : > "$RUN_DIR/logs/live-session.log"
+  setsid bash "$RUN_DIR/live-session.sh" >> "$RUN_DIR/logs/live-session.log" 2>&1 &
+  local launcher=$!
+  printf '%s\t%s\t%s\n' "$launcher" "$launcher" "live-launcher" >> "$LIVE_PID_FILE"
+  note "Tenkai starting (pid $launcher)"
+
+  # 4. the self-monitor
+  local q="" i=0
+  while [ $i -lt 120 ]; do
+    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $TENKAI_DIR/src/ryoku/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
+    [ -n "$q" ] && break
+    i=$((i + 1)); sleep 0.5
+  done
+  [ -n "$q" ] && printf '%s\t%s\t%s\n' "$q" "$q" "live-shell" >> "$LIVE_PID_FILE"
+  setsid python3 "$TENKAI_DIR/docs/tests/live-monitor.py" >> "$RUN_DIR/logs/live-monitor.out" 2>&1 &
+  printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_TOOLS_FILE"
+
+  # 5. the fallback: if Tenkai does not come up, the previous shell may take
+  # over, but never while any Tenkai process is alive. With no --fallback given,
+  # the previous shell's own start command (from the local config) is used; if
+  # that is not configured, there is no fallback and the log says so.
+  if [ -z "$fallback" ] && [ "$profile" = "full" ]; then
+    fallback="$(local_prev_shell_start || true)"
+    [ -n "$fallback" ] && note "no --fallback given; using the previous shell's start command from the local config"
+  fi
+  if [ -n "$fallback" ]; then
+    note "waiting up to 15 s for Tenkai to come up (fallback: $fallback)"
+    i=0
+    while [ $i -lt 30 ]; do
+      live_ready && break
+      live_all_gone || break
+      i=$((i + 1)); sleep 0.5
+    done
+    if live_ready; then
+      note "Tenkai is up (bar layer and notification name); the fallback was not run"
+    elif live_all_gone; then
+      note "Tenkai did not come up and no Tenkai process is left; running the fallback once"
+      eval "$fallback" >>"$logf" 2>&1 || note "the fallback command failed"
+    else
+      note "Tenkai is running but not ready; the fallback was NOT run (two shells would fight)"
+    fi
+  fi
+  note "log: $logf"
+  return 0
+}
+
+# cmd_scrub_check greps the TRACKED tree for anything personal: the built-in
+# patterns plus the terms in .local/scrub-terms.txt (which is not tracked, so
+# the public repository never carries them). It prints every hit and exits
+# non-zero if there is one.
+cmd_scrub_check() {
+  local terms_file="$TENKAI_DIR/.local/scrub-terms.txt"
+  # A personal home is a path that STARTS with /home/<name>: a relative
+  # ".run/home/..." is Tenkai's own tree, not the owner's home.
+  local -a pats=("serpantinum" "serpentinum" "(^|[[:space:]\"'\`(,=:;])/home/[A-Za-z0-9._-]+")
+  if [ -f "$terms_file" ]; then
+    local t
+    while read -r t; do
+      [ -n "$t" ] && pats+=("$t")
+    done < "$terms_file"
+  fi
+  local hits=0 f line
+  for f in $(git ls-files 2>/dev/null); do
+    [ -f "$f" ] || continue
+    for line in "${pats[@]}"; do
+      if grep -InE "$line" "$f" 2>/dev/null | head -5 | while IFS= read -r hit; do
+        case "$hit" in
+        *"/home/user"*|*"/home/<"*|*"/home/testuser"*|*"$TENKAI_DIR"*) continue ;;
+        # the check's own pattern definitions are not a finding
+        *'pats=('*|*'grep -rIil'*) continue ;;
+        esac
+        printf '  %s: %s\n' "$f" "$hit"
+      done | grep . ; then
+        hits=$((hits + 1))
+      fi
+    done
+  done
+  if [ "$hits" -gt 0 ]; then
+    note "SCRUB CHECK: FAIL ($hits file(s) carry something personal)"
+    return 1
+  fi
+  note "SCRUB CHECK: PASS (the tracked tree carries nothing personal)"
+  return 0
+}
+
+# cmd_export_clean copies the tracked, scrubbed files into a directory, for the
+# public repository. It refuses to copy anything if the scrub check finds a
+# hit, so a public tree can never carry the personal setup.
+cmd_export_clean() {
+  local dir="${1:-}"
+  [ -n "$dir" ] || die "usage: ./tenkai export-clean <dir>"
+  if ! cmd_scrub_check; then
+    die "refusing to export: the scrub check found something personal in the tracked tree"
+  fi
+  rm -rf "$dir"
+  mkdir -p "$dir"
+  local f
+  while read -r f; do
+    [ -f "$f" ] || continue
+    mkdir -p "$dir/$(dirname -- "$f")"
+    cp -p "$f" "$dir/$f"
+  done < <(git ls-files)
+  note "exported the tracked tree to $dir"
+  note "check it yourself before publishing:  grep -rIil -e serpantinum -e serpentinum $dir"
+  return 0
+}
+
+cmd_live() {
+  local profile="" list=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --profile) profile="${2:-}"; shift 2 || true ;;
+      --list) list=1; shift ;;
+      -h|--help) usage; return 0 ;;
+      *) die "usage: ./tenkai live --profile overlay|full [--list]" ;;
+    esac
+  done
+  case "$profile" in overlay|full) ;; *) die "usage: ./tenkai live --profile overlay|full [--list]" ;; esac
+
+  # --list: print the claim table and exit. Read-only (busctl/hyprctl/qs are
+  # queried, nothing is joined); used to review what a profile would claim
+  # without starting anything.
+  if [ "$list" = 1 ]; then
+    local mode=abort-any
+    [ "$profile" = full ] && mode=abort-unexpected
+    live_print_claims "$profile" "$mode" || true
+    return 0
+  fi
+
+  # 0. Tenkai must not already be running.
+  if live_any_alive "$LIVE_PID_FILE"; then
+    die "Tenkai is already running (live pids in $LIVE_PID_FILE): run './tenkai live-stop' first"
+  fi
+  if live_any_alive "$PID_FILE"; then
+    die "a nested Tenkai session is running: run './tenkai stop' first"
+  fi
+
+  # 1. the live session we are joining
+  local wl="${WAYLAND_DISPLAY:-}" sig="${HYPRLAND_INSTANCE_SIGNATURE:-}" rt="${XDG_RUNTIME_DIR:-}"
+  [ -n "$wl" ] || die "no WAYLAND_DISPLAY in this shell: run './tenkai live' from a terminal in your live session"
+  [ -n "$rt" ] || rt="/run/user/$(id -u)"
+  [ -e "$rt/$wl" ] || die "the live wayland socket $rt/$wl is missing: this is not your live session"
+  [ -n "$sig" ] || die "no HYPRLAND_INSTANCE_SIGNATURE in this shell: run './tenkai live' from a terminal in your live session"
+  note "joining the live session: display=$wl signature=$sig runtime=$rt"
+
+  # 2. what we will claim, and whether the live shell already owns it
+  echo
+  if [ "$profile" = "overlay" ]; then
+    if ! live_print_claims "$profile" abort-any; then
+      die "refusing to start: Tenkai would claim something your live shell already owns"
+    fi
+  else
+    if ! live_print_claims "$profile" abort-unexpected; then
+      die "refusing to start: Tenkai would claim something your live shell already owns"
+    fi
+  fi
+
+  # 3. full profile: the old shell must be gone, and the owner must agree
+  if [ "$profile" = "full" ]; then
+    local n owner
+    for n in org.freedesktop.Notifications org.kde.StatusNotifierWatcher; do
+      owner="$(live_dbus_owner "$n")"
+      if [ -n "$owner" ]; then
+        local prev_stop
+        prev_stop="$(local_prev_shell_stop || true)"
+        die "refusing: PID $owner still owns $n.
+     Stop the previous shell first${prev_stop:+:
+       $prev_stop}
+     then run this again. (docs/LIVE-CHECKLIST.md has the full runbook.)"
+      fi
+    done
+    echo "Tenkai --profile full will:"
+    echo "  * take org.freedesktop.Notifications and org.kde.StatusNotifierWatcher on the live bus"
+    echo "  * draw the wallpaper, the bar, the tray and the notification column on your display"
+    echo "  * start ryogami with the live-display guard explicitly overridden"
+    echo "  * keep every file it writes inside $RUN_DIR"
+    echo "  * leave your Hyprland config untouched"
+    printf 'Type YES to continue: '
+    local answer=""
+    read -r answer || true
+    [ "$answer" = "YES" ] || die "aborted (answer was '${answer}')"
+  fi
+
+  # 4. module flags and the session script
+  live_write_modules "$profile"
+  write_live_session "$profile" "$wl" "$sig" "$rt" 0
+  : > "$LIVE_PID_FILE"
+  : > "$RUN_DIR/logs/live-session.log"
+  setsid bash "$RUN_DIR/live-session.sh" >> "$RUN_DIR/logs/live-session.log" 2>&1 &
+  local launcher=$!
+  printf '%s\t%s\t%s\n' "$launcher" "$launcher" "live-launcher" >> "$LIVE_PID_FILE"
+
+  # 5. wait for the shell to come up, then the self-monitor
+  local q="" i=0
+  while [ $i -lt 120 ]; do
+    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $TENKAI_DIR/src/ryoku/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
+    [ -n "$q" ] && break
+    i=$((i + 1)); sleep 0.5
+  done
+  [ -n "$q" ] || die "the Tenkai shell did not come up (see $RUN_DIR/logs/live-daemon.log)"
+  setsid python3 "$TENKAI_DIR/docs/tests/live-monitor.py" >> "$RUN_DIR/logs/live-monitor.out" 2>&1 &
+  printf '%s\t%s\t%s\n' "$!" "$!" "live-monitor" >> "$LIVE_TOOLS_FILE"
+  echo "$profile" > "$LIVE_PROFILE_FILE"
+
+  echo
+  echo "Tenkai is live (profile: $profile)."
+  echo "  shell pid:   $q"
+  echo "  monitor:     $RUN_DIR/logs/live-monitor-*.log (CPU and RSS every 5 s)"
+  echo "  launcher:    hyprctl dispatch 'hl.dsp.global(\"tenkai:launcher\")'"
+  echo "  quick settings: hyprctl dispatch 'hl.dsp.global(\"tenkai:quicksettings\")'"
+  echo "  fallback:    qs ipc --pid $q call shell openSurface \"\" launcher"
+  echo "  stop:        ./tenkai live-stop"
+  if [ "$profile" = "overlay" ]; then
+    echo
+    echo "Your current shell keeps running: Tenkai has taken no D-Bus name, no screen"
+    echo "edge and no wallpaper in this profile."
+  fi
+}
+
+cmd_live_stop() {
+  if [ ! -f "$LIVE_PID_FILE" ]; then note "tenkai: no live session recorded ($LIVE_PID_FILE)"; return 0; fi
+  local -a roots=() victims=()
+  local p
+  while read -r p _; do
+    [ -n "${p:-}" ] && roots+=("$p")
+  done < "$LIVE_PID_FILE"
+  # descendants first, by /proc parent links: no pgrep, no killall, no names
+  for p in "${roots[@]}"; do
+    while read -r d; do [ -n "$d" ] && victims+=("$d"); done < <(live_descendants "$p")
+  done
+  for p in "${roots[@]}"; do victims+=("$p"); done
+  local i
+  for (( i=${#victims[@]}-1; i>=0; i-- )); do
+    p="${victims[$i]}"
+    [ -d "/proc/$p" ] || continue
+    local c; c="$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null || true)"
+    note "TERM  pid=$p  ${c:0:90}"
+    kill -TERM "$p" 2>/dev/null || true
+  done
+  local waited=0
+  while [ $waited -lt 12 ]; do
+    local alive=0
+    for p in "${victims[@]}"; do [ -d "/proc/$p" ] && alive=1; done
+    [ "$alive" = 0 ] && break
+    sleep 1; waited=$((waited + 1))
+  done
+  for p in "${victims[@]}"; do
+    [ -d "/proc/$p" ] || continue
+    local c; c="$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null || true)"
+    note "KILL  pid=$p  ${c:0:90}"
+    kill -KILL "$p" 2>/dev/null || true
+  done
+  # restore what the live run changed
+  if [ -d "$LIVE_BACKUP_DIR" ]; then
+    local f
+    for f in "$LIVE_BACKUP_DIR"/*.json; do
+      [ -f "$f" ] || continue
+      cp -f "$f" "$RUN_DIR/config/tenkai/$(basename "$f")"
+      note "restored $(basename "$f")"
+    done
+  fi
+  local rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+  for s in "$rt/tenkai-shell.sock" "$rt/ryogami.sock" "$rt/tenkai-hub.lock"; do
+    [ -e "$s" ] && { rm -f "$s"; note "removed $s"; }
+  done
+  if [ -f "$LIVE_TOOLS_FILE" ]; then
+    while read -r tp _; do
+      [ -n "${tp:-}" ] && [ -d "/proc/$tp" ] && { note "TERM  monitor pid=$tp"; kill -TERM "$tp" 2>/dev/null || true; }
+    done < "$LIVE_TOOLS_FILE"
+    rm -f "$LIVE_TOOLS_FILE"
+  fi
+  rm -f "$LIVE_PID_FILE" "$LIVE_PROFILE_FILE"
+  local prev_start prev_name
+  prev_start="$(local_prev_shell_start || true)"
+  prev_name="$(local_prev_shell_name || true)"
+  if [ -n "$prev_start" ]; then
+    note "to bring ${prev_name:-the previous shell} back: $prev_start"
+  else
+    note "the previous shell's start command is not in .local/tenkai.local.env; set TENKAI_PREV_SHELL_START there"
+  fi
+  note "tenkai: live session stopped"
+}
+
+cmd_live_status() {
+  if ! live_any_alive "$LIVE_PID_FILE"; then note "tenkai: no live session running"; return 0; fi
+  note "profile: $(cat "$LIVE_PROFILE_FILE" 2>/dev/null || echo '?')"
+  local p
+  while read -r p _ name; do
+    [ -n "${p:-}" ] || continue
+    if [ -d "/proc/$p" ]; then
+      note "  alive pid=$p  $name  $(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | cut -c1-80)"
+    else
+      note "  gone  pid=$p  $name"
+    fi
+  done < "$LIVE_PID_FILE"
+  note "monitor logs: $(ls -1t "$RUN_DIR"/logs/live-monitor-*.log 2>/dev/null | head -1)"
+}
+
+usage() {
+  local last
+  last="$(grep -n '^set -euo pipefail$' "${BASH_SOURCE[0]}" | cut -d: -f1)"
+  sed -n "2,$((last - 1))p" "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+}
+
+case "${1:-help}" in
+  baseline)         shift; cmd_baseline "${1:-}" ;;
+  verify-untouched) shift; cmd_verify_untouched "${1:-}" ;;
+  verify-prove)     shift; cmd_verify_prove ;;
+  status)           shift; cmd_status ;;
+  run)              shift; cmd_run ;;
+  stop)             shift; cmd_stop ;;
+  live)             shift; cmd_live "$@" ;;
+  scrub-check)      shift; cmd_scrub_check ;;
+  export-clean)     shift; cmd_export_clean "$@" ;;
+  start)            shift; cmd_start "$@" ;;
+  live-stop)        shift; cmd_live_stop "$@" ;;
+  live-status)      shift; cmd_live_status "$@" ;;
+  wallpaper)        shift; cmd_wallpaper "$@" ;;
+  env-check)        shift; cmd_env_check "${1:-}" ;;
+  test)             shift; cmd_test ;;
+  accept)           shift; cmd_accept "$@" ;;
+  help|--help|-h)   usage ;;
+  *) die "unknown subcommand '${1}' — see './tenkai help'" ;;
+esac

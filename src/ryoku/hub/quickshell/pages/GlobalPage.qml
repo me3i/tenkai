@@ -29,7 +29,7 @@ Item {
         var out = [];
         for (var i = 0; i < GlobalSchema.rows.length; i++) {
             var r = GlobalSchema.rows[i];
-            // MEI: weather is off the keep list (no daemon weather, no network),
+            // TENKAI: weather is off the keep list (no daemon weather, no network),
             // so the Location and Temperature-units rows are dropped. They stay in
             // schema/GlobalPage.js; remove this guard to restore them.
             if (r.key === "weatherLocation" || r.key === "weatherUnit")
@@ -63,7 +63,7 @@ Item {
     function readTz() { tzRead.running = false; tzRead.running = true; }
     function applyTimezone(z) {
         if (!z) return;
-        // MEI: the timezone is shown, not set -- Settings never writes /etc/localtime.
+        // TENKAI: the timezone is shown, not set -- Settings never writes /etc/localtime.
         // Disabled, not deleted: tzApply.command = ["timedatectl", "set-timezone", z];
         return;
         tzApply.running = false;
@@ -77,7 +77,7 @@ Item {
     // this does not close Settings.
     function applyDone() {
         pg.readTz();
-        // MEI: Settings never restarts the shell. Disabled, not deleted:
+        // TENKAI: Settings never restarts the shell. Disabled, not deleted:
         // shellRestart.running = false;
         // shellRestart.running = true;
     }
@@ -88,7 +88,7 @@ Item {
     }
     Process {
         id: shellRestart
-        // MEI: no systemd unit backs the shell (it is run per-session), and Settings
+        // TENKAI: no systemd unit backs the shell (it is run per-session), and Settings
         // must not drive systemctl. Disabled, not deleted -- original:
         // command: ["systemctl", "--user", "restart", "ryoku-shell.service"]
         command: ["true"]
@@ -115,7 +115,7 @@ Item {
         query: pg.hub ? pg.hub.query : ""
         onEdited: (k, v) => { if (pg.hub) pg.hub.edit(k, v); }
         onPickRequested: (r) => { if (pg.hub) pg.hub.openPick(r); }
-        // MEI: the timezone is display-only (see applyTimezone). Disabled, not deleted:
+        // TENKAI: the timezone is display-only (see applyTimezone). Disabled, not deleted:
         // onTimezonePickRequested: (r) => tzMap.open()
         onTimezonePickRequested: (r) => {}
     }

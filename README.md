@@ -1,21 +1,23 @@
-# Mei
+# Tenkai · 天界
 
 ```
- ███╗   ███╗███████╗██╗
- ████╗ ████║██╔════╝██║
- ██╔████╔██║█████╗  ██║
- ██║╚██╔╝██║██╔══╝  ██║
- ██║ ╚═╝ ██║███████╗██║
- ╚═╝     ╚═╝╚══════╝╚═╝
+████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗
+╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║
+   ██║   █████╗  ██╔██╗ ██║█████╔╝ ███████║██║
+   ██║   ██╔══╝  ██║╚██╗██║██╔═██╗ ██╔══██║██║
+   ██║   ███████╗██║ ╚████║██║  ██╗██║  ██║██║
+   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝
+                 天  界
 ```
 
-**Lightweight, modular, and visually stunning Quickshell environment** — for
+**天界 — The Celestial Quickshell Environment.** Lightweight, modular, and
+visually stunning — for
 Arch Linux + Hyprland, built by copying, trimming and measuring the
 [Ryoku](https://github.com/Ryoku-dev/ryoku) shell.
 
 ---
 
-## Why Mei
+## Why Tenkai
 
 - **Zero bloat.** Every component was put through a necessity test and
   dependency-traced before it was kept. If it is not on the keep list, it is
@@ -29,7 +31,7 @@ Arch Linux + Hyprland, built by copying, trimming and measuring the
   watch the whole desktop re-colour.
 - **Fully functional Settings.** Reuses Ryoku Settings' look and UI framework
   with Appearance and Shell pages only. It **never** writes or generates your
-  Hyprland config — Mei reads live state, it does not own it.
+  Hyprland config — Tenkai reads live state, it does not own it.
 - **Super+Tab overview.** Expo-style live workspace previews with
   drag-and-drop between workspaces.
 - **Measured motion.** A full animation language — durations, easing curves,
@@ -47,7 +49,7 @@ Arch Linux + Hyprland, built by copying, trimming and measuring the
 | Settings | Appearance & Shell pages (`Super+,`): themes, materials, motion, bar, widgets |
 | Wallpaper | Selector + `SUPER+P` picker + matugen palette pass |
 | Theming | Material You end-to-end: shell, terminal, GTK, btop |
-| Config reload | Settings persist to Mei's own config dir (`~/.config/mei`) |
+| Config reload | Settings persist to Tenkai's own config dir (`~/.config/tenkai`) |
 
 ## Keybinds
 
@@ -68,7 +70,7 @@ Arch Linux + Hyprland, built by copying, trimming and measuring the
 | `Super + W` | Close window · `Super + F` Fullscreen · `Super + A` Float |
 
 These ship in the bundled Hyprland Lua config; the authoritative list always
-lives in `src/mei-configs/hypr/modules/binds.lua`.
+lives in `src/tenkai-configs/hypr/modules/binds.lua`.
 
 ## Quick start
 
@@ -77,8 +79,8 @@ is checked for you — the installer prints exactly what is missing and never
 installs anything without asking.
 
 ```bash
-git clone <repo_url> ~/projects/mei
-cd ~/projects/mei
+git clone <repo_url> ~/projects/tenkai
+cd ~/projects/tenkai
 ./install.sh
 ```
 
@@ -87,26 +89,26 @@ daemons, the blob plugin and the QML modules, then offers each system change
 one at a time — systemd user units, the Hyprland autostart line, the kitty
 colour include, your terminal dotfiles, the Hyprland config, wallpapers, and
 fonts. Your existing `~/.config/hypr` is never overwritten without an
-interactive yes, and existing files are backed up to `*.mei-install.bak`
+interactive yes, and existing files are backed up to `*.tenkai-install.bak`
 first. `--dry-run` prints every step and writes nothing; `--help` lists all
 flags. Then:
 
 ```bash
-./mei status    # nothing running yet
-./mei start     # join this Hyprland session
+./tenkai status    # nothing running yet
+./tenkai start     # join this Hyprland session
 ```
 
-Log out and back in after enabling autostart, and your desktop is Mei.
+Log out and back in after enabling autostart, and your desktop is Tenkai.
 
 ## Layout
 
 ```
 ├── install.sh        the cinematic installer (see above)
-├── mei               the control script: run/test/verify-untouched
+├── tenkai               the control script: run/test/verify-untouched
 ├── src/
-│   ├── ryoku/        the Mei tree (adapted from upstream — never regenerated)
-│   ├── mei-configs/  bundled Hyprland Lua config + terminal dotfiles
-│   └── mei-assets/   wallpapers (empty) + OFL fonts (Space Grotesk, Fraunces)
+│   ├── ryoku/        the Tenkai tree (adapted from upstream — never regenerated)
+│   ├── tenkai-configs/  bundled Hyprland Lua config + terminal dotfiles
+│   └── tenkai-assets/   wallpapers (empty) + OFL fonts (Space Grotesk, Fraunces)
 ├── docs/             runbooks: LIVE-CHECKLIST · ROLLBACK · MODULES
 ├── CHANGES.md        every modification vs upstream
 ├── CREDITS.md        attribution — read this
@@ -115,27 +117,27 @@ Log out and back in after enabling autostart, and your desktop is Mei.
 
 ## Development
 
-Mei is built and tested in a **nested Hyprland** inside a private session — it
+Tenkai is built and tested in a **nested Hyprland** inside a private session — it
 never touches your live desktop:
 
 ```bash
-./mei test             # nested-session test suite
-./mei verify-untouched # prove the live session config hashes are identical
+./tenkai test             # nested-session test suite
+./tenkai verify-untouched # prove the live session config hashes are identical
 ```
 
-`./mei verify-untouched` must pass after any change to the tree — it compares
+`./tenkai verify-untouched` must pass after any change to the tree — it compares
 the live Hyprland/kitty/quickshell configs against a captured baseline.
 
 Honest status: the nested suite and the full cold-start acceptance pass
 (**16/16 product items**, one harness defect since fixed) are green; live
 measurements exist for the overlay stage. The live full-profile trial is not
-complete — see `docs/LIVE-CHECKLIST.md` before you run Mei live, and `docs/ROLLBACK.md`
+complete — see `docs/LIVE-CHECKLIST.md` before you run Tenkai live, and `docs/ROLLBACK.md`
 for the way back. Nothing here has been proven at 144 Hz on your hardware;
 that is what the checklist is for.
 
 ## Credits and license
 
-Mei is a **modified derivative of [Ryoku](https://github.com/Ryoku-dev/ryoku)**
+Tenkai is a **modified derivative of [Ryoku](https://github.com/Ryoku-dev/ryoku)**
 (pinned commit `98a0368253d9628be72b853985878a5db90e1547`, v0.75.5-beta.20,
 "Onogoro"), distributed under the **GNU GPL v3 or later**. Upstream notices
 are kept verbatim in `LICENSE` and `NOTICE`; attribution is in `CREDITS.md`;
@@ -146,4 +148,4 @@ Ryoku's frame-blob renderer is adapted from
 [Caelestia](https://github.com/caelestia-dots/shell) (GPL-3). Fonts: Space
 Grotesk and Fraunces (SIL OFL 1.1); Nerd Fonts for terminal glyph coverage.
 
-Mei is not affiliated with or endorsed by the Ryoku project.
+Tenkai is not affiliated with or endorsed by the Ryoku project.

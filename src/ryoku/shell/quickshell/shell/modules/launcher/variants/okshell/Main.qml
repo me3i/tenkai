@@ -10,7 +10,7 @@ import shell.services
 import "../../../../services/lib/screens.js" as Screens
 import Ryoku.Ui.Singletons
 
-// OkShell's applications-only launcher in Mei's live palette. It deliberately
+// OkShell's applications-only launcher in Tenkai's live palette. It deliberately
 // stays independent of the shared command-palette providers.
 Scope {
     id: root
@@ -34,7 +34,7 @@ Scope {
     readonly property color cOutline: role("outline", "#8a8178")
 
     FileView {
-        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/mei/colors.json"
+        path: (Quickshell.env("XDG_CACHE_HOME") || (Quickshell.env("HOME") + "/.cache")) + "/tenkai/colors.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -52,7 +52,7 @@ Scope {
     // the active coded theme's palette, resolved by the daemon into shell.json's
     // top-level themePalette key (absent for the dynamic Wallpaper/Default variants).
     FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/shell.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/shell.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

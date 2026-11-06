@@ -27,7 +27,7 @@ import (
 // app suite. Match wallpaper off, or a fixed named theme active, leaves the
 // pipeline idle so it never fights the static palette the theme daemon owns.
 //
-// One knob store, one renderer: ~/.config/mei/matugen.json holds mode,
+// One knob store, one renderer: ~/.config/tenkai/matugen.json holds mode,
 // contrast, prefer, the per-app roster and the app-suite toggle. The
 // Hub appearance page writes that file; the daemon reads it and watches it, so a
 // knob save retints exactly as a wallpaper change does. There is no second knob
@@ -51,7 +51,7 @@ import (
 // plane owns colors.json and matugen fans it out.
 
 // matugenKnobs are the scheme controls, read from the one knob store
-// (~/.config/mei/matugen.json). The token values are matugen's own CLI
+// (~/.config/tenkai/matugen.json). The token values are matugen's own CLI
 // vocabulary, so the constructed argv passes them straight through.
 type matugenKnobs struct {
 	Mode             string          // "dark" | "light" | "smart"
@@ -61,7 +61,7 @@ type matugenKnobs struct {
 	Prefer           string          // source-colour pick, e.g. "saturation"
 	SchemeType       string          // matugen -t variant; "" resolves to the default
 	SourceColorIndex int             // 0..4, most dominant first
-	ThemeMeiApps   bool            // theme the GTK / GUI app suite (apps.toml)
+	ThemeTenkaiApps   bool            // theme the GTK / GUI app suite (apps.toml)
 	Templates        map[string]bool // per-app roster, keyed by group
 }
 
@@ -72,7 +72,7 @@ var matugenPrefers = map[string]bool{
 	"less-saturation": true, "value": true, "closest-to-fallback": true,
 }
 
-// The default scheme Mei generates with. A variant picker (matugen.json
+// The default scheme Tenkai generates with. A variant picker (matugen.json
 // schemeType) lets a user pick another; tonal-spot stays the default because the
 // desaturating variants (monochrome, neutral) pull the colour out of a wallpaper.
 // The Hub labels those as desaturating instead of hiding the choice.
@@ -97,12 +97,12 @@ func defaultMatugenKnobs() matugenKnobs {
 		Contrast:       0,
 		Prefer:         "saturation",
 		SchemeType:     matugenSchemeType,
-		ThemeMeiApps: true,
+		ThemeTenkaiApps: true,
 	}
 }
 
 // readMatugenKnobs reads the scheme controls from the one knob store
-// (~/.config/mei/matugen.json), falling back to the shipped defaults for any
+// (~/.config/tenkai/matugen.json), falling back to the shipped defaults for any
 // that are absent so a partial file still produces a valid run.
 func readMatugenKnobs() matugenKnobs {
 	k := defaultMatugenKnobs()
@@ -118,7 +118,7 @@ func readMatugenKnobs() matugenKnobs {
 		Prefer           *string         `json:"prefer"`
 		SchemeType       *string         `json:"schemeType"`
 		SourceColorIndex *int            `json:"sourceColorIndex"`
-		ThemeMeiApps   *bool           `json:"themeRyokuApps"`
+		ThemeTenkaiApps   *bool           `json:"themeRyokuApps"`
 		Templates        map[string]bool `json:"templates"`
 	}
 	if json.Unmarshal(b, &doc) != nil {
@@ -145,8 +145,8 @@ func readMatugenKnobs() matugenKnobs {
 	if doc.SourceColorIndex != nil {
 		k.SourceColorIndex = *doc.SourceColorIndex
 	}
-	if doc.ThemeMeiApps != nil {
-		k.ThemeMeiApps = *doc.ThemeMeiApps
+	if doc.ThemeTenkaiApps != nil {
+		k.ThemeTenkaiApps = *doc.ThemeTenkaiApps
 	}
 	k.Templates = doc.Templates
 	return k
@@ -406,7 +406,7 @@ func ffmpegChroma(img string) (float64, bool) {
 // theme.theme is the master; this is its shadow. Other keys in the file
 // (themeApps) are preserved.
 func syncFollowWallpaper(themeName string) {
-	path := filepath.Join(meiConfigDir(), "theme.json")
+	path := filepath.Join(tenkaiConfigDir(), "theme.json")
 	doc := map[string]any{}
 	if b, err := os.ReadFile(path); err == nil {
 		_ = json.Unmarshal(b, &doc)
@@ -431,7 +431,7 @@ func syncFollowWallpaper(themeName string) {
 // chrome all read), defaulting ON to match the shell's own Config default: a
 // fresh box with no theme.json (or a file missing the key) follows the wallpaper.
 func matchWallpaperOn() bool {
-	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "theme.json"))
+	b, err := os.ReadFile(filepath.Join(tenkaiConfigDir(), "theme.json"))
 	if err != nil {
 		return true
 	}
@@ -450,7 +450,7 @@ func matchWallpaperOn() bool {
 // palette actually lands, unlike stock Adwaita GTK3 which hardcodes its colours.
 // theme.json is the one control-plane file the daemon reads directly.
 func gtkThemeSetting() string {
-	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "theme.json"))
+	b, err := os.ReadFile(filepath.Join(tenkaiConfigDir(), "theme.json"))
 	if err != nil {
 		return "adw"
 	}
@@ -469,7 +469,7 @@ func gtkThemeSetting() string {
 
 // resolveGtkTheme turns the gtkTheme knob and the resolved light/dark mode into
 // the gsettings gtk-theme name the daemon sets, or "" for "system" -- where the
-// user owns gtk-theme and Mei never writes it. The variant must match the mode
+// user owns gtk-theme and Tenkai never writes it. The variant must match the mode
 // so a light/dark flip lands on the right stylesheet (adw-gtk3 vs adw-gtk3-dark),
 // since the base carries the accent-derived rules the palette rides on.
 func resolveGtkTheme(mode string) string {
@@ -490,11 +490,11 @@ func resolveGtkTheme(mode string) string {
 	}
 }
 
-// gnomeAccentOn reports whether Mei tracks the palette onto GNOME's named
+// gnomeAccentOn reports whether Tenkai tracks the palette onto GNOME's named
 // accent (contract C3, default true). Off leaves org.gnome.desktop.interface
 // accent-color untouched so a user's own choice stands.
 func gnomeAccentOn() bool {
-	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "theme.json"))
+	b, err := os.ReadFile(filepath.Join(tenkaiConfigDir(), "theme.json"))
 	if err != nil {
 		return true
 	}
@@ -512,7 +512,7 @@ func gnomeAccentOn() bool {
 // theme's palette is the catalog's (themePalettes), which the daemon fans into
 // both the shell rail and the app templates so the two share one master.
 func staticThemeName() string {
-	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "shell.json"))
+	b, err := os.ReadFile(filepath.Join(tenkaiConfigDir(), "shell.json"))
 	if err != nil {
 		return ""
 	}
@@ -576,7 +576,7 @@ func (d *daemon) matugenApply(img string) error {
 		return fmt.Errorf("matugen colors.json: %w", err)
 	}
 
-	// MEI: cursor recolouring is an app theming fan-out and is OFF -- no
+	// TENKAI: cursor recolouring is an app theming fan-out and is OFF -- no
 	// `ryoku-cursor-material-recolor` process, no cursor action on the
 	// compositor. Disabled, not deleted: upstream's goroutine is kept below.
 	//   go func() {
@@ -1141,7 +1141,7 @@ func filterMatugenConfig(toml string, enabled func(group string) bool) string {
 func matugenRenderTemplates(shell map[string]string, k matugenKnobs) {
 	dir := matugenTemplateDir()
 	matugenEnsureDirs()
-	carrierPath := filepath.Join(matugenCacheHome(), "mei", "matugen-carrier.json")
+	carrierPath := filepath.Join(matugenCacheHome(), "tenkai", "matugen-carrier.json")
 	if err := writeJSONFile(carrierPath, matugenCarrier(shell)); err != nil {
 		fmt.Fprintf(os.Stderr, "matugen carrier: %v\n", err)
 		return
@@ -1159,17 +1159,17 @@ func matugenRenderTemplates(shell map[string]string, k matugenKnobs) {
 		}
 		return true
 	}
-	// MEI: rendered straight from Mei's own config, with no roster filtering --
+	// TENKAI: rendered straight from Tenkai's own config, with no roster filtering --
 	// there is no app fan-out left to gate -- so the log line names the real
-	// path ($XDG_CONFIG_HOME/mei/matugen/config.toml), not a cache copy.
+	// path ($XDG_CONFIG_HOME/tenkai/matugen/config.toml), not a cache copy.
 	_ = enabled
 	matugenRender(filepath.Join(dir, "config.toml"), carrierPath)
-	// MEI: the app-suite fan-out is OFF. Upstream also rendered matugen's
+	// TENKAI: the app-suite fan-out is OFF. Upstream also rendered matugen's
 	// apps.toml (22 templates: kitty, btop, qt6ct, gtk3/4, vesktop, obsidian, …)
 	// and blanked the GTK sheets when the "Theme apps" master went off. Neither
 	// happens here: no app config outside the project is ever written and there
 	// is no post_hook. Restore the block below (and apps.toml) to opt back in.
-	//   if k.ThemeMeiApps && themeAppsEnabled() {
+	//   if k.ThemeTenkaiApps && themeAppsEnabled() {
 	//       matugenRenderFiltered(filepath.Join(dir, "apps.toml"), carrierPath, enabled)
 	//       if enabled("obsidian") { nudgeObsidian() }
 	//   } else {
@@ -1214,7 +1214,7 @@ func nudgeObsidian() {
 		if err != nil || fi.Mode()&os.ModeSymlink == 0 {
 			continue // no link yet (doctor not run) or a user's own file
 		}
-		tmp := link + ".mei-tmp"
+		tmp := link + ".tenkai-tmp"
 		_ = os.Remove(tmp)
 		if os.Symlink(generated, tmp) != nil {
 			continue
@@ -1233,7 +1233,7 @@ func matugenRenderFiltered(config, carrier string, enabled func(group string) bo
 	if err != nil {
 		return
 	}
-	active := filepath.Join(matugenCacheHome(), "mei", "active-"+filepath.Base(config))
+	active := filepath.Join(matugenCacheHome(), "tenkai", "active-"+filepath.Base(config))
 	if err := os.WriteFile(active, []byte(filterMatugenConfig(string(b), enabled)), 0o644); err != nil {
 		return
 	}
@@ -1279,7 +1279,7 @@ var (
 // this point is correct, and they are what an X11 or xsettings-backed session
 // needs to follow along.
 func matugenReload(mode string) {
-	// MEI: the toolkit fan-out is OFF -- no gsettings/libadwaita accent writes,
+	// TENKAI: the toolkit fan-out is OFF -- no gsettings/libadwaita accent writes,
 	// no gtk-theme flip, no KDE colours. The only thing left is the in-shell
 	// repaint. Disabled, not deleted: upstream's body is kept below.
 	//   scheme := "prefer-dark"; if mode == "light" { scheme = "prefer-light" }
@@ -1355,7 +1355,7 @@ func matugenNudgeGtk(want string) {
 // applyGnomeAccent tracks the palette's primary onto GNOME's nine named accents
 // (org.gnome.desktop.interface accent-color), so Flatpaks and apps that read the
 // setting rather than our CSS follow the wallpaper. The primary comes from the
-// palette the pipeline just authored (~/.cache/mei/colors.json, the one file
+// palette the pipeline just authored (~/.cache/tenkai/colors.json, the one file
 // every colours reader shares); an unreadable palette or a non-hex primary skips
 // the write rather than guessing. Gated off (gnomeAccent false) leaves the
 // user's own accent alone.
@@ -1387,7 +1387,7 @@ func kdeglobalsPath() string {
 
 // matugenKdeColorsPath is the rendered colour groups waiting to be merged.
 func matugenKdeColorsPath() string {
-	return filepath.Join(matugenCacheHome(), "mei", "kdeglobals-colors.conf")
+	return filepath.Join(matugenCacheHome(), "tenkai", "kdeglobals-colors.conf")
 }
 
 // kdeOwnedGroup reports whether a kdeglobals group is one the palette replaces.
@@ -1424,7 +1424,7 @@ func applyKdeColors() {
 			continue
 		}
 		if group.name == "General" {
-			group.rows = setIniRow(group.rows, "ColorScheme", "Mei")
+			group.rows = setIniRow(group.rows, "ColorScheme", "Tenkai")
 		}
 		out = append(out, renderIniGroup(group))
 	}
@@ -1744,28 +1744,28 @@ func matugenDataHome() string {
 	return filepath.Join(os.Getenv("HOME"), ".local", "share")
 }
 
-// MEI: the minimal config.toml ships to $XDG_CONFIG_HOME/mei/matugen/config.toml
-// (seeded by ./mei run), not the user's own $XDG_CONFIG_HOME/matugen, so matugen
-// only ever reads Mei's file.
-func matugenTemplateDir() string { return filepath.Join(matugenConfigHome(), "mei", "matugen") }
+// TENKAI: the minimal config.toml ships to $XDG_CONFIG_HOME/tenkai/matugen/config.toml
+// (seeded by ./tenkai run), not the user's own $XDG_CONFIG_HOME/matugen, so matugen
+// only ever reads Tenkai's file.
+func matugenTemplateDir() string { return filepath.Join(matugenConfigHome(), "tenkai", "matugen") }
 
 // matugenKnobsPath is the one knob store the Hub appearance page and the daemon
 // share.
 func matugenKnobsPath() string {
-	return filepath.Join(meiConfigDir(), "matugen.json")
+	return filepath.Join(tenkaiConfigDir(), "matugen.json")
 }
 
 // matugenColorsPath is the shell palette every Quickshell singleton watches. It
-// lives under the mei cache dir; a single reader convention serves the matugen
+// lives under the tenkai cache dir; a single reader convention serves the matugen
 // palette source the shell singletons watch.
 func matugenColorsPath() string {
-	return filepath.Join(matugenCacheHome(), "mei", "colors.json")
+	return filepath.Join(matugenCacheHome(), "tenkai", "colors.json")
 }
 
 // matugenTonesPath is the tonal-ramp file beside it, for the surfaces that must
 // choose a tone rather than consume one. Absent under a fixed named theme.
 func matugenTonesPath() string {
-	return filepath.Join(matugenCacheHome(), "mei", "tones.json")
+	return filepath.Join(matugenCacheHome(), "tenkai", "tones.json")
 }
 
 // matugenEnsureDirs pre-creates the template output directories so matugen's own
@@ -1775,12 +1775,12 @@ func matugenEnsureDirs() {
 	cache := matugenCacheHome()
 	data := matugenDataHome()
 	home := os.Getenv("HOME")
-	// MEI: only the palette dirs are pre-created. The 22 app template output
+	// TENKAI: only the palette dirs are pre-created. The 22 app template output
 	// directories upstream made here are gone with the fan-out (and with them
 	// the Steam/Telegram/Vesktop paths). Disabled, not deleted: the upstream list
 	// is in git history.
 	for _, d := range []string{
-		filepath.Join(cache, "mei"),
+		filepath.Join(cache, "tenkai"),
 		filepath.Join(cache, "matugen"),
 	} {
 		_ = os.MkdirAll(d, 0o755)

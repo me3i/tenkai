@@ -8,8 +8,8 @@
 #  - removing an item drops its icon
 #  - no outbound, clean stop, no strays, verify-untouched at both ends
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
@@ -23,13 +23,13 @@ bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 
 echo "=== STATIC: one host, daemon only ==="
-QML_OWNERS="$(grep -rl "$WATCH" "$MEI/src" --include=*.qml 2>/dev/null | wc -l)"
+QML_OWNERS="$(grep -rl "$WATCH" "$TENKAI/src" --include=*.qml 2>/dev/null | wc -l)"
 if [ "$QML_OWNERS" = 0 ]; then ok "no QML file names the watcher: the daemon is the only host"
-else bad "QML names the watcher: $(grep -rl "$WATCH" "$MEI/src" --include=*.qml)"; fi
-if grep -q "watcherName      = \"$WATCH\"" "$MEI/src/ryoku/shell/ipc/tray.go"; then
+else bad "QML names the watcher: $(grep -rl "$WATCH" "$TENKAI/src" --include=*.qml)"; fi
+if grep -q "watcherName      = \"$WATCH\"" "$TENKAI/src/ryoku/shell/ipc/tray.go"; then
   ok "tray.go declares the single watcher name"
 else bad "tray.go does not declare $WATCH"; fi
-if grep -q 'registerCall("tray.activate"' "$MEI/src/ryoku/shell/ipc/tray.go"; then
+if grep -q 'registerCall("tray.activate"' "$TENKAI/src/ryoku/shell/ipc/tray.go"; then
   ok "daemon exposes the tray control verbs"
 else bad "no tray control verbs"; fi
 
@@ -39,26 +39,26 @@ note "live bus $WATCH owner BEFORE: ${LIVE_BEFORE:-none}"
 [ -n "$LIVE_BEFORE" ] && ok "the live session owns the watcher before the test (pid $LIVE_BEFORE)" || note "live bus has no watcher owner"
 
 echo; echo "=== verify-untouched BEFORE ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" verify-untouched 2>&1 | tail -2
 
-echo; echo "=== starting ./mei run ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run || { bad "mei run failed"; exit 1; }
+echo; echo "=== starting ./tenkai run ==="
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || { bad "tenkai run failed"; exit 1; }
 
 SIG=""; QS=""
 for _ in $(seq 1 150); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done
-[ -n "$SIG" ] && [ -n "$QS" ] || { bad "session did not come up"; "$MEI/mei" stop; exit 1; }
+[ -n "$SIG" ] && [ -n "$QS" ] || { bad "session did not come up"; "$TENKAI/tenkai" stop; exit 1; }
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
-BSIG="$(sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$MEI/docs/baseline/env.txt" | head -1)"
-[ "$SIG" != "$BSIG" ] && ok "nested Hyprland signature differs from the live baseline" || { bad "nested signature equals the baseline"; "$MEI/mei" stop; exit 1; }
+BSIG="$(sed -n 's/^HYPRLAND_INSTANCE_SIGNATURE=//p' "$TENKAI/docs/baseline/env.txt" | head -1)"
+[ "$SIG" != "$BSIG" ] && ok "nested Hyprland signature differs from the live baseline" || { bad "nested signature equals the baseline"; "$TENKAI/tenkai" stop; exit 1; }
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
@@ -83,11 +83,11 @@ BUS="$(cat "$RUN/bus" 2>/dev/null)"
 LIVE_BUS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$HOST_XDG/bus}"
 [ "$BUS" != "$LIVE_BUS" ] && ok "nested bus differs from the live bus" || bad "nested bus is the live bus"
 
-DPID="$(pgrep -f "$RUN/bin/mei-shell daemon" | head -1)"
-[ -n "$DPID" ] && ok "mei-shell daemon running (pid $DPID)" || bad "daemon not running"
+DPID="$(pgrep -f "$RUN/bin/tenkai-shell daemon" | head -1)"
+[ -n "$DPID" ] && ok "tenkai-shell daemon running (pid $DPID)" || bad "daemon not running"
 NESTED_OWNER="$(busctl --address="$BUS" list --no-legend 2>/dev/null | awk -v n="$WATCH" '$1==n{print $2}')"
 if [ -n "$NESTED_OWNER" ] && [ "$NESTED_OWNER" = "$DPID" ]; then
-  ok "nested $WATCH owner is Mei's daemon (pid $NESTED_OWNER)"
+  ok "nested $WATCH owner is Tenkai's daemon (pid $NESTED_OWNER)"
 else bad "nested owner '${NESTED_OWNER:-none}' != daemon '${DPID:-none}'"; fi
 [ "$NESTED_OWNER" != "$LIVE_BEFORE" ] && ok "nested owner ($NESTED_OWNER) differs from the live owner ($LIVE_BEFORE)" || bad "nested owner equals the live owner"
 
@@ -116,15 +116,15 @@ wait_log() {
 }
 kill_sni() {
   local p="$1"
-  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI/docs/tests/sni-test.py" \
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/docs/tests/sni-test.py" \
     && kill -TERM "$p" 2>/dev/null
 }
 
 echo; echo "=== item 1: icon-theme path ==="
 SNI1_LOG="$RUN/logs/step7-sni1-$STAMP.log"; : > "$SNI1_LOG"
 env DBUS_SESSION_BUS_ADDRESS="$BUS" HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" \
-  python3 "$MEI/docs/tests/sni-test.py" --icon-name dialog-information \
-  --event-log "$SNI1_LOG" --title "Mei Tray Test" \
+  python3 "$TENKAI/docs/tests/sni-test.py" --icon-name dialog-information \
+  --event-log "$SNI1_LOG" --title "Tenkai Tray Test" \
   > "$RUN/logs/step7-sni1-$STAMP.out" 2>&1 &
 SNI1=$!
 wait_count 1 && ok "the item registered with the nested watcher (tray count 1)" || bad "item did not appear (count $(tray_count))"
@@ -172,8 +172,8 @@ IPC trayPanel false >/dev/null
 echo; echo "=== item 2: pixmap path ==="
 SNI2_LOG="$RUN/logs/step7-sni2-$STAMP.log"; : > "$SNI2_LOG"
 env DBUS_SESSION_BUS_ADDRESS="$BUS" HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" \
-  python3 "$MEI/docs/tests/sni-test.py" --pixmap --bus-name org.kde.StatusNotifierItem.meitest2 \
-  --event-log "$SNI2_LOG" --title "Mei Pixmap" \
+  python3 "$TENKAI/docs/tests/sni-test.py" --pixmap --bus-name org.kde.StatusNotifierItem.tenkaitest2 \
+  --event-log "$SNI2_LOG" --title "Tenkai Pixmap" \
   > "$RUN/logs/step7-sni2-$STAMP.out" 2>&1 &
 SNI2=$!
 wait_count 2 && ok "a second item registered (tray count 2)" || bad "second item did not appear (count $(tray_count))"
@@ -239,21 +239,21 @@ for p in "$SNI1" "$SNI2"; do
 done
 
 echo; echo "=== SHUTDOWN ==="
-"$MEI/mei" stop || true
+"$TENKAI/tenkai" stop || true
 sleep 2
 stray=""
-for n in ryogami matugen mei-shell mei-hub; do
+for n in ryogami matugen tenkai-shell tenkai-hub; do
   # A name alone is not enough: the owner's live session runs its own
-  # /usr/bin ryogami (and matugen), and those are not Mei's. Only a
-  # process whose cmdline carries the project path belongs to Mei.
+  # /usr/bin ryogami (and matugen), and those are not Tenkai's. Only a
+  # process whose cmdline carries the project path belongs to Tenkai.
   for p in $(pgrep -x "$n" 2>/dev/null || true); do
-    if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qF "$MEI"; then stray="$stray $n=$p"; fi
+    if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qF "$TENKAI"; then stray="$stray $n=$p"; fi
   done
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
-  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI/src/ryoku"; then stray="$stray quickshell=$p"; fi
+  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/ryoku"; then stray="$stray quickshell=$p"; fi
 done
-[ -z "$stray" ] && ok "clean shutdown: no stray ryogami / matugen / mei-shell / project quickshell" || bad "stray:$stray"
+[ -z "$stray" ] && ok "clean shutdown: no stray ryogami / matugen / tenkai-shell / project quickshell" || bad "stray:$stray"
 if ls "$RT"/hypr/*/.socket.sock >/dev/null 2>&1; then bad "a nested control socket is still up"
 else ok "the nested instance is gone (no control socket)"; fi
 
@@ -263,7 +263,7 @@ note "live bus $WATCH owner AFTER: ${LIVE_AFTER:-none}"
 [ "$LIVE_AFTER" = "$LIVE_BEFORE" ] && ok "the live watcher owner is unchanged ($LIVE_AFTER)" || bad "live owner changed: $LIVE_BEFORE -> $LIVE_AFTER"
 
 echo; echo "=== verify-untouched AFTER ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" verify-untouched 2>&1 | tail -2
 
 echo; echo "RESULT: $([ "$fail" = 0 ] && echo PASS || echo FAIL)"
 echo "log: $LOG"

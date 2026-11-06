@@ -6,7 +6,7 @@ var rows = [{
         "key": "name",
         "label": "Name",
         "desc": "The name the shell calls this desktop",
-        "eg": "Mei",
+        "eg": "Tenkai",
         "ctl": "text",
         "src": "brand"
     },{

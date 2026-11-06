@@ -17,7 +17,7 @@ type matugenConfig struct {
 	Prefer           string          `json:"prefer"`           // "dominant" or "vibrant"
 	SchemeType       string          `json:"schemeType"`       // matugen -t variant
 	SourceColorIndex int             `json:"sourceColorIndex"` // 0..4
-	ThemeMeiApps   bool            `json:"themeRyokuApps"`   // theme Mei's native shell & apps
+	ThemeTenkaiApps   bool            `json:"themeRyokuApps"`   // theme Tenkai's native shell & apps
 	Templates        map[string]bool `json:"templates"`        // app -> bool
 }
 
@@ -133,7 +133,7 @@ func defaultMatugenConfig() matugenConfig {
 		Prefer:           "saturation",
 		SchemeType:       "scheme-tonal-spot",
 		SourceColorIndex: 0,
-		ThemeMeiApps:   true,
+		ThemeTenkaiApps:   true,
 		Templates: map[string]bool{
 			"btop":      true,
 			"qt":        true,
@@ -167,7 +167,7 @@ func matugenConfigPath() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei", "matugen.json")
+	return filepath.Join(base, "tenkai", "matugen.json")
 }
 
 func steamThemeReady() bool {
@@ -220,7 +220,7 @@ func runMatugenCmd(args []string) error {
 		// divergent colors.json.
 		return saveMatugenConfig(cfg)
 	case "render-apps":
-		pal := readPalette(filepath.Join(meiCacheDir(), "colors.json"))
+		pal := readPalette(filepath.Join(tenkaiCacheDir(), "colors.json"))
 		if pal != nil {
 			cfg := loadMatugenConfig()
 			renderActiveTemplates(cfg, pal)
@@ -234,7 +234,7 @@ func runMatugenCmd(args []string) error {
 // renderActiveTemplates generates matugen configs for enabled templates
 func renderActiveTemplates(cfg matugenConfig, pal map[string]string) {
 	matugenDir := filepath.Join(configHome(), "matugen")
-	cacheDir := filepath.Join(cacheHome(), "mei")
+	cacheDir := filepath.Join(cacheHome(), "tenkai")
 	_ = os.MkdirAll(cacheDir, 0o755)
 
 	// Ensure all target output directories exist

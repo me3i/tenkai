@@ -60,7 +60,7 @@ Item {
 
     Process {
         id: legendGet
-        command: ["mei-hub", "keybinds"]
+        command: ["tenkai-hub", "keybinds"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -79,7 +79,7 @@ Item {
     property var roles: []
     Process {
         id: appsGet
-        command: ["mei-hub", "apps"]
+        command: ["tenkai-hub", "apps"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -95,7 +95,7 @@ Item {
     property bool shellBusy: false
     Process {
         id: shellGet
-        command: ["mei-hub", "shell", "get"]
+        command: ["tenkai-hub", "shell", "get"]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -121,7 +121,7 @@ Item {
             return;
         pg.shellBusy = true;
         pg.shellError = "";
-        shellSet.command = ["mei-hub", "shell", "set", key];
+        shellSet.command = ["tenkai-hub", "shell", "set", key];
         shellSet.running = true;
     }
     function setZshPrompt(mode) {
@@ -129,7 +129,7 @@ Item {
             return;
         pg.shellBusy = true;
         pg.shellError = "";
-        shellSet.command = ["mei-hub", "shell", "prompt", mode];
+        shellSet.command = ["tenkai-hub", "shell", "prompt", mode];
         shellSet.running = true;
     }
     // role -> chosen command (draft); empty/absent uses the shipped fallback.
@@ -1522,8 +1522,8 @@ Item {
                 anchors { left: parent.left; right: parent.right; top: parent.top }
                 wrapMode: Text.WordWrap
                 text: pg.wmCfgPath
-                    ? I18n.tr("Custom shortcuts layered over the ones Mei ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in %1 never appear here and are not conflict-checked.").arg(pg.wmCfgPath)
-                    : I18n.tr("Custom shortcuts layered over the ones Mei ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in the compositor's own config never appear here and are not conflict-checked.")
+                    ? I18n.tr("Custom shortcuts layered over the ones Tenkai ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in %1 never appear here and are not conflict-checked.").arg(pg.wmCfgPath)
+                    : I18n.tr("Custom shortcuts layered over the ones Tenkai ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in the compositor's own config never appear here and are not conflict-checked.")
                 color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fSmall
                 lineHeight: 1.3
             }

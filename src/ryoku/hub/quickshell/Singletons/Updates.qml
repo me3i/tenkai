@@ -3,12 +3,12 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Updates view for the Hub, fed by the daemon "updates" topic (mei status
+// Updates view for the Hub, fed by the daemon "updates" topic (tenkai status
 // --json). The daemon owns the background check; check() forces a fresh run.
 Singleton {
     id: root
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     property bool available: false
     property string currentVersion: ""
@@ -20,7 +20,7 @@ Singleton {
     property string branch: "main"
     property int behind: 0
 
-    // Mei channel commits (when behind) and recent history (when current).
+    // Tenkai channel commits (when behind) and recent history (when current).
     property var updates: []
     property var recent: []
     // system packages a `pacman -Syu` would pull: [{ name, old, new }].

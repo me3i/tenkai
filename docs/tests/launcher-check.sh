@@ -3,10 +3,10 @@
 # Starts its own nested session: accept stops the previous gate's session before
 # this one runs, so there is never one waiting to be borrowed.
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"
-RT="$MEI/.r"
-# The host runtime and display, read before the nested ones replace them: ./mei
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"
+RT="$TENKAI/.r"
+# The host runtime and display, read before the nested ones replace them: ./tenkai
 # run is launched from the host session and builds the nested one itself.
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
@@ -14,7 +14,7 @@ export XDG_RUNTIME_DIR="$RT"
 export WAYLAND_DISPLAY=wayland-1
 SIG=""
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
@@ -23,7 +23,7 @@ H() {
 # word, so the call was a command named ".../nested-input.sh .../vkbd". A
 # function keeps both words on the command line. VK 53 sends one key;
 # VK 37 23 20 20 21 types "kitty". The guard pins the display to .r.
-VK() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
+VK() { "$TENKAI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
 fail=0
 ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
@@ -32,23 +32,23 @@ layers_launcher() {
 }
 
 echo; echo "=== launch nested session ==="
-if [ -f "$RUN/pids" ]; then bad "a Mei session is already running; refusing to start another"; exit 1; fi
-( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+if [ -f "$RUN/pids" ]; then bad "a Tenkai session is already running; refusing to start another"; exit 1; fi
+( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
 
 # Bounded wait, 120 s: the shell compiles its QML on a cold start, so the
-# process appears well after ./mei run returns. If it is still absent after two
+# process appears well after ./tenkai run returns. If it is still absent after two
 # minutes that is a startup failure, not a race, and the diagnostics say why.
 QS=""
 for _ in $(seq 1 400); do
-  QS=$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)
+  QS=$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
   [ -n "$QS" ] && break
   sleep 0.3
 done
 if [ -z "$QS" ]; then
   bad "no shell process after 120 s"
   echo "--- diagnostics ---"
-  ps -eo pid,args | grep -F "$MEI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
-  for f in "$RUN"/logs/shell*.log "$RUN"/state/mei/surfaces/shell.log; do
+  ps -eo pid,args | grep -F "$TENKAI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  for f in "$RUN"/logs/shell*.log "$RUN"/state/tenkai/surfaces/shell.log; do
     [ -f "$f" ] && { echo "--- $f (last 20) ---"; tail -n 20 "$f"; }
   done
   exit 1
@@ -56,7 +56,7 @@ fi
 ok "shell process present (pid $QS)"
 
 # The nested signature only exists after the compositor starts; resolve it now,
-# not before ./mei run returned.
+# not before ./tenkai run returned.
 for _ in $(seq 1 60); do
   SIG=$(basename "$(ls -d "$RUN/r/hypr/"*/ 2>/dev/null | tail -1)")
   if [ -n "$SIG" ] && HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl -j layers >/dev/null 2>&1; then
@@ -71,27 +71,27 @@ ok "nested instance reachable ($SIG)"
 # Wait for Quickshell to register the shortcut; the qs process exists before
 # the QML (and its CustomShortcut) has finished loading.
 for _ in $(seq 1 60); do
-  H globalshortcuts 2>/dev/null | grep -q 'mei:launcher' && break
+  H globalshortcuts 2>/dev/null | grep -q 'tenkai:launcher' && break
   sleep 0.5
 done
-H globalshortcuts 2>/dev/null | grep -q 'mei:launcher' \
-  && ok "global shortcut mei:launcher registered" \
-  || { bad "mei:launcher shortcut never registered"; exit 1; }
+H globalshortcuts 2>/dev/null | grep -q 'tenkai:launcher' \
+  && ok "global shortcut tenkai:launcher registered" \
+  || { bad "tenkai:launcher shortcut never registered"; exit 1; }
 sleep 1
 
 # prove the launcher writes usage state from scratch in this run
-rm -f "$RUN/state/mei/launcher-usage.json"
+rm -f "$RUN/state/tenkai/launcher-usage.json"
 
 # start from closed
 if [ "$(layers_launcher)" != "0" ]; then
-  H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
+  H dispatch 'hl.dsp.global("tenkai:launcher")' >/dev/null
   for _ in $(seq 1 20); do [ "$(layers_launcher)" = "0" ] && break; sleep 0.25; done
 fi
 
 # open through the compositor global shortcut (same path as SUPER+SPACE).
 # The first open after a cold start compiles the launcher QML, which took ~5 s
 # on this box; poll instead of assuming a fixed delay.
-H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
+H dispatch 'hl.dsp.global("tenkai:launcher")' >/dev/null
 n=0
 for _ in $(seq 1 40); do
   n=$(layers_launcher)
@@ -126,7 +126,7 @@ if [ -n "${KPID:-}" ]; then
   ok "launcher launched kitty inside the nested session (pid $KPID)"
   ENVS=$(tr '\0' '\n' < "/proc/$KPID/environ" 2>/dev/null)
   echo "$ENVS" | grep -qx "HOME=$RUN/home" && ok "app HOME = fake home" || bad "app HOME wrong"
-  echo "$ENVS" | grep -qx "XDG_RUNTIME_DIR=$MEI/.r" && ok "app runtime dir = nested .r" || bad "app runtime dir wrong"
+  echo "$ENVS" | grep -qx "XDG_RUNTIME_DIR=$TENKAI/.r" && ok "app runtime dir = nested .r" || bad "app runtime dir wrong"
   echo "$ENVS" | grep -qx "WAYLAND_DISPLAY=wayland-1" && ok "app on nested Wayland display" || bad "app display wrong"
   kill -TERM "$KPID" 2>/dev/null || true
   for _ in $(seq 1 20); do [ -z "$(H -j clients | jq -r '.[]|select(.class=="kitty")|.pid' 2>/dev/null)" ] && break; sleep 0.25; done
@@ -135,12 +135,12 @@ else
 fi
 grim -o WAYLAND-1 "$RUN/shots/launcher-$(date +%H%M%S)-launched.png" 2>/dev/null
 
-grep -q '"kitty"' "$RUN/state/mei/launcher-usage.json" 2>/dev/null \
-  && ok "frecency written under fake XDG_STATE_HOME ($RUN/state/mei/launcher-usage.json)" \
+grep -q '"kitty"' "$RUN/state/tenkai/launcher-usage.json" 2>/dev/null \
+  && ok "frecency written under fake XDG_STATE_HOME ($RUN/state/tenkai/launcher-usage.json)" \
   || bad "frecency missing under fake state home"
 
 # reopen and close with Esc
-H dispatch 'hl.dsp.global("mei:launcher")' >/dev/null
+H dispatch 'hl.dsp.global("tenkai:launcher")' >/dev/null
 for _ in $(seq 1 40); do [ "$(layers_launcher)" = "1" ] && break; sleep 0.25; done
 sleep 2
 VK 1
@@ -152,7 +152,7 @@ for _ in $(seq 1 30); do
 done
 [ "$n" = "0" ] && ok "Esc closes the launcher (0 layers)" || bad "launcher layers after Esc: $n"
 
-c=$(pgrep -fc "qs -p $MEI/src/ryoku/shell/quickshell/shell")
+c=$(pgrep -fc "qs -p $TENKAI/src/ryoku/shell/quickshell/shell")
 [ "$c" = "1" ] && ok "exactly one shell/launcher instance" || bad "qs instance count: $c"
 
 if ss -tunp 2>/dev/null | grep -q "pid=$QS,"; then
@@ -161,13 +161,13 @@ else
   ok "shell has no tcp/udp sockets"
 fi
 
-if grep -q 'ryoku-cmd-radio' "$RUN/state/mei/surfaces/shell.log" 2>/dev/null; then
+if grep -q 'ryoku-cmd-radio' "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null; then
   echo "NOTE        radio probe line present (local unbuilt helper; inspect)"
 else
   ok "no radio probe spawned"
 fi
 
-if grep -qiE 'is not a type|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Failed to load' "$RUN/state/mei/surfaces/shell.log" 2>/dev/null; then
+if grep -qiE 'is not a type|Cannot assign|Unable to assign|TypeError|SyntaxError|is not defined|Failed to load' "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null; then
   bad "QML error lines in shell log"
 else
   ok "no launcher QML load/type errors"

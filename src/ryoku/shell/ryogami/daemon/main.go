@@ -18,7 +18,7 @@ func unmarshalStrict(body string, into interface{}) error {
 	return json.Unmarshal([]byte(body), into)
 }
 
-// homeGuard refuses to run outside Mei's confined fake home. Every file this
+// homeGuard refuses to run outside Tenkai's confined fake home. Every file this
 // binary writes (sockets, caches, state) must live inside <project>/.run/home;
 // a manual run with the real HOME is exactly how step 5's incident happened.
 // The expected home is derived from the executable path, which is always
@@ -41,14 +41,14 @@ func homeGuard() error {
 		got = filepath.Clean(home)
 	}
 	if got != want {
-		return fmt.Errorf("HOME=%s is not Mei's fake home (%s): refusing to start; use ./mei", home, want)
+		return fmt.Errorf("HOME=%s is not Tenkai's fake home (%s): refusing to start; use ./tenkai", home, want)
 	}
 	return nil
 }
 
 func main() {
 	if err := homeGuard(); err != nil {
-		fmt.Fprintln(os.Stderr, "mei:", err)
+		fmt.Fprintln(os.Stderr, "tenkai:", err)
 		os.Exit(1)
 	}
 

@@ -69,7 +69,7 @@ func (m *managedProcess) launch(extraEnv ...string) {
 	if m.runningLocked() {
 		return
 	}
-	// MEI: never kill by name (upstream ran `pkill -f "quickshell .*<qml>"`). The
+	// TENKAI: never kill by name (upstream ran `pkill -f "quickshell .*<qml>"`). The
 	// picker is disabled entirely, so this launch is unreachable; keep the body
 	// for a documented opt-in and start the instance without touching others.
 	cmd := exec.Command("quickshell", "-p", m.qml)

@@ -65,7 +65,7 @@ Item {
             for (var k in extra)
                 req[k] = extra[k];
         pg.busyError = "";
-        setProc.command = ["mei-hub", "voxtype", "set", JSON.stringify(req)];
+        setProc.command = ["tenkai-hub", "voxtype", "set", JSON.stringify(req)];
         setProc.running = true;
     }
     // clicking a card selects it; a local model that isn't downloaded is fetched
@@ -98,12 +98,12 @@ Item {
         pg.notice = "";
         pg.dlPercent = -1;
         pg.downloading = key;
-        dlProc.command = ["mei-hub", "voxtype", "download", key];
+        dlProc.command = ["tenkai-hub", "voxtype", "download", key];
         dlProc.running = true;
     }
     function removeModel(key) {
         pg.busyError = "";
-        rmProc.command = ["mei-hub", "voxtype", "rmmodel", key];
+        rmProc.command = ["tenkai-hub", "voxtype", "rmmodel", key];
         rmProc.running = true;
     }
 
@@ -130,7 +130,7 @@ Item {
 
     Process {
         id: getProc
-        command: ["mei-hub", "voxtype", "get"]
+        command: ["tenkai-hub", "voxtype", "get"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

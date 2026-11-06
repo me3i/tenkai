@@ -306,7 +306,7 @@ func touchpadStatePath() string {
 	if dir == "" {
 		dir = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return filepath.Join(dir, "mei", "touchpad-off")
+	return filepath.Join(dir, "tenkai", "touchpad-off")
 }
 
 // touchpadDisabled reports whether that intent is recorded, so writeInput can
@@ -378,7 +378,7 @@ func normBorderHex(s string) (string, bool) {
 // var so the tests stay silent, and a swallowed error so a session with no
 // notify-send is fine.
 var touchpadNotify = func(title, body string) {
-	_ = exec.Command("notify-send", "-a", "Mei", title, body).Run()
+	_ = exec.Command("notify-send", "-a", "Tenkai", title, body).Run()
 }
 
 // isInternalOutput tells the built-in panel from an external screen the same way
@@ -471,7 +471,7 @@ func outputCyclePath() string {
 	if dir == "" {
 		dir = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return filepath.Join(dir, "mei", "niri-output-cycle")
+	return filepath.Join(dir, "tenkai", "niri-output-cycle")
 }
 
 func readCyclePosition() int {

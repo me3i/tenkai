@@ -90,7 +90,7 @@ Item {
                         tip: I18n.tr("Lock")
                         tipBelow: true
                         onClicked: {
-                            // Mei: routed through SessionActions so the test-mode
+                            // Tenkai: routed through SessionActions so the test-mode
                             // stub suppresses it (no direct ryoku-shell lock).
                             SessionActions.lock();
                             if (root.closePanel)
@@ -102,7 +102,7 @@ Item {
                         tip: I18n.tr("Click to reboot")
                         tipBelow: true
                         tipAlign: "right"
-                        // Mei: routed through SessionActions (test-mode stub).
+                        // Tenkai: routed through SessionActions (test-mode stub).
                         onActivated: SessionActions.run("reboot")
                     }
                     Menus.QsHoldButton {
@@ -110,7 +110,7 @@ Item {
                         tip: I18n.tr("Click to suspend")
                         tipBelow: true
                         tipAlign: "right"
-                        // Mei: routed through SessionActions (test-mode stub).
+                        // Tenkai: routed through SessionActions (test-mode stub).
                         onActivated: SessionActions.run("suspend")
                     }
                     Menus.QsHoldButton {
@@ -118,7 +118,7 @@ Item {
                         tip: I18n.tr("Click to shut down")
                         tipBelow: true
                         tipAlign: "right"
-                        // Mei: routed through SessionActions (test-mode stub).
+                        // Tenkai: routed through SessionActions (test-mode stub).
                         onActivated: SessionActions.run("shutdown")
                     }
                 }
@@ -175,7 +175,7 @@ Item {
                 }
             }
 
-            // Mei: the QS Bar Settings <-> Quick Settings surface switch is
+            // Tenkai: the QS Bar Settings <-> Quick Settings surface switch is
             // disabled (not deleted): it retargets the bar logo at a panel that is
             // outside the keep list.
             // Menus.QsSeg {
@@ -217,7 +217,7 @@ Item {
                 rowSpacing: 8
                 readonly property real tileWidth: (width - columnSpacing) / 2
 
-                // Mei: network status only (owner rule). Kept as a read-only
+                // Tenkai: network status only (owner rule). Kept as a read-only
                 // status tile -- no onToggled, no hasPage -- so the Wi-Fi detail
                 // page (which toggles) is unreachable.
                 Menus.QsTile {
@@ -227,7 +227,7 @@ Item {
                     sub: !Toggles.wifiOn ? I18n.tr("Off") : Network.activeSsid !== "" ? Network.activeSsid : I18n.tr("On")
                     on: Toggles.wifiOn
                 }
-                // Mei: the other Connect tiles are disabled, not deleted. They
+                // Tenkai: the other Connect tiles are disabled, not deleted. They
                 // are kept here as comments because a QML Grid still lays out
                 // invisible children: `visible: false` alone would reserve their
                 // 64px rows and push the audio/brightness section off the panel.
@@ -328,7 +328,7 @@ Item {
                 }
             }
 
-            // Mei: media, calendar month grid and system monitor are disabled (off
+            // Tenkai: media, calendar month grid and system monitor are disabled (off
             // the keep list); kept here for opt-back-in.
             // Menus.MediaHero {
             //     width: parent.width
@@ -361,7 +361,7 @@ Item {
         anchors.rightMargin: 12
         spacing: 6
 
-        // Mei: power profiles (power-profiles-daemon) are disabled (off the keep
+        // Tenkai: power profiles (power-profiles-daemon) are disabled (off the keep
         // list); kept here for opt-back-in. The id stays so the Flickable above
         // still anchors to powerDock.top.
         // Rectangle {

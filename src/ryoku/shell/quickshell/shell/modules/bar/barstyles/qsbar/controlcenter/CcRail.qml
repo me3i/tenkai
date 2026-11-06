@@ -7,7 +7,7 @@ import shell.services
 
 // QS Bar Settings' left rail: the masthead, the four bar routes as one flat
 // group, then, parted by a rule and a COMMUNITY eyebrow, the route for every bar
-// widget installed from outside Mei, and a search row at the foot. The panel
+// widget installed from outside Tenkai, and a search row at the foot. The panel
 // is about one thing, the bar, so the first group has no headers: four routes,
 // always one click away. Latin names the route, kanji seals it. The active route
 // takes a bone plate with a `//` lead, the desktop's only emphasis; nothing here
@@ -22,7 +22,7 @@ Item {
     signal searchRequested()
     signal hubRequested()
 
-    // Installed bar plugins that are not Mei's own: the Community route's count.
+    // Installed bar plugins that are not Tenkai's own: the Community route's count.
     readonly property int communityCount: {
         var c = (rail.root && rail.root.barCatalog) ? rail.root.barCatalog : []
         var n = 0
@@ -133,7 +133,7 @@ Item {
             }
             UiText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: "MEI"
+                text: "TENKAI"
                 color: Tokens.ink
                 font.family: Tokens.mono
                 font.pixelSize: Tokens.fMicro
@@ -328,7 +328,7 @@ Item {
         Barcode {
             id: plate
             anchors { left: parent.left; right: parent.right; bottom: parent.bottom }
-            text: "MEI"
+            text: "TENKAI"
             barHeight: 12
             unit: Math.max(0.7, Math.min(1.4, margin.width / ((plate.text.length + 2) * 16)))
         }

@@ -17,7 +17,7 @@ import (
 // These verbs read the widget catalogue (the one file the shell, the panel and
 // this CLI share) and the installed plugins, validate every mutation against
 // them, and write through the settings store (the sole writer of shell.json) or,
-// for a plugin, through mei-plugins-place. Nothing here executes plugin code.
+// for a plugin, through tenkai-plugins-place. Nothing here executes plugin code.
 //
 // The layout algebra (layoutMove, normalizeLayout, layoutDefaults, barListRows)
 // is pure so it can be unit-tested without a running daemon.
@@ -121,7 +121,7 @@ type pluginInfo struct {
 	Manifest map[string]any
 }
 
-// pluginState is a plugin's placement in ~/.config/mei/plugins.json.
+// pluginState is a plugin's placement in ~/.config/tenkai/plugins.json.
 type pluginState struct {
 	enabled bool
 	host    string
@@ -345,7 +345,7 @@ func barListRows(l barLayout, meta map[string]widgetMeta) []listRow {
 
 // shellCatalogPath resolves the widget catalogue the shell materialised: on a
 // deployed box ~/.config/quickshell/shell/..., on a checkout
-// MEI_SHELL_DIR/quickshell/shell/..., mirroring the daemon's shell-config
+// TENKAI_SHELL_DIR/quickshell/shell/..., mirroring the daemon's shell-config
 // resolution elsewhere.
 func shellCatalogPath() string {
 	var base string
@@ -382,24 +382,24 @@ func dataHome() string {
 	return filepath.Join(os.Getenv("HOME"), ".local", "share")
 }
 
-// pluginsPlaceTool resolves mei-plugins-place: the checkout copy under
-// MEI_SHELL_DIR, else the packaged name on PATH (matching Desktop.qml).
+// pluginsPlaceTool resolves tenkai-plugins-place: the checkout copy under
+// TENKAI_SHELL_DIR, else the packaged name on PATH (matching Desktop.qml).
 func pluginsPlaceTool() string {
 	if shellDir != "" {
-		return filepath.Join(shellDir, "quickshell", "plugins", "mei-plugins-place")
+		return filepath.Join(shellDir, "quickshell", "plugins", "tenkai-plugins-place")
 	}
-	return "mei-plugins-place"
+	return "tenkai-plugins-place"
 }
 
 // loadInstalledPlugins reads every plugin manifest from the dev-override dirs
-// (RYOSTORE_PLUGINS_DIR, legacy MEI_PLUGINS_DIR, colon-separated) and the
-// installed root (~/.local/share/mei/plugins), first source wins on a
+// (RYOSTORE_PLUGINS_DIR, legacy TENKAI_PLUGINS_DIR, colon-separated) and the
+// installed root (~/.local/share/tenkai/plugins), first source wins on a
 // duplicate id, mirroring discover.sh's source order.
 func loadInstalledPlugins() []pluginInfo {
 	var dirs []string
 	pd := os.Getenv("RYOSTORE_PLUGINS_DIR")
 	if pd == "" {
-		pd = os.Getenv("MEI_PLUGINS_DIR")
+		pd = os.Getenv("TENKAI_PLUGINS_DIR")
 	}
 	if pd != "" {
 		for _, d := range strings.Split(pd, ":") {
@@ -408,7 +408,7 @@ func loadInstalledPlugins() []pluginInfo {
 			}
 		}
 	}
-	dirs = append(dirs, filepath.Join(dataHome(), "mei", "plugins"))
+	dirs = append(dirs, filepath.Join(dataHome(), "tenkai", "plugins"))
 	seen := map[string]bool{}
 	var out []pluginInfo
 	for _, dir := range dirs {
@@ -450,10 +450,10 @@ func barCapablePlugins(all []pluginInfo) []pluginInfo {
 	return out
 }
 
-// loadPluginsState reads ~/.config/mei/plugins.json into enabled/host per id.
+// loadPluginsState reads ~/.config/tenkai/plugins.json into enabled/host per id.
 func loadPluginsState() map[string]pluginState {
 	out := map[string]pluginState{}
-	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "plugins.json"))
+	b, err := os.ReadFile(filepath.Join(tenkaiConfigDir(), "plugins.json"))
 	if err != nil {
 		return out
 	}
@@ -500,7 +500,7 @@ func (p pluginInfo) author() string {
 	return s
 }
 
-// official is the manifest's own claim; Mei's plugins ship it true, so any
+// official is the manifest's own claim; Tenkai's plugins ship it true, so any
 // other bar plugin is a community widget (the panel's Community route).
 func (p pluginInfo) official() bool {
 	b, _ := p.Manifest["official"].(bool)
@@ -946,9 +946,9 @@ func runPlace(tool string, args ...string) (string, error) {
 func placeErr(out string, err error) string {
 	out = strings.TrimSpace(out)
 	if out != "" {
-		return "mei-plugins-place: " + out
+		return "tenkai-plugins-place: " + out
 	}
-	return "mei-plugins-place: " + err.Error()
+	return "tenkai-plugins-place: " + err.Error()
 }
 
 func (d *daemon) barSet(args []string) string {

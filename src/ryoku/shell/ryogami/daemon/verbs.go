@@ -69,10 +69,10 @@ func (d *daemon) wallpaperVerb(line string) string {
 		d.restoreOutputs()
 		return "ok"
 	case "ui":
-		// MEI: the wall-ui picker surface is not part of this build (it brings a
+		// TENKAI: the wall-ui picker surface is not part of this build (it brings a
 		// 114-file shell with Wallhaven/Steam outbound services). Disabled, not
 		// deleted; the selector is served by the shell's own surfaces.
-		return "err wallpaper: the wall-ui picker is disabled in Mei"
+		return "err wallpaper: the wall-ui picker is disabled in Tenkai"
 	case "resource":
 		f := strings.Fields(rest)
 		if len(f) < 2 || (f[1] != "low" && f[1] != "medium" && f[1] != "high") {
@@ -103,10 +103,10 @@ func (d *daemon) wallpaperVerb(line string) string {
 // `set` carries a JSON body so paths with spaces survive, `clear` wipes every
 // slot's cutout.
 func (d *daemon) depthVerb(line string) string {
-	// MEI: the stage/depth fold is off the keep list. Stills-only rendering never
+	// TENKAI: the stage/depth fold is off the keep list. Stills-only rendering never
 	// asks for a cutout, and this refuses one if the shell ever did.
 	_ = d
-	return "err depth disabled in Mei"
+	return "err depth disabled in Tenkai"
 }
 
 func (d *daemon) depthVerbOriginal(line string) string {

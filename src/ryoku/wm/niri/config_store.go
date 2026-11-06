@@ -20,12 +20,12 @@ import (
 // settings.kdl carries the full effective config, not a diff, because the shipped
 // niri tree has no defaults module: config.kdl plus five comment-only seeds, so
 // settings.kdl and rebinds.kdl are the only writers of real config. A leaf left
-// out here would boot as stock niri, not Mei.
+// out here would boot as stock niri, not Tenkai.
 
 // Appearance: the window-frame, gap, shadow and opacity leaves niri can express.
 // Window blur is deliberately absent: niri 26.04's forced background-effect
 // renders translucent windows opaque instead of frosted on real hardware, so
-// Mei does not model it and the neutral blur keys are reported unhonored. The
+// Tenkai does not model it and the neutral blur keys are reported unhonored. The
 // rest of the neutral appearance model (glow, per-window dim) has no niri setting
 // and is reported unhonored too.
 type Appearance struct {
@@ -328,7 +328,7 @@ func defaultAnim() AnimSpec {
 
 // defaultStore is niri's baseline. It differs from Hyprland where niri has its
 // own opinion (gaps 16, border width 4, no rounding); the pointer and keyboard
-// leaves match the recommended niri session; the wm.niri block is the Mei look
+// leaves match the recommended niri session; the wm.niri block is the Tenkai look
 // for the settings niri owns alone.
 func defaultStore() niriStore {
 	return niriStore{
@@ -494,7 +494,7 @@ func configHome() string {
 // storePath is the neutral settings store this provider reads for the runtime
 // behaviours that never reach the config file, like taming a maximised open.
 func storePath() string {
-	return filepath.Join(configHome(), "mei", "desktop.json")
+	return filepath.Join(configHome(), "tenkai", "desktop.json")
 }
 
 // borderPalettePath is where the border act records the live palette's active
@@ -506,7 +506,7 @@ func borderPalettePath() string {
 	if dir == "" {
 		dir = filepath.Join(os.Getenv("HOME"), ".local", "state")
 	}
-	return filepath.Join(dir, "mei", "niri-border-palette.json")
+	return filepath.Join(dir, "tenkai", "niri-border-palette.json")
 }
 
 // borderPaletteColors reads the active and inactive colours the border act last
@@ -534,7 +534,7 @@ func borderPaletteColors() (active, inactive string, ok bool) {
 // lives here so it survives an update as a user edit; writeOverlayKdl reflects
 // the same bytes into the live niri dir so a reload picks them up at once.
 func userEditsNiriDir() string {
-	return filepath.Join(configHome(), "mei", "user_edits", "niri")
+	return filepath.Join(configHome(), "tenkai", "user_edits", "niri")
 }
 
 // --- disk ------------------------------------------------------------------

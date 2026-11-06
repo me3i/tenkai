@@ -21,7 +21,7 @@ Item {
     readonly property real heroPosY: boundedNumber(values.heroPosY, 0.5)
     readonly property bool showGreeting: values.showGreeting === undefined
         ? true : !!values.showGreeting
-    // MEI: weather is off the keep list (no daemon weather, no network), so the
+    // TENKAI: weather is off the keep list (no daemon weather, no network), so the
     // preview must not draw the placeholder weather block. Disabled, not deleted
     // -- original:
     //   readonly property bool showWeather: values.showWeather === undefined

@@ -1,10 +1,10 @@
 package main
 
 // The compositor's border defaults, derived from the matugen palette written
-// to cache/mei/colors.json. The live wallpaper accent (Hyprland's `wc`) still
+// to cache/tenkai/colors.json. The live wallpaper accent (Hyprland's `wc`) still
 // wins when it is set — these are the floor, not the ceiling: they exist so a
 // session whose palette is available gets its own colour instead of the
-// hardcoded Mei red that shipped before the Visuals page had a border
+// hardcoded Tenkai red that shipped before the Visuals page had a border
 // control. With no palette at all, mono grey.
 
 import (
@@ -43,7 +43,7 @@ func paletteColorsPath() string {
 			base = ".cache"
 		}
 	}
-	return filepath.Join(base, "mei", "colors.json")
+	return filepath.Join(base, "tenkai", "colors.json")
 }
 
 // readPaletteColors pulls the primary and outline roles out of the palette the

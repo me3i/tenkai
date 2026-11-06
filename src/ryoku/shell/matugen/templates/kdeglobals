@@ -1,9 +1,9 @@
-# Mei palette -> the colour groups KColorScheme reads. Merged into
+# Tenkai palette -> the colour groups KColorScheme reads. Merged into
 # ~/.config/kdeglobals rather than written over it, so the fonts, icon theme and
 # widget style a user set there survive a repaint.
 #
 # Hex rather than KDE's usual decimal "R,G,B": KColorScheme parses both, and the
-# carrier Mei hands matugen exposes only .hex.
+# carrier Tenkai hands matugen exposes only .hex.
 
 [Colors:View]
 BackgroundNormal={{colors.surface.default.hex}}

@@ -1,16 +1,16 @@
 package main
 
-// Config import: bring a migrating user's existing dotfiles onto Mei without
+// Config import: bring a migrating user's existing dotfiles onto Tenkai without
 // losing them and without breaking the desktop. `import scan` reports what was
 // found (apps, items, keybind conflicts) as JSON; `import apply` layers the
-// chosen config on top of Mei's defaults (Hyprland binds/rules into the hub
+// chosen config on top of Tenkai's defaults (Hyprland binds/rules into the hub
 // Overrides model, everything else into each app's user-include) after a full
 // backup; `import undo` restores a prior import from that backup. The verbs and
 // JSON are the cross-slice contract shared with the CLI and Hub UI; see
 // docs/config-import.md.
 //
 // This file owns the verb dispatch, the scan orchestration, and the pieces both
-// scan and apply share: combo normalization and Mei's shipped-bind legend.
+// scan and apply share: combo normalization and Tenkai's shipped-bind legend.
 // import_parse.go has the per-app parsers, import_apply.go the apply + backup,
 // import_undo.go the restore.
 
@@ -55,12 +55,12 @@ type scanItem struct {
 type scanConflict struct {
 	Combo string        `json:"combo"` // display form
 	Norm  string        `json:"norm"`  // stable key, opaque to UI/CLI
-	Mei conflictMei `json:"mei"`
+	Tenkai conflictTenkai `json:"tenkai"`
 	Mine  conflictMine  `json:"mine"`
 	Kind  string        `json:"kind"` // shipped | duplicate
 }
 
-type conflictMei struct {
+type conflictTenkai struct {
 	Action string `json:"action"`
 	Desc   string `json:"desc"`
 }
@@ -71,7 +71,7 @@ type conflictMine struct {
 }
 
 // decisions is the apply input. An app absent or include:false is skipped; a
-// conflict absent from Conflicts defaults to "mei" (Mei's bind kept).
+// conflict absent from Conflicts defaults to "tenkai" (Tenkai's bind kept).
 type decisions struct {
 	Source    string                     `json:"source"`
 	Apps      map[string]appDecision     `json:"apps"`
@@ -276,7 +276,7 @@ func normToken(t string) string {
 	return strings.ToLower(t)
 }
 
-// --- Mei's shipped bind legend (for conflict detection + unbinds) ----------
+// --- Tenkai's shipped bind legend (for conflict detection + unbinds) ----------
 
 // shippedInfo is one shipped chord: Combo is the raw form hl.unbind() keys on,
 // Action/Desc describe it for the conflict UI.
@@ -286,13 +286,13 @@ type shippedInfo struct {
 	Desc   string
 }
 
-// meiShipped reads binds.lua (Mei's live legend, the same file keybinds()
+// tenkaiShipped reads binds.lua (Tenkai's live legend, the same file keybinds()
 // serves) into norm -> shippedInfo. It walks the file directly rather than
 // reusing keybinds() because conflict rows need the dispatcher, which the legend
 // drops; the parsing helpers (resolveKeys, describe, reBind/reTrail) are shared.
 // The workspace loop is expanded to its ten concrete chords so a Super+N import
 // is caught as a shadow.
-func meiShipped() map[string]shippedInfo {
+func tenkaiShipped() map[string]shippedInfo {
 	out := map[string]shippedInfo{}
 	b, err := os.ReadFile(bindsPath())
 	if err != nil {
@@ -377,7 +377,7 @@ func dispatcherAction(d string) string {
 // --- binds.lua parsing helpers -----------------------------------------------
 //
 // The desktop's live binds.lua is still the source for two import-adjacent
-// reads: meiShipped above walks it for conflict detection and unbinds, and the
+// reads: tenkaiShipped above walks it for conflict detection and unbinds, and the
 // apps page maps a launcher role to its shipped chord. The keybind legend the
 // Hub and cheatsheet draw no longer comes from here; the active provider reports
 // it. These helpers stay so those two readers keep a shared parser rather than

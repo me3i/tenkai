@@ -3,7 +3,7 @@ import "../modules"
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import "../MeiPower.js" as MeiPower
+import "../TenkaiPower.js" as TenkaiPower
 import Ryoku.Ui.Singletons
 
 PanelWindow {
@@ -199,7 +199,7 @@ PanelWindow {
 
     Process {
         id: batData
-        command: ["bash", "-c", MeiPower.batteryDataCmd]
+        command: ["bash", "-c", TenkaiPower.batteryDataCmd]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {

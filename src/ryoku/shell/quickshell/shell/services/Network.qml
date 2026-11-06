@@ -69,7 +69,7 @@ Singleton {
     signal replied(int id, bool ok, string error)
     property int nextCallId: 1
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     function apply(line) {
         try {

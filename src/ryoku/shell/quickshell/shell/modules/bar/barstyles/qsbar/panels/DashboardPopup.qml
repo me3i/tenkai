@@ -47,7 +47,7 @@ PanelWindow {
     readonly property string dateLong: now.toLocaleDateString(Config.formatLoc, "MMMM d")
 
     // ── weather (daemon-fed singleton) ──
-    // MEI: weather is off the keep list and its feed is compiled out, so its
+    // TENKAI: weather is off the keep list and its feed is compiled out, so its
     // three islands are hidden rather than deleted. Set true to restore them.
     readonly property bool weatherUi: false
     readonly property var cur: Weather.current

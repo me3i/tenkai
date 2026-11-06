@@ -5,9 +5,9 @@ import Quickshell.Io
 import Ryoku.FrameBars
 import Ryoku.Ui.Singletons
 
-// live shell appearance config. one source of truth for the look knobs Mei
+// live shell appearance config. one source of truth for the look knobs Tenkai
 // Settings' Shell section edits, plus the shipped defaults the shell falls back
-// to. JSON at ~/.config/mei/shell.json, watched, so a save in Settings
+// to. JSON at ~/.config/tenkai/shell.json, watched, so a save in Settings
 // retunes the running shell on the next file event. no reload. defaults here
 // are canonical; Settings mirrors them for reset-to-default and seeds nothing
 // of its own.
@@ -39,7 +39,7 @@ Singleton {
     // style. Each owns its own bar, popouts and settings. Default qsbar.
     property alias barStyle: adapter.barStyle
 
-    // modules: the one switchboard for Mei's components. A missing key reads as
+    // modules: the one switchboard for Tenkai's components. A missing key reads as
     // ON, so an older shell.json keeps working. Read here by the shell (surface
     // loaders, toggleSurface) and by the daemon (tray, surface commands, hub);
     // docs/MODULES.md lists every read site.
@@ -167,12 +167,12 @@ Singleton {
         themePalette = pal;
     }
 
-    // brand: the desktop's mark + name, user-overridable from Mei Settings ->
+    // brand: the desktop's mark + name, user-overridable from Tenkai Settings ->
     // Shell -> Global. a small cross-cutting identity master (like theme.json).
     // markText is the glyph/short-text seal (default 力); markImage an optional
     // image path that wins over the text; markTint recolours a single-colour
-    // image to the accent; name is the wordmark ("Mei") shown in chrome copy.
-    // Mei's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
+    // image to the accent; name is the wordmark ("Tenkai") shown in chrome copy.
+    // Tenkai's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
     property alias markText:  brandAdapter.markText
     property alias markImage: brandAdapter.markImage
     property alias markTint:  brandAdapter.markTint
@@ -180,7 +180,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/shell.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/shell.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -251,7 +251,7 @@ Singleton {
     // window borders and shell chrome all read it). true = follow the wallpaper.
     FileView {
         id: themeFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/theme.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/theme.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -263,7 +263,7 @@ Singleton {
     // Hub's Shell -> Global editor. seeded once on first run below.
     FileView {
         id: brandFile
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/brand.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/brand.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -274,7 +274,7 @@ Singleton {
             property string markText: "M"
             property string markImage: ""
             property bool markTint: true
-            property string name: "Mei"
+            property string name: "Tenkai"
         }
     }
 
@@ -282,7 +282,7 @@ Singleton {
     // it and serialises every writer), so a persisted write goes through it.
     Socket {
         id: shaderCtl
-        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+        path: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
         property string queued: ""
         function flushQueued() {
             if (queued.length === 0)

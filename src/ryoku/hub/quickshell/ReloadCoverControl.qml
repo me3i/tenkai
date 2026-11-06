@@ -197,7 +197,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 visible: renderer.status === Loader.Error
-                text: I18n.tr("Preview unavailable; reload still falls back to the Mei wordmark.")
+                text: I18n.tr("Preview unavailable; reload still falls back to the Tenkai wordmark.")
                 color: Tokens.ink
                 font.family: Tokens.ui
                 font.pixelSize: Tokens.fSmall
@@ -207,7 +207,7 @@ Item {
             Text {
                 Layout.fillWidth: true
                 visible: renderer.status === Loader.Ready && renderer.item && renderer.item.mediaError
-                text: I18n.tr("Couldn't preview this asset; shell reload will use the Mei wordmark.")
+                text: I18n.tr("Couldn't preview this asset; shell reload will use the Tenkai wordmark.")
                 color: Tokens.ink
                 font.family: Tokens.ui
                 font.pixelSize: Tokens.fSmall

@@ -55,7 +55,7 @@ Item {
     readonly property bool engineNeedsSetup: Stash.dockerState === "setup" || Stash.dockerState === "missing"
     readonly property string engineSub: {
         if (Stash.setupState === "running") return I18n.tr("Setting up…");
-        if (Stash.dockerState === "missing") return I18n.tr("Needs Docker. `mei update` installs it");
+        if (Stash.dockerState === "missing") return I18n.tr("Needs Docker. `tenkai update` installs it");
         if (Stash.dockerState === "setup") return I18n.tr("One-time setup: flip the switch to run it");
         if (Stash.dockerState === "denied") return I18n.tr("Docker is unreachable and the ryoku-docker helper is missing");
         switch (Stash.cobaltState) {

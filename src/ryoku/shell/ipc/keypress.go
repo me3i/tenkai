@@ -513,7 +513,7 @@ type keypressSettings struct {
 }
 
 func keypressSettingsPath() string {
-	dir := meiConfigDir()
+	dir := tenkaiConfigDir()
 	if dir == "" {
 		return ""
 	}

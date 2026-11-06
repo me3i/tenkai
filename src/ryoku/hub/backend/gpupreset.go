@@ -234,7 +234,7 @@ func presetsPath() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	return filepath.Join(base, "mei", "gpu-presets.json")
+	return filepath.Join(base, "tenkai", "gpu-presets.json")
 }
 
 func loadCustomPresets() []preset {

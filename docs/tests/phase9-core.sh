@@ -7,8 +7,8 @@
 #  10  missing dependency (brightness helper + brightnessctl)
 #   11 clean shutdown              12  5-minute idle capture
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"; RT="$MEI/.r"
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"; RT="$TENKAI/.r"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 STAMP="$(date +%H%M%S)"
@@ -21,12 +21,12 @@ ok()  { echo "TESTED      $*"; }
 bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
-D() { H dispatch "hl.dsp.global(\"mei:$1\")" >/dev/null 2>&1; }
+D() { H dispatch "hl.dsp.global(\"tenkai:$1\")" >/dev/null 2>&1; }
 IPC() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call qsbar "$@" 2>&1; }
 SH() { XDG_RUNTIME_DIR="$RT" qs ipc --pid "$QS" call shell "$@" 2>&1; }
 owner() { busctl --address="$BUS" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }
@@ -36,26 +36,26 @@ cleanup() {
   # even if the script dies mid-step (owner rule 7: small steps, restore).
   [ -n "${BR_RESTORE:-}" ] && brightnessctl set "$BR_RESTORE" >/dev/null 2>&1 || true
   [ "${KEEP:-0}" = 1 ] && return
-  ( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+  ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
 }
 trap cleanup EXIT
 
 echo "=== cold start check ==="
-if [ -e "$RUN/config/mei/shell.json" ]; then
+if [ -e "$RUN/config/tenkai/shell.json" ]; then
   bad "shell.json already exists; this is not a cold start"
 else
-  ok "cold start: no ~/.config/mei/shell.json before launch"
+  ok "cold start: no ~/.config/tenkai/shell.json before launch"
 fi
 
 echo; echo "=== verify-untouched BEFORE ==="
-( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
-    XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )
+( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
+    XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )
 
 echo; echo "=== launch ==="
-( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei run ) >/dev/null 2>&1
+( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
 for _ in $(seq 1 240); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done
@@ -64,19 +64,19 @@ export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 WL_NAME="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WL_NAME"
 BUS="$(cat "$RUN/bus" 2>/dev/null)"
-SHELLLOG="$RUN/state/mei/surfaces/shell.log"
-DPID="$(pgrep -f "^$RUN/bin/mei-shell daemon" | head -1)"
+SHELLLOG="$RUN/state/tenkai/surfaces/shell.log"
+DPID="$(pgrep -f "^$RUN/bin/tenkai-shell daemon" | head -1)"
 note "nested sig $SIG, display $WAYLAND_DISPLAY, shell $QS, daemon $DPID"
 [ "$WAYLAND_DISPLAY" = "wayland-1" ] && ok "nested display is wayland-1 (launcher harness expects it)" \
   || bad "nested display is $WAYLAND_DISPLAY"
 
 echo; echo "=== 1. launch: one shell, fresh defaults, private bus, no QML errors ==="
-# Count only Quickshell servers bound to the nested runtime. Any Mei qs on
+# Count only Quickshell servers bound to the nested runtime. Any Tenkai qs on
 # another runtime is a leak onto the live session: kill it (we started it).
 nqs=0; leak=""
 for _ in $(seq 1 10); do
   nqs=0; leak=""
-  for p in $(pgrep -f "^qs -p $MEI/" 2>/dev/null); do
+  for p in $(pgrep -f "^qs -p $TENKAI/" 2>/dev/null); do
     prt="$(tr '\0' '\n' < /proc/$p/environ 2>/dev/null | sed -n 's/^XDG_RUNTIME_DIR=//p')"
     [ -z "$prt" ] && continue
     if [ "$prt" = "$RT" ]; then
@@ -90,24 +90,24 @@ for _ in $(seq 1 10); do
 done
 if [ -n "$leak" ]; then
   for lp in $leak; do kill -TERM "${lp%%:*}" 2>/dev/null || true; done
-  bad "Mei qs leaked outside the nested runtime (killed):$leak"
+  bad "Tenkai qs leaked outside the nested runtime (killed):$leak"
 fi
 [ "$nqs" = 1 ] && ok "exactly one shell instance (nested runtime)" || bad "shell instances: $nqs"
 BASELINE_SIG="$(sed -n 's/^BASELINE_SIG="\(.*\)"$/\1/p' "$RUN/session.sh")"
 [ -n "$BASELINE_SIG" ] && [ "$SIG" != "$BASELINE_SIG" ] && ok "nested signature differs from the live baseline" || bad "nested signature equals baseline"
 LIVE_BUS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$HOST_XDG/bus}"
 [ -n "$BUS" ] && [ "$BUS" != "$LIVE_BUS" ] && ok "private nested bus, not the live bus" || bad "bus is live or missing"
-if [ -s "$RUN/config/mei/shell.json" ]; then
+if [ -s "$RUN/config/tenkai/shell.json" ]; then
   ok "a fresh shell.json was written from defaults"
-  if jq -e 'has("modules")' "$RUN/config/mei/shell.json" >/dev/null 2>&1; then
-    note "fresh shell.json carries a modules block: $(jq -c '.modules' "$RUN/config/mei/shell.json")"
+  if jq -e 'has("modules")' "$RUN/config/tenkai/shell.json" >/dev/null 2>&1; then
+    note "fresh shell.json carries a modules block: $(jq -c '.modules' "$RUN/config/tenkai/shell.json")"
   else
     ok "fresh shell.json has no modules block -> every module defaults ON"
   fi
-  [ "$(jq -r '.theme.theme // "?"' "$RUN/config/mei/shell.json")" = "Default" ] \
-    && ok "default theme is Default" || bad "default theme is $(jq -r '.theme.theme' "$RUN/config/mei/shell.json")"
-  [ "$(jq -r '.theme.matugen.mode // "?"' "$RUN/config/mei/shell.json")" = "Dark" ] \
-    && ok "default matugen mode is Dark" || bad "default mode is $(jq -r '.theme.matugen.mode' "$RUN/config/mei/shell.json")"
+  [ "$(jq -r '.theme.theme // "?"' "$RUN/config/tenkai/shell.json")" = "Default" ] \
+    && ok "default theme is Default" || bad "default theme is $(jq -r '.theme.theme' "$RUN/config/tenkai/shell.json")"
+  [ "$(jq -r '.theme.matugen.mode // "?"' "$RUN/config/tenkai/shell.json")" = "Dark" ] \
+    && ok "default matugen mode is Dark" || bad "default mode is $(jq -r '.theme.matugen.mode' "$RUN/config/tenkai/shell.json")"
 else
   # The settings store writes lazily: a fresh start keeps the code defaults in
   # memory and touches disk only on the first change. Absence is the expected
@@ -144,17 +144,17 @@ barall="$(IPC workspaceState | python3 -c 'import json,sys; print(",".join(sorte
 
 echo; echo "=== 3. launcher (docs/tests/launcher-check.sh) ==="
 LAUNCH_LOG="$RUN/logs/phase9-launcher-$STAMP.log"
-bash "$MEI/docs/tests/launcher-check.sh" > "$LAUNCH_LOG" 2>&1
+bash "$TENKAI/docs/tests/launcher-check.sh" > "$LAUNCH_LOG" 2>&1
 lrc=$?
 grep -E 'TESTED|FAIL' "$LAUNCH_LOG" | sed 's/^/  /'
 [ "$lrc" = 0 ] && ok "launcher open / search / launch / close all passed" || bad "launcher harness failed (see $LAUNCH_LOG)"
 
-echo; echo "=== 16. terminal role (mei-app; Ryoku's ryoku-app) ==="
-# The shell runs every Terminal=true desktop entry through mei-app; without it
+echo; echo "=== 16. terminal role (tenkai-app; Ryoku's ryoku-app) ==="
+# The shell runs every Terminal=true desktop entry through tenkai-app; without it
 # a TUI (htop, vim) silently died. This harness proves the direct call, the
-# desktop.json choice and the launcher -> AppLaunch -> mei-app -> kitty chain.
+# desktop.json choice and the launcher -> AppLaunch -> tenkai-app -> kitty chain.
 TERM_LOG="$RUN/logs/phase9-terminal-$STAMP.log"
-bash "$MEI/docs/tests/terminal-check.sh" > "$TERM_LOG" 2>&1
+bash "$TENKAI/docs/tests/terminal-check.sh" > "$TERM_LOG" 2>&1
 trc=$?
 grep -E 'TESTED|FAIL' "$TERM_LOG" | sed 's/^/  /'
 if [ "$trc" = 0 ]; then
@@ -205,11 +205,11 @@ if command -v brightnessctl >/dev/null 2>&1 && [ -n "$(brightnessctl get 2>/dev/
   BR_REST="$(brightnessctl get 2>/dev/null)"
   [ "$BR_REST" = "$BR_BEFORE" ] && ok "brightness restored between the two steps" \
     || bad "brightness not restored between steps ($BR_REST != $BR_BEFORE)"
-  # (b) the media-key path: mei-shell brightness -> ryoku-cmd-brightness
+  # (b) the media-key path: tenkai-shell brightness -> ryoku-cmd-brightness
   BOUT="$(env HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" \
     XDG_CACHE_HOME="$RUN/home/.cache" XDG_STATE_HOME="$RUN/state" \
     XDG_DATA_HOME="$RUN/data" XDG_RUNTIME_DIR="$RT" \
-    DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1)"; BRC=$?
+    DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/tenkai-shell" brightness up 2>&1)"; BRC=$?
   BR_HUB="$(brightnessctl get 2>/dev/null)"
   if [ "$BRC" = 0 ] && [ -n "$BR_HUB" ] && [ "$BR_HUB" != "$BR_BEFORE" ]; then
     ok "hub brightness verb moved $BR_DEV ${BR_BEFORE} -> ${BR_HUB} of ${BR_MAX} (5%)"
@@ -236,7 +236,7 @@ if [ -e "$HELPER" ]; then
   BOUT="$(env HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" \
     XDG_CACHE_HOME="$RUN/home/.cache" XDG_STATE_HOME="$RUN/state" \
     XDG_DATA_HOME="$RUN/data" XDG_RUNTIME_DIR="$RT" \
-    DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/mei-shell" brightness up 2>&1)"; BRC=$?
+    DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/tenkai-shell" brightness up 2>&1)"; BRC=$?
   ln -sfn "$HSAVED" "$HELPER"
   echo "  output: $BOUT"
   [ "$BRC" != 0 ] && ok "hub brightness verb fails cleanly without the helper (rc=$BRC)" \
@@ -260,10 +260,10 @@ PROBE="$(PATH="$FAKE:$PATH" bash -c 'BL=$(ryoku-hw-backlight 2>/dev/null); brigh
 
 echo; echo "=== 12. five-minute idle capture ==="
 idle_pids() {
-  { pgrep -f "^$RUN/bin/mei-shell"
-    pgrep -f "^qs -p $MEI/src/ryoku/shell/quickshell/shell"
+  { pgrep -f "^$RUN/bin/tenkai-shell"
+    pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell"
     pgrep -f "^Hyprland -c $RUN"
-    pgrep -x ryogami; pgrep -x matugen; pgrep -x mei-hub; } 2>/dev/null | sort -u
+    pgrep -x ryogami; pgrep -x matugen; pgrep -x tenkai-hub; } 2>/dev/null | sort -u
 }
 OUT="$RUN/phase9-idle-outbound-$STAMP.txt"; : > "$OUT"
 LISTEN="$RUN/phase9-idle-listen-$STAMP.txt"; : > "$LISTEN"
@@ -280,34 +280,34 @@ done
 awk 'BEGIN{IGNORECASE=1} /ESTAB|SYN-SENT|FIN-WAIT|LAST-ACK/ && $0 !~ /127\.0\.0\.1|\[::1\]|::1/ {print}' "$OUT.tmp" 2>/dev/null | sort -u > "$OUT"
 sort -u "$LISTEN.tmp" 2>/dev/null > "$LISTEN"
 rm -f "$OUT.tmp" "$LISTEN.tmp"
-if [ -s "$OUT" ]; then bad "outbound connections during idle:"; sed 's/^/  /' "$OUT"; else ok "zero outbound connections from Mei PIDs over 5 minutes"; fi
+if [ -s "$OUT" ]; then bad "outbound connections during idle:"; sed 's/^/  /' "$OUT"; else ok "zero outbound connections from Tenkai PIDs over 5 minutes"; fi
 note "listening sockets during idle: $(wc -l < "$LISTEN") line(s)"
 sed 's/^/  /' "$LISTEN"
 note "5 shell log lines during idle: $(tail -5 "$SHELLLOG" 2>/dev/null | tr '\n' '|' | cut -c1-200)"
 
 echo; echo "=== 11. clean shutdown ==="
-( cd "$MEI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./mei stop ) >/dev/null 2>&1
+( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
 trap - EXIT
 for _ in $(seq 1 120); do
-  pgrep -f "^$RUN/bin/mei-shell|^qs -p $MEI/src/ryoku/shell|^Hyprland -c $RUN" >/dev/null 2>&1 || break
+  pgrep -f "^$RUN/bin/tenkai-shell|^qs -p $TENKAI/src/ryoku/shell|^Hyprland -c $RUN" >/dev/null 2>&1 || break
   sleep 0.25
 done
 stray=""
 for p in $(pgrep -f "^$RUN/bin/" 2>/dev/null || true); do
-  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI" && stray="$stray $p"
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI" && stray="$stray $p"
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
-  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$MEI/src/ryoku" && stray="$stray qs:$p"
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/ryoku" && stray="$stray qs:$p"
 done
-for p in $(pgrep -x mei-hub 2>/dev/null || true); do stray="$stray hub:$p"; done
-[ -z "$stray" ] && ok "no Mei process left" || bad "strays:$stray"
+for p in $(pgrep -x tenkai-hub 2>/dev/null || true); do stray="$stray hub:$p"; done
+[ -z "$stray" ] && ok "no Tenkai process left" || bad "strays:$stray"
 waysock="$(ls "$RT"/wayland-* 2>/dev/null | tr '\n' ' ')"
 [ -z "$waysock" ] && ok "nested Wayland socket removed" || bad "Wayland socket left: $waysock"
 livehypr="$(find "$RT/hypr" -name .socket.sock 2>/dev/null | tr '\n' ' ')"
 [ -z "$livehypr" ] && ok "no live Hyprland control socket" || bad "live Hyprland socket left: $livehypr"
-# Lock files and the per-instance directory are inert; ./mei run removes them
+# Lock files and the per-instance directory are inert; ./tenkai run removes them
 # before the next start. Report them instead of counting them as a failure.
-stale="$(ls "$RT"/mei-shell.sock.lock "$RT"/ryogami.sock "$RT"/mei-hub.lock 2>/dev/null | tr '\n' ' ')"
+stale="$(ls "$RT"/tenkai-shell.sock.lock "$RT"/ryogami.sock "$RT"/tenkai-hub.lock 2>/dev/null | tr '\n' ' ')"
 [ -n "$stale" ] && note "inert runtime files left (next run cleans or rebinds): $stale"
 inst="$(ls -d "$RT"/hypr/*/ 2>/dev/null | tr '\n' ' ')"
 [ -n "$inst" ] && note "stale instance dir left (no live socket): $inst"
@@ -319,8 +319,8 @@ else
 fi
 
 echo; echo "=== verify-untouched AFTER ==="
-( cd "$MEI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
-    XDG_RUNTIME_DIR="$HOST_XDG" ./mei verify-untouched 2>&1 | tail -1 )
+( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
+    XDG_RUNTIME_DIR="$HOST_XDG" ./tenkai verify-untouched 2>&1 | tail -1 )
 
 echo
 [ "$fail" = 0 ] && echo "RESULT: PASS" || echo "RESULT: FAIL"

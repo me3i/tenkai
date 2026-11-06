@@ -31,7 +31,7 @@ type hyprpmPlugin struct {
 	Description string   `toml:"description"`
 	Output      string   `toml:"output"`
 	Build       []string `toml:"build"`
-	// Assets is a Mei extension for plugins authored in this repo: a directory
+	// Assets is a Tenkai extension for plugins authored in this repo: a directory
 	// the build fills, laid beside the .so as <userPluginDir>/<id>/.
 	Assets string `toml:"assets"`
 }
@@ -110,10 +110,10 @@ func tipManifest(dir string) (hyprpmManifest, error) {
 
 func srcCacheDir() string {
 	if d := os.Getenv("XDG_CACHE_HOME"); d != "" {
-		return filepath.Join(d, "mei", "hypr-plugins-src")
+		return filepath.Join(d, "tenkai", "hypr-plugins-src")
 	}
 	home, _ := os.UserHomeDir()
-	return filepath.Join(home, ".cache", "mei", "hypr-plugins-src")
+	return filepath.Join(home, ".cache", "tenkai", "hypr-plugins-src")
 }
 
 // repoSlug names a clone dir after its URL: host and path, nothing else.
@@ -205,14 +205,14 @@ func checkoutRoot(flag string) string {
 		home, _ := os.UserHomeDir()
 		state = filepath.Join(home, ".local", "state")
 	}
-	b, err := os.ReadFile(filepath.Join(state, "mei", "repo"))
+	b, err := os.ReadFile(filepath.Join(state, "tenkai", "repo"))
 	if err != nil {
 		return ""
 	}
 	return strings.TrimSpace(string(b))
 }
 
-// localSourceDir finds the source of a Mei-authored plugin: the checkout when
+// localSourceDir finds the source of a Tenkai-authored plugin: the checkout when
 // this box deploys from one, else the copy ryoku-desktop ships.
 func localSourceDir(d pluginDef, checkout string) (string, bool) {
 	if checkout != "" {
@@ -437,7 +437,7 @@ func repoDirFor(url string, fetched map[string]string, log io.Writer) (string, e
 }
 
 // needsBuild says whether a plugin has no copy matching the installed headers. A
-// Mei-authored plugin is also stale once its source is newer than the build.
+// Tenkai-authored plugin is also stale once its source is newer than the build.
 func needsBuild(d pluginDef, hdr hyprABI, checkout string) (bool, string) {
 	copies := pluginCopies(d.ID)
 	for _, c := range copies {
@@ -620,7 +620,7 @@ func runPluginAdd(args []string) error {
 			continue
 		}
 		if _, bundled := bundledByID(id); bundled {
-			res.Failed[id] = "already bundled with Mei; rebuild it from its own row instead"
+			res.Failed[id] = "already bundled with Tenkai; rebuild it from its own row instead"
 			continue
 		}
 		jobs = append(jobs, buildJob{
@@ -645,7 +645,7 @@ func runPluginRemove(args []string) error {
 	}
 	id := args[0]
 	if _, bundled := bundledByID(id); bundled {
-		return fmt.Errorf("%s is bundled with Mei: turn it off instead of removing it", id)
+		return fmt.Errorf("%s is bundled with Tenkai: turn it off instead of removing it", id)
 	}
 	unloadPluginCopies(id)
 	so := filepath.Join(userPluginDir(), id+".so")

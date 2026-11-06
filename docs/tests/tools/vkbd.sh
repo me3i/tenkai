@@ -7,12 +7,12 @@
 # the virtual-keyboard protocol on the display the caller names.
 #
 # Every call goes through docs/tests/tools/nested-input.sh, which resolves that
-# display to Mei's own nested runtime (.r) and refuses anything else, so this
+# display to Tenkai's own nested runtime (.r) and refuses anything else, so this
 # can never type into the owner's live session. Called on its own, outside the
 # guard, it is inert: wtype has nowhere to send a key.
 #
-# This file is the source; ./mei links it to .run/tools/vkbd/vkbd at provision
-# time (mei_provision_bin), which is the path the harnesses use.
+# This file is the source; ./tenkai links it to .run/tools/vkbd/vkbd at provision
+# time (tenkai_provision_bin), which is the path the harnesses use.
 set -uo pipefail
 
 die() { echo "vkbd: $*" >&2; exit 2; }

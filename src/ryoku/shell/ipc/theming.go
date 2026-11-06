@@ -23,32 +23,32 @@ import (
 // Ryogami daemon now.
 
 func findHubBin() string {
-	// Prefer the mei-hub next to this binary (both live in .run/bin for a
+	// Prefer the tenkai-hub next to this binary (both live in .run/bin for a
 	// dev checkout), then PATH, then the usual install locations. Never the
-	// upstream hub: Mei must not drive Ryoku's backend.
+	// upstream hub: Tenkai must not drive Ryoku's backend.
 	if exe, err := os.Executable(); err == nil {
-		cand := filepath.Join(filepath.Dir(exe), "mei-hub")
+		cand := filepath.Join(filepath.Dir(exe), "tenkai-hub")
 		if fi, err := os.Stat(cand); err == nil && fi.Mode()&0o111 != 0 {
 			return cand
 		}
 	}
-	if p, err := exec.LookPath("mei-hub"); err == nil {
+	if p, err := exec.LookPath("tenkai-hub"); err == nil {
 		return p
 	}
 	home := os.Getenv("HOME")
 	for _, cand := range []string{
-		filepath.Join(home, ".local", "bin", "mei-hub"),
-		"/usr/local/bin/mei-hub",
-		"/usr/bin/mei-hub",
+		filepath.Join(home, ".local", "bin", "tenkai-hub"),
+		"/usr/local/bin/tenkai-hub",
+		"/usr/bin/tenkai-hub",
 	} {
 		if fi, err := os.Stat(cand); err == nil && fi.Mode()&0o111 == 0o111 {
 			return cand
 		}
 	}
-	return "mei-hub"
+	return "tenkai-hub"
 }
 
-func wallState() string { return filepath.Join(stateDir(), "mei-wallpaper") }
+func wallState() string { return filepath.Join(stateDir(), "tenkai-wallpaper") }
 
 func isFile(p string) bool {
 	st, err := os.Stat(p)
@@ -173,7 +173,7 @@ func (d *daemon) scheduleTheme() {
 // paintWorker: regen the palette for whatever is on screen, reload hypr
 // (config-only, monitors untouched), wake the LED worker. The wallpaper source
 // is the ryogami frame the bridge mirrors (watchRyogami schedules a pass on
-// every switch), matugenApply authors ~/.cache/mei/colors.json and fans the
+// every switch), matugenApply authors ~/.cache/tenkai/colors.json and fans the
 // palette into the app templates, and a fixed named theme overrides the
 // dynamic path entirely so the two never write colors.json on the same
 // trigger. Runs for the life of the daemon.
@@ -242,7 +242,7 @@ func (d *daemon) reassertPreview() {
 	if !d.wmc.Can(wm.CapLiveConfigEval) {
 		return
 	}
-	draft, ok := readLivePreview(filepath.Join(meiConfigDir(), ".desktop-preview.json"))
+	draft, ok := readLivePreview(filepath.Join(tenkaiConfigDir(), ".desktop-preview.json"))
 	if !ok {
 		return
 	}
@@ -294,7 +294,7 @@ func themeAppsEnabled() bool {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".config")
 	}
-	b, err := os.ReadFile(filepath.Join(base, "mei", "theme.json"))
+	b, err := os.ReadFile(filepath.Join(base, "tenkai", "theme.json"))
 	if err != nil {
 		return true
 	}
@@ -307,10 +307,10 @@ func themeAppsEnabled() bool {
 	return *s.ThemeApps
 }
 
-// blankGtk drops the Mei palette from the generated GTK stylesheets, so GTK /
+// blankGtk drops the Tenkai palette from the generated GTK stylesheets, so GTK /
 // libadwaita apps fall back to their own stock colours when app theming is off.
 func blankGtk(cfgBase string) {
-	const off = "/* Mei: app theming is off; apps use their own colours. */\n"
+	const off = "/* Tenkai: app theming is off; apps use their own colours. */\n"
 	for _, rel := range []string{"gtk-3.0/gtk.css", "gtk-4.0/gtk.css"} {
 		p := filepath.Join(cfgBase, rel)
 		_ = os.MkdirAll(filepath.Dir(p), 0o755)
@@ -319,7 +319,7 @@ func blankGtk(cfgBase string) {
 }
 
 // ledsWorker: push the new accent at the lighting devices the user put under
-// Mei's control. `ryoku-hub lighting accent` returns without touching anything
+// Tenkai's control. `ryoku-hub lighting accent` returns without touching anything
 // while lighting is off or no device is adopted, so an untouched install never
 // talks to a keyboard. Reaching hardware is slow (seconds on first use), so it
 // lives on its own coalescing worker and never touches the theme hot path. Runs

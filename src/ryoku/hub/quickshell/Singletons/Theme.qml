@@ -2,7 +2,7 @@ pragma Singleton
 import QtQuick
 import Quickshell
 
-// Mei Settings palette, the website's "Greek-noir yakuza" language in QML.
+// Tenkai Settings palette, the website's "Greek-noir yakuza" language in QML.
 // A near-black canvas so the one vermillion accent (M mark, active section,
 // focused search, numerals) reads as deliberate, never a wash. Warm-white type,
 // gold used only as kintsugi. Depth from hairlines + hard offset shadows, not

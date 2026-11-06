@@ -68,7 +68,7 @@ func TestBuildDomainXMLWindows(t *testing.T) {
 		"<hyperv mode='custom'>",
 		"<hidden state='on'/>",
 		"function='0x0'", "function='0x1'", // GPU + its audio function
-		"managed='no'", // the Mei hook binds vfio
+		"managed='no'", // the Tenkai hook binds vfio
 		"mem-path=/dev/kvmfr0,size=134217728,share=yes", // kvmfr 128 MiB
 		"<tpm model='tpm-crb'>",                         // Windows 11 TPM
 		"name='secure-boot'",                            // firmware knob present

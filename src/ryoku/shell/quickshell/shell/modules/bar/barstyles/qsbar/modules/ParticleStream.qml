@@ -11,7 +11,7 @@ Item {
     required property var   theme
     required property Item  layout   // island: exposes pillRuns, runRightEdge(), runLeftEdge()
     property bool active: false
-    // Mei CAVA feed: the stream flows on a passive sine when idle and swells
+    // Tenkai CAVA feed: the stream flows on a passive sine when idle and swells
     // with playback energy when music plays. Claimed only while the stream is
     // live so cava (owner-refcounted) runs solely when the gap animation is on
     // screen and unfrozen.
@@ -962,9 +962,9 @@ Item {
         lastNet7 = netMode7
     }
 
-    // Mei pushed an update (UpdateWidget's 6h poll flipped to available)
+    // Tenkai pushed an update (UpdateWidget's 6h poll flipped to available)
     readonly property bool upd7: theme.omarchyUpdateAvail === true
-    onUpd7Changed: if (armed7 && upd7) pushText("UPDATE READY", "MEI", 1, "long")
+    onUpd7Changed: if (armed7 && upd7) pushText("UPDATE READY", "TENKAI", 1, "long")
 
     // do-not-disturb toggled
     readonly property bool dnd7: theme.notifSilenced === true

@@ -28,9 +28,9 @@ func parsePerfFlag(b []byte, key string) bool {
 	return v
 }
 
-// meiConfigDir is ~/.config/ryoku (honouring XDG_CONFIG_HOME), the dir the
-// Mei Settings sections write. Empty only when the home dir is unknowable.
-func meiConfigDir() string {
+// tenkaiConfigDir is ~/.config/ryoku (honouring XDG_CONFIG_HOME), the dir the
+// Tenkai Settings sections write. Empty only when the home dir is unknowable.
+func tenkaiConfigDir() string {
 	dir := os.Getenv("XDG_CONFIG_HOME")
 	if dir == "" {
 		home, err := os.UserHomeDir()
@@ -39,13 +39,13 @@ func meiConfigDir() string {
 		}
 		dir = filepath.Join(home, ".config")
 	}
-	return filepath.Join(dir, "mei")
+	return filepath.Join(dir, "tenkai")
 }
 
-// perfPath is ~/.config/mei/performance.json, the file the Performance section
-// in Mei Settings writes. Empty only when the home dir is unknowable.
+// perfPath is ~/.config/tenkai/performance.json, the file the Performance section
+// in Tenkai Settings writes. Empty only when the home dir is unknowable.
 func perfPath() string {
-	dir := meiConfigDir()
+	dir := tenkaiConfigDir()
 	if dir == "" {
 		return ""
 	}

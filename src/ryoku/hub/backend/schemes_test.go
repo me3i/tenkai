@@ -14,7 +14,7 @@ import (
 func TestCurrentSchemeReportsFollow(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	tp := filepath.Join(dir, "mei", "theme.json")
+	tp := filepath.Join(dir, "tenkai", "theme.json")
 	if err := os.MkdirAll(filepath.Dir(tp), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -52,15 +52,15 @@ func TestSchemeFollowRoundTrips(t *testing.T) {
 	}
 }
 
-func TestApplyMeiThemeUsesMeiFrameBarLook(t *testing.T) {
-	t.Skip("Mei ships qsbar; the ryoku-frame bar look is disabled")
+func TestApplyTenkaiThemeUsesTenkaiFrameBarLook(t *testing.T) {
+	t.Skip("Tenkai ships qsbar; the ryoku-frame bar look is disabled")
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(dir, "config"))
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("PATH", "")
 
-	shellPath := filepath.Join(dir, "config", "mei", "shell.json")
+	shellPath := filepath.Join(dir, "config", "tenkai", "shell.json")
 	if err := os.MkdirAll(filepath.Dir(shellPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -68,7 +68,7 @@ func TestApplyMeiThemeUsesMeiFrameBarLook(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := applyMeiTheme(); err != nil {
+	if err := applyTenkaiTheme(); err != nil {
 		t.Fatal(err)
 	}
 	got := readJSONMap(shellPath)

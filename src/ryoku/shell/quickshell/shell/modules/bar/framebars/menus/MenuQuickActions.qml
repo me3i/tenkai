@@ -11,9 +11,9 @@ import "../../../../components"
 // menu; command actions run and close. Icons are 24px Material Symbols.
 //
 // Divergence recorded: the reference wraps Logout/Reboot/Shutdown in a
-// ConfirmationDialog first; Mei fires them through the same immediate path its
+// ConfirmationDialog first; Tenkai fires them through the same immediate path its
 // bar power actions already use (runBarAction), so behaviour matches the rest of
-// the Mei shell. A ConfirmationDialog (contract 16 sec 2.2) is the follow-up.
+// the Tenkai shell. A ConfirmationDialog (contract 16 sec 2.2) is the follow-up.
 Item {
     id: root
 
@@ -50,7 +50,7 @@ Item {
         case "airplane": Toggles.toggleWifi(); return;
         case "night-light": Toggles.toggleNight(); return;
         case "color": Quickshell.execDetached(["ryoku-cmd-color-picker"]); root.requestClose(); return;
-        case "settings": Quickshell.execDetached(["mei-shell", "hub", "open"]); root.requestClose(); return;
+        case "settings": Quickshell.execDetached(["tenkai-shell", "hub", "open"]); root.requestClose(); return;
         case "lock": SessionActions.lock(); root.requestClose(); return;
         case "logout": SessionActions.run("logout"); return;
         case "reboot": SessionActions.run("reboot"); return;

@@ -105,7 +105,7 @@ func calendarCacheDir() string {
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
 	}
-	return filepath.Join(base, "mei", "holidays")
+	return filepath.Join(base, "tenkai", "holidays")
 }
 
 func (s *calendarState) cachePath(country string, year int) string {
@@ -130,10 +130,10 @@ func (s *calendarState) loadYear(country, subdivision string, year int) ([]calen
 		}
 	}
 
-	// MEI: the holiday service fetch is compiled out (no net/http import here).
+	// TENKAI: the holiday service fetch is compiled out (no net/http import here).
 	// A cached year is still served, even stale; with no cache the year is
 	// simply unavailable.
-	err := errors.New("mei: outbound network disabled")
+	err := errors.New("tenkai: outbound network disabled")
 	if cachedErr == nil && decodeErr == nil {
 		return filterCalendarHolidays(cached, subdivision), "stale-cache", err
 	}

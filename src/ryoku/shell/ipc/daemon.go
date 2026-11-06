@@ -39,12 +39,12 @@ var components = []component{
 
 func reloadCoverPath() string {
 	if shellDir != "" {
-		return filepath.Join(shellDir, "scripts", "mei-reload-cover")
+		return filepath.Join(shellDir, "scripts", "tenkai-reload-cover")
 	}
 	if exe, err := os.Executable(); err == nil {
-		return filepath.Join(filepath.Dir(exe), "mei-reload-cover")
+		return filepath.Join(filepath.Dir(exe), "tenkai-reload-cover")
 	}
-	return "mei-reload-cover"
+	return "tenkai-reload-cover"
 }
 
 var reloadCoverOutput = func(ctx context.Context) ([]byte, error) {
@@ -94,7 +94,7 @@ func moduleDisabled(name string) bool {
 	if name == "" {
 		return false
 	}
-	dir := meiConfigDir()
+	dir := tenkaiConfigDir()
 	if dir == "" {
 		return false
 	}
@@ -134,7 +134,7 @@ func componentDisabled(name string) bool {
 	if name == "shell" {
 		return false
 	}
-	// mei: with surfaces consolidated into the single shell, per-surface disable
+	// tenkai: with surfaces consolidated into the single shell, per-surface disable
 	// is now internal to the shell; performance.json's disabledComponents no longer
 	// maps to separate processes, so this only ever guards components that no
 	// longer exist.
@@ -436,7 +436,7 @@ func quitStaleDaemon(path string) {
 }
 
 // setupQmlImportPath puts the active shell config root and home-installed
-// Mei plugins on the import path inherited by supervised Quickshell
+// Tenkai plugins on the import path inherited by supervised Quickshell
 // processes. External Store scenes import stable modules from the config root;
 // dev sessions point at the checkout instead of a materialized copy.
 func setupQmlImportPath() {
@@ -456,7 +456,7 @@ func setupQmlImportPath() {
 	exe, _ := os.Executable()
 	if strings.HasPrefix(exe, home+string(os.PathSeparator)) {
 		dirs = append(dirs, filepath.Join(home, ".local", "lib", "qt6", "qml"))
-	} else if _, err := os.Stat("/usr/lib/qt6/qml/Mei/Blobs/qmldir"); err != nil {
+	} else if _, err := os.Stat("/usr/lib/qt6/qml/Tenkai/Blobs/qmldir"); err != nil {
 		dirs = append(dirs, filepath.Join(home, ".local", "lib", "qt6", "qml"))
 	}
 	prefix := strings.Join(dirs, string(os.PathListSeparator))
@@ -474,7 +474,7 @@ func setupQmlImportPath() {
 // watcher, the tray host, the keyring prompter, the theme workers, the in-shell
 // wallpaper surface and the first wallpaper, then the persistent Quickshell
 // components.
-// bootstrap starts only the services Mei keeps. Mei is read-only toward the
+// bootstrap starts only the services Tenkai keeps. Tenkai is read-only toward the
 // compositor and the owner's session: nothing here touches /dev/input, plays
 // audio, fetches weather/updates/holidays, spawns ryogami/ryoku-hub, or runs a
 // polkit agent. The topic-registering services stay because the kept bar
@@ -510,7 +510,7 @@ func visualOverridesPath() string {
 			base = ".config"
 		}
 	}
-	return filepath.Join(base, "mei", "hypr-visual.json")
+	return filepath.Join(base, "tenkai", "hypr-visual.json")
 }
 
 func clampVisualInt(p *int, lo, hi int) int {
@@ -621,13 +621,13 @@ func reapplyVisualOverrides() {
 	b, err := os.ReadFile(path)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			fmt.Printf("mei-shell: visual overrides: cannot read %s: %v\n", path, err)
+			fmt.Printf("tenkai-shell: visual overrides: cannot read %s: %v\n", path, err)
 		}
 		return
 	}
 	var o visualOverrides
 	if err := json.Unmarshal(b, &o); err != nil {
-		fmt.Printf("mei-shell: visual overrides: %s is not valid JSON: %v\n", path, err)
+		fmt.Printf("tenkai-shell: visual overrides: %s is not valid JSON: %v\n", path, err)
 		return
 	}
 	script := visualOverridesLua(o)
@@ -636,20 +636,20 @@ func reapplyVisualOverrides() {
 	}
 	out, err := exec.Command("hyprctl", "eval", script).CombinedOutput()
 	if err != nil {
-		fmt.Printf("mei-shell: visual overrides: hyprctl eval failed: %v (%s)\n", err, strings.TrimSpace(string(out)))
+		fmt.Printf("tenkai-shell: visual overrides: hyprctl eval failed: %v (%s)\n", err, strings.TrimSpace(string(out)))
 		return
 	}
-	fmt.Printf("mei-shell: visual overrides applied from %s\n", path)
+	fmt.Printf("tenkai-shell: visual overrides applied from %s\n", path)
 }
 
 func (d *daemon) bootstrap() {
 	reapplyVisualOverrides()
 	// Displays, advanced window settings and keybinds: the same runtime-override
 	// files, applied before any surface is painted so the first frame is right.
-	reapplyMeiOverrides()
+	reapplyTenkaiOverrides()
 	d.startSettings()
 	if moduleDisabled("tray") {
-		fmt.Println("mei-shell: tray module off in shell.json; no StatusNotifierWatcher claimed")
+		fmt.Println("tenkai-shell: tray module off in shell.json; no StatusNotifierWatcher claimed")
 	} else {
 		d.startTray()
 	}
@@ -663,8 +663,8 @@ func (d *daemon) bootstrap() {
 	// The session power verbs (logout, reboot, suspend, shutdown). They were
 	// left out of the bootstrap when the session module was trimmed, so the
 	// sidebar's power buttons had no verb to call and were dead. The actions
-	// themselves stay guarded: MEI_TEST (a nested test session) and
-	// MEI_STUB_POWER (the first live trial) suppress every one of them.
+	// themselves stay guarded: TENKAI_TEST (a nested test session) and
+	// TENKAI_STUB_POWER (the first live trial) suppress every one of them.
 	d.startSession()
 	// The OSD feed: the daemon watches the panel's backlight and republishes
 	// every change, which is what the shell's OSD windows (volume, mic,
@@ -673,15 +673,15 @@ func (d *daemon) bootstrap() {
 	// never fire.
 	d.startOsd()
 	// The clipboard history: the daemon watches the selection, keeps a bounded
-	// local history under Mei's own state and publishes it. The surface was
+	// local history under Tenkai's own state and publishes it. The surface was
 	// always in the shell; the topic was left out of the bootstrap when the
 	// module was trimmed, so the surface had nothing to show.
 	d.startClipboard()
 	// The polkit prompt: the daemon always publishes the topic, and registers
-	// the D-Bus agent only when MEI_POLKIT_AGENT=1 (the live full profile
+	// the D-Bus agent only when TENKAI_POLKIT_AGENT=1 (the live full profile
 	// sets it; dev mode and the overlay profile do not). The registration
 	// fails closed: if the session's polkit slot is already held by another
-	// agent, the existing agent keeps working and Mei does not fight it.
+	// agent, the existing agent keeps working and Tenkai does not fight it.
 	d.startPolkit()
 	d.startNetwork()
 	d.startNightlight()
@@ -934,7 +934,7 @@ func qsEnv() []string {
 // surfaceLog is where a supervised surface's stderr goes, one file per component
 // so a crash on start is still readable after the respawn.
 func surfaceLog(name string) string {
-	dir := filepath.Join(stateDir(), "mei", "surfaces")
+	dir := filepath.Join(stateDir(), "tenkai", "surfaces")
 	_ = os.MkdirAll(dir, 0o755)
 	return filepath.Join(dir, name+".log")
 }
@@ -1017,7 +1017,7 @@ func (d *daemon) supervise(name string) {
 		exited := make(chan struct{})
 		if name == "shell" {
 			// A shell that stays up past its crash window is the desktop coming
-			// back after a boot; record it for the boot guard (mei boot-guard),
+			// back after a boot; record it for the boot guard (tenkai boot-guard),
 			// which reverts an update whose next boots never get here.
 			go recordBootOK(exited)
 		}
@@ -1214,7 +1214,7 @@ func (d *daemon) handle(conn net.Conn) {
 		if secure {
 			kind = "secure"
 		}
-		log.Printf("mei-shell: the session lock is %s (%s)", state, kind)
+		log.Printf("tenkai-shell: the session lock is %s (%s)", state, kind)
 		fmt.Fprintln(conn, "ok")
 		return
 	}
@@ -1551,7 +1551,7 @@ func (d *daemon) dispatch(line string) string {
 		}
 		if args[0] == "remove" && len(args) >= 2 {
 			// `theme remove <id>` uninstalls a downloaded scheme. Reset the
-			// applied scheme to the Mei default first when it is the one being
+			// applied scheme to the Tenkai default first when it is the one being
 			// removed, so the desktop never keeps a scheme whose files are gone;
 			// the settings store drives the retheme off that write.
 			id := strings.Join(args[1:], " ")
@@ -1681,7 +1681,7 @@ func (d *daemon) voice() string {
 
 // reload restarts every supervised component by terminating it; the supervisor
 // brings it back. It waits for the result: answering "ok" while the surface dies
-// on the same error is what made `mei reload` look like it does nothing on a
+// on the same error is what made `tenkai reload` look like it does nothing on a
 // black screen.
 func (d *daemon) reload() string {
 	_ = beginReloadCover()

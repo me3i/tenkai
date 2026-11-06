@@ -23,11 +23,11 @@ Singleton {
     property int rev: 0
 
     // Resolve the binary the way the shell does elsewhere: a checkout runs it out
-    // of MEI_SHELL_DIR/ipc, a deployed box finds it on PATH.
-    readonly property string _shellDir: Quickshell.env("MEI_SHELL_DIR")
-    // MEI: the daemon is `mei-shell` and is built to Mei's bin dir (on PATH), not
-    // <MEI_SHELL_DIR>/ipc; resolve it by name so the icon index actually loads.
-    readonly property string _bin: "mei-shell"
+    // of TENKAI_SHELL_DIR/ipc, a deployed box finds it on PATH.
+    readonly property string _shellDir: Quickshell.env("TENKAI_SHELL_DIR")
+    // TENKAI: the daemon is `tenkai-shell` and is built to Tenkai's bin dir (on PATH), not
+    // <TENKAI_SHELL_DIR>/ipc; resolve it by name so the icon index actually loads.
+    readonly property string _bin: "tenkai-shell"
 
     // path(name, fallback): Quickshell.iconPath's semantics, resolved against the
     // index instead of Qt's icon engine.

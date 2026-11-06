@@ -39,13 +39,13 @@ Singleton {
     function reload() {
         schemaProc.running = false;
         schemaProc.running = true;
-        // MEI: the "unhonored" list is never fetched. The verb shells out to
+        // TENKAI: the "unhonored" list is never fetched. The verb shells out to
         // `ryoku-wm-hyprland apply <store> --preview`, whose --preview pushes the
         // whole appearance (gaps, size, border) onto the live compositor with the
         // provider's *defaults* when no store exists — so asking a read-only
         // question repainted the whole window frame, every time the Hub opened.
         // The only consumers are the disabled Window Manager page and the switch
-        // sheet, so nothing Mei ships misses it.
+        // sheet, so nothing Tenkai ships misses it.
         root.unhonored = [];
         root.revision++;
     }
@@ -56,7 +56,7 @@ Singleton {
     // so a page may reload() after a save to refresh the cannot-do list.
     Process {
         id: schemaProc
-        command: ["mei-hub", "desktop", "schema"]
+        command: ["tenkai-hub", "desktop", "schema"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {
@@ -71,12 +71,12 @@ Singleton {
         }
     }
 
-    // MEI: never fetched - see reload(). Kept (not deleted) so the shared page
+    // TENKAI: never fetched - see reload(). Kept (not deleted) so the shared page
     // shape is unchanged and upstream can be restored by wiring this back in,
     // gated behind the same `desktop unhonored` being made side-effect free.
     Process {
         id: unhonoredProc
-        command: ["mei-hub", "desktop", "unhonored"]
+        command: ["tenkai-hub", "desktop", "unhonored"]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {

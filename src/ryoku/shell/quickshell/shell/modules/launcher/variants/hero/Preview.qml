@@ -121,7 +121,7 @@ Item {
 
         Text {
             anchors.right: parent.right
-            visible: false   // MEI: weather is off the keep list
+            visible: false   // TENKAI: weather is off the keep list
             text: (root.effectiveWeatherUnit === "F" ? "70" : "21")
                 + (root.effectiveWeatherUnit === "F"
                     ? I18n.tr("\u00b0F") : I18n.tr("\u00b0C"))
@@ -133,7 +133,7 @@ Item {
         }
         Text {
             anchors.right: parent.right
-            visible: false   // MEI: weather is off the keep list
+            visible: false   // TENKAI: weather is off the keep list
             text: I18n.tr("Clear sky")
             color: Tokens.inkMuted
             font.family: Tokens.ui

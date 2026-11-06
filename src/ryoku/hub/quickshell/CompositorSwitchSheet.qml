@@ -10,7 +10,7 @@ import Quickshell.Io
 // `ryoku-hub wm preview <target>`, what carries over and what the target cannot
 // honour, then asks the one extra question a switch raises: keep the compositor
 // you are leaving so you can return with no download, or remove it to reclaim
-// the space. Confirming runs `mei wm use <target>` in a terminal (the same
+// the space. Confirming runs `tenkai wm use <target>` in a terminal (the same
 // reversible pacman transaction the CLI uses), and, only if you chose remove,
 // drops the old package afterwards. Nothing here is spelled
 // per compositor: every name, package and path comes from the preview.
@@ -35,7 +35,7 @@ Item {
         sh.switched = false;
         sh.failure = "";
         sh.loading = true;
-        previewProc.command = ["mei-hub", "wm", "preview", targetRow.name];
+        previewProc.command = ["tenkai-hub", "wm", "preview", targetRow.name];
         previewProc.running = false;
         previewProc.running = true;
         sh.active = true;
@@ -99,7 +99,7 @@ Item {
         onExited: (code) => {
             sh.switching = false;
             sh.switched = code === 0;
-            sh.failure = code === 0 ? "" : I18n.tr("The switch did not complete. Run mei wm use %1 to see why.").arg(sh.targetName);
+            sh.failure = code === 0 ? "" : I18n.tr("The switch did not complete. Run tenkai wm use %1 to see why.").arg(sh.targetName);
         }
     }
 
@@ -118,18 +118,18 @@ Item {
         // progress and its sudo prompt.
         if (sh.deployed && !removing) {
             sh.switching = true;
-            switchProc.command = ["mei", "wm", "use", sh.target.name, "--keep-previous"];
+            switchProc.command = ["tenkai", "wm", "use", sh.target.name, "--keep-previous"];
             switchProc.running = false;
             switchProc.running = true;
             return;
         }
-        var line = "mei wm use " + sh.shq(sh.target.name)
+        var line = "tenkai wm use " + sh.shq(sh.target.name)
             + (removing ? " --remove-previous" : " --keep-previous");
         line += "; echo; read -n1 -rsp " + sh.shq(I18n.tr("Done. Press any key to close.")) + "; echo";
         Spawn.run(["kitty", "--class", "ryoku-wm-switch", "-e", "sh", "-c", line]);
         sh.close();
     }
-    function logOut() { Spawn.run(["mei", "wm", "act", "session.exit"]); }
+    function logOut() { Spawn.run(["tenkai", "wm", "act", "session.exit"]); }
 
     // dim backdrop: a click outside the card cancels.
     MouseArea { anchors.fill: parent; onClicked: sh.close() }

@@ -14,7 +14,7 @@ import "lib/weather.js" as Model
 Singleton {
     id: root
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     // The whole frame, plus the parts callers bind directly.
     property var frame: ({ status: "loading", hourly: [], daily: [] })

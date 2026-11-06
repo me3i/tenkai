@@ -3,14 +3,14 @@ import Quickshell
 import Quickshell.Io
 import Ryoku.Ui.Singletons
 
-// Mei Settings entry point. A normal floating window (not a layer-shell
+// Tenkai Settings entry point. A normal floating window (not a layer-shell
 // surface); the Hyprland window rule floats and centres it. `qs -c hub` loads
 // this (the config dir and binary keep the internal "hub" name).
 ShellRoot {
     FloatingWindow {
         id: win
-        title: I18n.tr("Mei Settings")
-        // Mei Settings is a page, not a dialog: it opens at 99% of the screen
+        title: I18n.tr("Tenkai Settings")
+        // Tenkai Settings is a page, not a dialog: it opens at 99% of the screen
         // width, filling the height the shell bar leaves, so the settings get the
         // room the layout is designed for instead of a fixed 1200px strip. The
         // size is requested here and honoured by whichever compositor owns
@@ -41,7 +41,7 @@ ShellRoot {
         }
 
         // The launcher keybind (Super+,) guards against a second instance with
-        // `flock` on $XDG_RUNTIME_DIR/mei-hub.lock, held for the life of this process. The
+        // `flock` on $XDG_RUNTIME_DIR/tenkai-hub.lock, held for the life of this process. The
         // in-app dismissals (Escape, close button) already route requestQuit();
         // closing the window through the compositor (Super+Q) only hides it while
         // qs keeps running, which would pin the lock and make Super+, silently

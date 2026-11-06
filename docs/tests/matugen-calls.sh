@@ -1,23 +1,23 @@
 #!/usr/bin/env bash
-# matugen-calls.sh — R5 static check: no matugen call may omit Mei's -c config.
+# matugen-calls.sh — R5 static check: no matugen call may omit Tenkai's -c config.
 #
 # Three things run here:
 #   1. every matugen spawn in the tracked sources is listed with its verdict;
 #   2. a spawn that passes -c is accepted on the spot — the .run/bin shim
-#      (mei_write_matugen_shim in ./mei) re-checks at runtime that the path it
+#      (tenkai_write_matugen_shim in ./tenkai) re-checks at runtime that the path it
 #      names is inside the project, so a literal -c here cannot smuggle a live
 #      ~/.config/matugen path past the session;
 #   3. a spawn that passes NO -c fails, except the one audited indirection in
 #      the daemon whose arguments are built by matugenArgs() and normalised by
-#      the shim (it injects Mei's config). That exception is named, in this file,
+#      the shim (it injects Tenkai's config). That exception is named, in this file,
 #      so a new call site cannot borrow it silently.
 #
 # Usage: matugen-calls.sh [extra-file]
 #   extra-file — scanned with the same rules; used by the gate's --prove run to
 #   show this check failing on a doctored spawn.
 set -uo pipefail
-MEI="$(cd "$(dirname "$0")/../.." && pwd)"
-cd "$MEI" || exit 1
+TENKAI="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$TENKAI" || exit 1
 
 extra="${1:-}"
 fails=0
@@ -33,7 +33,7 @@ verdict() { # $1 = file:line, $2 = the line text
       ;;
     *'exec.Command("matugen", args...)'*)
       # The audited indirection: matugenArgs() builds the argv, the shim adds
-      # Mei's -c. Nothing else may look like this.
+      # Tenkai's -c. Nothing else may look like this.
       printf 'OK-SHIM  %s   (argv built by matugenArgs; the shim supplies -c)\n' "$where"
       return 0
       ;;
@@ -66,8 +66,8 @@ while IFS= read -r f; do
     *.qml) scan "$f" Qml ;;
     *.sh) scan "$f" Sh  ;;
   esac
-done < <(git ls-files 'src/*.go' 'src/*.qml' 'docs/*.sh' 'docs/tests/*.sh' 'mei' 2>/dev/null)
-# ./mei is bash, not sh: its own matugen reference is the config copy, not a spawn.
+done < <(git ls-files 'src/*.go' 'src/*.qml' 'docs/*.sh' 'docs/tests/*.sh' 'tenkai' 2>/dev/null)
+# ./tenkai is bash, not sh: its own matugen reference is the config copy, not a spawn.
 if [ -n "$extra" ] && [ -f "$extra" ]; then
   echo "--- proof material: $extra ---"
   scan "$extra" Go
@@ -76,8 +76,8 @@ fi
 
 echo "spawns checked: $seen   failures: $fails"
 if [ "$fails" -gt 0 ]; then
-  echo "matugen-calls: FAIL (a matugen call does not carry Mei's -c config)"
+  echo "matugen-calls: FAIL (a matugen call does not carry Tenkai's -c config)"
   exit 1
 fi
-echo "matugen-calls: PASS (every matugen call carries Mei's -c config, or is the audited shim-normalised argv)"
+echo "matugen-calls: PASS (every matugen call carries Tenkai's -c config, or is the audited shim-normalised argv)"
 exit 0

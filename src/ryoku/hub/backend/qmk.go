@@ -12,7 +12,7 @@ package main
 // of scope, so this provider offers one honest mode: Static, accent-driven.
 //
 // No `--save`: writing the colour to EEPROM on every theme change would wear the
-// chip, and Mei re-applies on login (autostart) and on resume (hypridle), so
+// chip, and Tenkai re-applies on login (autostart) and on resume (hypridle), so
 // the live colour is restored each session without persisting it.
 
 import (

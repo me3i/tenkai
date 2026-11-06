@@ -658,7 +658,7 @@ func removeFastfetchLogo() (string, error) {
 // import does: copied to ryoku-logo.<ext> in the fastfetch dir, a user-owned
 // name no package ships, and config.jsonc repointed at it. It returns the
 // stored source. A rice used to copy its emblem over the SHIPPED
-// fastfetch-emblem.png instead, which `mei materialize` re-lays on every
+// fastfetch-emblem.png instead, which `tenkai materialize` re-lays on every
 // update, so the rice's logo reset to the brand mark each time (docs/updates.md:
 // never write into a shipped path).
 func applyFastfetchEmblem(src string) (string, error) {
@@ -679,7 +679,7 @@ func applyFastfetchEmblem(src string) (string, error) {
 }
 
 // fastfetchOnShippedEmblem reports whether the readout draws the package's own
-// fastfetch-emblem.png (or nothing Mei wrote): the state a rice emblem lands in
+// fastfetch-emblem.png (or nothing Tenkai wrote): the state a rice emblem lands in
 // after materialize clobbered it, and the only state `rice emblem` repairs.
 func fastfetchOnShippedEmblem() bool {
 	m, err := loadFastfetch()

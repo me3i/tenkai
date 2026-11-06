@@ -6,7 +6,7 @@ import Quickshell.Wayland
 import Ryoku.Ui.Singletons
 import shell.services
 
-// The Mei dock: a first-class shell surface (namespace ryoku-dock), one per
+// The Tenkai dock: a first-class shell surface (namespace ryoku-dock), one per
 // monitor and style-agnostic -- it no longer belongs to any bar. A frosted
 // island row (DockBand) on the screen edge OPPOSITE the bar, revealed by a peek
 // strip when autohide is on.

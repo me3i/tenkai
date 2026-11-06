@@ -22,7 +22,7 @@ Singleton {
 
     Process {
         id: catalogProc
-        command: ["mei-shell", "theme", "catalog"]
+        command: ["tenkai-shell", "theme", "catalog"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

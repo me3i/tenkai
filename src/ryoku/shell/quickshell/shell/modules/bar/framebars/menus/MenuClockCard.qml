@@ -7,7 +7,7 @@ import shell.services
 // The quick-settings clock entry (contract 06 sec 2.5): a big bold weekday on
 // the left, with a stacked date and time taking the rest of the row. Rendered at
 // fixed reference pixels like the rest of the quick-settings stack; 24h format
-// follows the Mei shell-wide convention (the reference default is 12h,
+// follows the Tenkai shell-wide convention (the reference default is 12h,
 // recorded as a minor divergence). The calendar/weather clock MENU is separate
 // (MenuClock.qml); this card lives only inside the quick-settings stack.
 Item {

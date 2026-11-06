@@ -10,13 +10,13 @@ import shell.services
  * app class and banks the elapsed time against today's bucket
  * (per app, per hour, and a running total). "Active" means a real app is
  * focused; nothing syncs and nothing leaves the box. History persists to
- * ~/.local/state/mei/screentime.json (last 30 days) so a shell restart
+ * ~/.local/state/tenkai/screentime.json (last 30 days) so a shell restart
  * resumes the same day.
  */
 Singleton {
     id: root
 
-    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/mei"
+    readonly property string stateDir: (Quickshell.env("XDG_STATE_HOME") || (Quickshell.env("HOME") + "/.local/state")) + "/tenkai"
     readonly property int sampleSec: 10
 
     // { "YYYY-MM-DD": { total: int, apps: { class: sec }, hours: [24 ints] } }
@@ -89,7 +89,7 @@ Singleton {
         return I18n.tr("%1s").arg(sec);
     }
     function isRealApp(c) {
-        return !!c && !/^(mei|quickshell|org\.quickshell)/i.test(c);
+        return !!c && !/^(tenkai|quickshell|org\.quickshell)/i.test(c);
     }
     function zeros24() {
         const a = [];

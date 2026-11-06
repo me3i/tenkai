@@ -3,13 +3,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Live view of the daemon "updates" topic (mei status --json). The background
+// Live view of the daemon "updates" topic (tenkai status --json). The background
 // check lives in the daemon; this just parses the streamed frame so the bar glyph
 // reflects it without polling.
 Singleton {
     id: root
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     property var frame: ({})
     readonly property bool available: root.frame.available === true

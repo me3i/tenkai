@@ -62,7 +62,7 @@ type stageWall struct {
 	Layers []stageLayer `json:"layers,omitempty"`
 }
 
-// stageWalls is the daemon-owned registry at ~/.local/state/mei/stage-walls.json.
+// stageWalls is the daemon-owned registry at ~/.local/state/tenkai/stage-walls.json.
 // `current` mirrors the wallpaper on screen now so the shell can key its lookup.
 type stageWalls struct {
 	Current string               `json:"current"`
@@ -125,7 +125,7 @@ func logStage(what string, err error) {
 
 // --- paths -----------------------------------------------------------------
 
-func stageWallsPath() string { return filepath.Join(stateDir(), "mei", "stage-walls.json") }
+func stageWallsPath() string { return filepath.Join(stateDir(), "tenkai", "stage-walls.json") }
 func stageDir() string       { return filepath.Join(os.Getenv("HOME"), "Pictures", "Stage") }
 
 func stageStem(source string) string {
@@ -139,7 +139,7 @@ func stageBackgroundOut(source string) string {
 	return filepath.Join(stageWallDir(source), "background.png")
 }
 func stageIndexPath(source string) string { return filepath.Join(stageWallDir(source), ".index.json") }
-func stageProgressPath() string           { return filepath.Join(stateDir(), "mei", "stage", "progress") }
+func stageProgressPath() string           { return filepath.Join(stateDir(), "tenkai", "stage", "progress") }
 
 // --- shared fs helpers -----------------------------------------------------
 
@@ -251,7 +251,7 @@ func saveStageIndex(source string, idx stageIndex) {
 // motion) is the shell's; the daemon reads only quality, at each generation.
 func stageConfig() stageQuality {
 	def := stageQualityFor("draft")
-	dir := meiConfigDir()
+	dir := tenkaiConfigDir()
 	if dir == "" {
 		return def
 	}
@@ -284,13 +284,13 @@ func stageQualityFor(tier string) stageQuality {
 // --- engine ----------------------------------------------------------------
 
 // stageEngineBin resolves the ryostage helper. RYOKU_STAGE_ENGINE is the test /
-// out-of-tree seam; a dev run reaches it under MEI_SHELL_DIR; otherwise it is
+// out-of-tree seam; a dev run reaches it under TENKAI_SHELL_DIR; otherwise it is
 // on PATH once packaged.
 func stageEngineBin() string {
 	if bin := os.Getenv("RYOKU_STAGE_ENGINE"); bin != "" {
 		return bin
 	}
-	if dir := os.Getenv("MEI_SHELL_DIR"); dir != "" {
+	if dir := os.Getenv("TENKAI_SHELL_DIR"); dir != "" {
 		p := filepath.Join(dir, "scripts", "ryostage")
 		if isFile(p) {
 			return p
@@ -992,7 +992,7 @@ type stageWallsV1 struct {
 }
 
 func stageMigrationMarker() string {
-	return filepath.Join(stateDir(), "mei", "migrations", "ryostage-v2")
+	return filepath.Join(stateDir(), "tenkai", "migrations", "ryostage-v2")
 }
 
 // migrateStage folds the v1 Ryostage state into v2 once, gated by the marker.
@@ -1064,7 +1064,7 @@ type legacyParallaxWalls struct {
 	Layers map[string][]legacyParallaxLayer `json:"layers"`
 }
 
-func legacyDepthWallsPath() string { return filepath.Join(stateDir(), "mei", "depth-walls.json") }
+func legacyDepthWallsPath() string { return filepath.Join(stateDir(), "tenkai", "depth-walls.json") }
 func legacyDepthDir() string       { return filepath.Join(os.Getenv("HOME"), "Pictures", "Depth") }
 func legacyParallaxDir() string    { return filepath.Join(os.Getenv("HOME"), "Pictures", "Parallax") }
 func legacyLayersPath() string     { return filepath.Join(legacyParallaxDir(), "layers.pz") }
@@ -1329,7 +1329,7 @@ func stageMotionAmount(motion map[string]any) string {
 // box that skipped v1), deriving the quality tier from their model+matting. The
 // file is GUI-owned, so nothing is created when there is nothing to fold.
 func migrateStageSettings() {
-	dir := meiConfigDir()
+	dir := tenkaiConfigDir()
 	if dir == "" {
 		return
 	}

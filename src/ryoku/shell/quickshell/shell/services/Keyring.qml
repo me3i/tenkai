@@ -34,7 +34,7 @@ Singleton {
     property string continueLabel: ""
     property string cancelLabel: ""
 
-    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/mei-shell.sock"
+    readonly property string sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     // Fired when a fresh prompt arrives so the surface resets its fields and
     // takes focus, even when the island is already open (a wrong-password retry).

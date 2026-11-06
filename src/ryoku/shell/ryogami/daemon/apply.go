@@ -18,11 +18,11 @@ import (
 // video_engine knob: "ryogami" (the C player + READY handshake, default) or
 // "in_shell" (the clip publishes as videoPath and the shell decodes it).
 func (d *daemon) applyWallpaper(wpType, path, mode string, outputs []string, mute map[string]bool, volume map[string]int) error {
-	// MEI: stills only. Live video needs the C player and a Wayland surface, both
+	// TENKAI: stills only. Live video needs the C player and a Wayland surface, both
 	// of which are out of scope; refuse before any work, so a stray clip can
 	// never start the video path.
 	if wpType != "static" {
-		return fmt.Errorf("video wallpapers are disabled in Mei (stills only)")
+		return fmt.Errorf("video wallpapers are disabled in Tenkai (stills only)")
 	}
 	if path == "" {
 		return fmt.Errorf("missing 'path' parameter")
@@ -203,7 +203,7 @@ func frameAudio(outputs []string, mute map[string]bool, volume map[string]int) w
 	return wallAudio{mute: m, volume: vol}
 }
 
-// wallStatePath is the legacy ~/.local/state/mei-wallpaper file: the absolute
+// wallStatePath is the legacy ~/.local/state/tenkai-wallpaper file: the absolute
 // path of the current default (broadcast) wallpaper, newline-terminated.
 // Ryogami owns wallpaper apply now, but rice capture, the overview backdrop, the
 // Super+W on-air dot, and the shell's palette bridge still read this file to
@@ -211,7 +211,7 @@ func frameAudio(outputs []string, mute map[string]bool, volume map[string]int) w
 // ryogami took the wallpaper over the write was dropped, so those readers saw a
 // stale wallpaper (a saved rice and the overview showed the wrong wall). This
 // restores the write.
-func wallStatePath() string { return filepath.Join(stateHome(), "mei-wallpaper") }
+func wallStatePath() string { return filepath.Join(stateHome(), "tenkai-wallpaper") }
 
 // defaultWallpaperFrom picks the broadcast wallpaper from the persisted outputs
 // map: the "*" entry when present, else the first per-output entry by sorted key
@@ -242,12 +242,12 @@ func defaultWallpaperFrom(state map[string]map[string]interface{}) string {
 func syncWallState(state map[string]map[string]interface{}) {
 	dir := stateHome()
 	_ = os.MkdirAll(dir, 0o755)
-	_ = os.WriteFile(filepath.Join(dir, "mei-wallpaper"), []byte(defaultWallpaperFrom(state)+"\n"), 0o644)
+	_ = os.WriteFile(filepath.Join(dir, "tenkai-wallpaper"), []byte(defaultWallpaperFrom(state)+"\n"), 0o644)
 }
 
 // legacyWallStatePath: the shell's own choice from before Ryogami owned the
 // wallpaper. Nothing writes it now.
-func legacyWallStatePath() string { return filepath.Join(stateHome(), "mei-wallpaper.json") }
+func legacyWallStatePath() string { return filepath.Join(stateHome(), "tenkai-wallpaper.json") }
 
 // migrateLegacyOutputs seeds outputs.json from the pre-split state once,
 // only while no wallpaper is stored.

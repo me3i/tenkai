@@ -160,9 +160,9 @@ Item {
 
     // Hyprland animation personality: the preset the loader picks. Read from the
     // backend at load; setAnimPreset writes ~/.config/ryoku/anim-preset + reloads.
-    property string animPreset: "mei"
+    property string animPreset: "tenkai"
     readonly property var animPresets: [
-        { "id": "mei", "label": "Mei" },
+        { "id": "tenkai", "label": "Tenkai" },
         { "id": "dusky", "label": "Dusky" },
         { "id": "bounce", "label": "Bounce" },
         { "id": "fade", "label": "Fade" },
@@ -177,14 +177,14 @@ Item {
         { "id": "disable", "label": "Off" }
     ]
     readonly property var animPresetLabels: pg.animPresets.map(p => p.label)
-    function animPresetLabel(id) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].id === id) return pg.animPresets[i].label; return "Mei"; }
-    function animPresetId(label) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].label === label) return pg.animPresets[i].id; return "mei"; }
-    function setAnimPreset(id) { pg.animPreset = id; animPresetSet.command = ["mei-hub", "desktop", "anim-preset", id]; animPresetSet.running = true; }
+    function animPresetLabel(id) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].id === id) return pg.animPresets[i].label; return "Tenkai"; }
+    function animPresetId(label) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].label === label) return pg.animPresets[i].id; return "tenkai"; }
+    function setAnimPreset(id) { pg.animPreset = id; animPresetSet.command = ["tenkai-hub", "desktop", "anim-preset", id]; animPresetSet.running = true; }
 
     Process {
         id: animPresetGet
-        command: ["mei-hub", "desktop", "anim-preset"]
-        // MEI: the compositor animation preset is off the keep list; disabled.
+        command: ["tenkai-hub", "desktop", "anim-preset"]
+        // TENKAI: the compositor animation preset is off the keep list; disabled.
         running: false
         stdout: StdioCollector { onStreamFinished: { try { var d = JSON.parse(this.text); if (d && d.preset) pg.animPreset = d.preset; } catch (e) {} } }
     }
@@ -668,7 +668,7 @@ Item {
         Text { text: I18n.tr("Motion"); color: Tokens.ink; font.family: Tokens.display; font.pixelSize: Tokens.fTitle }
         Text {
             width: Math.min(parent.width, 720)
-            text: I18n.tr("How fast Mei's own panels, menus and transitions move. Speed scales every animation live.")
+            text: I18n.tr("How fast Tenkai's own panels, menus and transitions move. Speed scales every animation live.")
             color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
         }
         Item { width: 1; height: Tokens.s1 }
@@ -700,7 +700,7 @@ Item {
                     width: parent.width
                     leftPadding: Tokens.s4; rightPadding: Tokens.s4
                     topPadding: Tokens.s3; bottomPadding: Tokens.s1
-                    text: I18n.tr("How fast the shell's own panels, menus and transitions move. Speed scales every Mei animation live; Reduce motion snaps them into place for comfort.") + (pg.hasWindowAnims ? " " + I18n.tr("Separate from the window animations below.") : "")
+                    text: I18n.tr("How fast the shell's own panels, menus and transitions move. Speed scales every Tenkai animation live; Reduce motion snaps them into place for comfort.") + (pg.hasWindowAnims ? " " + I18n.tr("Separate from the window animations below.") : "")
                     color: Tokens.inkMuted; font.family: Tokens.ui
                     font.pixelSize: Tokens.fSmall; wrapMode: Text.WordWrap
                 }
@@ -762,7 +762,7 @@ Item {
             SettingCard {
                 width: col.colWidth
                 title: I18n.tr("MOTION")
-                // MEI: the compositor animation tree and curve editor are off the
+                // TENKAI: the compositor animation tree and curve editor are off the
                 // keep list; only SHELL MOTION (theme.motion.*) ships. Disabled, not
                 // deleted -- restore by putting back: visible: pg.gVisible || pg.cVisible
                 visible: false
@@ -935,7 +935,7 @@ Item {
                 id: fsec
                 width: col.colWidth
                 title: I18n.tr("FOCUS FLASH")
-                // MEI: the Hyprland focus-flash plugin is off the keep list and is
+                // TENKAI: the Hyprland focus-flash plugin is off the keep list and is
                 // not installed. Disabled, not deleted.
                 visible: false
 

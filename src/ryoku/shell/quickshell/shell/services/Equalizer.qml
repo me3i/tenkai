@@ -16,8 +16,8 @@ import Ryoku.Ui.Singletons
 Singleton {
     id: root
 
-    readonly property string bin: (Quickshell.env("MEI_SHELL_DIR") || "").length > 0
-        ? Quickshell.env("MEI_SHELL_DIR") + "/scripts/ryoku-eq"
+    readonly property string bin: (Quickshell.env("TENKAI_SHELL_DIR") || "").length > 0
+        ? Quickshell.env("TENKAI_SHELL_DIR") + "/scripts/ryoku-eq"
         : "ryoku-eq"
 
     readonly property int bandCount: 10
@@ -139,7 +139,7 @@ Singleton {
     FileView {
         id: stateFile
         path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config"))
-            + "/mei/equalizer.json"
+            + "/tenkai/equalizer.json"
         watchChanges: true
         printErrors: false
         onFileChanged: stateFile.reload()

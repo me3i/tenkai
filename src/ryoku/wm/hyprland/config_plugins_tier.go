@@ -16,18 +16,18 @@ import (
 // The Hyprland compositor plugins the desktop manages. A plugin is one .so
 // Hyprland dlopens, ABI-locked to the exact compositor build. Three tiers can
 // hold a copy: the package under pluginDir, a local build under userPluginDir,
-// and hyprpm's own tree. Beside every copy Mei builds sits a <id>.abi receipt
+// and hyprpm's own tree. Beside every copy Tenkai builds sits a <id>.abi receipt
 // so the roster and settings.lua can tell a stale build from a working one
 // without loading it.
 
-// pluginDef is one plugin Mei bundles.
+// pluginDef is one plugin Tenkai bundles.
 type pluginDef struct {
 	ID      string
 	Name    string
 	Desc    string
 	Repo    string // upstream git URL; "" for a plugin authored in this repo
 	Plugin  string // the [table] in the repo's hyprpm.toml
-	Local   string // in-tree source dir for a Mei-authored plugin
+	Local   string // in-tree source dir for a Tenkai-authored plugin
 	Package string // the pacman package that ships the .so
 	Docs    string
 	Sounds  string
@@ -80,7 +80,7 @@ var bundledPlugins = []pluginDef{
 		Desc:   "Plays a keyboard sound on every key press: real switch recordings, or your own samples.",
 		Plugin: "keysounds", Local: "ryoku/hyprland/plugins/keysounds",
 		Package: "ryoku-keysounds",
-		Docs:    "https://github.com/ryoku-dev/ryoku-arch/blob/unstable-dev/mei/hyprland/plugins/keysounds/README.md",
+		Docs:    "https://github.com/ryoku-dev/ryoku-arch/blob/unstable-dev/tenkai/hyprland/plugins/keysounds/README.md",
 		Sounds:  "https://github.com/hainguyents13/mechvibes/tree/main/src/audio",
 		Loaded:  "keysounds",
 	},
@@ -94,7 +94,7 @@ func keysoundsUserDir() string {
 		home, _ := os.UserHomeDir()
 		base = filepath.Join(home, ".local", "share")
 	}
-	dir := filepath.Join(base, "mei", "keysounds")
+	dir := filepath.Join(base, "tenkai", "keysounds")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return dir
 	}
@@ -117,7 +117,7 @@ cuts it into a folder here. Or make one by hand: short .wav/.ogg files named
     space-up-1.wav enter-up-1.wav backspace-up-1.wav   their releases
 
 A missing role falls back to down (or up). The shipped profiles are a good
-starting point to copy from: /usr/share/mei/keysounds.
+starting point to copy from: /usr/share/tenkai/keysounds.
 `), 0o644)
 	}
 	return dir
@@ -129,7 +129,7 @@ func keysoundsShippedDir() string {
 	if local := filepath.Join(userPluginDir(), "keysounds"); fileExists(filepath.Join(local, "cherry-mx-brown")) {
 		return local
 	}
-	return "/usr/share/mei/keysounds"
+	return "/usr/share/tenkai/keysounds"
 }
 
 func bundledByID(id string) (pluginDef, bool) {
@@ -141,9 +141,9 @@ func bundledByID(id string) (pluginDef, bool) {
 	return pluginDef{}, false
 }
 
-// sharedRecipeDir is where ryoku-desktop lays the source of a plugin Mei
+// sharedRecipeDir is where ryoku-desktop lays the source of a plugin Tenkai
 // authors (keysounds), so a packaged box can rebuild it without a checkout.
-const sharedRecipeDir = "/usr/share/mei/hypr-plugins"
+const sharedRecipeDir = "/usr/share/tenkai/hypr-plugins"
 
 // userPluginDir is the local-build tier: what deploy.sh, Rebuild and Add write.
 func userPluginDir() string {

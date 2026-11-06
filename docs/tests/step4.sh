@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Test-only acceptance for Phase 6 step 4 (Settings app / mei-hub) plus the
+# Test-only acceptance for Phase 6 step 4 (Settings app / tenkai-hub) plus the
 # owner-approved audio reachability probe. Lives in docs/tests (versioned).
 #   step4.sh          -> run, checks, stop, verify-untouched
 #   KEEP=1 step4.sh   -> run, checks, leave the session up
 set -uo pipefail
-MEI=$HOME/projects/mei
-RUN="$MEI/.run"
-RT="$MEI/.r"                 # short symlink to .run/r (108-byte socket limit)
+TENKAI=$HOME/projects/tenkai
+RUN="$TENKAI/.run"
+RT="$TENKAI/.r"                 # short symlink to .run/r (108-byte socket limit)
 RTP=/run/user/1000/pipewire-0
-SHELLJSON="$RUN/config/mei/shell.json"
-HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"   # host session (for ./mei run)
+SHELLJSON="$RUN/config/tenkai/shell.json"
+HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"   # host session (for ./tenkai run)
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 LOG="$RUN/logs/step4-$(date +%H%M%S).log"
 mkdir -p "$RUN/shots"
@@ -39,7 +39,7 @@ HYPR_BEFORE="$(hypr_hash)"
 note "real ~/.config/hypr hash before: $HYPR_BEFORE"
 
 echo "=== verify-untouched BEFORE ==="
-"$MEI/mei" verify-untouched 2>&1 | tail -2
+"$TENKAI/tenkai" verify-untouched 2>&1 | tail -2
 
 if [ -S "$RTP" ]; then
   ln -sfn "$RTP" "$RUN/r/pipewire-0"
@@ -48,21 +48,21 @@ else
   bad "real pipewire-0 socket not found at $RTP"
 fi
 
-echo "=== starting ./mei run ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run || { bad "mei run failed"; exit 1; }
+echo "=== starting ./tenkai run ==="
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || { bad "tenkai run failed"; exit 1; }
 
 SIG=""; QS=""
 for _ in $(seq 1 90); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -n "$QS" ] && break
   sleep 0.5
 done
-[ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; "$MEI/mei" stop; exit 1; }
-[ -n "$SIG" ] && ok "nested Hyprland instance ($SIG)" || { bad "no nested instance"; "$MEI/mei" stop; exit 1; }
+[ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; "$TENKAI/tenkai" stop; exit 1; }
+[ -n "$SIG" ] && ok "nested Hyprland instance ($SIG)" || { bad "no nested instance"; "$TENKAI/tenkai" stop; exit 1; }
 export XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG"
 H() {
-  local rt="${RT:-${MEI:-$HOME/projects/mei}/.r}" sig="${SIG:-}"
+  local rt="${RT:-${TENKAI:-$HOME/projects/tenkai}/.r}" sig="${SIG:-}"
   [ -n "$sig" ] && [ -S "$rt/hypr/$sig/.socket.sock" ] \
     || { echo "REFUSED: nested Hyprland socket absent; no live fallback" >&2; return 1; }
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
@@ -70,43 +70,43 @@ H() {
 WDISP="$(basename "$(ls "$RT"/wayland-* 2>/dev/null | head -1)")"
 export WAYLAND_DISPLAY="$WDISP"
 note "nested WAYLAND_DISPLAY=$WDISP"
-# The daemon refuses to run outside Mei's fake home; without HOME here every
+# The daemon refuses to run outside Tenkai's fake home; without HOME here every
 # hub/settings request in this harness is rejected by the guard.
 # BREAK_HUB=1 deliberately drops HOME so the "does the hub open" gate can be
 # proven to fail (a harness that cannot fail is not a test).
 if [ "${BREAK_HUB:-0}" = 1 ]; then
-  mesh() { XDG_RUNTIME_DIR="$RT" "$RUN/bin/mei-shell" "$@"; }
+  mesh() { XDG_RUNTIME_DIR="$RT" "$RUN/bin/tenkai-shell" "$@"; }
 else
-  mesh() { HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" XDG_RUNTIME_DIR="$RT" "$RUN/bin/mei-shell" "$@"; }
+  mesh() { HOME="$RUN/home" XDG_CONFIG_HOME="$RUN/config" XDG_RUNTIME_DIR="$RT" "$RUN/bin/tenkai-shell" "$@"; }
 fi
 hub_geom() { H -j clients 2>/dev/null | jq -r '.[] | select(.class=="org.quickshell") | "\(.at[0]),\(.at[1]) \(.size[0])x\(.size[1])"' | head -1; }
 hub_focused() { H -j activewindow 2>/dev/null | jq -r '.class // ""'; }
 # Bounded: grim can hang on a wedged nested Wayland socket, and an unbounded
 # screenshot would stall the whole gate instead of just losing its picture.
 shot() { timeout 5 grim -o "${WDISP^^}" "$RUN/shots/step4-$1.png" 2>/dev/null && echo "  shot: step4-$1.png"; }
-vkbd() { "$MEI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
+vkbd() { "$TENKAI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@" >/dev/null 2>&1; }
 # Drive the settings store over the daemon socket with the documented call
 # grammar (`call settings.patch|reset <json>`, ryoku/shell/ipc/settings.go).
 # The Motion card's switch and RESET button reach the store through exactly
 # these two calls, so this exercises the same code path the button does instead
 # of guessing a Tab count. vkbd cannot reliably focus the card's controls, and a
-# blind keystroke walk is a test of wtype, not of Mei.
+# blind keystroke walk is a test of wtype, not of Tenkai.
 setmotion() { # $1 = "reduce"|"scale", $2 = JSON value
   local reply
   reply="$(printf 'call settings.patch {"path":"theme.motion.%s","value":%s}\n' "$1" "$2" \
-    | timeout 10 socat - UNIX-CONNECT:"$RT/mei-shell.sock" 2>/dev/null)"
+    | timeout 10 socat - UNIX-CONNECT:"$RT/tenkai-shell.sock" 2>/dev/null)"
   case "$reply" in *'"ok":true'*|ok) return 0 ;; *) echo "  patch reply: ${reply:-<none>}"; return 1 ;; esac
 }
 resetmotion() {
   local reply
   reply="$(printf 'call settings.reset {"path":"theme.motion"}\n' \
-    | timeout 10 socat - UNIX-CONNECT:"$RT/mei-shell.sock" 2>/dev/null)"
+    | timeout 10 socat - UNIX-CONNECT:"$RT/tenkai-shell.sock" 2>/dev/null)"
   case "$reply" in *'"ok":true'*|ok) return 0 ;; *) echo "  reset reply: ${reply:-<none>}"; return 1 ;; esac
 }
 hubs() { for p in $(pgrep -f "hub/quickshell" 2>/dev/null); do [ "$(cat /proc/$p/comm 2>/dev/null)" = qs ] && { echo "$p"; return; }; done; }
 # A fresh hub opens on its default page (global) and writes no section key
 # until the user navigates; absence therefore means global, not "did not open".
-sec() { local s; s="$(sed -n 's/^ *section = "\(.*\)"/\1/p' "$RUN/config/mei/hub.toml" 2>/dev/null)"; printf '%s' "${s:-global}"; }
+sec() { local s; s="$(sed -n 's/^ *section = "\(.*\)"/\1/p' "$RUN/config/tenkai/hub.toml" 2>/dev/null)"; printf '%s' "${s:-global}"; }
 
 MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"
 [ -n "$MON" ] && H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1 && ok "nested output enlarged (monitor $MON)" || bad "could not enlarge nested output"
@@ -115,39 +115,39 @@ sleep 2
 # ============================ AUDIO =========================================
 echo; echo "=== AUDIO (nested reaches real PipeWire via the symlink) ==="
 [ -L "$RUN/r/pipewire-0" ] && ok "pipewire-0 symlink present in the nested runtime" || bad "pipewire-0 symlink missing"
-H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 3
+H dispatch global tenkai:quicksettings >/dev/null 2>&1; sleep 3
 shot audio-qspanel-readonly
 note "read-only: the bar/panel audio readout should show the real sink (vol=$VOL_BEFORE)"
-H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 1
+H dispatch global tenkai:quicksettings >/dev/null 2>&1; sleep 1
 if [ -n "${VOL_BEFORE:-}" ]; then
   wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- >/dev/null 2>&1 || true
   NOW="$(wpctl get-volume @DEFAULT_AUDIO_SINK@ 2>/dev/null | awk '{print $2}')"
   if [ -n "$NOW" ] && [ "$NOW" != "$VOL_BEFORE" ]; then
     ok "volume changed via the nested runtime: $VOL_BEFORE -> $NOW (<=5%), real sink"
-    H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 3
+    H dispatch global tenkai:quicksettings >/dev/null 2>&1; sleep 3
     shot audio-qspanel-changed
-    H dispatch global mei:quicksettings >/dev/null 2>&1; sleep 1
+    H dispatch global tenkai:quicksettings >/dev/null 2>&1; sleep 1
   else bad "volume did not change via the nested runtime"; fi
   restore_audio
 fi
 
 # ============================ HUB OPEN + PAGES ==============================
-echo; echo "=== SETTINGS APP (mei-hub) ==="
+echo; echo "=== SETTINGS APP (tenkai-hub) ==="
 mesh hub open >/dev/null 2>&1
 HUB=""
 for _ in $(seq 1 60); do HUB="$(hubs)"; [ -n "$HUB" ] && break; sleep 0.5; done
 HUB_OK=0
 if [ -n "$HUB" ]; then
-  HUB_OK=1; ok "Mei Settings opened (hub pid $HUB) via 'mei-shell hub open' (the rail button's exact command)"
+  HUB_OK=1; ok "Tenkai Settings opened (hub pid $HUB) via 'tenkai-shell hub open' (the rail button's exact command)"
 else
-  bad "Mei Settings did not open -- every hub check below will fail, not pass silently"
+  bad "Tenkai Settings did not open -- every hub check below will fail, not pass silently"
 fi
 sleep 4
 shot hub-open
-[ -e "$RT/mei-hub.lock" ] && ok "hub lock is \$XDG_RUNTIME_DIR/mei-hub.lock" || note "mei-hub.lock not seen (flock -o may unlink on exit)"
+[ -e "$RT/tenkai-hub.lock" ] && ok "hub lock is \$XDG_RUNTIME_DIR/tenkai-hub.lock" || note "tenkai-hub.lock not seen (flock -o may unlink on exit)"
 
 note "rail sections in source (active block only):"
-AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$MEI/src/ryoku/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
+AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$TENKAI/src/ryoku/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
 echo "    $AKEYS"
 # The kept rail, asserted per key rather than as one exact string: the list grows
 # as pages ship (Visuals, Fastfetch, Window Manager, Displays, Keybinds,
@@ -229,10 +229,10 @@ fi
 
 MOT_SET="$MOT_AFTER"
 if [ "$MOT_PROVEN" = 1 ]; then
-  echo; note "--- restarting Mei (stop + run) to prove persistence ---"
-  "$MEI/mei" stop >/dev/null 2>&1; sleep 3
-  XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" run >/dev/null 2>&1
-  for _ in $(seq 1 60); do QS="$(pgrep -f "qs -p $MEI/src/ryoku/shell/quickshell/shell" | head -1)"; [ -n "$QS" ] && break; sleep 0.5; done
+  echo; note "--- restarting Tenkai (stop + run) to prove persistence ---"
+  "$TENKAI/tenkai" stop >/dev/null 2>&1; sleep 3
+  XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run >/dev/null 2>&1
+  for _ in $(seq 1 60); do QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"; [ -n "$QS" ] && break; sleep 0.5; done
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
   export HYPRLAND_INSTANCE_SIGNATURE="$SIG"
   MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"; H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1
@@ -242,7 +242,7 @@ if [ "$MOT_PROVEN" = 1 ]; then
   [ -n "$HUB" ] || bad "hub did not reopen after the restart"
   sleep 5
   MOT_RESTART="$(jq -c '.theme.motion' "$SHELLJSON" 2>/dev/null)"
-  [ "$MOT_RESTART" = "$MOT_SET" ] && ok "motion value survived a full Mei restart: $MOT_RESTART" || bad "motion value did NOT survive (before=$MOT_SET after=$MOT_RESTART)"
+  [ "$MOT_RESTART" = "$MOT_SET" ] && ok "motion value survived a full Tenkai restart: $MOT_RESTART" || bad "motion value did NOT survive (before=$MOT_SET after=$MOT_RESTART)"
   shot hub-motion-restart-stuck
 else
   bad "motion persistence not tested: the reduction was never proven"
@@ -277,7 +277,7 @@ done
 find "$RUN/home" "$RUN/config" -type d -name user_edits 2>/dev/null | grep -q . && bad "user_edits dir created" || ok "no user_edits dir anywhere in the fake home"
 HYPR_AFTER="$(hypr_hash)"
 [ "$HYPR_AFTER" = "$HYPR_BEFORE" ] && ok "real ~/.config/hypr unchanged ($HYPR_AFTER)" || bad "real ~/.config/hypr CHANGED: $HYPR_BEFORE -> $HYPR_AFTER"
-note "what Settings wrote (must be under \$XDG_CONFIG_HOME/mei only):"; ls -1 "$RUN/config/mei" 2>/dev/null | sed 's/^/    /'
+note "what Settings wrote (must be under \$XDG_CONFIG_HOME/tenkai only):"; ls -1 "$RUN/config/tenkai" 2>/dev/null | sed 's/^/    /'
 
 # ============================ HYGIENE =======================================
 echo; echo "=== HYGIENE ==="
@@ -297,7 +297,7 @@ else ok "no QML errors in the hub/shell logs (portal/pipewire noise excluded)"; 
 if command -v qmllint >/dev/null 2>&1; then
   syn=0
   for f in Hub.qml pages/VisualsPage.qml pages/FastfetchPage.qml pages/WindowManagerPage.qml pages/AnimationsPage.qml pages/GlobalPage.qml pages/DesktopPage.qml pages/BarStudioPage.qml pages/LauncherPage.qml; do
-    if qmllint "$MEI/src/ryoku/hub/quickshell/$f" 2>&1 | grep -qi 'syntax error'; then bad "syntax error in $f"; syn=1; fi
+    if qmllint "$TENKAI/src/ryoku/hub/quickshell/$f" 2>&1 | grep -qi 'syntax error'; then bad "syntax error in $f"; syn=1; fi
   done
   [ "$syn" = 0 ] && ok "qmllint: no syntax errors in the nine edited hub files"
 else note "qmllint unavailable"; fi
@@ -312,13 +312,13 @@ sleep 3
 [ -z "$(hubs)" ] && ok "hub closed cleanly (no stray processes)" || { bad "stray hub process after close"; pgrep -af "hub/quickshell"; }
 
 echo; echo "=== stopping ==="
-"$MEI/mei" stop || true
+"$TENKAI/tenkai" stop || true
 sleep 2
-stray="$(pgrep -af "$RUN/bin/mei-shell|quickshell/shell|quickshell/hub|mei-wm-hyprland|mei-hub" | grep -v pgrep || true)"
-[ -z "$stray" ] && ok "clean shutdown: no stray Mei processes" || { bad "stray processes:"; printf '%s\n' "$stray"; }
+stray="$(pgrep -af "$RUN/bin/tenkai-shell|quickshell/shell|quickshell/hub|tenkai-wm-hyprland|tenkai-hub" | grep -v pgrep || true)"
+[ -z "$stray" ] && ok "clean shutdown: no stray Tenkai processes" || { bad "stray processes:"; printf '%s\n' "$stray"; }
 
 echo; echo "=== verify-untouched AFTER ==="
-XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$MEI/mei" verify-untouched 2>&1 | tail -2
+XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" verify-untouched 2>&1 | tail -2
 
 echo; echo "RESULT: $([ "$fail" = 0 ] && echo PASS || echo FAIL)"; echo "log: $LOG"
 exit "$fail"

@@ -8,7 +8,7 @@ Item {
     required property var root
     readonly property color contentColor: root.widgetContentColor("G8", root.seal)
 
-    // "Stay awake" mode active; Theme maps this to the active Mei idle backend.
+    // "Stay awake" mode active; Theme maps this to the active Tenkai idle backend.
     readonly property bool awake: root.stayAwake
 
     visible: awake

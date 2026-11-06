@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 // Perf is the shell's one performance-policy singleton and the single reader of
-// ~/.config/mei/performance.json (the file Mei Settings' Performance page
+// ~/.config/tenkai/performance.json (the file Tenkai Settings' Performance page
 // writes). It folds four inputs into the effective switches every surface obeys:
 //
 //   1. the explicit user toggles in performance.json (lowPowerMode is the master),
@@ -150,7 +150,7 @@ Singleton {
 
     FileView {
         id: file
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/mei/performance.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/performance.json"
         watchChanges: true
         atomicWrites: true
         printErrors: false

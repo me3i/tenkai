@@ -1,4 +1,4 @@
-# Mei runtime state — never commit (sockets, pids, XDG overrides, Go build dirs)
+# Tenkai runtime state — never commit (sockets, pids, XDG overrides, Go build dirs)
 .run/
 *.log
 
