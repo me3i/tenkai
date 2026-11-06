@@ -68,12 +68,21 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BL=$'\e[1;34m'
   YL=$'\e[1;33m'
   RD=$'\e[1;31m'
-  # Thin cyan draws the frames — quiet next to the icons it surrounds.
-  THIN=$'\e[36m'
-  # 256-colour gold, for the one line that closes the whole install.
-  GOLD=$'\e[38;5;220m'
+
+  # ── the night sky ──
+  DEEP_BLUE=$'\e[38;5;26m'       # every frame rule
+  SOFT_PURPLE=$'\e[38;5;141m'    # step headers and the turning star
+  CELESTIAL_GOLD=$'\e[38;5;220m' # success, and the closing line
+  STAR_WHITE=$'\e[1;37m'         # body text
+  TWINKLE_CYAN=$'\e[38;5;51m'    # accents, and the shooting star
+  # The earlier names stay as aliases, so no call site has to change.
+  THIN=$DEEP_BLUE
+  WH=$STAR_WHITE
+  GOLD=$CELESTIAL_GOLD
 else
-  R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD='' THIN='' GOLD=''
+  R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
+  DEEP_BLUE='' SOFT_PURPLE='' CELESTIAL_GOLD='' STAR_WHITE='' TWINKLE_CYAN=''
+  THIN='' GOLD=''
 fi
 
 say()  { printf '%s\n' "$*"; }
@@ -82,8 +91,65 @@ ok()   { printf '  %s✓%s %s\n' "$GR" "$R" "$*"; }
 warn() { printf '  %s⚠%s %s\n' "$YL" "$R" "$*"; }
 bad()  { printf '  %s✗%s %s\n' "$RD" "$R" "$*"; }
 info() { printf '  %s→%s %s\n' "$CY" "$R" "$*"; }
-gear() { printf '  %s⚙%s %s\n' "$MG" "$R" "$*"; }
 die()  { printf '\n%s✗ %s%s\n' "$RD" "$*" "$R" >&2; exit 1; }
+
+# ── the night sky ─────────────────────────────────────────────────────────────
+# Motion is for eyes only: a real terminal, no NO_COLOR, never a dry run.
+# Everywhere else these helpers print nothing and sleep for nothing, so a piped
+# log or a CI run sees exactly the same bytes as the unanimated installer.
+_motion() { [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "$DRY_RUN" = 0 ]; }
+
+_celestial_glyphs=(✦ ✧ ✶ ✷ ✸ ✹ ✺ ✻)
+
+# The animation loop itself, always started in the background.
+# $1 = label, $2 = spin|star. In spin mode one glyph turns, alternating purple
+# and cyan on each step; in star mode a single star crosses a strip of sky.
+_celestial_sky() {
+  local label="$1" mode="$2" i=0 j=0 k cells col
+  while :; do
+    col="$SOFT_PURPLE"
+    [ $((i % 2)) -eq 1 ] && col="$TWINKLE_CYAN"
+    if [ "$mode" = star ]; then
+      cells=''
+      for ((k = 0; k < 20; k++)); do
+        if [ "$k" -eq $((j % 20)) ]; then cells+="$TWINKLE_CYAN✦$D"; else cells+='·'; fi
+      done
+      printf '\r  %s%s%s %s ' "$D" "$cells" "$R" "$label"
+    else
+      printf '\r  %s%s%s %s ' "$col" "${_celestial_glyphs[i]}" "$R" "$label"
+    fi
+    i=$(( (i + 1) % ${#_celestial_glyphs[@]} ))
+    j=$(( j + 1 ))
+    sleep 0.12
+  done
+}
+
+# celestial_spin <label> <spin|star> <shown command> <command...>
+# Runs the command with its output captured while a star turns (or shoots) above
+# it, then prints that output dimmed beneath the result. The animation is a child
+# we start and kill by its recorded PID — never by name — so it cannot leak or
+# outlive the command it belongs to. <shown command> is what a dry run prints, so
+# the log never exposes the internal helper that does the real work.
+celestial_spin() {
+  local label="$1" mode="$2" show="$3" log pid rc=0
+  shift 3
+  printf '  %s$ %s%s\n' "$D" "$show" "$R"
+  [ "$DRY_RUN" = 1 ] && return 0
+  if ! _motion; then
+    "$@" || rc=$?
+    return "$rc"
+  fi
+  log="$(mktemp)"
+  _celestial_sky "$label" "$mode" &
+  pid=$!
+  "$@" >>"$log" 2>&1 || rc=$?
+  kill "$pid" 2>/dev/null
+  wait "$pid" 2>/dev/null
+  printf '\r%*s\r' "$(( ${#label} + 24 ))" ''
+  [ -s "$log" ] && sed "s|^|${D}  │ |; s|\$|${R}|" "$log"
+  rm -f "$log"
+  return "$rc"
+}
 
 # A full-width section header: a hairline cyan rule, the count in cyan, the
 # title in white. No heavy box — the eye should land on the icons underneath.
@@ -98,7 +164,7 @@ step() {
   [ "$pad" -lt 0 ] && pad=0
   printf '\n%s╭%s╮%s\n' "$THIN" "$rule" "$R"
   printf '%s│%s%s%s%s%s%s%*s%s│%s\n' \
-    "$THIN" "$CY" "$cnt" "$GY" "$sep" "$WH" "$title" "$pad" "" "$THIN" "$R"
+    "$THIN" "$SOFT_PURPLE" "$cnt" "$GY" "$sep" "$WH" "$title" "$pad" "" "$THIN" "$R"
   printf '%s╰%s╯%s\n' "$THIN" "$rule" "$R"
 }
 
@@ -135,16 +201,47 @@ fl() {
   printf '%s│%*s%s%*s%s│%s\n' "$THIN" "$lead" "" "$content" "$((58 - lead - width))" "" "$THIN" "$R"
 }
 
+# A breath of sky before the closing frame: four stars brighten and fade, then
+# the box lands. Well under a second, and silent anywhere but a terminal.
+_celestial_twinkle() {
+  local i
+  _motion || return 0
+  printf '\n'
+  for i in 1 2 3 4; do
+    if [ $((i % 2)) -eq 0 ]; then
+      printf '\r%s   ·   ✦   ·   %s✧%s   ·   ✦   ·   ✧   %s' \
+        "$D" "$TWINKLE_CYAN" "$R" "$D"
+    else
+      printf '\r%s   ✦   ·   ✧   %s✦%s   ·   ✧   ·   ✦   %s' \
+        "$D" "$SOFT_PURPLE" "$R" "$D"
+    fi
+    sleep 0.15
+  done
+  printf '\r%*s\r' 48 ''
+}
+
 print_success() {
-  local W=58 row rule
+  local W=58 row rule c
   rule="$(printf '─%.0s' $(seq 1 $W))"
+  _celestial_twinkle
   printf '\n%s╭%s╮%s\n' "$THIN" "$rule" "$R"
   fl 0 "" 0
   for row in "${BANNER_ROWS[@]}"; do fl 1 "${CY}${B}${row}${R}" "$BANNER_W"; done
   fl 0 "" 0
   fl 6 "${WH}${TAGLINE}${R}" 46
   fl 0 "" 0
-  fl 14 "${GOLD}${B}Tenkai is installed and ready.${R}" 30
+  # The closing line arrives: cyan, then purple, then it settles on gold.
+  if _motion; then
+    for c in "$TWINKLE_CYAN" "$SOFT_PURPLE" "$CELESTIAL_GOLD"; do
+      fl 14 "${c}${B}Tenkai is installed and ready.${R}" 30
+      if [ "$c" != "$CELESTIAL_GOLD" ]; then
+        printf '\033[1A\r'
+        sleep 0.18
+      fi
+    done
+  else
+    fl 14 "${CELESTIAL_GOLD}${B}Tenkai is installed and ready.${R}" 30
+  fi
   fl 0 "" 0
   fl 9 "${WH}Log out and log back in -- your desktop${R}" 39
   fl 21 "${WH}will be Tenkai.${R}" 15
@@ -310,11 +407,16 @@ else
   export GOCACHE="$RUN/go/cache"
   export CGO_ENABLED=0
 
+  # The build runs inside the spinner's child, so the star turns for exactly as
+  # long as the compiler does.
+  _go_build_one() { ( cd "$1" && nice -n 10 go build -trimpath -p 2 -o "$2" ./ ); }
+
   go_build() { # $1 = source dir, $2 = output name
     local src="$TENKAI_DIR/src/ryoku/$1" out="$SYS_GO_BIN/$2"
     [ -d "$src" ] || die "missing source dir: $src"
-    gear "building $2"
-    ( cd "$src" && nice -n 10 go build -trimpath -p 2 -o "$out" ./ ) \
+    celestial_spin "building $2" spin \
+      "cd ${src#$TENKAI_DIR/} && nice -n 10 go build -trimpath -p 2 -o $out ./" \
+      _go_build_one "$src" "$out" \
       || die "go build failed in $src"
     [ -x "$out" ] || die "$2 was not produced"
     ok "$out"
@@ -329,14 +431,17 @@ else
   # Ryoku.Blobs — the SDF metaball plugin behind the frame. Prebuilt upstream
   # because a target machine has no toolchain; here we do have one.
   [ -d "$TENKAI_DIR/src/ryoku/shell/plugin" ] || die "missing src/ryoku/shell/plugin"
-  gear "configuring Ryoku.Blobs"
   CMAKE_GEN=()
   command -v ninja >/dev/null 2>&1 && CMAKE_GEN=(-G Ninja)
-  run cmake -S "$TENKAI_DIR/src/ryoku/shell/plugin" -B "$BLOBS_BUILD" \
+  celestial_spin "configuring Ryoku.Blobs" spin \
+    "cmake -S src/ryoku/shell/plugin -B .run/build/blobs ${CMAKE_GEN[*]} -DCMAKE_BUILD_TYPE=Release" \
+    cmake -S "$TENKAI_DIR/src/ryoku/shell/plugin" -B "$BLOBS_BUILD" \
       "${CMAKE_GEN[@]}" -DCMAKE_BUILD_TYPE=Release \
     || die "cmake configure failed (Qt6 6.5+ with Quick/ShaderTools/Multimedia is required)"
-  gear "building Ryoku.Blobs"
-  run nice -n 10 cmake --build "$BLOBS_BUILD" -j2 || die "cmake build failed"
+  # The long one: a comet crosses the sky while the SDF plugin compiles.
+  celestial_spin "building Ryoku.Blobs" star "nice -n 10 cmake --build .run/build/blobs -j2" \
+    nice -n 10 cmake --build "$BLOBS_BUILD" -j2 \
+    || die "cmake build failed"
   # A dry run configures/builds nothing; only a real run may assert the artifact.
   if [ "$DRY_RUN" = 0 ]; then
     [ -d "$BLOBS_BUILD/qml/Ryoku/Blobs" ] || die "the Blobs module was not produced"
