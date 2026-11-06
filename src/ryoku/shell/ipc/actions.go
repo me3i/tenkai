@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -95,57 +94,6 @@ func ipcCallN(config, target, fn string, args ...string) string {
 		msg = err.Error()
 	}
 	return "err qs ipc " + config + "/" + fn + ": " + msg
-}
-
-// The frame shell has been consolidated into the single shell instance, which
-// serves no command socket (its shell.qml omits the SocketServer fast path).
-// The socket helpers below and pillIpc are therefore dead in production; they
-// are retained (and still covered by pillipc_test.go) for a future cutover
-// rather than deleted here.
-// pillSockPath: the frame's command socket. A persistent Quickshell component
-// would serve it; the daemon writes a surface command here to skip the
-// `qs ipc call` subprocess on the keybind hot path.
-func pillSockPath() string {
-	dir := os.Getenv("XDG_RUNTIME_DIR")
-	if dir == "" {
-		dir = "/tmp"
-	}
-	return filepath.Join(dir, "tenkai-pill.sock")
-}
-
-// pillSocketCall writes one command line to the pill socket and reports whether
-// the pill acknowledged with "ok". A miss (socket down, pill restarting, an
-// unknown command) returns false so the caller falls back to the qs client.
-func pillSocketCall(line string) bool {
-	conn, err := net.DialTimeout("unix", pillSockPath(), 200*time.Millisecond)
-	if err != nil {
-		return false
-	}
-	defer conn.Close()
-	_ = conn.SetDeadline(time.Now().Add(time.Second))
-	if _, err := fmt.Fprintln(conn, line); err != nil {
-		return false
-	}
-	buf := make([]byte, 16)
-	n, _ := conn.Read(buf)
-	return strings.TrimSpace(string(buf[:n])) == "ok"
-}
-
-// pillIpc invokes the consolidated component's IpcHandler function, preferring
-// the command socket and falling back to the qs client when it is unreachable.
-// Empty args drop out of the socket line; the qs fallback keeps the same
-// positional argv.
-func pillIpc(fn string, args ...string) string {
-	line := fn
-	for _, a := range args {
-		if a != "" {
-			line += " " + a
-		}
-	}
-	if pillSocketCall(line) {
-		return "ok"
-	}
-	return ipcCallN("pill", "pill", fn, args...)
 }
 
 // shellIpc invokes a "shell" IpcHandler function through the qs client. Unlike
