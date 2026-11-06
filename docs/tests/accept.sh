@@ -175,7 +175,8 @@ printf '\n'
 # Q4's reference is measured here, before any gate has loaded the machine. The
 # idle figure follows whatever the box is doing, so a number recorded on an idle
 # box cannot gate the end of a 30-minute run: it would report this run's own load
-# as a regression. docs/STATUS.md keeps the recorded table as a trend record.
+# as a regression. The recorded Phase 10A figures in accept-q4.sh stay as a trend
+# record.
 printf -- '--- measuring the idle reference Q4 will be compared against ---\n'
 if bash "$MEI/docs/tests/accept-q4.sh" --reference > "$RUN/logs/accept-q4-reference-$STAMP.log" 2>&1; then
   printf 'Q4   idle reference measured                                  %s\n' "$RUN/logs/accept-q4-reference-$STAMP.log"

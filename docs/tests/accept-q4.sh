@@ -9,8 +9,8 @@
 # doing. A number recorded on an idle box, compared at the end of a 30-minute
 # acceptance run that exercises the whole shell, reports the run's own load as
 # a regression. accept therefore measures a fresh reference before it starts
-# any gate, and the table in docs/STATUS.md stays what it always was — a trend
-# record, not a threshold.
+# any gate, and the recorded figures below stay what they always were — a
+# trend record, not a threshold.
 #
 # The Phase 10A harness measures; this gate compares.
 set -uo pipefail
@@ -80,12 +80,13 @@ case "$MODE" in
   ;;
 esac
 
-# The committed trend record: docs/STATUS.md, post-Blobs, idle on an idle box.
+# The committed trend record (Phase 10A final, post-Blobs, idle on an idle
+# box; it used to live in docs/STATUS.md, since removed):
 REC_RSS=657260
 REC_PSS=311253
 REC_THREADS=98
 REC_CPU=0.73
-SOURCE="recorded table (docs/STATUS.md; trend only)"
+SOURCE="recorded table (Phase 10A figures; trend only)"
 
 if [ -s "$REF" ]; then
   read -r REC_RSS REC_PSS REC_THREADS REC_CPU < "$REF"
