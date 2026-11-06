@@ -105,7 +105,7 @@ Log out and back in after enabling autostart, and your desktop is Tenkai.
 ├── install.sh        the cinematic installer (see above)
 ├── tenkai               the control script: run/test/verify-untouched
 ├── src/
-│   ├── ryoku/        the Tenkai tree (adapted from upstream — never regenerated)
+│   ├── ryoku/        the Ryoku shell tree, adapted by Tenkai (never regenerated from scratch)
 │   ├── tenkai-configs/  bundled Hyprland Lua config + terminal dotfiles
 │   └── tenkai-assets/   wallpapers (empty) + OFL fonts (Space Grotesk, Fraunces)
 ├── docs/             runbooks: LIVE-CHECKLIST · ROLLBACK · MODULES
