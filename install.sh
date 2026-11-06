@@ -68,19 +68,8 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BL=$'\e[1;34m'
   YL=$'\e[1;33m'
   RD=$'\e[1;31m'
-
-  # ── the heavenly palette ──────────────────────────────────────────────────
-  PINK=$'\e[38;5;213m'          # 天界 — the kanji, and them alone
-  DEMON_RED=$'\e[38;5;196m'     # the Heavenly Demon's aura
-  MASTER_BLUE=$'\e[38;5;39m'    # the Heavenly Master's aura
-  HEAVENLY_GOLD=$'\e[38;5;220m' # ascension, and every success
-  CYAN=$CY                      # the borders and the TENKAI block art
-  PURPLE=$MG                    # the step frames and the action logs
-  WHITE=$WH                     # body text
 else
   R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
-  PINK='' DEMON_RED='' MASTER_BLUE='' HEAVENLY_GOLD=''
-  CYAN='' PURPLE='' WHITE=''
 fi
 
 say()  { printf '%s\n' "$*"; }
@@ -108,6 +97,7 @@ step() {
 # to the ANSI-shadow TENKAI block art by a hairline divider. Six rows tall on
 # both sides, 56 columns wide, so it centres with one column of air each side
 # inside the 58-column installer frame. Keep every row exactly 56 columns.
+BANNER_W=56
 BANNER_ROWS=(
   '╔════╗ │  ████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗'
   '║    ║ │  ╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║'
@@ -118,142 +108,40 @@ BANNER_ROWS=(
 )
 TAGLINE='The Celestial Lite version of Ryoku Quickshell'
 
-# banner_row <plain row>: the seal and the block art stay cyan, but 天 and 界
-# burn pink inside the seal. Width is untouched — the escapes carry none.
-banner_row() {
-  local row="$1"
-  case "$row" in
-    *天*) row="${row/天/${PINK}天${CYAN}${B}}" ;;
-    *界*) row="${row/界/${PINK}界${CYAN}${B}}" ;;
-  esac
-  printf '%s' "${CYAN}${B}${row}"
-}
-
-# ac <colour> <text>: centre a narrow-glyph line inside the 58-column frame.
-ac() {
-  local lead=$(( (58 - ${#2}) / 2 ))
-  [ "$lead" -lt 0 ] && lead=0
-  printf '%*s%s%s%s\n' "$lead" '' "$1" "$2" "$R"
-}
-
 # The opened and closed gate of the installer.
 print_banner() {
   local row
-  printf '\n'
-  for row in "${BANNER_ROWS[@]}"; do printf ' %s%s\n' "$(banner_row "$row")" "$R"; done
-  ac "$HEAVENLY_GOLD" "$TAGLINE"
+  printf '\n%s' "$CY$B"
+  for row in "${BANNER_ROWS[@]}"; do printf ' %s\n' "$row"; done
+  printf '%s' "$R"
+  printf '%s      %s%s\n' "$GY" "$TAGLINE" "$R"
   printf '%s   checkout:%s %s\n' "$GY" "$R" "$TENKAI_DIR"
   printf '\n'
 }
 
-# ── the ascension animation ─────────────────────────────────────────────────
-# The Heavenly Master (left, blue) and the Heavenly Demon (right, red) meet at
-# the seam of a 56-column stage; what rises from the clash is the shell. Every
-# glyph below is narrow, so a character offset is a column offset, and a frame
-# line reads as the art it becomes. Colours are per half: pass the Master's
-# colour and the Demon's colour, and the seam does the rest.
-STAGE_HALF=28
-
-ah() { # $1 left colour, $2 right colour, $3 = one stage line
-  local l="${3:0:$STAGE_HALF}" r="${3:$STAGE_HALF}" pad
-  pad=$(( STAGE_HALF - ${#l} )); [ "$pad" -gt 0 ] && l="$l$(printf '%*s' "$pad" '')"
-  pad=$(( STAGE_HALF - ${#r} )); [ "$pad" -gt 0 ] && r="$r$(printf '%*s' "$pad" '')"
-  printf ' %s%s%s%s%s%s\n' "$1" "$l" "$R" "$2" "$r" "$R"
+# One framed content line inside the success banner. $1 = leading spaces,
+# $2 = content (may carry ANSI), $3 = *visible* width of the content.
+fl() {
+  local lead="$1" content="$2" width="$3"
+  printf '%s║%*s%s%*s║%s\n' "$B$GR" "$lead" "" "$content" "$((58 - lead - width))" "" "$R"
 }
 
-# Clear for the next beat. Piped output (a log, a CI run) gets a blank line
-# instead of an escape, so the frames stay readable in a file.
-anim_clear() {
-  if [ -t 1 ]; then printf '\033[H\033[2J'; else printf '\n'; fi
-}
-
-play_ascension_animation() {
-  local row
-
-  # ── frame 1 — two cultivators, one heaven ──
-  anim_clear
-  ah "$GY" "$GY" '    ·         ·          ·          ·         ·         '
-  ah "$MASTER_BLUE" "$DEMON_RED" '    ▄███▄                                       ▄███▄'
-  ah "$MASTER_BLUE" "$DEMON_RED" '     ███                                         ███'
-  ah "$MASTER_BLUE" "$DEMON_RED" '    ╱   ╲                                       ╱   ╲'
-  ah "$GY" "$GY" '    ·         ·          ·          ·         ·         '
-  ac "$GY" 'the heavens hold their breath'
-  sleep 0.4
-
-  # ── frame 2 — the auras flare: blue-white against red ──
-  anim_clear
-  ah "$MASTER_BLUE" "$DEMON_RED" '   .  *  .   ^      *    .    *      ^   .  *  .        '
-  ah "$MASTER_BLUE" "$DEMON_RED" '    *  ▄███▄  .   .   *  .  *   .   .  ▄███▄  *         '
-  ah "$MASTER_BLUE" "$DEMON_RED" '   ^  .  ███  *   *   .   *   .   *   *  ███  .  ^      '
-  ah "$MASTER_BLUE" "$DEMON_RED" '    .  ╱   ╲  *    .   *  .  *   .    *  ╱   ╲  .       '
-  ah "$MASTER_BLUE" "$DEMON_RED" '  *   .   *    .   *   .  ..  .   *    .   *    .  *    '
-  ac "$GY" 'azure gathers on the left · crimson answers on the right'
-  sleep 0.4
-
-  # ── frame 3 — the dash ──
-  anim_clear
-  ah "$MASTER_BLUE" "$DEMON_RED" '    ≡≡ ≡▄███▄▸▸                         ◂◂▄███▄≡ ≡≡      '
-  ah "$MASTER_BLUE" "$DEMON_RED" '  ≡≡≡≡   ███ ▸▸▸▸                   ◂◂◂◂ ███   ≡≡≡≡      '
-  ah "$MASTER_BLUE" "$DEMON_RED" '   ≡≡≡ ╱   ╲▸▸▸▸▸                 ◂◂◂◂◂╱   ╲≡ ≡≡        '
-  ah "$MASTER_BLUE" "$DEMON_RED" '         ▸▸▸▸▸▸▸                  ◂◂◂◂◂◂◂                '
-  ac "$GY" 'they move'
-  sleep 0.4
-
-  # ── frame 4 — the clash ──
-  anim_clear
-  ah "$HEAVENLY_GOLD" "$HEAVENLY_GOLD" '                      \\   │   /                        '
-  ah "$MASTER_BLUE" "$HEAVENLY_GOLD" '                   .   \\  │  /   .                     '
-  ah "$HEAVENLY_GOLD" "$WHITE" '        ▄███▄      +══ ✦ ✦ ✦ ══+      ▄███▄            '
-  ah "$WHITE" "$HEAVENLY_GOLD" '          ███       *  +  *  +  *       ███            '
-  ah "$HEAVENLY_GOLD" "$WHITE" '        ╱   ╲     /    .  │  .    \\    ╱   ╲           '
-  ah "$HEAVENLY_GOLD" "$HEAVENLY_GOLD" '                      *   +   *                        '
-  ah "$WHITE" "$WHITE" '                       \\  │  /                         '
-  ac "$HEAVENLY_GOLD" 'steel meets steel — and neither heaven yields'
-  sleep 0.4
-
-  # ── frame 5 — the light breaks upward, the banner ascends ──
-  anim_clear
-  ah "$HEAVENLY_GOLD" "$HEAVENLY_GOLD" '        ║         ║         ║         ║         ║       '
-  ah "$HEAVENLY_GOLD" "$MASTER_BLUE" '       ╱║╲       ╱║╲       ╱║╲       ╱║╲       ╱║╲      '
-  ah "$MASTER_BLUE" "$HEAVENLY_GOLD" '       ╲║╱       ╲║╱       ╲║╱       ╲║╱       ╲║╱      '
-  ah "$GY" "$GY" '        ·         ·         ·         ·         ·       '
-  printf '\n'
-  for row in "${BANNER_ROWS[@]}"; do
-    printf ' %s%s\n' "$(banner_row "$row")" "$R"
-    sleep 0.06   # the banner climbs into place, row by row
-  done
-  ac "$HEAVENLY_GOLD" "$TAGLINE"
-  printf '\n'
-  sleep 0.4
-}
-
-# The closing frame: no box this time, only an aura, the name, and the
-# ascension line it has been earning the whole way down.
 print_success() {
-  local row
-  anim_clear
-  ac "$HEAVENLY_GOLD" '✦   ·   ✧   ·   ✦   ·   ✧   ·   ✦   ·   ✧   ·   ✦'
-  ac "$HEAVENLY_GOLD" ' ·  ✦   ╲   │   ╱    ✧   ✦   ✧    ╲   │   ╱   ✦ ·'
-  ac "$HEAVENLY_GOLD" '      ✦    ╲ │ ╱    ·  ✧   ✧  ·    ╲ │ ╱    ✦'
-  printf '\n'
-  for row in "${BANNER_ROWS[@]}"; do printf ' %s%s\n' "$(banner_row "$row")" "$R"; done
-  printf '\n'
-  ac "$HEAVENLY_GOLD" '      ✦    ╱ │ ╲    ·  ✧   ✧  ·    ╱ │ ╲    ✦'
-  ac "$HEAVENLY_GOLD" ' ·  ✦   ╱   │   ╲    ✧   ✦   ✧    ╱   │   ╲   ✦ ·'
-  ac "$HEAVENLY_GOLD" '✦   ·   ✧   ·   ✦   ·   ✧   ·   ✦   ·   ✧   ·   ✦'
-  printf '\n'
-  ac "$HEAVENLY_GOLD" 'A S C E N S I O N   C O M P L E T E'
-  ac "$WHITE" "$TAGLINE"
-  printf '\n'
-  ac "$GR" 'Tenkai is installed and ready.'
-  printf '\n'
-  ac "$WHITE" 'Log out and log back in -- your desktop'
-  ac "$WHITE" 'will be Tenkai.'
+  local W=58 row
+  printf '\n%s╭%s╮%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
+  fl 0 "" 0
+  for row in "${BANNER_ROWS[@]}"; do fl 1 "${CY}${B}${row}${R}" "$BANNER_W"; done
+  fl 0 "" 0
+  fl 6 "${WH}${TAGLINE}${R}" 46
+  fl 0 "" 0
+  fl 13 "${GR}${B}Tenkai is installed and ready.${R}" 30
+  fl 0 "" 0
+  fl 9 "${WH}Log out and log back in -- your desktop${R}" 39
+  fl 9 "${WH}will be Tenkai.${R}" 15
+  fl 0 "" 0
+  printf '%s╰%s╯%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
   printf '\n'
 }
-
-# deploy <what>: one transparent line per thing the installer touches.
-deploy() { printf '  %s✦%s %s\n' "$PURPLE" "$R" "$*"; }
 
 # run <command...>: show it, then run it unless this is a dry run. In a dry run
 # the whole "would have" line is the output, so nothing can be half-applied.
@@ -395,16 +283,9 @@ if [ "${#BUILD_MISSING[@]}" -gt 0 ]; then
   say ""
 fi
 
-# Every dependency check has passed: the gates open and the cultivators meet
-# before a single file is touched.
-play_ascension_animation
-
 # ── 2. build ──────────────────────────────────────────────────────────────────
 
 step 2 "build"
-
-deploy "Compiling Go daemons (tenkai-shell, tenkai-hub, ryogami) into $SYS_GO_BIN"
-deploy "Assembling QML modules (Ui, FrameBars, PluginKit, Wm/Hyprland, Blobs) under $QML_ROOT"
 
 if [ "$SKIP_BUILD" = 1 ]; then
   say "  ${GY}--skip-build: not building${R}"
@@ -493,7 +374,6 @@ write_unit() { # $1 = file name, stdin = content
   if [ -f "$UNIT_DIR/$name" ] && cmp -s "$tmp" "$UNIT_DIR/$name"; then
     ok "$name unchanged"
   else
-    deploy "Deploying systemd user unit to $UNIT_DIR/$name"
     say "  would write $UNIT_DIR/$name"
     say "$content" | sed 's/^/    | /'
     if [ "$DRY_RUN" = 1 ]; then
@@ -674,7 +554,6 @@ copy_config() { # $1 = file in this checkout, $2 = destination
     ok "$dst already matches"
     return 0
   fi
-  deploy "Deploying ${src#$TENKAI_DIR/} to $dst"
   if [ -f "$dst" ]; then
     say "  $dst differs from the bundled copy"
   else
@@ -852,7 +731,6 @@ deploy_hypr() {
     # part of the file being installed (a 0644 script is a bind that fails).
     mode=0644
     [ -x "$HYPR_SRC/$rel" ] && mode=0755
-    deploy "Deploying Hyprland Lua module src/tenkai-configs/hypr/$rel to $dst"
     install -m "$mode" "$HYPR_SRC/$rel" "$dst"
   done
   ok "hypr configs installed (${#plan[@]} files; backups are *.$MARK.bak)"
@@ -966,7 +844,6 @@ else
       if [ -f "$dst" ]; then
         cp -a "$dst" "$dst.$MARK.bak"
       fi
-      deploy "Deploying wallpaper src/tenkai-assets/wallpapers/$rel to $dst"
       install -m 0644 "$WP_SRC/$rel" "$dst"
     done
     ok "wallpapers installed into $WP_DEST"
@@ -1001,7 +878,6 @@ for fam in space-grotesk fraunces; do
       continue
     fi
     mkdir -p "$FONT_DEST"
-    deploy "Deploying font src/tenkai-assets/fonts/$fam/$base to $dst"
     install -m 0644 "$f" "$dst"
     ok "installed $dst"
     fonts_written=1
