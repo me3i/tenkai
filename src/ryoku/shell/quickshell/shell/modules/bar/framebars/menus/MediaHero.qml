@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import Quickshell.Services.Mpris
-import "../.." as Pill
 import shell.services
 import "../../../../components"
 import Ryoku.Ui.Singletons

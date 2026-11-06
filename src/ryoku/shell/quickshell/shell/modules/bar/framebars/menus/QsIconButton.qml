@@ -1,5 +1,4 @@
 import QtQuick
-import "../.." as Pill
 import shell.services
 import "../../../../components"
 

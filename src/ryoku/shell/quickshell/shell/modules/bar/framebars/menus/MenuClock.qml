@@ -1,7 +1,6 @@
 pragma ComponentBehavior: Bound
 
 import QtQuick
-import "../.." as Pill
 import shell.services
 
 // The clock menu: calendar above weather. Composes QsCalendarEmbed (the

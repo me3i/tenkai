@@ -4,7 +4,6 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "shared/Singletons"
-import "shared/providers" as SharedProviders
 import "shared/lib/catalog.js" as Catalog
 
 Scope {

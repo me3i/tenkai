@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 
 import QtQuick
 import Quickshell
-import "../.." as Pill
 import shell.services
 import "../../../../components"
 
