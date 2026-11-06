@@ -471,7 +471,18 @@ else
   sync_dir "$TENKAI_DIR/src/ryoku/wm/hyprland/qml" "$QML_ROOT/Wm/Hyprland"
   sync_dir "$BLOBS_BUILD/qml/Ryoku/Blobs" "$QML_ROOT/Blobs"
 
+  # The wallpaper picker (ryogami's wall-ui), bundled so the daemon never reads
+  # the distro's /usr/share/ryogami. It lives beside the binary, not under
+  # .run/qml, because the daemon hands this directory to the picker as
+  # RYOGAMI_WALL_INSTALL and the picker resolves its scripts from that root.
+  WALL_UI_SRC="$TENKAI_DIR/src/ryoku/shell/ryogami/wall-ui"
+  WALL_UI_DST="$RUN/ryogami-wall-ui"
+  sync_dir "$WALL_UI_SRC" "$WALL_UI_DST"
+  [ -d "$WALL_UI_SRC/data/scripts" ] && sync_dir "$WALL_UI_SRC/data/scripts" "$WALL_UI_DST/scripts"
+  [ -f "$WALL_UI_DST/shell.qml" ] || [ "$DRY_RUN" = 1 ] || die "the wall-ui entry point is missing at $WALL_UI_DST/shell.qml"
+
   ok "QML modules under $QML_ROOT (Ui, FrameBars, PluginKit, Wm/Hyprland, Blobs)"
+  ok "wallpaper picker under $WALL_UI_DST"
 fi
 
 # A dry run builds nothing, so it must not fail these two (that is the point of
@@ -479,6 +490,7 @@ fi
 if [ "$DRY_RUN" = 0 ]; then
   [ -x "$SYS_GO_BIN/tenkai-shell" ] || die "tenkai-shell is not built at $SYS_GO_BIN/tenkai-shell"
   [ -d "$QML_ROOT/Ui" ] || die "the QML modules are not assembled under $QML_ROOT"
+  [ -f "$RUN/ryogami-wall-ui/shell.qml" ] || die "the bundled wallpaper picker is missing at $RUN/ryogami-wall-ui/shell.qml"
 fi
 
 # ── 3. systemd user units ────────────────────────────────────────────────────

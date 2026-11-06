@@ -1730,6 +1730,9 @@ cmd_accept(){ docs/tests/accept.sh "$@"; }
 cmd_run() {
   [ -x "$RUN_DIR/bin/tenkai-shell" ] || die "tenkai-shell not built — run the Phase 6 build first"
   [ -d "$RUN_DIR/qml/Ryoku/Ui" ] || die "QML modules not assembled under .run/qml"
+  # The picker is bundled, never read from /usr/share/ryogami; install.sh's
+  # build step assembles it beside the binaries.
+  [ -f "$RUN_DIR/ryogami-wall-ui/shell.qml" ] || die "bundled wallpaper picker missing — run install.sh to assemble .run/ryogami-wall-ui"
 
   # Refuse to clobber a session that is still up.
   if [ -f "$PID_FILE" ]; then

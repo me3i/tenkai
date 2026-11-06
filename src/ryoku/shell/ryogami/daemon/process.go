@@ -26,18 +26,36 @@ func newWallUIProcess() *managedProcess {
 }
 
 // resolveShellQML finds the wall-ui entry point: env override first (the dev
-// deploy sets it on the unit), then the packaged default.
+// deploy sets it on the unit), then the copy Tenkai ships beside the binary
+// (.run/ryogami-wall-ui, written by install.sh), then a shell.qml in the
+// working directory. TENKAI: there is no system fallback — the picker is
+// bundled from src/ryoku/shell/ryogami/wall-ui, so a machine without the
+// distro ryogami package can still run the daemon.
 func resolveShellQML() string {
 	if p := os.Getenv("RYOGAMI_SHELL_QML"); p != "" {
 		return p
 	}
-	if p := "shell.qml"; fileExists(p) {
-		abs, err := filepath.Abs(p)
-		if err == nil {
-			return abs
+	for _, p := range shellQMLCandidates() {
+		if fileExists(p) {
+			return p
 		}
 	}
-	return "/usr/share/ryogami/shell.qml"
+	return ""
+}
+
+func shellQMLCandidates() []string {
+	var out []string
+	if exe, err := os.Executable(); err == nil {
+		if abs, err := filepath.Abs(filepath.Join(filepath.Dir(exe), "..", "ryogami-wall-ui", "shell.qml")); err == nil {
+			out = append(out, abs)
+		}
+	}
+	if p := "shell.qml"; fileExists(p) {
+		if abs, err := filepath.Abs(p); err == nil {
+			out = append(out, abs)
+		}
+	}
+	return out
 }
 
 func (m *managedProcess) running() bool {
@@ -67,6 +85,10 @@ func (m *managedProcess) launch(extraEnv ...string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	if m.runningLocked() {
+		return
+	}
+	if m.qml == "" {
+		fmt.Fprintf(os.Stderr, "ryogami: wall-ui shell.qml not found (set RYOGAMI_SHELL_QML or run install.sh)\n")
 		return
 	}
 	// TENKAI: never kill by name (upstream ran `pkill -f "quickshell .*<qml>"`). The

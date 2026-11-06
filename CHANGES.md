@@ -1,3 +1,18 @@
+## Wallpaper picker bundled (2026-11-06)
+
+- `ryogami`'s picker is now Tenkai's own: `src/ryoku/shell/ryogami/wall-ui/` is a verbatim
+  copy of upstream's `wall-ui`, assembled by `install.sh` into `.run/ryogami-wall-ui/`
+  (`scripts/` and `data/matugen/` keep the layout `Config.qml` resolves from
+  `RYOGAMI_WALL_INSTALL`).
+- `daemon/process.go` no longer falls back to `/usr/share/ryogami/shell.qml` (the distro
+  package's compiled `Ryoku.Ryogami` module); it resolves `RYOGAMI_SHELL_QML`, then
+  `../ryogami-wall-ui/shell.qml` beside the binary, then `./shell.qml`, and refuses to spawn
+  when none exists.
+- TESTED (nested): picker starts as
+  `quickshell -p …/.run/ryogami-wall-ui/shell.qml` (140 MB), logs
+  `DaemonClient: connected` / `Configuration Loaded`, no error or `/usr/share` reference;
+  `.run/bin/ryogami` no longer contains the `/usr/share/ryogami` string.
+
 ## Tenkai installer: celestial CLI (2026-11-06)
 
 `install.sh` is a 60-column, full-screen install: a six-row `天界` / `TENKAI`
