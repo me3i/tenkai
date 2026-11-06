@@ -32,6 +32,8 @@
 # The systemd units and the autostart line are ALTERNATIVES, not both: the units
 # start the daemons directly, while `mei start` runs Mei's own live-session
 # script (which starts the same daemons and records their pids). Use one.
+#
+# The terminal forces colour off when there is no tty or NO_COLOR is set.
 set -uo pipefail
 
 MEI_DIR="${MEI_DIR:-$(cd "$(dirname "$0")" && pwd)}"
@@ -47,22 +49,98 @@ FISH_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/fish/config.fish"
 STARSHIP_CONF="${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
 TERM_SRC="$MEI_DIR/src/mei-configs/terminal"
 MARK='mei-install'
+STEP_TOTAL=9
 
 ASSUME_YES=0
 DRY_RUN=0
 SKIP_BUILD=0
 
+# ── palette ───────────────────────────────────────────────────────────────────
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
+  R=$'\e[0m'   # reset
+  B=$'\e[1m'   # bold
+  D=$'\e[2m'   # dim
+  WH=$'\e[1;37m'
+  GY=$'\e[0;90m'
+  CY=$'\e[1;36m'
+  GR=$'\e[1;32m'
+  MG=$'\e[1;35m'
+  BL=$'\e[1;34m'
+  YL=$'\e[1;33m'
+  RD=$'\e[1;31m'
+else
+  R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
+fi
+
 say()  { printf '%s\n' "$*"; }
-step() { printf '\n=== %s ===\n' "$*"; }
-ok()   { printf '  ok    %s\n' "$*"; }
-warn() { printf '  warn  %s\n' "$*"; }
-bad()  { printf '  FAIL  %s\n' "$*"; }
-die()  { printf '\ninstall.sh: %s\n' "$*" >&2; exit 1; }
+dim()  { printf '%s%s%s\n' "$D" "$*" "$R"; }
+ok()   { printf '  %s✓%s %s\n' "$GR" "$R" "$*"; }
+warn() { printf '  %s⚠%s %s\n' "$YL" "$R" "$*"; }
+bad()  { printf '  %s✗%s %s\n' "$RD" "$R" "$*"; }
+info() { printf '  %s→%s %s\n' "$CY" "$R" "$*"; }
+gear() { printf '  %s⚙%s %s\n' "$BL" "$R" "$*"; }
+die()  { printf '\n%s✗ %s%s\n' "$RD" "$*" "$R" >&2; exit 1; }
+
+# A full-width section header in a magenta frame.
+step() {
+  local n="$1" title="$2"
+  local text inner_w=58 pad
+  text=$(printf ' STEP %s/%s · %s' "$n" "$STEP_TOTAL" "$title")
+  pad=$(( inner_w - ${#text} ))
+  [ "$pad" -lt 0 ] && pad=0
+  printf '\n%s╭%s╮%s\n' "$B$MG" "$(printf '─%.0s' $(seq 1 $inner_w))" "$R"
+  printf '%s│%s%s%*s%s│%s\n' "$B$MG" "$WH" "$text" "$pad" "" "$B$MG" "$R"
+  printf '%s╰%s╯%s\n' "$B$MG" "$(printf '─%.0s' $(seq 1 $inner_w))" "$R"
+}
+
+# The opened and closed gate of the installer.
+print_banner() {
+  printf '%s\n' "$CY"
+  cat <<'ART'
+   ███╗   ███╗███████╗██╗
+   ████╗ ████║██╔════╝██║
+   ██╔████╔██║█████╗  ██║
+   ██║╚██╔╝██║██╔══╝  ██║
+   ██║ ╚═╝ ██║███████╗██║
+   ╚═╝     ╚═╝╚══════╝╚═╝
+ART
+  printf '%s' "$R"
+  printf '%s   A lightweight Quickshell environment%s\n' "$GY" "$R"
+  printf '%s   checkout:%s %s\n' "$GY" "$R" "$MEI_DIR"
+  printf '\n'
+}
+
+# One framed content line inside the success banner. $1 = leading spaces,
+# $2 = content (may carry ANSI), $3 = *visible* width of the content.
+fl() {
+  local lead="$1" content="$2" width="$3"
+  printf '%s║%*s%s%*s║%s\n' "$B$GR" "$lead" "" "$content" "$((58 - lead - width))" "" "$R"
+}
+
+print_success() {
+  local W=58
+  printf '\n%s╭%s╮%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
+  fl 0 "" 0
+  fl 17 "${CY}${B}███╗   ███╗███████╗██╗${R}" 22
+  fl 17 "${CY}${B}████╗ ████║██╔════╝██║${R}" 22
+  fl 17 "${CY}${B}██╔████╔██║█████╗  ██║${R}" 22
+  fl 17 "${CY}${B}██║╚██╔╝██║██╔══╝  ██║${R}" 22
+  fl 17 "${CY}${B}██║ ╚═╝ ██║███████╗██║${R}" 22
+  fl 17 "${CY}${B}╚═╝     ╚═╝╚══════╝╚═╝${R}" 22
+  fl 0 "" 0
+  fl 13 "${GR}${B}Mei is installed and ready.${R}" 27
+  fl 0 "" 0
+  fl 9 "${WH}Log out and log back in -- your desktop${R}" 39
+  fl 9 "${WH}will be Mei.${R}" 12
+  fl 0 "" 0
+  printf '%s╰%s╯%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
+  printf '\n'
+}
 
 # run <command...>: show it, then run it unless this is a dry run. In a dry run
 # the whole "would have" line is the output, so nothing can be half-applied.
 run() {
-  printf '  $ %s\n' "$*"
+  printf '  %s$%s %s\n' "$GY" "$R" "$*"
   [ "$DRY_RUN" = 1 ] && return 0
   "$@"
 }
@@ -95,7 +173,22 @@ confirm_yes() {
 }
 
 usage() {
-  sed -n '2,34p' "$0" | grep '^#' | sed 's/^# \{0,1\}//'
+  cat <<'USAGE'
+install.sh — set Mei up on a fresh Arch Linux + Hyprland machine.
+
+  ./install.sh                 check, build, then ask before each system change
+  ./install.sh --yes           answer "yes" to the non-Hyprland prompts too
+  ./install.sh --dry-run       print what would happen, touch nothing
+  ./install.sh --skip-build    only do the system steps (binaries already built)
+  ./install.sh --help          this text
+
+In order: dependencies, build, systemd user units, Hyprland autostart, kitty
+colour include, the Fish + Starship terminal files, the bundled Hyprland Lua
+config, wallpapers, and the bundled fonts. Nothing is installed and no sudo is
+run; every write outside this checkout is named and prompted for. The Hyprland
+autostart and the Hyprland-config deploy are INTERACTIVE y/N only — --yes does
+not answer them. Second runs are safe.
+USAGE
 }
 
 while [ $# -gt 0 ]; do
@@ -113,12 +206,15 @@ done
 [ -n "${MEI_TEST:-}" ] && die "MEI_TEST is set: this is a nested test session, not an install"
 [ "$(id -u)" = 0 ] && die "do not run this as root: it builds and installs into your own account"
 
-say "Mei installer"
-say "  checkout: $MEI_DIR"
+print_banner
+if [ "$DRY_RUN" = 1 ]; then
+  info "dry run — nothing will be written, every prompt is shown as skipped"
+  say ""
+fi
 
 # ── 1. dependencies ───────────────────────────────────────────────────────────
 
-step "1. dependencies"
+step 1 "dependencies"
 
 # Checked BEFORE building, and never installed here: the exact pacman line is
 # printed and the run stops, so an install is always an explicit act.
@@ -166,32 +262,32 @@ check_build wl-clipboard wl-copy
 
 if [ "${#MISSING_PKGS[@]}" -gt 0 ]; then
   say ""
-  say "Install the required packages, then run this again:"
+  say "  Install the required packages, then run this again:"
   say ""
-  say "  sudo pacman -S --needed ${MISSING_PKGS[*]}"
+  say "  ${BL}sudo pacman -S --needed ${MISSING_PKGS[*]}${R}"
   die "${#MISSING_PKGS[@]} required package(s) missing"
 fi
 
 if [ "${#BUILD_MISSING[@]}" -gt 0 ]; then
   say ""
-  say "Not on the required list, but needed to build or run Mei. If the build"
-  say "fails below, this is the line:"
+  say "  Not on the required list, but needed to build or run Mei. If the build"
+  say "  fails below, this is the line:"
   say ""
-  say "  sudo pacman -S --needed ${BUILD_MISSING[*]}"
+  say "  ${BL}sudo pacman -S --needed ${BUILD_MISSING[*]}${R}"
   say ""
 fi
 
 # ── 2. build ──────────────────────────────────────────────────────────────────
 
-step "2. build"
+step 2 "build"
 
 if [ "$SKIP_BUILD" = 1 ]; then
-  say "  --skip-build: not building"
+  say "  ${GY}--skip-build: not building${R}"
 else
   mkdir -p "$SYS_GO_BIN" "$QML_ROOT" "$RUN/go"
 
   # Project-local Go state, vendored deps, no toolchain download, no CGO: the
-  # same environment docs/04-plan.md pins for a reproducible build.
+  # same environment the project pins for a reproducible build.
   export GOTOOLCHAIN=local
   export GOFLAGS=-mod=vendor
   export GOPATH="$RUN/go"
@@ -201,7 +297,7 @@ else
   go_build() { # $1 = source dir, $2 = output name
     local src="$MEI_DIR/src/ryoku/$1" out="$SYS_GO_BIN/$2"
     [ -d "$src" ] || die "missing source dir: $src"
-    say "  building $2"
+    gear "building $2"
     ( cd "$src" && nice -n 10 go build -trimpath -p 2 -o "$out" ./ ) \
       || die "go build failed in $src"
     [ -x "$out" ] || die "$2 was not produced"
@@ -217,20 +313,27 @@ else
   # Ryoku.Blobs — the SDF metaball plugin behind the frame. Prebuilt upstream
   # because a target machine has no toolchain; here we do have one.
   [ -d "$MEI_DIR/src/ryoku/shell/plugin" ] || die "missing src/ryoku/shell/plugin"
-  say "  configuring Ryoku.Blobs"
+  gear "configuring Ryoku.Blobs"
   CMAKE_GEN=()
   command -v ninja >/dev/null 2>&1 && CMAKE_GEN=(-G Ninja)
   run cmake -S "$MEI_DIR/src/ryoku/shell/plugin" -B "$BLOBS_BUILD" \
       "${CMAKE_GEN[@]}" -DCMAKE_BUILD_TYPE=Release \
     || die "cmake configure failed (Qt6 6.5+ with Quick/ShaderTools/Multimedia is required)"
-  say "  building Ryoku.Blobs"
+  gear "building Ryoku.Blobs"
   run nice -n 10 cmake --build "$BLOBS_BUILD" -j2 || die "cmake build failed"
-  [ -d "$BLOBS_BUILD/qml/Ryoku/Blobs" ] || die "the Blobs module was not produced"
+  # A dry run configures/builds nothing; only a real run may assert the artifact.
+  if [ "$DRY_RUN" = 0 ]; then
+    [ -d "$BLOBS_BUILD/qml/Ryoku/Blobs" ] || die "the Blobs module was not produced"
+  fi
 
   # One QML import path for the whole tree. `cp -a src/. dst/` overwrites in
   # place, so a second run refreshes the modules without nesting a copy.
   sync_dir() { # $1 = source, $2 = destination
-    [ -d "$1" ] || die "missing QML module source: $1"
+    if [ ! -d "$1" ]; then
+      # A dry run builds nothing, so build artifacts are absent by definition.
+      [ "$DRY_RUN" = 1 ] && { say "  (dry run: would copy $1/. -> $2/)"; return 0; }
+      die "missing QML module source: $1"
+    fi
     mkdir -p "$2"
     run cp -a "$1/." "$2/"
   }
@@ -252,7 +355,7 @@ fi
 
 # ── 3. systemd user units ────────────────────────────────────────────────────
 
-step "3. systemd user units"
+step 3 "systemd user units"
 
 # Both units are ALTERNATIVES to the autostart line in step 4 — they start the
 # daemons themselves. Nothing is enabled here; enabling is your call, because
@@ -337,12 +440,12 @@ else
   say "  units are up to date; no daemon-reload needed"
 fi
 say ""
-say "  Not enabled on purpose. To use the units instead of the autostart line:"
-say "    systemctl --user enable --now mei-shell.service mei-hub.service"
+say "  ${GY}Not enabled on purpose. To use the units instead of the autostart line:${R}"
+say "    ${BL}systemctl --user enable --now mei-shell.service mei-hub.service${R}"
 
 # ── 4. Hyprland autostart ────────────────────────────────────────────────────
 
-step "4. Hyprland autostart"
+step 4 "Hyprland autostart"
 
 # The one Hyprland file this script could ever change — and only after an
 # interactive y/N. --yes does not answer this one, and a non-tty run only prints
@@ -398,14 +501,14 @@ fi
 
 # ── 5. kitty colours ────────────────────────────────────────────────────────
 
-step "5. kitty colours"
+step 5 "kitty colours"
 
 # Mei's palette pass writes ~/.cache/mei/kitty-colors.conf; kitty only reads it
 # if its own config includes it. Mei never writes ~/.config/kitty itself.
 if [ ! -f "$KITTY_CONF" ]; then
   warn "no $KITTY_CONF — kitty is not configured for this user"
   say "  create it with:"
-  say "    mkdir -p ${KITTY_CONF%/*} && printf '%s\\n' '$KITTY_INCLUDE' >> $KITTY_CONF"
+  say "    ${BL}mkdir -p ${KITTY_CONF%/*} && printf '%s\\n' '$KITTY_INCLUDE' >> $KITTY_CONF${R}"
 elif grep -qF "$KITTY_INCLUDE" "$KITTY_CONF"; then
   ok "$KITTY_CONF already includes the Mei colour file"
 else
@@ -423,12 +526,12 @@ else
   fi
 fi
 say ""
-say "  The file itself appears the first time Mei runs a palette pass."
-say "  Kitty re-reads its config on SIGUSR1: pkill -USR1 -x kitty"
+info "The file itself appears the first time Mei runs a palette pass."
+info "Kitty re-reads its config on SIGUSR1: ${BL}pkill -USR1 -x kitty${R}"
 
 # ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ─────
 
-step "6. terminal (kitty + fish + starship + fastfetch)"
+step 6 "terminal (kitty + fish + starship + fastfetch)"
 
 # Mei ships the owner's exact terminal environment: kitty style/conf (opacity,
 # padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
@@ -550,13 +653,13 @@ if [ -f "$FISH_CONF" ] && ! grep -qsF 'starship init fish' "$FISH_CONF"; then
   warn "$FISH_CONF does not call starship; the prompt will be plain fish"
 fi
 if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v fish 2>/dev/null)" ]; then
-  say "  fish is installed but is not your login shell. To use it:"
-  say "    chsh -s $(command -v fish)"
+  say "  ${GY}fish is installed but is not your login shell. To use it:${R}"
+  say "    ${BL}chsh -s $(command -v fish)${R}"
 fi
 
 # ── 7. Hyprland configs ─────────────────────────────────────────────────────
 
-step "7. Hyprland configs (Lua)"
+step 7 "Hyprland configs (Lua)"
 
 # Mei ships the owner's Hyprland Lua config so a fresh install is not stuck
 # with Hyprland defaults. Files are copied whole, never merged; existing
@@ -602,8 +705,8 @@ deploy_hypr() {
     return 0
   fi
   say "  would install ${#plan[@]} bundled file(s) into $HYPR_DEST:"
-  for rel in "${new[@]}";  do say "    new        $rel"; done
-  for rel in "${over[@]}"; do say "    overwrite  $rel  (backup: $rel.$MARK.bak)"; done
+  for rel in "${new[@]}";  do say "    ${GR}new${R}        $rel"; done
+  for rel in "${over[@]}"; do say "    ${YL}overwrite${R}  $rel  (backup: $rel.$MARK.bak)"; done
   if [ "$DRY_RUN" = 1 ]; then
     say "  (dry run: nothing written)"
     return 0
@@ -690,7 +793,7 @@ deploy_helper_links
 
 # ── 8. wallpapers ───────────────────────────────────────────────────────────
 
-step "8. wallpapers"
+step 8 "wallpapers"
 
 # The repo ships NO wallpapers (the owner's set is not redistributable), so
 # this step mostly reports and prepares the directory Mei's wallpaper daemon
@@ -745,7 +848,7 @@ fi
 
 # ── 9. fonts ────────────────────────────────────────────────────────────────
 
-step "9. fonts"
+step 9 "fonts"
 
 # Bundled OFL fonts (Space Grotesk + Fraunces) install user-locally — no
 # sudo. The remaining fonts Mei's QML references live in the official Arch
@@ -786,28 +889,28 @@ MISSING_FONTS=()
 if command -v fc-list >/dev/null 2>&1; then
   fc-list | grep -qi "JetBrainsMono Nerd Font"   || MISSING_FONTS+=(ttf-jetbrains-mono-nerd)
   fc-list | grep -qi "SpaceMono Nerd Font"       || MISSING_FONTS+=(ttf-space-mono-nerd)
-  fc-list | grep -qi "Material Symbols"          || MISSING_FONTS+=(ttf-material-symbols-variable)
+  fc-list | grep -qi "Material Symbols"           || MISSING_FONTS+=(ttf-material-symbols-variable)
   if [ "${#MISSING_FONTS[@]}" -gt 0 ]; then
     say "  optional icon/mono fonts not found; to install them (needs sudo):"
-    say "    sudo pacman -S --needed ${MISSING_FONTS[*]}"
+    say "    ${BL}sudo pacman -S --needed ${MISSING_FONTS[*]}${R}"
   else
     ok "nerd/material fonts already present"
   fi
 else
   say "  fc-list not found; cannot check Nerd/Material Symbols fonts"
-  say "    sudo pacman -S --needed ttf-jetbrains-mono-nerd ttf-space-mono-nerd ttf-material-symbols-variable"
+  say "    ${BL}sudo pacman -S --needed ttf-jetbrains-mono-nerd ttf-space-mono-nerd ttf-material-symbols-variable${R}"
 fi
 
 # ── done ─────────────────────────────────────────────────────────────────────
 
-step "done"
+print_success
 
-say "  binaries:  $SYS_GO_BIN/{mei-shell,mei-hub,ryogami}"
-say "  QML:       $QML_ROOT"
+say "  ${GY}binaries:${R}  $SYS_GO_BIN/{mei-shell,mei-hub,ryogami}"
+say "  ${GY}QML:${R}       $QML_ROOT"
 say ""
-say "  Next:"
-say "    ./mei status                 # nothing running yet"
-say "    ./mei start                  # join this Hyprland session now"
+say "  ${WH}Next:${R}"
+say "    ${BL}./mei status${R}                 # nothing running yet"
+say "    ${BL}./mei start${R}                  # join this Hyprland session now"
 say ""
 say "  A second run of this script is safe: it rebuilds only what changed,"
 say "  rewrites no identical unit, reinstalls no identical hypr file or font,"

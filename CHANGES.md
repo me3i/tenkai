@@ -1,4 +1,18 @@
-# CHANGES.md — modifications vs upstream Ryoku
+## Heavenly installer (2026-11-06)
+
+`install.sh` is now a full-screen, 60-column experience: ANSI-colour ASCII-art
+MEI banner, rounded magenta step frames (`╭ STEP n/9 · …`), ✓/✗/→/⚙/⚠ status
+glyphs, a dry-run mode that is genuinely read-only, and a closing success
+banner telling the user to log out and back in. Static frame widths are
+computed manually so the boxes align in any UTF-8 locale and collapse to plain
+text when there is no tty or NO_COLOR is set.
+
+Behaviour is unchanged except for one pre-existing bug fix: `--dry-run` died at
+"the Blobs module was not produced" / "missing QML module source" because the
+build-artifact existence checks ran even when nothing was built; both are now
+skipped on a dry run. `bash -n` and `shellcheck -S warning` pass; every step,
+prompt, backup and the interactive-y/N-only Hyprland rule behave exactly as
+before.
 
 ## Deep clean: strip Ryoku mentions, dead ceremony, stale docs (2026-11-06)
 
