@@ -347,8 +347,15 @@ check_pkg go go
 check_pkg cmake cmake
 check_pkg matugen matugen
 check_pkg kitty kitty
-check_pkg pipewire pw-cli
+# Audio is driven through `wpctl` (src/ryoku/shell/ipc/control.go:81), which ships
+# with wireplumber; pipewire comes in with it. `pw-cli` was checked here but is
+# never called by the shell.
+check_pkg wireplumber wpctl
 check_pkg networkmanager nmcli
+# Keep-list features that shell out at runtime: the brightness steps and the
+# battery readout (modules/bar/BrightnessControl.qml, barstyles/qsbar/TenkaiPower.js).
+check_pkg brightnessctl brightnessctl
+check_pkg upower upower
 # The terminal: Tenkai ships the owner's own Fish config and Starship preset, and
 # step 6 installs them, so both are dependencies of a complete install.
 check_pkg fish fish
