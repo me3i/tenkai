@@ -1,8 +1,7 @@
 package main
 
 // gpudomain.go: the pure libvirt-domain builder for passthrough VMs, plus the
-// CPU-pinning planner. Kept separate from gpuvm.go's orchestration so both are
-// unit-tested as functions of their inputs, with no virsh or sysfs in the way.
+// CPU-pinning planner.
 //
 // The generated domain is tuned for near-native passthrough: host-passthrough
 // CPU with vCPU pinning (emulator/iothreads on host-reserved cores), Hyper-V

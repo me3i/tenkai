@@ -81,7 +81,7 @@ func installPassthroughAUR() {
 	}
 }
 
-// aurInstall hands packages to the Tenkai AUR wrapper, falling back to a raw
+// aurInstall hands packages to the Ryoku AUR wrapper, falling back to a raw
 // helper. inherits this terminal so makepkg/sudo can prompt.
 func aurInstall(pkgs []string) error {
 	if _, err := exec.LookPath("ryoku-pkg-aur-add"); err == nil {
@@ -150,15 +150,15 @@ type managedFile struct {
 
 func managedFiles(user, exe string) []managedFile {
 	gpuBin := exe // ryoku-hub. the hook also needs ryoku-gpu, resolved below.
-	tenkaiGpu := "ryoku-gpu"
+	ryokuGpu := "ryoku-gpu"
 	if p, err := exec.LookPath("ryoku-gpu"); err == nil {
-		tenkaiGpu = p
+		ryokuGpu = p
 	}
 	hook := "#!/bin/bash\n" +
-		"# Managed by Tenkai (ryoku-hub gpu apply). libvirt calls this for every domain;\n" +
-		"# we forward the Tenkai VM's prepare/release to ryoku-hub, which binds the dGPU to\n" +
+		"# Managed by Ryoku (ryoku-hub gpu apply). libvirt calls this for every domain;\n" +
+		"# we forward the Ryoku VM's prepare/release to ryoku-hub, which binds the dGPU to\n" +
 		"# vfio-pci on start and hands it back on stop.\n" +
-		"export RYOKU_GPU_BIN=" + shellQuote(tenkaiGpu) + "\n" +
+		"export RYOKU_GPU_BIN=" + shellQuote(ryokuGpu) + "\n" +
 		"guest=\"$1\"; op=\"$2\"\n" +
 		"case \"$op\" in\n" +
 		"  prepare) " + shellQuote(gpuBin) + " gpu hook prepare \"$guest\" ;;\n" +
@@ -182,8 +182,8 @@ func kvmfrModuleAvailable() bool {
 	return exec.Command("modinfo", "kvmfr").Run() == nil
 }
 
-const polkitRule = `// Managed by Tenkai. Let the libvirt group manage libvirt without a password so the
-// Tenkai VM launches straight from the app launcher.
+const polkitRule = `// Managed by Ryoku. Let the libvirt group manage libvirt without a password so the
+// Ryoku VM launches straight from the app launcher.
 polkit.addRule(function(action, subject) {
   if (action.id == "org.libvirt.unix.manage" && subject.isInGroup("libvirt")) {
     return polkit.Result.YES;
@@ -194,11 +194,11 @@ polkit.addRule(function(action, subject) {
 // kvmfrStaticMB = Looking Glass shared-memory size in MiB, written to the kvmfr
 // module's static_size_mb. 128 MiB covers SDR panels up to 2160p and most
 // ultrawides; bumping it just locks down that RAM. Only the passthrough stack
-// uses it (a passthrough VM is launched outside Tenkai, e.g. via libvirt).
+// uses it (a passthrough VM is launched outside Ryoku, e.g. via libvirt).
 const kvmfrStaticMB = 128
 
 // the passthrough stack. core packages are official, install as one
-// transaction; the Looking Glass pieces live in [tenkai] (or the AUR on plain
+// transaction; the Looking Glass pieces live in [ryoku] (or the AUR on plain
 // Arch) and install best-effort, so their absence never blocks the core set.
 var corePassthroughPkgs = []string{"qemu-desktop", "libvirt", "edk2-ovmf", "swtpm", "dnsmasq"}
 var extraPassthroughPkgs = []string{"looking-glass", "looking-glass-module-dkms"}
@@ -211,9 +211,9 @@ func applyPlan(action, user, exe string, dryRun bool) error {
 	if action == "enable" {
 		say("install packages: " + strings.Join(corePassthroughPkgs, " "))
 		if !dryRun {
-			snapshot("tenkai gpu passthrough enable")
+			snapshot("ryoku gpu passthrough enable")
 			if err := pacmanInstall(corePassthroughPkgs); err != nil {
-				return fmt.Errorf("installing the passthrough stack failed: %w (update the system with `tenkai update`, then retry)", err)
+				return fmt.Errorf("installing the passthrough stack failed: %w (update the system with `ryoku update`, then retry)", err)
 			}
 		}
 		// Looking Glass + the kvmfr module are AUR-only; runGpuApply builds them

@@ -167,7 +167,7 @@ func readTenkaiKeybinds() tenkaiKeybinds {
 }
 
 // bindDsp maps the four actions the Keybinds page offers onto the same hl.dsp
-// forms the import layer generates (import_parse.go), so a bound action is
+// forms the config-import layer would generate, so a bound action is
 // exactly what a hand-written config would have produced.
 func bindDsp(action, value string) (string, bool) {
 	switch strings.TrimSpace(action) {
