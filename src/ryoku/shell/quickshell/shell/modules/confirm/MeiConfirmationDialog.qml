@@ -6,7 +6,7 @@ import Quickshell.Wayland
 import shell.services
 import Ryoku.Ui.Singletons
 
-// Session-action confirmation dialog (contract 13 sec 2c). A ryoku-dialog layer
+// Session-action confirmation dialog (contract 13 sec 2c). A mei-dialog layer
 // surface holding one centred box: a 2px outline, radiusWindow corners, a centred
 // wrapping title at the large label size (fontLg) with 40px vertical and 20px
 // horizontal margins, then a two-button row where both buttons expand to split
@@ -40,7 +40,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    WlrLayershell.namespace: "ryoku-dialog"
+    WlrLayershell.namespace: "mei-dialog"
 
     anchors { top: true; bottom: true; left: true; right: true }
 
