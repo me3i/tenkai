@@ -68,8 +68,12 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BL=$'\e[1;34m'
   YL=$'\e[1;33m'
   RD=$'\e[1;31m'
+  # Thin cyan draws the frames — quiet next to the icons it surrounds.
+  THIN=$'\e[36m'
+  # 256-colour gold, for the one line that closes the whole install.
+  GOLD=$'\e[38;5;220m'
 else
-  R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
+  R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD='' THIN='' GOLD=''
 fi
 
 say()  { printf '%s\n' "$*"; }
@@ -78,19 +82,24 @@ ok()   { printf '  %s✓%s %s\n' "$GR" "$R" "$*"; }
 warn() { printf '  %s⚠%s %s\n' "$YL" "$R" "$*"; }
 bad()  { printf '  %s✗%s %s\n' "$RD" "$R" "$*"; }
 info() { printf '  %s→%s %s\n' "$CY" "$R" "$*"; }
-gear() { printf '  %s⚙%s %s\n' "$BL" "$R" "$*"; }
+gear() { printf '  %s⚙%s %s\n' "$MG" "$R" "$*"; }
 die()  { printf '\n%s✗ %s%s\n' "$RD" "$*" "$R" >&2; exit 1; }
 
-# A full-width section header in a magenta frame.
+# A full-width section header: a hairline cyan rule, the count in cyan, the
+# title in white. No heavy box — the eye should land on the icons underneath.
 step() {
   local n="$1" title="$2"
-  local text inner_w=58 pad
-  text=$(printf ' STEP %s/%s · %s' "$n" "$STEP_TOTAL" "$title")
+  local cnt sep text inner_w=58 pad rule
+  rule="$(printf '─%.0s' $(seq 1 $inner_w))"
+  cnt=" STEP $n/$STEP_TOTAL "
+  sep="· "
+  text="$cnt$sep$title"
   pad=$(( inner_w - ${#text} ))
   [ "$pad" -lt 0 ] && pad=0
-  printf '\n%s╭%s╮%s\n' "$B$MG" "$(printf '─%.0s' $(seq 1 $inner_w))" "$R"
-  printf '%s│%s%s%*s%s│%s\n' "$B$MG" "$WH" "$text" "$pad" "" "$B$MG" "$R"
-  printf '%s╰%s╯%s\n' "$B$MG" "$(printf '─%.0s' $(seq 1 $inner_w))" "$R"
+  printf '\n%s╭%s╮%s\n' "$THIN" "$rule" "$R"
+  printf '%s│%s%s%s%s%s%s%*s%s│%s\n' \
+    "$THIN" "$CY" "$cnt" "$GY" "$sep" "$WH" "$title" "$pad" "" "$THIN" "$R"
+  printf '%s╰%s╯%s\n' "$THIN" "$rule" "$R"
 }
 
 # The banner: a six-row hanko seal (天 / 界 stacked inside a double rule) joined
@@ -123,30 +132,31 @@ print_banner() {
 # $2 = content (may carry ANSI), $3 = *visible* width of the content.
 fl() {
   local lead="$1" content="$2" width="$3"
-  printf '%s║%*s%s%*s║%s\n' "$B$GR" "$lead" "" "$content" "$((58 - lead - width))" "" "$R"
+  printf '%s│%*s%s%*s%s│%s\n' "$THIN" "$lead" "" "$content" "$((58 - lead - width))" "" "$THIN" "$R"
 }
 
 print_success() {
-  local W=58 row
-  printf '\n%s╭%s╮%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
+  local W=58 row rule
+  rule="$(printf '─%.0s' $(seq 1 $W))"
+  printf '\n%s╭%s╮%s\n' "$THIN" "$rule" "$R"
   fl 0 "" 0
   for row in "${BANNER_ROWS[@]}"; do fl 1 "${CY}${B}${row}${R}" "$BANNER_W"; done
   fl 0 "" 0
   fl 6 "${WH}${TAGLINE}${R}" 46
   fl 0 "" 0
-  fl 13 "${GR}${B}Tenkai is installed and ready.${R}" 30
+  fl 14 "${GOLD}${B}Tenkai is installed and ready.${R}" 30
   fl 0 "" 0
   fl 9 "${WH}Log out and log back in -- your desktop${R}" 39
-  fl 9 "${WH}will be Tenkai.${R}" 15
+  fl 21 "${WH}will be Tenkai.${R}" 15
   fl 0 "" 0
-  printf '%s╰%s╯%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
+  printf '%s╰%s╯%s\n' "$THIN" "$rule" "$R"
   printf '\n'
 }
 
 # run <command...>: show it, then run it unless this is a dry run. In a dry run
 # the whole "would have" line is the output, so nothing can be half-applied.
 run() {
-  printf '  %s$%s %s\n' "$GY" "$R" "$*"
+  printf '  %s$ %s%s\n' "$D" "$*" "$R"
   [ "$DRY_RUN" = 1 ] && return 0
   "$@"
 }
@@ -375,7 +385,8 @@ write_unit() { # $1 = file name, stdin = content
     ok "$name unchanged"
   else
     say "  would write $UNIT_DIR/$name"
-    say "$content" | sed 's/^/    | /'
+    # Dim the file body: it is reference material, not the point of the run.
+    printf '%s\n' "$content" | sed "s|^|${D}    │ |; s|\$|${R}|"
     if [ "$DRY_RUN" = 1 ]; then
       ok "$name (dry run)"
     elif confirm_yes "write $UNIT_DIR/$name?"; then
@@ -537,7 +548,7 @@ info "Kitty re-reads its config on SIGUSR1: ${BL}pkill -USR1 -x kitty${R}"
 
 # ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ─────
 
-step 6 "terminal (kitty + fish + starship + fastfetch)"
+step 6 "terminal (kitty, fish, starship, fastfetch)"
 
 # Tenkai ships the owner's exact terminal environment: kitty style/conf (opacity,
 # padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
