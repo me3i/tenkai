@@ -115,15 +115,15 @@ func vmReadiness() (bool, string, *Capability) {
 	case cap.Passthrough == nil:
 		return false, "no discrete GPU is free for passthrough on this machine", &cap
 	case cap.Verdict == "incapable":
-		return false, "this machine cannot pass a GPU through (see Ryoku Settings > GPU)", &cap
+		return false, "this machine cannot pass a GPU through (see Mei Settings > GPU)", &cap
 	case cap.Verdict == "needs-setup":
-		return false, "turn on GPU passthrough first in Ryoku Settings > GPU", &cap
+		return false, "turn on GPU passthrough first in Mei Settings > GPU", &cap
 	case cap.Verdict == "needs-reboot":
 		return false, "reboot to finish enabling passthrough, then launch the VM", &cap
 	case cap.Verdict == "needs-relogin":
 		return false, "log out and back in (or reboot) to activate the libvirt group, then launch", &cap
 	case cap.Verdict != "ready":
-		return false, "passthrough is not ready yet (see Ryoku Settings > GPU)", &cap
+		return false, "passthrough is not ready yet (see Mei Settings > GPU)", &cap
 	}
 	return true, "", &cap
 }
@@ -153,7 +153,7 @@ func vmDoStatus(name string) error {
 	}
 	m, ok := loadMachine(name)
 	if !ok {
-		return fmt.Errorf("no Ryoku passthrough VM named %q", name)
+		return fmt.Errorf("no Mei passthrough VM named %q", name)
 	}
 	return printJSON(m)
 }
@@ -196,7 +196,7 @@ func vmDoCreate(f map[string]string) error {
 		return err
 	}
 	if _, err := readMeta(name); err == nil {
-		return fmt.Errorf("a Ryoku passthrough VM named %q already exists", name)
+		return fmt.Errorf("a Mei passthrough VM named %q already exists", name)
 	}
 	ready, blocker, cap := vmReadiness()
 	if !ready {
@@ -265,7 +265,7 @@ func vmDoStart(name string) error {
 		return fmt.Errorf("gpu vm start needs --name")
 	}
 	if _, err := readMeta(name); err != nil {
-		return fmt.Errorf("no Ryoku passthrough VM named %q", name)
+		return fmt.Errorf("no Mei passthrough VM named %q", name)
 	}
 	ready, blocker, _ := vmReadiness()
 	if !ready {

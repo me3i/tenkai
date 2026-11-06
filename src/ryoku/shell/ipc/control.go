@@ -22,7 +22,7 @@ import (
 // barEdges are the four frame edges plus "all". The reference offered per-edge
 // toggles and a toggle/reveal/hide-all trio whose -x flag excluded bars marked
 // hidden-by-default; that flag's meaning was inverted from its name (with -x set
-// it acted ONLY on reveal-by-default bars). Ryoku drops the flag for an explicit
+// it acted ONLY on reveal-by-default bars). Mei drops the flag for an explicit
 // edge list, so "all" is every edge (the reference's default, non-excluding
 // path) and a named edge is just that one.
 var barEdges = map[string]bool{"top": true, "bottom": true, "left": true, "right": true, "all": true}
@@ -211,10 +211,10 @@ func (d *daemon) menuClose() string {
 	return shellIpc("closeAllMenus", d.activeMonitor())
 }
 
-// barToggle drives the per-edge bar reveal state (reference bar toggle/reveal/
+// barToggle drives the per-edge bar reveal state (bar toggle/reveal/
 // hide, per edge or across all).
 //
-// ryoku: the shell exposes no setBar IPC function. Its bar reveal is a single
+// mei: the shell exposes no setBar IPC function. Its bar reveal is a single
 // whole-bar toggle driven in-process by the global:mei:barToggle keybind
 // (CustomShortcut -> ShellState.barRevealed), with no per-edge reveal/hide
 // grammar. This CLI verb still emits setBar on the shell target, so it is a
@@ -225,7 +225,7 @@ func (d *daemon) barToggle(edge, action string) string {
 	return shellIpc("setBar", d.activeMonitor(), edge, action)
 }
 
-// hub opens or closes Ryoku Hub, which replaces the reference settings window.
+// hub opens or closes Mei Hub, which replaces the reference settings window.
 // The Hub is one app: Bar Studio and every other page are sections inside it,
 // reached by in-app navigation, never separate processes. Open on a running
 // Hub navigates (when a section is named) and raises the window; open on a

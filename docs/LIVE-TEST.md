@@ -124,7 +124,7 @@ hyprctl dispatch 'hl.dsp.global("mei:quicksettings")'  # the quick settings
 
 **Note the syntax.** Your Hyprland config is **Lua**, so the bare
 `hyprctl dispatch global mei:launcher` is a Lua syntax error there
-(`'\'' )' expected near 'ryoku'`) and does nothing. The explicit
+(`'\'' )' expected near 'mei'`) and does nothing. The explicit
 `hl.dsp.global("...")` form is the one that works — that is the same form the
 nested harness uses. (The *shortcut* itself is registered by Mei's shell over
 the global-shortcuts protocol, so no config bind is needed either way.)

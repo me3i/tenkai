@@ -28,7 +28,7 @@ import (
 // is the first daily entry's sunrise/sunset.
 //
 // Divergence from the reference (recorded): the reference default location is the
-// null island (Coordinates 0,0). Ryoku instead falls back to a keyless IP lookup
+// null island (Coordinates 0,0). Mei instead falls back to a keyless IP lookup
 // when no location is configured, so a fresh profile shows local weather rather
 // than the Gulf of Guinea. An explicit location always wins over the fallback.
 
@@ -171,7 +171,7 @@ func conditionLabel(code int) string {
 	}
 }
 
-// weatherIcon maps a condition and day/night flag to a Ryoku weather icon token
+// weatherIcon maps a condition and day/night flag to a Mei weather icon token
 // (reference get_weather_icon_name, appendix A). Only Clear and PartlyCloudy
 // split on day/night; every other condition uses one icon for both. Daily items
 // always pass isDay=true.
@@ -729,7 +729,7 @@ func wxRetryable(kind string) bool {
 
 // resolveLocation turns the config into concrete coordinates. An explicit city
 // query geocodes; explicit coordinates are used directly; an empty query falls
-// back to a keyless IP lookup (the Ryoku divergence).
+// back to a keyless IP lookup (the Mei divergence).
 func (s *wxState) resolveLocation(cfg wxConfig) (*wxLocation, string, error) {
 	if cfg.query != "" {
 		return s.geocode(cfg.query)

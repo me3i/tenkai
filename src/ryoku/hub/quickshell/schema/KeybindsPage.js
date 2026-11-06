@@ -67,7 +67,7 @@ var rows = [
     {
         "tab": "Custom", "group": "CUSTOM",
         "label": "Custom shortcuts",
-        "desc": "Add your own key combos layered over the ones Ryoku ships",
+        "desc": "Add your own key combos layered over the ones Mei ships",
         "opts": ["custom", "add", "record", "command", "run", "bind"]
     }
 ];

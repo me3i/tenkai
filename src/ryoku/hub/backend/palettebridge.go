@@ -97,7 +97,7 @@ func paletteBridgeManagedFiles() map[string]bool {
 	if state == "" {
 		state = filepath.Join(paletteBridgeHome(), ".local", "state")
 	}
-	b, err := os.ReadFile(filepath.Join(state, "ryoku", "palette-bridge", "owned-files.tsv"))
+	b, err := os.ReadFile(filepath.Join(state, "mei", "palette-bridge", "owned-files.tsv"))
 	if err != nil {
 		return map[string]bool{}
 	}

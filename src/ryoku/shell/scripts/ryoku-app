@@ -1,11 +1,11 @@
 #!/bin/bash
-# ryoku-app: launch the user's chosen app for a role, or the Ryoku default.
+# ryoku-app: launch the user's chosen app for a role, or the Mei default.
 #
 #	ryoku-app terminal              open the terminal
 #	ryoku-app terminal -- btop      run btop inside it
 #
 # The choice lives in the Hub's store (~/.config/ryoku/desktop.json,
-# "desktop.apps"); the Default Apps page (Ryoku Settings) writes it. Reading it
+# "desktop.apps"); the Default Apps page (Mei Settings) writes it. Reading it
 # here means a swap takes effect on the next launch with no reload. The fallbacks
 # match the shipped binds, so an unconfigured system behaves exactly as before.
 set -euo pipefail
@@ -61,7 +61,7 @@ cmd="$(read_role "$store" ".desktop.apps[\$r] // empty")"
 [ -n "$cmd" ] || cmd="$(fallback "$role")"
 
 if [ -z "$cmd" ]; then
-	notify-send "Ryoku" "No app set for \"$role\". Pick one in Settings > Default Apps." 2>/dev/null || true
+	notify-send "Mei" "No app set for \"$role\". Pick one in Settings > Default Apps." 2>/dev/null || true
 	exit 1
 fi
 

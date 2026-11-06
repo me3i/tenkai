@@ -55,7 +55,7 @@ type powerProfilesState struct {
 func (d *daemon) startPowerProfiles() {
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
-		log.Printf("ryoku-shell: power profiles disabled: %v", err)
+		log.Printf("mei-shell: power profiles disabled: %v", err)
 		return
 	}
 	p := &powerProfilesState{
@@ -74,7 +74,7 @@ func (d *daemon) startPowerProfiles() {
 		dbus.WithMatchInterface("org.freedesktop.DBus.Properties"),
 		dbus.WithMatchMember("PropertiesChanged"),
 	); err != nil {
-		log.Printf("ryoku-shell: power profiles signal match failed: %v", err)
+		log.Printf("mei-shell: power profiles signal match failed: %v", err)
 	}
 	sigs := make(chan *dbus.Signal, 8)
 	conn.Signal(sigs)
@@ -112,14 +112,14 @@ func (d *daemon) startPowerProfiles() {
 	// Restore the last pick: ppd resets to a platform default on reboot.
 	if saved != "" && saved != p.activeProfile() {
 		if err := p.setProfile(saved); err != nil {
-			log.Printf("ryoku-shell: restore power profile %q: %v", saved, err)
+			log.Printf("mei-shell: restore power profile %q: %v", saved, err)
 		}
 	}
 	if shouldSeedBalanced(saved, p.activeProfile(), gameModeActive()) {
 		// setProfile rejects a name ppd does not offer, so a box with no
 		// `balanced` simply logs and keeps what it had.
 		if err := p.setProfile(seedProfile); err != nil {
-			log.Printf("ryoku-shell: seed power profile %q: %v", seedProfile, err)
+			log.Printf("mei-shell: seed power profile %q: %v", seedProfile, err)
 		} else {
 			p.saved.Store(seedProfile)
 			p.persistProfile(seedProfile)
@@ -196,7 +196,7 @@ func (p *powerProfilesState) setProfile(name string) error {
 // power-profile choice, kept beside power.json but separate so a ryoku-power
 // write of the CPU knobs never clobbers it (and vice versa).
 func persistedProfilePath() string {
-	dir := ryokuConfigDir()
+	dir := meiConfigDir()
 	if dir == "" {
 		return ""
 	}
@@ -236,7 +236,7 @@ func gameModeProfilePath() string {
 }
 
 // gameModeActive reports whether game mode holds the profile. Its switch is
-// Ryoku's, not the user's, so the daemon neither banks nor fights it; game mode
+// Mei's, not the user's, so the daemon neither banks nor fights it; game mode
 // restores the prior profile on stop.
 func gameModeActive() bool {
 	_, err := os.Stat(gameModeProfilePath())
@@ -247,7 +247,7 @@ func gameModeActive() bool {
 type profileAction int
 
 const (
-	profileNone     profileAction = iota // Ryoku-caused change; leave it, do not record it
+	profileNone     profileAction = iota // Mei-caused change; leave it, do not record it
 	profilePersist                       // a genuine user pick (either write path); save it
 	profileReassert                      // ppd's boot default landed after restore; put the pick back
 )
@@ -290,7 +290,7 @@ func (p *powerProfilesState) maybeHandleProfileChange() {
 		p.saved.Store(active)
 	case profileReassert:
 		if err := p.setProfile(saved); err != nil {
-			log.Printf("ryoku-shell: re-assert power profile %q over ppd default %q: %v", saved, active, err)
+			log.Printf("mei-shell: re-assert power profile %q over ppd default %q: %v", saved, active, err)
 		}
 	}
 }
@@ -372,7 +372,7 @@ var applyProfileCmd = func(profile string) error {
 // powerConfigPath is ~/.config/mei/power.json, the CPU/battery knob store the
 // Machine page and ryoku-power write. Empty when the home dir is unknowable.
 func powerConfigPath() string {
-	dir := ryokuConfigDir()
+	dir := meiConfigDir()
 	if dir == "" {
 		return ""
 	}
@@ -446,7 +446,7 @@ func (p *powerProfilesState) applyActiveProfile(active string) {
 	if err := applyProfileCmd(active); err != nil {
 		if p.lastApplyErr != active {
 			p.lastApplyErr = active
-			log.Printf("ryoku-shell: apply-profile %q failed: %v", active, err)
+			log.Printf("mei-shell: apply-profile %q failed: %v", active, err)
 		}
 		return
 	}

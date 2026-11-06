@@ -11,7 +11,7 @@ var rows = [
         "group": "AT LOGIN",
         "key": "desktop.autostart",
         "label": "Autostart command",
-        "desc": "Runs once at login, on top of Ryoku's own autostart.",
+        "desc": "Runs once at login, on top of Mei's own autostart.",
         "ctl": "list",
         "src": "desktop.json"
     },

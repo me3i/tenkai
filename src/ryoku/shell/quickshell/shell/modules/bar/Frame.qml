@@ -301,7 +301,7 @@ Scope {
             visible: !overlay.monFullscreen
             Keys.onEscapePressed: if (frameMenus.keyboardMode === "exclusive") frameMenus.closeAll()
 
-            // Shared blob field for retained Ryoku-owned credential, voice,
+            // Shared blob field for retained Mei-owned credential, voice,
             // stash, capture, and rail-card popouts plus RecordHud.
             BlobGroup {
                 id: blobGroup

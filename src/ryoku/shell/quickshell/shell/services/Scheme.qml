@@ -5,7 +5,7 @@ import Quickshell.Io
 
 /**
  * The live wallpaper palette, active while Match wallpaper is on. The theme
- * daemon is the only author of colour math in Ryoku: on every wallpaper change
+ * daemon is the only author of colour math in Mei: on every wallpaper change
  * it writes ~/.cache/mei/colors.json carrying the full Material role set
  * (camelCase keys) beside the sixteen terminal colours, already contrast
  * corrected for light and dark images alike. This singleton is a thin reader:

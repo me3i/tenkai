@@ -1,4 +1,4 @@
-// ryoku-shell = single control plane for the Ryoku desktop shell. as
+// ryoku-shell = single control plane for the Mei desktop shell. as
 // `ryoku-shell daemon` it supervises the Quickshell components, brings up the
 // clipboard and wallpaper helpers, and owns one Unix socket. as
 // `ryoku-shell <command>` it forwards that command to the daemon over the

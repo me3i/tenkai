@@ -58,22 +58,14 @@ type Rice struct {
 	Layers      map[string]json.RawMessage `json:"layers,omitempty"`
 }
 
-func ryokuConfigDir() string {
-	base := os.Getenv("XDG_CONFIG_HOME")
-	if base == "" {
-		base = filepath.Join(os.Getenv("HOME"), ".config")
-	}
-	return filepath.Join(base, "ryoku")
-}
-
-func ricesDir() string            { return filepath.Join(ryokuConfigDir(), "rices") }
-func shellStorePath() string      { return filepath.Join(ryokuConfigDir(), "shell.json") }
-func launcherStorePath() string   { return filepath.Join(ryokuConfigDir(), "launcher.json") }
-func widgetsStorePath() string    { return filepath.Join(ryokuConfigDir(), "widgets.json") }
-func visualizerStorePath() string { return filepath.Join(ryokuConfigDir(), "visualizer.json") }
-func decorStorePath() string      { return filepath.Join(ryokuConfigDir(), "decor.json") }
-func brandStorePath() string      { return filepath.Join(ryokuConfigDir(), "brand.json") }
-func ryogamiStorePath() string    { return filepath.Join(ryokuConfigDir(), "ryogami.json") }
+func ricesDir() string            { return filepath.Join(meiConfigDir(), "rices") }
+func shellStorePath() string      { return filepath.Join(meiConfigDir(), "shell.json") }
+func launcherStorePath() string   { return filepath.Join(meiConfigDir(), "launcher.json") }
+func widgetsStorePath() string    { return filepath.Join(meiConfigDir(), "widgets.json") }
+func visualizerStorePath() string { return filepath.Join(meiConfigDir(), "visualizer.json") }
+func decorStorePath() string      { return filepath.Join(meiConfigDir(), "decor.json") }
+func brandStorePath() string      { return filepath.Join(meiConfigDir(), "brand.json") }
+func ryogamiStorePath() string    { return filepath.Join(meiConfigDir(), "ryogami.json") }
 func ricePath(slug string) string {
 	return filepath.Join(ricesDir(), slug, "rice.json")
 }
@@ -220,10 +212,10 @@ func currentUser() string {
 	return ""
 }
 
-// ryokuVersion is the running Ryoku base version (the createdWith tag). Best
-// effort: an empty string when the ryoku CLI is not on PATH (e.g. tests).
-func ryokuVersion() string {
-	out, err := exec.Command("ryoku", "version").Output()
+// meiVersion is the running Mei base version (the createdWith tag). Best
+// effort: an empty string when the mei CLI is not on PATH (e.g. tests).
+func meiVersion() string {
+	out, err := exec.Command("mei", "version").Output()
 	if err != nil {
 		return ""
 	}
@@ -358,7 +350,7 @@ func bundleDecorAssets(dir string, decor map[string]any) {
 // the live desktop). a missing or invalid asset clears the picture; the decor
 // still applies.
 func rehydrateDecorAssets(riceDir, slug string, decor map[string]any) {
-	out := filepath.Join(ryokuConfigDir(), "rice-assets", slug)
+	out := filepath.Join(meiConfigDir(), "rice-assets", slug)
 	for _, v := range decor {
 		ent, ok := v.(map[string]any)
 		if !ok {
@@ -387,7 +379,7 @@ func rehydrateRiceAsset(riceDir, slug, ref string) (string, bool) {
 		return "", false
 	}
 	name := strings.TrimPrefix(ref, "rice://")
-	dst := filepath.Join(ryokuConfigDir(), "rice-assets", slug, name)
+	dst := filepath.Join(meiConfigDir(), "rice-assets", slug, name)
 	if validAssetName(name) && isFile(filepath.Join(riceDir, name)) &&
 		copyFile(filepath.Join(riceDir, name), dst) == nil {
 		return dst, true
@@ -439,7 +431,7 @@ func captureRice(name string, layers []string) (Rice, error) {
 		Slug:        slug,
 		Name:        strings.TrimSpace(name),
 		Author:      currentUser(),
-		CreatedWith: ryokuVersion(),
+		CreatedWith: meiVersion(),
 		Look: map[string]map[string]any{
 			"hypr":       pick(hy, riceHyprLook),
 			"shell":      omit(readJSONMap(shellStorePath()), riceShellOmit),
@@ -513,7 +505,7 @@ func captureRice(name string, layers []string) (Rice, error) {
 		}
 	}
 	if r.Color.Mode == "fixed" {
-		if copyFile(filepath.Join(ryokuCacheDir(), "colors.json"), filepath.Join(dir, "palette.json")) != nil {
+		if copyFile(filepath.Join(meiCacheDir(), "colors.json"), filepath.Join(dir, "palette.json")) != nil {
 			r.Color.Mode = "wallpaper" // no cached palette: follow the wallpaper instead
 			r.Color.Palette = ""
 		}
@@ -616,7 +608,7 @@ var backupStores = []string{
 func snapshotStores(slot string) error {
 	dir := filepath.Join(ricesDir(), slot)
 	for _, f := range backupStores {
-		src := filepath.Join(ryokuConfigDir(), f)
+		src := filepath.Join(meiConfigDir(), f)
 		if !isFile(src) {
 			continue
 		}
@@ -655,7 +647,7 @@ func restoreRice(slot string) error {
 		if !isFile(src) {
 			continue
 		}
-		if err := copyFile(src, filepath.Join(ryokuConfigDir(), f)); err != nil {
+		if err := copyFile(src, filepath.Join(meiConfigDir(), f)); err != nil {
 			return err
 		}
 		restored = true
@@ -823,7 +815,7 @@ func applyRice(slug string, layers []string) error {
 		saveThemeState(st)
 	}
 	if r.Assets.Hero != "" {
-		dst := filepath.Join(ryokuConfigDir(), "rice-hero"+filepath.Ext(r.Assets.Hero))
+		dst := filepath.Join(meiConfigDir(), "rice-hero"+filepath.Ext(r.Assets.Hero))
 		if copyFile(filepath.Join(dir, r.Assets.Hero), dst) == nil {
 			setLauncherHero(dst)
 		}
@@ -885,7 +877,7 @@ func setActiveRice(slug string) { _ = atomicWrite(activePath(), []byte(slug), 0o
 // reapplyRiceEmblem lands the active rice's fastfetch emblem again when the
 // readout is back on the shipped brand mark. Boxes riced before applyRice used
 // the user-owned ryoku-logo path had the rice's emblem copied over the shipped
-// fastfetch-emblem.png, which every update re-laid; `ryoku doctor` calls this
+// fastfetch-emblem.png, which every update re-laid; `mei doctor` calls this
 // so one update after the fix restores the rice's logo. A logo the user imported
 // themselves (any other source) is never touched. Returns the stored source, or
 // "" when nothing needed doing.
@@ -907,7 +899,7 @@ func reapplyRiceEmblem() (string, error) {
 // --- the UI-facing list ----------------------------------------------------
 
 // riceListEntry is a rice plus the fields the Rices tab needs: compatibility
-// against the running Ryoku, whether it is the applied rice, a preview URL,
+// against the running Mei, whether it is the applied rice, a preview URL,
 // and whether its wallpaper is a live (video) wall.
 type riceListEntry struct {
 	Rice
@@ -922,7 +914,7 @@ func listRiceEntries() []riceListEntry {
 	out := []riceListEntry{}
 	for _, r := range listRices() {
 		e := riceListEntry{
-			Rice: r, Compat: compat.Rice(r.CreatedWith, ryokuVersion()), Active: r.Slug == active,
+			Rice: r, Compat: compat.Rice(r.CreatedWith, meiVersion()), Active: r.Slug == active,
 			Live: isVideo(r.Assets.Wallpaper),
 		}
 		dir := filepath.Join(ricesDir(), r.Slug)
@@ -986,7 +978,7 @@ func homeRel(p string) string {
 // and the outputs regenerated from them) plus the assets it carries, each
 // flagged by whether the rice actually provides it.
 func riceTouches(r Rice, dir string) []riceTouch {
-	cfg := ryokuConfigDir()
+	cfg := meiConfigDir()
 	touches := []riceTouch{
 		{homeRel(filepath.Join(cfg, "hypr.json")), "config", "window", "Windows: decoration and motion", len(r.Look["hypr"]) > 0},
 		{homeRel(filepath.Join(cfg, "shell.json")), "config", "widgets", "Shell: bar skin and modules", len(r.Look["shell"]) > 0},
@@ -999,7 +991,7 @@ func riceTouches(r Rice, dir string) []riceTouch {
 	}
 	if r.Color.Mode == "fixed" {
 		touches = append(touches,
-			riceTouch{homeRel(filepath.Join(ryokuCacheDir(), "colors.json")), "output", "refresh", "Colour palette (ryoku cache)", true},
+			riceTouch{homeRel(filepath.Join(meiCacheDir(), "colors.json")), "output", "refresh", "Colour palette (mei cache)", true},
 		)
 	}
 	if r.Color.ThemeApps == nil || *r.Color.ThemeApps {
@@ -1116,7 +1108,7 @@ func exportReadme(r Rice) string {
 		name = r.Slug
 	}
 	var b strings.Builder
-	fmt.Fprintf(&b, "Ryoku rice: %s\n", name)
+	fmt.Fprintf(&b, "Mei rice: %s\n", name)
 	if r.Author != "" {
 		fmt.Fprintf(&b, "By %s\n", r.Author)
 	}
@@ -1142,7 +1134,7 @@ func exportReadme(r Rice) string {
 	if len(r.Look["decor"]) > 0 {
 		b.WriteString("  decor-*      the desktop decors' pictures\n")
 	}
-	fmt.Fprintf(&b, "\nDrop this folder into ~/.config/ryoku/rices/ and apply it from\nRyoku Settings > Appearance > Rices, or `ryoku-hub rice apply %s`.\n", r.Slug)
+	fmt.Fprintf(&b, "\nDrop this folder into ~/.config/ryoku/rices/ and apply it from\nMei Settings > Appearance > Rices, or `ryoku-hub rice apply %s`.\n", r.Slug)
 	return b.String()
 }
 

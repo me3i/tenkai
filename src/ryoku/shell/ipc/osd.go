@@ -12,7 +12,7 @@ import (
 )
 
 // osd.go feeds the brightness OSD. The volume and mic OSDs read PipeWire
-// directly in QML, where Ryoku already owns the audio graph, so their change
+// directly in QML, where Mei already owns the audio graph, so their change
 // events and value are observable without the daemon. Brightness has no such
 // QML-observable source: the media keys and the `brightness` verb both drive
 // ryoku-cmd-brightness straight to the backlight, so the daemon watches the

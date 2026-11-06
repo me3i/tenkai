@@ -6,7 +6,7 @@ import Ryoku.Ui.Singletons
 // One launcher for XDG desktop entries. Quickshell parses Terminal=true into
 // runInTerminal but spawns no terminal for it, so a TUI (btop, yazi, nvim) got no
 // tty and died at once; mei-app owns which terminal the user picked (ported
-// from Ryoku's ryoku-app, trimmed to the terminal role).
+// from Mei's ryoku-app, trimmed to the terminal role).
 //
 // Launching goes through Spawn rather than DesktopEntry.execute(): execute()
 // hands the child the desktop's whole environment, and a Quickshell app that

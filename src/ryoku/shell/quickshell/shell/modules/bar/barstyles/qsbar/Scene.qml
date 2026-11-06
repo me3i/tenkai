@@ -1,6 +1,6 @@
-// QS Bar (Quickshell Rise) entry, adapted to Ryoku's barstyle contract.
+// QS Bar (Quickshell Rise) entry, adapted to Mei's barstyle contract.
 //
-// Ryoku loads a barstyle Scene once per monitor via Frame's Loader, so this
+// Mei loads a barstyle Scene once per monitor via Frame's Loader, so this
 // Scene hosts the single bar system a single time on the primary output. The
 // VariantRoot inside fans one bar across every screen itself, so multi-monitor
 // behaviour is unchanged.

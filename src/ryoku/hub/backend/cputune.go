@@ -15,7 +15,7 @@ import (
 	"strconv"
 )
 
-const ryokuPowerBin = "ryoku-power"
+const meiPowerBin = "ryoku-power"
 
 // cpuCaps mirrors `ryoku-power capabilities --json`. Every knob is a pointer so
 // an absent capability key drops its Tunable rather than rendering an empty row.
@@ -106,7 +106,7 @@ func runCpu(args []string) error {
 // cpuSwitch changes the LIVE power profile. The write goes through the shell
 // daemon, not straight at ppd: the daemon is the single owner of the user's
 // pick (it banks it for the reboot restore, keeps game mode's stash intact,
-// and re-applies the Ryoku CPU definition after ppd settles). A second, raw
+// and re-applies the Mei CPU definition after ppd settles). A second, raw
 // writer would silently undo all three.
 func cpuSwitch(profile string) error {
 	return daemonCall("powerprofiles.setProfile", map[string]string{"profile": profile}, nil)
@@ -138,7 +138,7 @@ func cpuActiveReport() error {
 
 func readCapabilities() (cpuCaps, error) {
 	var caps cpuCaps
-	out, err := exec.Command(ryokuPowerBin, "capabilities", "--json").Output()
+	out, err := exec.Command(meiPowerBin, "capabilities", "--json").Output()
 	if err != nil {
 		return caps, fmt.Errorf("ryoku-power capabilities: %w", err)
 	}
@@ -155,7 +155,7 @@ func readProfileDef(profile string) profileDef {
 	if profile == "" {
 		return def
 	}
-	out, err := exec.Command(ryokuPowerBin, "profile", "get", profile).Output()
+	out, err := exec.Command(meiPowerBin, "profile", "get", profile).Output()
 	if err != nil {
 		return def
 	}
@@ -250,16 +250,16 @@ func cpuSet(scope, id, value string) error {
 	case "battery":
 		switch id {
 		case "chargeLimit":
-			return ttyRun(ryokuPowerBin, "charge-limit", "set", value)
+			return ttyRun(meiPowerBin, "charge-limit", "set", value)
 		case "aspm":
-			return ttyRun(ryokuPowerBin, "aspm", "set", value)
+			return ttyRun(meiPowerBin, "aspm", "set", value)
 		default:
 			return fmt.Errorf("unknown battery knob: %s", id)
 		}
 	case "idle":
 		return idleSet(id, value)
 	}
-	return ttyRun(ryokuPowerBin, "profile", "set", scope, id, value)
+	return ttyRun(meiPowerBin, "profile", "set", scope, id, value)
 }
 
 func onOff(b bool) string {
@@ -311,7 +311,7 @@ func idleSet(id, value string) error {
 	if err != nil {
 		return err
 	}
-	if err := ttyRun(ryokuPowerBin, "idle", "set", id, stored); err != nil {
+	if err := ttyRun(meiPowerBin, "idle", "set", id, stored); err != nil {
 		return err
 	}
 	return exec.Command("ryoku-idle", "apply").Run()

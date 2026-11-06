@@ -55,22 +55,22 @@ hl.bind(K(mod .. " + ALT + E"),   hl.dsp.exec_cmd("kitty -e yazi"))             
 hl.bind(K(mod .. " + J"),         hl.dsp.exec_cmd("ryotunes"))                     -- open Ryotunes (single-instance: a second press focuses it)
 
 -- Shell surfaces and tools
-hl.bind(K(mod .. " + Space"),     hl.dsp.global("ryoku:launcher"))                 -- open the app launcher
+hl.bind(K(mod .. " + Space"),     hl.dsp.global("mei:launcher"))                 -- open the app launcher
 hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/dev/null || flock -n -o /tmp/ryoku-keys.lock qs -c keys")) -- keybind cheatsheet: toggle (press to open, press again to close)
 hl.bind(K(mod .. " + L"),         hl.dsp.exec_cmd("ryoku-shell lock"))             -- lock the screen
-hl.bind(K(mod .. " + Escape"),    hl.dsp.global("ryoku:quicksettings")) -- quick settings: power, logout, restart, shutdown, wifi
+hl.bind(K(mod .. " + Escape"),    hl.dsp.global("mei:quicksettings")) -- quick settings: power, logout, restart, shutdown, wifi
 hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("ryogami wallpaper ui"))     -- ryogami wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo
 hl.bind(K(mod .. " + SHIFT + W"), hl.dsp.exec_cmd("ryogami wallpaper random")) -- random wallpaper, random transition
 hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("ryoku-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
-hl.bind(K(mod .. " + V"),         hl.dsp.global("ryoku:clipboard")) -- clipboard (sidebar deep link)
-hl.bind(K(mod .. " + Tab"),       hl.dsp.global("ryoku:overview")) -- workspace overview (expo: live previews, drag windows between workspaces, cycle)
-hl.bind(K(mod .. " + ALT + Tab"), hl.dsp.global("ryoku:overview")) -- workspace overview, stepping desktops (Alt+Tab again inside cycles desktops)
-hl.bind(K(mod .. " + M"),         hl.dsp.global("ryoku:visualizer"))        -- toggle the desktop audio visualiser
-hl.bind(K(mod .. " + SHIFT + M"), hl.dsp.global("ryoku:visualizer-overlay")) -- raise the visualiser over windows (flip back to desktop)
-hl.bind(K(mod .. " + ALT + M"),   hl.dsp.global("ryoku:visualizer-place"))   -- move the audio visualiser: drag the ring or orb into place
+hl.bind(K(mod .. " + V"),         hl.dsp.global("mei:clipboard")) -- clipboard (sidebar deep link)
+hl.bind(K(mod .. " + Tab"),       hl.dsp.global("mei:overview")) -- workspace overview (expo: live previews, drag windows between workspaces, cycle)
+hl.bind(K(mod .. " + ALT + Tab"), hl.dsp.global("mei:overview")) -- workspace overview, stepping desktops (Alt+Tab again inside cycles desktops)
+hl.bind(K(mod .. " + M"),         hl.dsp.global("mei:visualizer"))        -- toggle the desktop audio visualiser
+hl.bind(K(mod .. " + SHIFT + M"), hl.dsp.global("mei:visualizer-overlay")) -- raise the visualiser over windows (flip back to desktop)
+hl.bind(K(mod .. " + ALT + M"),   hl.dsp.global("mei:visualizer-place"))   -- move the audio visualiser: drag the ring or orb into place
 hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("ryoku-shell voice"))             -- voice typing: speech-to-text with a mic wave (tap again to stop)
-hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("ryoku-shell hub open"))     -- ryoku settings
-hl.bind(K(mod .. " + S"),         hl.dsp.global("ryoku:stash"))         -- sidebar: screen time and downloads
+hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("ryoku-shell hub open"))     -- mei settings
+hl.bind(K(mod .. " + S"),         hl.dsp.global("mei:stash"))         -- sidebar: screen time and downloads
 hl.bind(K(mod .. " + SHIFT + S"), hl.dsp.exec_cmd("flock -n -o /tmp/ryoshot.lock qs -c ryoshot"))  -- screenshot: capture, annotate and beautify
 hl.bind(K(mod .. " + SHIFT + C"), hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick a color
 
@@ -129,6 +129,6 @@ hl.bind(K("XF86MonBrightnessUp"),   hl.dsp.exec_cmd("ryoku-cmd-brightness +2"), 
 hl.bind(K("XF86MonBrightnessDown"), hl.dsp.exec_cmd("ryoku-cmd-brightness -2"), { locked = true, repeating = true }) -- lower screen brightness
 
 -- Touchpad lock (the FN touchpad key), through the window-manager seam
-hl.bind(K("XF86TouchpadToggle"), hl.dsp.exec_cmd("ryoku wm act input.touchpad toggle"), { locked = true }) -- toggle the touchpad
-hl.bind(K("XF86TouchpadOn"),     hl.dsp.exec_cmd("ryoku wm act input.touchpad on"),     { locked = true }) -- enable the touchpad
-hl.bind(K("XF86TouchpadOff"),    hl.dsp.exec_cmd("ryoku wm act input.touchpad off"),    { locked = true }) -- disable the touchpad
+hl.bind(K("XF86TouchpadToggle"), hl.dsp.exec_cmd("mei wm act input.touchpad toggle"), { locked = true }) -- toggle the touchpad
+hl.bind(K("XF86TouchpadOn"),     hl.dsp.exec_cmd("mei wm act input.touchpad on"),     { locked = true }) -- enable the touchpad
+hl.bind(K("XF86TouchpadOff"),    hl.dsp.exec_cmd("mei wm act input.touchpad off"),    { locked = true }) -- disable the touchpad

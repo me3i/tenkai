@@ -12,9 +12,9 @@ import "../../../../components"
 // menu; command actions run and close. Icons are 24px Material Symbols.
 //
 // Divergence recorded: the reference wraps Logout/Reboot/Shutdown in a
-// ConfirmationDialog first; Ryoku fires them through the same immediate path its
+// ConfirmationDialog first; Mei fires them through the same immediate path its
 // bar power actions already use (runBarAction), so behaviour matches the rest of
-// the Ryoku shell. A ConfirmationDialog (contract 16 sec 2.2) is the follow-up.
+// the Mei shell. A ConfirmationDialog (contract 16 sec 2.2) is the follow-up.
 Item {
     id: root
 

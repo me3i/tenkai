@@ -100,7 +100,7 @@ Item {
     }
 
     readonly property var paletteModel: SysInfo.sysPalette.length > 0 ? SysInfo.sysPalette.split(",") : Scheme.ramp
-    readonly property string barcodeText: I18n.tr("RYOKU-") + SysInfo.codename.toUpperCase() + "-" + (pg.installDate.length > 0 ? pg.installDate : I18n.tr("UNKNOWN"))
+    readonly property string barcodeText: I18n.tr("MEI-") + SysInfo.codename.toUpperCase() + "-" + (pg.installDate.length > 0 ? pg.installDate : I18n.tr("UNKNOWN"))
 
     // customization: read from ProfileStore with the plate's built-in default, so
     // an absent/empty profile.json renders exactly the stock marble plate.
@@ -610,7 +610,7 @@ Item {
         Text {
             anchors.centerIn: parent
             rotation: -90
-            text: pg.f("text.marginalia", I18n.tr("RYOKU · %1 · KERNEL %2 · SHOT ON BLACK").arg(pg.fv(SysInfo.codename)).arg(pg.fv(SysInfo.sysKernel)))
+            text: pg.f("text.marginalia", I18n.tr("MEI · %1 · KERNEL %2 · SHOT ON BLACK").arg(pg.fv(SysInfo.codename)).arg(pg.fv(SysInfo.sysKernel)))
             color: Tokens.inkFaint
             font.family: Tokens.mono
             font.pixelSize: Tokens.fTiny
@@ -1011,7 +1011,7 @@ Item {
     }
     PickFile {
         id: importDlg
-        title: I18n.tr("Open a Ryoku profile")
+        title: I18n.tr("Open a Mei profile")
         fileFilters: ["*.ryoprofile"]
         startFolder: "file://" + (Quickshell.env("HOME") || "")
         onPicked: (p) => {

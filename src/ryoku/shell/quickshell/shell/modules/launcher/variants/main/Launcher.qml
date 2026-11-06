@@ -10,7 +10,7 @@ import Ryoku.Ui.Singletons
 // The command palette body: a search row over the rest dashboard (empty query),
 // the all-apps grid (Ctrl+A from rest), the action-mode tabs + list ("/" prefix),
 // or the ranked result list. Ctrl+K opens the selected row's action panel. Grows
-// and shrinks with its content on the Ryoku morph curve. Providers register with
+// and shrinks with its content on the Mei morph curve. Providers register with
 // the dispatcher; this view only renders what the dispatcher returns.
 Item {
     id: root

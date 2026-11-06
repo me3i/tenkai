@@ -1,7 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
-import "../RyokuPower.js" as RyokuPower
+import "../MeiPower.js" as MeiPower
 import Ryoku.Ui.Singletons
 
 Item {
@@ -110,7 +110,7 @@ Item {
     // detect backlight on startup
     Process {
         id: detectProc
-        command: ["bash", "-c", RyokuPower.backlightDetectCmd]
+        command: ["bash", "-c", MeiPower.backlightDetectCmd]
         running: true
         stdout: StdioCollector {
             onStreamFinished: {
@@ -126,7 +126,7 @@ Item {
 
     Process {
         id: briProc
-        command: ["bash", "-c", RyokuPower.brightnessPercentCmd]
+        command: ["bash", "-c", MeiPower.brightnessPercentCmd]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
@@ -144,7 +144,7 @@ Item {
     Process { id: brightnessErrNotify }
     Process {
         id: briUp
-        command: ["bash", "-c", RyokuPower.brightnessSetCmd("+5%")]
+        command: ["bash", "-c", MeiPower.brightnessSetCmd("+5%")]
         onExited: (code) => {
             rootMod.notifyBrightnessError("Brightness up", code)
             rootMod.refreshBrightness()
@@ -152,7 +152,7 @@ Item {
     }
     Process {
         id: briDown
-        command: ["bash", "-c", RyokuPower.brightnessSetCmd("5%-")]
+        command: ["bash", "-c", MeiPower.brightnessSetCmd("5%-")]
         onExited: (code) => {
             rootMod.notifyBrightnessError("Brightness down", code)
             rootMod.refreshBrightness()

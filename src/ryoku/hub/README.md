@@ -1,12 +1,12 @@
 # ryoku/hub/
 
-Ryoku Settings: the desktop's central GUI control center. A native Qt6/QML app
+Mei Settings: the desktop's central GUI control center. A native Qt6/QML app
 (Quickshell, not a webview) with a grouped, Kirigami-style sidebar and a global
 fuzzy search, opened with `Super + ,`. It floats and centres on top of the
-current windows. The product name is **Ryoku Settings**; the internal binary,
+current windows. The product name is **Mei Settings**; the internal binary,
 config directory, and `qs -c hub` invocation keep the original `hub` name.
 
-It is where you edit anything the Hyprland (Lua) config drives, plus the Ryoku
+It is where you edit anything the Hyprland (Lua) config drives, plus the Mei
 shell, in one place: monitors, appearance, input, keybinds, window rules,
 autostart, environment, the shell's look, the lock screen, and the update channel.
 
@@ -61,7 +61,7 @@ changing a page's look.
 ## Sections
 
 - **Displays** detect every connected monitor and arrange them on a drag canvas
-  (edges snap), with per-monitor resolution, refresh, scale, Ryoku interface
+  (edges snap), with per-monitor resolution, refresh, scale, Mei interface
   scale, bar and desktop-widget visibility, rotation, adaptive sync, mirroring,
   and enable/disable. Apply to the live session, or save a named
   profile keyed to the connected displays' hardware identity so it returns
@@ -105,7 +105,7 @@ changing a page's look.
   suppression.
 - **Layer Rules** blur, dim, X-ray, or disable animations on layer-shell
   surfaces (bars, launchers, notification daemons) matched by namespace.
-- **Autostart** commands run at login, after the base Ryoku autostart.
+- **Autostart** commands run at login, after the base Mei autostart.
 - **Environment** environment variables for the Hyprland session.
 - **Shell** the live editor for the screen frame, the top island (its style: the
   classic fused island, a floating pill, or none, each with an optional
@@ -117,7 +117,7 @@ changing a page's look.
 ## The override model
 
 The Lua-editing sections never touch the shipped Hyprland modules (those are
-re-laid by `ryoku materialize` on update). Instead:
+re-laid by `mei materialize` on update). Instead:
 
 - The editable source of truth is one JSON document at
   `~/.config/ryoku/hypr.json`, owned by `ryoku-hub`.

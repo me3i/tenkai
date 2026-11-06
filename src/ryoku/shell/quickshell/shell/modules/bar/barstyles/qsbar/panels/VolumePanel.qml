@@ -678,5 +678,5 @@ PanelWindow {
         }
     }
 
-    Process { id: audioRunner; command: ["bash", "-c", "command -v pavucontrol >/dev/null 2>&1 && exec pavucontrol || notify-send -a Ryoku 'Audio settings' 'pavucontrol is not installed'"] }
+    Process { id: audioRunner; command: ["bash", "-c", "command -v pavucontrol >/dev/null 2>&1 && exec pavucontrol || notify-send -a Mei 'Audio settings' 'pavucontrol is not installed'"] }
 }

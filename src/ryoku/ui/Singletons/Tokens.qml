@@ -4,13 +4,13 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The one place Ryoku's look is defined. Everything that draws imports this;
+// The one place Mei's look is defined. Everything that draws imports this;
 // nothing hardcodes a hex, a size or a duration.
 //
 // Colour resolves live from the daemon palette the same way the pill's Theme
 // does: a fixed named colour scheme (shell.json themePalette) wins, then the
     // live wallpaper palette (~/.cache/mei/colors.json Material roles), then the
-// compiled signature default. So every Ryoku app (the Hub, Ryowalls, ...)
+// compiled signature default. So every Mei app (the Hub, Ryowalls, ...)
 // retints on ANY scheme change, a named theme or a wallpaper switch, with no
 // colour math of its own. The kit's role names are kept; only their source moved
 // onto the Material roles.

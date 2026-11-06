@@ -453,7 +453,7 @@ func barCapablePlugins(all []pluginInfo) []pluginInfo {
 // loadPluginsState reads ~/.config/mei/plugins.json into enabled/host per id.
 func loadPluginsState() map[string]pluginState {
 	out := map[string]pluginState{}
-	b, err := os.ReadFile(filepath.Join(ryokuConfigDir(), "plugins.json"))
+	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "plugins.json"))
 	if err != nil {
 		return out
 	}
@@ -500,7 +500,7 @@ func (p pluginInfo) author() string {
 	return s
 }
 
-// official is the manifest's own claim; Ryoku's plugins ship it true, so any
+// official is the manifest's own claim; Mei's plugins ship it true, so any
 // other bar plugin is a community widget (the panel's Community route).
 func (p pluginInfo) official() bool {
 	b, _ := p.Manifest["official"].(bool)

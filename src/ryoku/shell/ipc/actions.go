@@ -97,13 +97,13 @@ func ipcCallN(config, target, fn string, args ...string) string {
 	return "err qs ipc " + config + "/" + fn + ": " + msg
 }
 
-// ryoku: the pill was consolidated into the single shell instance, which serves
-// no command socket (its shell.qml omits the SocketServer fast path). The pill
-// socket helpers below and pillIpc are therefore dead in production; they are
-// retained (and still covered by pillipc_test.go) for the retire phase rather
-// than deleted here, to keep this cutover minimal and reversible.
-// pillSockPath: the pill's command socket. The pill (a persistent Quickshell
-// component) serves it; the daemon writes a surface command here to skip the
+// The frame shell has been consolidated into the single shell instance, which
+// serves no command socket (its shell.qml omits the SocketServer fast path).
+// The socket helpers below and pillIpc are therefore dead in production; they
+// are retained (and still covered by pillipc_test.go) for a future cutover
+// rather than deleted here.
+// pillSockPath: the frame's command socket. A persistent Quickshell component
+// would serve it; the daemon writes a surface command here to skip the
 // `qs ipc call` subprocess on the keybind hot path.
 func pillSockPath() string {
 	dir := os.Getenv("XDG_RUNTIME_DIR")
@@ -131,9 +131,10 @@ func pillSocketCall(line string) bool {
 	return strings.TrimSpace(string(buf[:n])) == "ok"
 }
 
-// pillIpc invokes a pill IpcHandler function, preferring the command socket and
-// falling back to the qs client when it is unreachable. Empty args drop out of
-// the socket line; the qs fallback keeps the same positional argv.
+// pillIpc invokes the consolidated component's IpcHandler function, preferring
+// the command socket and falling back to the qs client when it is unreachable.
+// Empty args drop out of the socket line; the qs fallback keeps the same
+// positional argv.
 func pillIpc(fn string, args ...string) string {
 	line := fn
 	for _, a := range args {
@@ -310,7 +311,7 @@ var (
 // /proc.
 const lockClientPattern = "quickshell.*(quickshell-lockscreen|qylock-next/lockscreen).*/lock_shell[.]qml"
 
-// lockSession locks the screen with qylock, the in-session lock Ryoku ships.
+// lockSession locks the screen with qylock, the in-session lock Mei ships.
 // The shell has no lock surface of its own.
 func lockSession() string {
 	if err := ensureSessionLocked(time.Now().Add(lockWait)); err != nil {
@@ -408,7 +409,7 @@ func voxtypeRecord(verb string) {
 }
 
 // dictationReady reports whether a Super+` tap can actually dictate: Voxtype
-// installed and its user service running. When it can't, the pill shows an
+// installed and its user service running. When it can't, the shell shows an
 // "off" note instead of a listening wave that would capture nothing.
 func dictationReady() bool {
 	if _, err := exec.LookPath("voxtype"); err != nil {

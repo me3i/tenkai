@@ -16,18 +16,18 @@ import (
 // The Hyprland compositor plugins the desktop manages. A plugin is one .so
 // Hyprland dlopens, ABI-locked to the exact compositor build. Three tiers can
 // hold a copy: the package under pluginDir, a local build under userPluginDir,
-// and hyprpm's own tree. Beside every copy Ryoku builds sits a <id>.abi receipt
+// and hyprpm's own tree. Beside every copy Mei builds sits a <id>.abi receipt
 // so the roster and settings.lua can tell a stale build from a working one
 // without loading it.
 
-// pluginDef is one plugin Ryoku bundles.
+// pluginDef is one plugin Mei bundles.
 type pluginDef struct {
 	ID      string
 	Name    string
 	Desc    string
 	Repo    string // upstream git URL; "" for a plugin authored in this repo
 	Plugin  string // the [table] in the repo's hyprpm.toml
-	Local   string // in-tree source dir for a Ryoku-authored plugin
+	Local   string // in-tree source dir for a Mei-authored plugin
 	Package string // the pacman package that ships the .so
 	Docs    string
 	Sounds  string
@@ -141,7 +141,7 @@ func bundledByID(id string) (pluginDef, bool) {
 	return pluginDef{}, false
 }
 
-// sharedRecipeDir is where ryoku-desktop lays the source of a plugin Ryoku
+// sharedRecipeDir is where ryoku-desktop lays the source of a plugin Mei
 // authors (keysounds), so a packaged box can rebuild it without a checkout.
 const sharedRecipeDir = "/usr/share/mei/hypr-plugins"
 

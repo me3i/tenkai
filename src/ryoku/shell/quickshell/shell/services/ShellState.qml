@@ -43,9 +43,8 @@ Singleton {
 
     // --- Session-action confirmation (contract 13 sec 2c, 8) ---------------
     // A frame-bar logout/reboot/shutdown click asks for confirmation on its own
-    // monitor; the per-screen RyokuConfirmationDialog runs the action through
-    // SessionActions only on the positive press. Ported from the reference pill
-    // root (shell.qml 60-78); singleton-level so any monitor can raise it.
+    // monitor; the per-screen MeiConfirmationDialog runs the action through
+    // SessionActions only on the positive press. Singleton-level so any monitor can raise it.
     property string sessionAction: ""            // "" | "logout" | "reboot" | "shutdown"
     property string sessionActionMonitor: ""
     readonly property var sessionCopy: ({
@@ -71,8 +70,7 @@ Singleton {
     // Daemon- and root-driven surface prompts reach the owning monitor's
     // FrameMenuManager through these singleton signals. Each Frame connects and
     // opens/closes only when the request targets its screen (mon "" broadcasts to
-    // every monitor, matching the reference). Ported from the reference pill root
-    // (shell.qml 32-35, 317-339).
+    // every monitor).
     signal surfaceRequested(string id, string mon, var context)
     signal surfaceClosed(string id, string mon)
     signal keyringPromptChanged(int promptId)

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Mei's acceptance gate.
 #
-# Every machine-checkable criterion in docs/CRITERIA.md, one table: the gate
+# Every machine-checkable criterion of the release, one table: the gate
 # id, the name, PASS / FAIL / UNVERIFIED and the evidence (a log path).
 #
 # Everything runs from a cold start in the nested session: the fake HOME, the

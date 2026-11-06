@@ -65,7 +65,7 @@ func runIcons(args []string) int {
 	if len(args) == 0 {
 		b, err := json.Marshal(idx)
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-shell: icons:", err)
+			fmt.Fprintln(os.Stderr, "mei-shell: icons:", err)
 			return 1
 		}
 		fmt.Println(string(b))

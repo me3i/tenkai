@@ -29,7 +29,7 @@ import (
 //	desktop variants <layout>   kb variants for a layout
 //	desktop plugins <verb>      the compositor plugin subsystem
 
-func desktopStorePath() string { return filepath.Join(ryokuConfigDir(), "desktop.json") }
+func desktopStorePath() string { return filepath.Join(meiConfigDir(), "desktop.json") }
 
 // hyprConfigDir is the compositor config tree the import layerer still writes a
 // user.lua block into; the generated config is the provider's.
@@ -142,7 +142,7 @@ func runDesktop(args []string) error {
 		}
 		return applyScheme(args[1])
 	case "ryoku-theme":
-		return applyRyokuTheme()
+		return applyMeiTheme()
 	case "theme-apps":
 		if len(args) < 2 {
 			return printJSON(map[string]bool{"themeApps": currentThemeApps()})
@@ -316,7 +316,7 @@ func previewDesktop(raw string) error {
 	// reload drops the marker and reverts to disk -- an unsaved quit still
 	// means unsaved.
 	b, _ := json.Marshal(map[string]any{"pid": os.Getppid(), "draft": m})
-	_ = os.MkdirAll(ryokuConfigDir(), 0o755)
+	_ = os.MkdirAll(meiConfigDir(), 0o755)
 	_ = os.WriteFile(desktopPreviewPath(), b, 0o600)
 	return nil
 }
@@ -326,7 +326,7 @@ func previewDesktop(raw string) error {
 // config, so a config-only reload re-reads disk and silently drops it. The
 // daemon re-asserts the draft after every such reload while the Hub that owns
 // it is alive.
-func desktopPreviewPath() string { return filepath.Join(ryokuConfigDir(), ".desktop-preview.json") }
+func desktopPreviewPath() string { return filepath.Join(meiConfigDir(), ".desktop-preview.json") }
 
 // restoreDesktop reverts the live session to the saved config: a reload resets
 // every keyword, and the cursor is re-asserted since it is imperative state a
@@ -601,8 +601,8 @@ func setHyprSections(sections map[string]any) error {
 // withDesktopLock serializes read-modify-write of desktop.json against the GUI
 // save, so a concurrent write cannot drop the other's change.
 func withDesktopLock(fn func() error) error {
-	_ = os.MkdirAll(ryokuConfigDir(), 0o755)
-	f, err := os.OpenFile(filepath.Join(ryokuConfigDir(), ".desktop.lock"), os.O_CREATE|os.O_RDWR, 0o644)
+	_ = os.MkdirAll(meiConfigDir(), 0o755)
+	f, err := os.OpenFile(filepath.Join(meiConfigDir(), ".desktop.lock"), os.O_CREATE|os.O_RDWR, 0o644)
 	if err != nil {
 		return fn()
 	}
@@ -652,21 +652,21 @@ func atomicWrite(path string, b []byte, mode os.FileMode) error {
 // anim-preset: the active animation personality. A plain file the animation
 // module reads at load; set writes it and reloads.
 var animPresets = map[string]bool{
-	"ryoku": true, "dusky": true, "bounce": true, "fade": true, "fast": true,
+	"mei": true, "dusky": true, "bounce": true, "fade": true, "fast": true,
 	"mechanical": true, "minimal": true, "rage": true, "slowmotion": true,
 	"air": true, "hallucination": true, "exaggerated": true, "disable": true,
 }
 
-func animPresetPath() string { return filepath.Join(ryokuConfigDir(), "anim-preset") }
+func animPresetPath() string { return filepath.Join(meiConfigDir(), "anim-preset") }
 
 func currentAnimPreset() string {
 	b, err := os.ReadFile(animPresetPath())
 	if err != nil {
-		return "ryoku"
+		return "mei"
 	}
 	name := strings.TrimSpace(string(b))
 	if !animPresets[name] {
-		return "ryoku"
+		return "mei"
 	}
 	return name
 }

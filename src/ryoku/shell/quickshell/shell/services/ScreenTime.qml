@@ -89,7 +89,7 @@ Singleton {
         return I18n.tr("%1s").arg(sec);
     }
     function isRealApp(c) {
-        return !!c && !/^(ryoku|quickshell|org\.quickshell)/i.test(c);
+        return !!c && !/^(mei|quickshell|org\.quickshell)/i.test(c);
     }
     function zeros24() {
         const a = [];

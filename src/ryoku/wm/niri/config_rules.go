@@ -18,7 +18,7 @@ const overviewBackdropNamespace = "ryoku-overview-backdrop"
 // backdrop, then emits each user layer rule. The backdrop rule is always first
 // and always emitted: it matches nothing until the shell maps that surface (only
 // when the overviewBackdrop capability is live and the user turned it on), and a
-// rule that matches nothing is inert. Ryoku keeps its wallpaper on a separate
+// rule that matches nothing is inert. Mei keeps its wallpaper on a separate
 // opaque surface that already paints every workspace, so unlike a shell whose
 // wallpaper IS the backdrop this needs no transparent workspace background to be
 // seen.

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Desktop-relative workspace navigation, and the single source of truth for the
-# "desktop" concept the Ryoku overview shows.
+# "desktop" concept the Mei overview shows.
 #
 # A desktop is a block of PER workspace ids: desktop d owns ids
 # [d*PER+1 .. d*PER+PER]. The current desktop is DERIVED from the focused
@@ -28,7 +28,7 @@ set -euo pipefail
 
 PER=10
 
-ryoku_bin="${RYOKU_BIN-$(command -v ryoku || true)}"
+ryoku_bin="${RYOKU_BIN-$(command -v mei || true)}"
 
 # Capabilities and the workspace model come from the seam's status, which names
 # what the live compositor can do, never which compositor it is.

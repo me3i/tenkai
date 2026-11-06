@@ -1,6 +1,6 @@
 local home = os.getenv("HOME")
--- Mei writes ~/.cache/mei/hypr-colors.lua; fall back to the Ryoku path for
--- hybrid setups where the stock Ryoku shell is also installed.
+-- Mei writes ~/.cache/mei/hypr-colors.lua; fall back to the Mei path for
+-- hybrid setups where the stock Mei shell is also installed.
 local ok, wc = pcall(dofile, home .. "/.cache/mei/hypr-colors.lua")
 if not ok then ok, wc = pcall(dofile, home .. "/.cache/ryoku/hypr-colors.lua") end
 if not ok then wc = nil end
@@ -13,7 +13,7 @@ end
 local active   = border(wc and wc.active, "#e0563b")
 local inactive = border(wc and wc.inactive, "#313a4d")
 
--- Low-power switches, read from the shell's performance.json (the file Ryoku
+-- Low-power switches, read from the shell's performance.json (the file Mei
 -- Settings' Performance page writes). A flat-JSON pattern match keeps this
 -- dependency-free; a missing file or key reads false. Compositor blur and shadow
 -- are the heaviest present-time GPU cost, so lowPowerMode (or the individual

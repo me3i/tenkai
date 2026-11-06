@@ -251,7 +251,7 @@ func saveStageIndex(source string, idx stageIndex) {
 // motion) is the shell's; the daemon reads only quality, at each generation.
 func stageConfig() stageQuality {
 	def := stageQualityFor("draft")
-	dir := ryokuConfigDir()
+	dir := meiConfigDir()
 	if dir == "" {
 		return def
 	}
@@ -1329,7 +1329,7 @@ func stageMotionAmount(motion map[string]any) string {
 // box that skipped v1), deriving the quality tier from their model+matting. The
 // file is GUI-owned, so nothing is created when there is nothing to fold.
 func migrateStageSettings() {
-	dir := ryokuConfigDir()
+	dir := meiConfigDir()
 	if dir == "" {
 		return
 	}

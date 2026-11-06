@@ -271,14 +271,14 @@ Item {
         return "file://" + s;
     }
 
-    // ready-made emblems for the picker: the Ryoku brand marks, the shipped
+    // ready-made emblems for the picker: the Mei brand marks, the shipped
     // ryodecors (our decor), and whatever the store has installed into
     // ryoemblems. Picking one sets the source directly (no copy); "Your image"
     // imports a file since it can live anywhere. Paths keep a leading ~ so the
     // config stays portable.
     property var installedArt: []
     readonly property var brandArt: [
-        { "name": "RYOKU", "path": "~/.local/share/ryoku/assets/brand/fastfetch-emblem.png" },
+        { "name": "MEI", "path": "~/.local/share/ryoku/assets/brand/fastfetch-emblem.png" },
         { "name": "MARK", "path": "~/.local/share/ryoku/assets/brand/logo-mark.png" },
         { "name": "LAOCOON", "path": "~/Pictures/ryodecors/laocoon.png" },
         { "name": "DAVID", "path": "~/Pictures/ryodecors/david.png" },
@@ -965,7 +965,7 @@ Item {
                         }
                     }
 
-                    // your art: a gallery of ready emblems (the Ryoku brand marks
+                    // your art: a gallery of ready emblems (the Mei brand marks
                     // and our ryodecors) plus a browse/drop tile for your own
                     // image. Click a tile to set it; drop a file to import it.
                     DropArea {

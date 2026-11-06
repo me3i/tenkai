@@ -10,7 +10,7 @@ import ".."
 import shell.services as Svc
 
 // Script provider: runs user scripts that speak the rofi-script protocol, so the
-// existing ecosystem (rofimoji, rofi-rbw, custom menus) works in Ryoku unchanged.
+// existing ecosystem (rofimoji, rofi-rbw, custom menus) works in Mei unchanged.
 // Scripts are declared in ~/.config/mei/launcher-scripts.json as
 // [{ keyword, name, exec }]. Typing "<keyword> <query>" runs the script (pass 1,
 // ROFI_RETV=0), parses its rows, and activating a row re-runs it (ROFI_RETV=1,

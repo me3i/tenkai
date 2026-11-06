@@ -52,7 +52,7 @@ func TestSchemeFollowRoundTrips(t *testing.T) {
 	}
 }
 
-func TestApplyRyokuThemeUsesRyokuFrameBarLook(t *testing.T) {
+func TestApplyMeiThemeUsesMeiFrameBarLook(t *testing.T) {
 	t.Skip("Mei ships qsbar; the ryoku-frame bar look is disabled")
 	dir := t.TempDir()
 	t.Setenv("HOME", dir)
@@ -68,7 +68,7 @@ func TestApplyRyokuThemeUsesRyokuFrameBarLook(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := applyRyokuTheme(); err != nil {
+	if err := applyMeiTheme(); err != nil {
 		t.Fatal(err)
 	}
 	got := readJSONMap(shellPath)

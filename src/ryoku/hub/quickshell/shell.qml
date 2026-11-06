@@ -3,14 +3,14 @@ import Quickshell
 import Quickshell.Io
 import Ryoku.Ui.Singletons
 
-// Ryoku Settings entry point. A normal floating window (not a layer-shell
+// Mei Settings entry point. A normal floating window (not a layer-shell
 // surface); the Hyprland window rule floats and centres it. `qs -c hub` loads
 // this (the config dir and binary keep the internal "hub" name).
 ShellRoot {
     FloatingWindow {
         id: win
         title: I18n.tr("Mei Settings")
-        // Ryoku Settings is a page, not a dialog: it opens at 99% of the screen
+        // Mei Settings is a page, not a dialog: it opens at 99% of the screen
         // width, filling the height the shell bar leaves, so the settings get the
         // room the layout is designed for instead of a fixed 1200px strip. The
         // size is requested here and honoured by whichever compositor owns

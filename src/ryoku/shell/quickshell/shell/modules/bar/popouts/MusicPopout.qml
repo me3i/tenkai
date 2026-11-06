@@ -16,7 +16,7 @@ import Ryoku.Ui.Singletons
 // title, artist, a wide spectrum sweep (the shared AudioBars feed the rail draws
 // from) and the three transport moves follow, all tuned to the art's palette so
 // the card wears the record's colour. The card never grabs the keyboard and
-// dismisses on an outside click like every Ryoku surface. cava is claimed while
+// dismisses on an outside click like every Mei surface. cava is claimed while
 // open, so the strip keeps dancing even when the rail is out of view.
 Item {
     id: root

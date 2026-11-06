@@ -23,20 +23,29 @@ import (
 // Ryogami daemon now.
 
 func findHubBin() string {
-	if p, err := exec.LookPath("ryoku-hub"); err == nil {
+	// Prefer the mei-hub next to this binary (both live in .run/bin for a
+	// dev checkout), then PATH, then the usual install locations. Never the
+	// upstream hub: Mei must not drive Ryoku's backend.
+	if exe, err := os.Executable(); err == nil {
+		cand := filepath.Join(filepath.Dir(exe), "mei-hub")
+		if fi, err := os.Stat(cand); err == nil && fi.Mode()&0o111 != 0 {
+			return cand
+		}
+	}
+	if p, err := exec.LookPath("mei-hub"); err == nil {
 		return p
 	}
 	home := os.Getenv("HOME")
 	for _, cand := range []string{
-		filepath.Join(home, ".local", "bin", "ryoku-hub"),
-		"/usr/local/bin/ryoku-hub",
-		"/usr/bin/ryoku-hub",
+		filepath.Join(home, ".local", "bin", "mei-hub"),
+		"/usr/local/bin/mei-hub",
+		"/usr/bin/mei-hub",
 	} {
-		if _, err := os.Stat(cand); err == nil {
+		if fi, err := os.Stat(cand); err == nil && fi.Mode()&0o111 == 0o111 {
 			return cand
 		}
 	}
-	return "ryoku-hub"
+	return "mei-hub"
 }
 
 func wallState() string { return filepath.Join(stateDir(), "mei-wallpaper") }
@@ -233,7 +242,7 @@ func (d *daemon) reassertPreview() {
 	if !d.wmc.Can(wm.CapLiveConfigEval) {
 		return
 	}
-	draft, ok := readLivePreview(filepath.Join(ryokuConfigDir(), ".desktop-preview.json"))
+	draft, ok := readLivePreview(filepath.Join(meiConfigDir(), ".desktop-preview.json"))
 	if !ok {
 		return
 	}
@@ -298,10 +307,10 @@ func themeAppsEnabled() bool {
 	return *s.ThemeApps
 }
 
-// blankGtk drops the Ryoku palette from the generated GTK stylesheets, so GTK /
+// blankGtk drops the Mei palette from the generated GTK stylesheets, so GTK /
 // libadwaita apps fall back to their own stock colours when app theming is off.
 func blankGtk(cfgBase string) {
-	const off = "/* Ryoku: app theming is off; apps use their own colours. */\n"
+	const off = "/* Mei: app theming is off; apps use their own colours. */\n"
 	for _, rel := range []string{"gtk-3.0/gtk.css", "gtk-4.0/gtk.css"} {
 		p := filepath.Join(cfgBase, rel)
 		_ = os.MkdirAll(filepath.Dir(p), 0o755)
@@ -310,7 +319,7 @@ func blankGtk(cfgBase string) {
 }
 
 // ledsWorker: push the new accent at the lighting devices the user put under
-// Ryoku's control. `ryoku-hub lighting accent` returns without touching anything
+// Mei's control. `ryoku-hub lighting accent` returns without touching anything
 // while lighting is off or no device is adopted, so an untouched install never
 // talks to a keyboard. Reaching hardware is slow (seconds on first use), so it
 // lives on its own coalescing worker and never touches the theme hot path. Runs

@@ -58,7 +58,7 @@ hl.env("QT_WAYLAND_DISABLE_WINDOWDECORATION", "1")
 hl.env("GSK_RENDERER", "gl")
 
 -- qt6ct, not kde: the kde platform theme reads ~/.config/kdeglobals (which the
--- daemon keeps in sync) but needs plasma-integration, which Ryoku does not ship,
+-- daemon keeps in sync) but needs plasma-integration, which Mei does not ship,
 -- so switching here would strip plain Qt apps of their palette, Papirus icons
 -- and font. A user who installs plasma-integration can set kde here themselves.
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
@@ -72,15 +72,15 @@ hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 hl.env("QML_IMPORT_PATH",  os.getenv("HOME") .. "/.local/lib/qt6/qml")
 
 -- The shell daemon registers as the PolicyKit1 authentication agent, so an
--- administrator password is asked for on a Ryoku island instead of the stock
+-- administrator password is asked for on a Mei island instead of the stock
 -- agent's grey dialog. The daemon reads it at startup; without it the daemon
 -- leaves the slot alone.
-hl.env("RYOKU_POLKIT_AGENT", "1")
+hl.env("MEI_POLKIT_AGENT", "1")
 hl.env("QML2_IMPORT_PATH", os.getenv("HOME") .. "/.local/lib/qt6/qml")
 
 -- deploy.sh builds the ryoku-* binaries into ~/.local/bin; put it first so the
 -- session runs them, not the package's /usr/bin copies. Inert on a package
--- install, where ~/.local/bin holds no ryoku binaries.
+-- install, where ~/.local/bin holds no mei binaries.
 local local_bin = (os.getenv("HOME") or "") .. "/.local/bin"
 local entries = { local_bin }
 local inherited = os.getenv("PATH") or ""

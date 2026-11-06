@@ -18,7 +18,7 @@ import (
 // file rather than a second shell.
 //
 // Everything speaks the Lua config provider's API, because that is the only
-// parser Ryoku ships: `hyprctl dispatch <expr>` evaluates as hl.dispatch(<expr>),
+// parser Mei ships: `hyprctl dispatch <expr>` evaluates as hl.dispatch(<expr>),
 // so a classic `dispatch workspace 9` is a Lua syntax error, and `hyprctl
 // keyword` refuses outright ("keyword can't work with non-legacy parsers"). Live
 // config changes therefore go through eval and hl.config.
@@ -519,7 +519,7 @@ func touchpadStatePath() string {
 // touchpadNotify shows the toast the ported script sent. A var so the pad tests
 // stay silent, and a swallowed error so a session with no notify-send is fine.
 var touchpadNotify = func(title, body string) {
-	_ = exec.Command("notify-send", "-a", "Ryoku", title, body).Run()
+	_ = exec.Command("notify-send", "-a", "Mei", title, body).Run()
 }
 
 // eval, not keyword: under the Lua config provider a reload re-runs

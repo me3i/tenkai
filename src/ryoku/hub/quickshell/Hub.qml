@@ -31,7 +31,7 @@ import "schema/VisualsPage.js" as VisualsSchema
 import "ReloadCoverModel.js" as ReloadCoverModel
 import Ryoku.FrameBars
 
-// Ryoku Settings, assembled. The rail owns navigation and global search; the
+// Mei Settings, assembled. The rail owns navigation and global search; the
 // head, cells and tabs are drawn once by SchemaPage from a page's schema; the
 // pinned side is the feedback loop (live preview, the dirty-state plate, the
 // pending-write diff); the action bar is the one surface whose absence eats an
@@ -743,7 +743,7 @@ Rectangle {
         }
         hub.committed = JSON.parse(JSON.stringify(hub.draft));
         // language rides the normal Save: the file it just wrote (shell.json) is
-        // watched by every Ryoku surface's shared I18n, so the whole desktop
+        // watched by every Mei surface's shared I18n, so the whole desktop
         // retranslates. Set it here too so this window switches deterministically.
         if (files.shell) I18n.configLang = hub.committed.language || "Auto";
         if (hub.hyprChanges().length) {
@@ -1832,7 +1832,7 @@ Rectangle {
                     spacing: Tokens.s2
                     Text {
                         width: fcol.width
-                        text: I18n.tr("Each page's settings live in one full file below: the complete config you edit in place (the GUI writes the very same file). The shipped base underneath refreshes on update; your file wins. Run `ryoku reset <path>` to drop an override.")
+                        text: I18n.tr("Each page's settings live in one full file below: the complete config you edit in place (the GUI writes the very same file). The shipped base underneath refreshes on update; your file wins. Run `mei reset <path>` to drop an override.")
                         color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: 11; wrapMode: Text.WordWrap
                     }
                     Repeater {

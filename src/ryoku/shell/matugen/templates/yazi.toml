@@ -1,6 +1,6 @@
-# Ryoku palette for yazi. Rendered by the theme daemon; do not edit.
+# Mei palette for yazi. Rendered by the theme daemon; do not edit.
 #
-# yazi reads theme.toml beside yazi.toml. Ryoku ships only yazi.toml, so this
+# yazi reads theme.toml beside yazi.toml. Mei ships only yazi.toml, so this
 # file is the daemon's alone and clobbers nothing you wrote.
 
 [mgr]

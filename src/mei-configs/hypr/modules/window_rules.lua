@@ -35,7 +35,7 @@ end
 -- page or custom fraction inside the work area with the same gaps and border a
 -- tiled window gets.
 local function fit_page_to_work_area(win)
-    if not win or win.title ~= "Ryoku Settings" then return end
+    if not win or win.title ~= "Mei Settings" then return end
     local mon = win.monitor
     if not mon then return end
     local scale = mon.scale or 1
@@ -122,7 +122,7 @@ hl.window_rule({
 
 hl.window_rule({
 	name   = "float-ryoku-settings",
-	match  = { title = "^(Ryoku Settings)$" },
+	match  = { title = "^(Mei Settings)$" },
 	float  = true,
 	size   = page(),
 	center = true,
@@ -146,7 +146,7 @@ hl.window_rule({
 
 
 hl.window_rule({
-    -- The update and rollback logs are started from Ryoku Settings itself
+    -- The update and rollback logs are started from Mei Settings itself
     -- (UpdatesPage, and the bar's update widget), and a tiled window always
     -- sits under a float, so the run's output hid behind the 99% settings
     -- page until it finished (issue 288). The launches name this GTK-valid
@@ -242,7 +242,7 @@ hl.window_rule({
 
 hl.window_rule({
     name   = "float-ryoku-welcome",
-    match  = { title = "^(Welcome to Ryoku)$" },
+    match  = { title = "^(Welcome to Mei)$" },
     float  = true,
     size   = fit(1180, 760),
     center = true,
@@ -269,7 +269,7 @@ hl.window_rule({
     immediate    = true,
 })
 
--- Ryotunes, the music app ([ryoku] package, ryoku-dev/ryotunes). Float it like
+-- Ryotunes, the music app ([mei] package, ryoku-dev/ryotunes). Float it like
 -- the other music players (Spotify above); the app sizes and centres its own
 -- floating window. The Tauri app maps with class "ryotunes"; the native
 -- Quickshell client (ryotunes-qml) maps with Quickshell's class and the title

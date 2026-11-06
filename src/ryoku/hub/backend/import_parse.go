@@ -125,7 +125,7 @@ func parseHyprland(src string) ([]scanItem, hyprScan) {
 }
 
 // parseBind splits `MODS, KEY, DISPATCHER, ARGS` (args may hold commas) and maps
-// the native dispatcher onto the hub Keybind model. killactive is Ryoku's
+// the native dispatcher onto the hub Keybind model. killactive is Mei's
 // "close"; anything outside the four ingestable dispatchers stays raw.
 func parseBind(val, raw string) importBind {
 	f := splitNCommaTrim(val, 4)
@@ -430,10 +430,10 @@ func numOr0(s string) string {
 // --- conflict detection ------------------------------------------------------
 
 // hyprConflicts flags every imported chord that clashes: shipped (shadows a
-// Ryoku bind) takes priority over duplicate (repeats an earlier imported chord),
+// Mei bind) takes priority over duplicate (repeats an earlier imported chord),
 // one row per chord, keyed by the stable norm.
 func hyprConflicts(binds []importBind) []scanConflict {
-	shipped := ryokuShipped()
+	shipped := meiShipped()
 	seen := map[string]importBind{}
 	done := map[string]bool{}
 	out := []scanConflict{}
@@ -445,7 +445,7 @@ func hyprConflicts(binds []importBind) []scanConflict {
 		if si, ok := shipped[n]; ok {
 			out = append(out, scanConflict{
 				Combo: b.Combo, Norm: n,
-				Ryoku: conflictRyoku{Action: si.Action, Desc: si.Desc},
+				Mei: conflictMei{Action: si.Action, Desc: si.Desc},
 				Mine:  conflictMine{Raw: b.Raw, Desc: b.Desc},
 				Kind:  "shipped",
 			})
@@ -455,7 +455,7 @@ func hyprConflicts(binds []importBind) []scanConflict {
 		if first, ok := seen[n]; ok {
 			out = append(out, scanConflict{
 				Combo: b.Combo, Norm: n,
-				Ryoku: conflictRyoku{Action: first.Action, Desc: first.Desc},
+				Mei: conflictMei{Action: first.Action, Desc: first.Desc},
 				Mine:  conflictMine{Raw: b.Raw, Desc: b.Desc},
 				Kind:  "duplicate",
 			})

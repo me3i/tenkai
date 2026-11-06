@@ -160,9 +160,9 @@ Item {
 
     // Hyprland animation personality: the preset the loader picks. Read from the
     // backend at load; setAnimPreset writes ~/.config/ryoku/anim-preset + reloads.
-    property string animPreset: "ryoku"
+    property string animPreset: "mei"
     readonly property var animPresets: [
-        { "id": "ryoku", "label": "Mei" },
+        { "id": "mei", "label": "Mei" },
         { "id": "dusky", "label": "Dusky" },
         { "id": "bounce", "label": "Bounce" },
         { "id": "fade", "label": "Fade" },
@@ -177,8 +177,8 @@ Item {
         { "id": "disable", "label": "Off" }
     ]
     readonly property var animPresetLabels: pg.animPresets.map(p => p.label)
-    function animPresetLabel(id) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].id === id) return pg.animPresets[i].label; return "Ryoku"; }
-    function animPresetId(label) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].label === label) return pg.animPresets[i].id; return "ryoku"; }
+    function animPresetLabel(id) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].id === id) return pg.animPresets[i].label; return "Mei"; }
+    function animPresetId(label) { for (var i = 0; i < pg.animPresets.length; i++) if (pg.animPresets[i].label === label) return pg.animPresets[i].id; return "mei"; }
     function setAnimPreset(id) { pg.animPreset = id; animPresetSet.command = ["mei-hub", "desktop", "anim-preset", id]; animPresetSet.running = true; }
 
     Process {

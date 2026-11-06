@@ -8,7 +8,7 @@ import Ryoku.Ui.Singletons
 
 // Live Bluetooth bubbles for the palette: one compact card per CONNECTED
 // device, floating detached under the launcher window, the Android quick-pair
-// tile reduced to Ryoku's brutalist grammar. Device name up top, a big
+// tile reduced to Mei's brutalist grammar. Device name up top, a big
 // Material-style class glyph on the left (BlueZ classifies the device --
 // headset, mouse, keyboard, pad, phone -- and the shipped Nerd Font embeds the
 // Material Design Icons set, so the pictograms come from an asset pack we

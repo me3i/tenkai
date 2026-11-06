@@ -22,7 +22,7 @@ import "../Singletons"
 //     lose nothing. grpIds carries grp:caps_toggle deliberately (so it is
 //     stripped from Extra options) while the Switch seg never offers it: that
 //     asymmetry is load-bearing and reproduced here on purpose.
-//   * Apply system-wide is an out-of-band, privileged `ryoku keyboard apply`
+//   * Apply system-wide is an out-of-band, privileged `mei keyboard apply`
 //     covering the login screen, the TTYs and the disk passphrase prompt; it
 //     has no draft, no revert, no dirty state, and is gated on the keyboard
 //     keys already being saved.
@@ -68,7 +68,7 @@ Item {
     Process {
         id: touchpadStatus
         running: false
-        command: ["ryoku", "wm", "act", "input.touchpad", "status"]
+        command: ["mei", "wm", "act", "input.touchpad", "status"]
         stdout: StdioCollector {
             onStreamFinished: pg.touchpadOn = String(this.text).trim() !== "off"
         }
@@ -79,7 +79,7 @@ Item {
         onExited: touchpadStatus.running = true
     }
     function setTouchpad(on) {
-        touchpadSet.command = ["ryoku", "wm", "act", "input.touchpad", on ? "on" : "off"];
+        touchpadSet.command = ["mei", "wm", "act", "input.touchpad", on ? "on" : "off"];
         touchpadSet.running = false;
         touchpadSet.running = true;
     }
@@ -298,14 +298,14 @@ Item {
     function applyLayoutArg() { return String(pg.hv("desktop.input.kbLayout") || "us"); }
     function applyVariantArg() { return String(pg.hv("desktop.input.kbVariant") || ""); }
     function applyOptionsArg() { return String(pg.hv("desktop.input.kbOptions") || ""); }
-    // `ryoku keyboard apply` owns all four layers: it sets the greeter and the
+    // `mei keyboard apply` owns all four layers: it sets the greeter and the
     // console through localectl AND rebuilds the boot image, which localectl
     // alone cannot do. mkinitcpio bakes a copy of /etc/vconsole.conf into the
     // image at build time, so without that rebuild the disk passphrase prompt
     // keeps the keymap it was built with however correct /etc looks.
     Process {
         id: sysApplyProc
-        command: ["ryoku", "keyboard", "apply", pg.applyLayoutArg()]
+        command: ["mei", "keyboard", "apply", pg.applyLayoutArg()]
         onExited: (code, status) => {
             pg.sysApplyState = code === 0 ? "ok" : "err";
             sysApplyClear.restart();

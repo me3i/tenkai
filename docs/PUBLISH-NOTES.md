@@ -49,7 +49,7 @@ Then, in the new directory:
 cd ../mei-public
 git init
 git add -A
-git commit -m "Mei: a Hyprland desktop shell built on Ryoku"
+git commit -m "Mei: a Hyprland desktop shell built on Mei"
 ```
 
 Before you push, check the export yourself:

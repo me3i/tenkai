@@ -17,7 +17,7 @@ type matugenConfig struct {
 	Prefer           string          `json:"prefer"`           // "dominant" or "vibrant"
 	SchemeType       string          `json:"schemeType"`       // matugen -t variant
 	SourceColorIndex int             `json:"sourceColorIndex"` // 0..4
-	ThemeRyokuApps   bool            `json:"themeRyokuApps"`   // theme Ryoku's native shell & apps
+	ThemeMeiApps   bool            `json:"themeRyokuApps"`   // theme Mei's native shell & apps
 	Templates        map[string]bool `json:"templates"`        // app -> bool
 }
 
@@ -133,7 +133,7 @@ func defaultMatugenConfig() matugenConfig {
 		Prefer:           "saturation",
 		SchemeType:       "scheme-tonal-spot",
 		SourceColorIndex: 0,
-		ThemeRyokuApps:   true,
+		ThemeMeiApps:   true,
 		Templates: map[string]bool{
 			"btop":      true,
 			"qt":        true,
@@ -220,7 +220,7 @@ func runMatugenCmd(args []string) error {
 		// divergent colors.json.
 		return saveMatugenConfig(cfg)
 	case "render-apps":
-		pal := readPalette(filepath.Join(ryokuCacheDir(), "colors.json"))
+		pal := readPalette(filepath.Join(meiCacheDir(), "colors.json"))
 		if pal != nil {
 			cfg := loadMatugenConfig()
 			renderActiveTemplates(cfg, pal)

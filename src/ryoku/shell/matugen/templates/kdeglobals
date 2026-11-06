@@ -1,9 +1,9 @@
-# Ryoku palette -> the colour groups KColorScheme reads. Merged into
+# Mei palette -> the colour groups KColorScheme reads. Merged into
 # ~/.config/kdeglobals rather than written over it, so the fonts, icon theme and
 # widget style a user set there survive a repaint.
 #
 # Hex rather than KDE's usual decimal "R,G,B": KColorScheme parses both, and the
-# carrier Ryoku hands matugen exposes only .hex.
+# carrier Mei hands matugen exposes only .hex.
 
 [Colors:View]
 BackgroundNormal={{colors.surface.default.hex}}

@@ -12,7 +12,7 @@ import (
 
 // updates.go runs the background update check the Hub's Updates section and the
 // bar's update glyph read, so a check happens whether or not the Hub is open.
-// It polls `ryoku status --json` on the configured cadence (hub.toml
+// It polls `mei status --json` on the configured cadence (hub.toml
 // update_interval), publishes the frame on the "updates" topic, and caches it.
 type updatesState struct {
 	topic *stateTopic

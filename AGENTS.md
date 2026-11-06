@@ -11,7 +11,8 @@ existing system, 4. strict no-bloat reduction, 5. modular, 6. measured performan
 
 - `upstream/` — private clone of Ryoku at a pinned commit. **READ-ONLY. Never edit.**
 - `src/` — the Mei tree (copies/adaptations from upstream live here).
-- `docs/` — phase docs (`01-audit.md`, …), `baseline/` snapshots, `ROLLBACK.md`, `LIVE-TEST.md`.
+- `docs/` — install/verify runbooks: `LIVE-CHECKLIST.md`, `LIVE-TEST.md`, `MODULES.md`,
+  `ROLLBACK.md`, `revert-to-previous-shell.sh`, `tests/`, `baseline/` snapshots (not tracked).
 - `mei` — control script (`baseline`, `verify-untouched`, `status`, `run`, `stop`, `test`).
 - `.run/` — all runtime state: XDG overrides (`config/`, `cache/`, `state/`, `data/`), Go dirs
   (`go/`), sockets, pids. Git-ignored. **Deleting `~/projects/mei` must be a complete rollback**;

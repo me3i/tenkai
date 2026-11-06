@@ -92,7 +92,7 @@ func runGpuHook(args []string) error {
 	if len(args) >= 2 {
 		name = args[1]
 	}
-	// libvirt hooks fire for every domain; act only on Ryoku-managed VMs (the
+	// libvirt hooks fire for every domain; act only on Mei-managed VMs (the
 	// "ryoku-" name prefix). This works even when libvirtd runs us as root with no
 	// access to the user's vm.json.
 	if name != "" && !strings.HasPrefix(name, "ryoku-") {

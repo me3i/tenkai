@@ -5,7 +5,7 @@ import Quickshell.Io
 import Ryoku.FrameBars
 import Ryoku.Ui.Singletons
 
-// live shell appearance config. one source of truth for the look knobs Ryoku
+// live shell appearance config. one source of truth for the look knobs Mei
 // Settings' Shell section edits, plus the shipped defaults the shell falls back
 // to. JSON at ~/.config/mei/shell.json, watched, so a save in Settings
 // retunes the running shell on the next file event. no reload. defaults here
@@ -167,12 +167,12 @@ Singleton {
         themePalette = pal;
     }
 
-    // brand: the desktop's mark + name, user-overridable from Ryoku Settings ->
+    // brand: the desktop's mark + name, user-overridable from Mei Settings ->
     // Shell -> Global. a small cross-cutting identity master (like theme.json).
     // markText is the glyph/short-text seal (default 力); markImage an optional
     // image path that wins over the text; markTint recolours a single-colour
-    // image to the accent; name is the wordmark ("Ryoku") shown in chrome copy.
-    // Ryoku's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
+    // image to the accent; name is the wordmark ("Mei") shown in chrome copy.
+    // Mei's own apps (the Hub, ryo* apps) never read this and keep the 力 brand.
     property alias markText:  brandAdapter.markText
     property alias markImage: brandAdapter.markImage
     property alias markTint:  brandAdapter.markTint

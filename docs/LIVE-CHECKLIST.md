@@ -17,8 +17,8 @@ cd ~/projects/mei
 ./mei live --profile overlay
 ```
 
-Compare the claim table it prints with the live-session table in
-`docs/PARITY.md`: every name, socket and layer namespace must read **free**.
+Compare the claim table it prints with the live-session table below: every
+name, socket and layer namespace must read **free**.
 
 | # | do | must happen | if it fails | rollback |
 |---|---|---|---|---|
@@ -118,11 +118,11 @@ and keep the previous shell installed for a few weeks afterwards.
    stay stubbed. Add `--real-power` when you have
    tried logout and suspend by hand and they behaved.
 3. **Log out and back in** (or run `<your previous shell's stop command>` and then Mei's line).
-4. **The revert**, whenever you want it: `SUPER + SHIFT + R` (the rescue bind
-   in `docs/keybinds-for-mei.lua`, which depends on no shell at all), or
+4. **The revert**, whenever you want it (from your own terminal):
    ```bash
-   bash ~/projects/mei/docs/revert-to-the previous shell.sh
+   bash ~/projects/mei/docs/revert-to-previous-shell.sh
    ```
+   The rescue path depends on no shell at all, so it works even if Mei is wedged.
    That stops Mei and starts <your previous shell>. It deliberately does **not** edit
    your Hyprland config: the autostart line stays a manual step, so nothing
    rewrites your configuration behind your back. Uncomment your
@@ -131,8 +131,8 @@ and keep the previous shell installed for a few weeks afterwards.
 5. **If the screen is blank:** Ctrl+Alt+F3, log in, run the revert script,
    Ctrl+Alt+F2 to come back.
 
-**What you lose by turning the previous shell off** (the full list, with what each
-would cost to add, is in `docs/PARITY.md`): the wellbeing guide, the calendar,
+**What you lose by turning the previous shell off** (each item would cost real
+work to add): the wellbeing guide, the calendar,
 the quick-actions palette, the autohide toggle, the SUPER+SHIFT+number
 move-a-window bind, the image editor on SHIFT+Print, and (until it is built)
 Mei's own idle timeouts. The tray, notifications, wallpaper, popouts, dock,

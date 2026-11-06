@@ -610,10 +610,10 @@ done
                     Btn { text: I18n.tr("Retry"); primary: true; onAct: pg.reload() }
                 }
 
-                // ── RYOKU RENDERS ON ──
+                // ── MEI RENDERS ON ──
                 SettingCard {
                     width: gfxCol.colWidth
-                    title: I18n.tr("RYOKU RENDERS ON")
+                    title: I18n.tr("MEI RENDERS ON")
                     // Hybrid/Performance/Passthrough only mean something with a
                     // second GPU to switch between; a single-GPU box always renders
                     // on its one GPU, so hide the switcher rather than lock it.

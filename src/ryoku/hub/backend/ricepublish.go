@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// Rice authoring stays in Ryoku Settings. Remote catalogue and install
+// Rice authoring stays in Mei Settings. Remote catalogue and install
 // ownership belongs exclusively to Ryostore.
 
 // productFile is one row of a RyoStore product manifest's files[]: a payload

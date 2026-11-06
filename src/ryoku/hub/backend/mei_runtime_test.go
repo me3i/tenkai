@@ -116,7 +116,7 @@ func TestUnbindLua(t *testing.T) {
 // override pass, so they survive a Hyprland reload without being saved into the
 // user's keybinds.json. A user bind on the same chord wins, and each default is
 // unbound first because the shipped config already binds the same keys to
-// ryoku:* globals.
+// mei:* globals.
 func TestDefaultBindsLua(t *testing.T) {
 	got := defaultBindsLua(meiKeybinds{})
 	for _, w := range []string{

@@ -13,12 +13,12 @@ import (
 // ryoku-hub wm is the neutral compositor-switch backend for the Hub. It answers
 // two questions and mutates nothing: which providers exist and their state
 // (list), and what a switch to one would cost (preview). The switch itself is
-// `ryoku wm use <name>`, a reversible pacman transaction the Hub launches, so
+// `mei wm use <name>`, a reversible pacman transaction the Hub launches, so
 // there is never a second package path with different rollback semantics.
 //
 //	wm list             every provider: name, package, installed, active, caps
 //	wm preview <name>   the honest switch report, degrading when the target's
-//	                    provider binary is absent the way `ryoku wm use` does
+//	                    provider binary is absent the way `mei wm use` does
 
 func runWm(args []string) error {
 	if len(args) == 0 {
@@ -95,7 +95,7 @@ func wmList() error {
 // wmPreviewReport is the honest switch report the confirmation sheet renders.
 // exact is false when the target's provider binary is absent: the dry run could
 // not run, so unhonored is empty and the Hub says "install the package to see
-// the exact list", the same degradation `ryoku wm use` prints.
+// the exact list", the same degradation `mei wm use` prints.
 type wmPreviewReport struct {
 	Target    string `json:"target"`
 	Active    string `json:"active"`
@@ -173,7 +173,7 @@ func wmKnown(name string) bool {
 // shown as unavailable instead of a switch that would fail at the transaction.
 func pkgAvailable(pkg string) bool { return exec.Command("pacman", "-Si", pkg).Run() == nil }
 
-// storeKeybindCount is the neutral keybind carry-over: the count `ryoku wm use`
+// storeKeybindCount is the neutral keybind carry-over: the count `mei wm use`
 // prints, so the sheet says the same number. Zero when the store or field is
 // absent.
 func storeKeybindCount(store string) int {

@@ -4,7 +4,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Where Ryoku keeps things, resolved once for every surface that needs to know.
+// Where Mei keeps things, resolved once for every surface that needs to know.
 //
 // The recordings directory used to be worked out in three places that disagreed:
 // ryoku-cmd-screenrecord resolved it properly, the pill's deck hardcoded

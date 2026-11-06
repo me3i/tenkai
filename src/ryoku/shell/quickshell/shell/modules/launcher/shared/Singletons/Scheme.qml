@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * The live palette for the pill/shell, used only when Ryoku Settings ->
+ * The live palette for the pill/shell, used only when Mei Settings ->
  * Shell -> Match wallpaper is on. matugen rewrites ~/.cache/mei/colors.json on
  * every wallpaper change and this watches it, so the pill's
  * surface fill and accent retune to whatever is on screen.
@@ -14,7 +14,7 @@ import Quickshell.Io
  * launcher onto a bright surface its light text can't sit on. `elevated`/`deep`/
  * `line` shift its value for the depth hierarchy. `accent` is the vivified lead
  * tint, lightened by legible() until it clears 3:1 against the elevated surface.
- * Defaults are the Ryoku brand palette so the launcher looks right before the
+ * Defaults are the Mei brand palette so the launcher looks right before the
  * first matugen run; they sit inside the band, so they render unchanged.
  */
 Singleton {

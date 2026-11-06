@@ -18,8 +18,8 @@ func TestManagedFilesContent(t *testing.T) {
 	if hook == nil {
 		t.Fatal("no libvirt hook in managed files")
 	}
-	if !strings.Contains(hook.content, "ryoku") {
-		t.Error("hook must contain the ryoku marker (hookInstalled checks for it)")
+	if !strings.Contains(hook.content, "Managed by Mei") {
+		t.Error("hook must contain the \"Managed by Mei\" marker (hookInstalled checks for it)")
 	}
 	if hook.mode != 0o755 {
 		t.Errorf("hook mode = %o, want 0755", hook.mode)

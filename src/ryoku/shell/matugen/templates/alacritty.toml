@@ -1,4 +1,4 @@
-# Ryoku palette -> Alacritty. Rendered by matugen; do not edit.
+# Mei palette -> Alacritty. Rendered by matugen; do not edit.
 
 [colors.primary]
 background = '{{colors.background.default.hex}}'

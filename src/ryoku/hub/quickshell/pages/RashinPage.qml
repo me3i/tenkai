@@ -209,7 +209,7 @@ Item {
     }
     Process { id: wireProc; onExited: pg.refresh() }
     Process { id: chatProc; onExited: pg.refresh() }
-    // Wiring drops the pointer + the ryoku skill + prowl's skills into an
+    // Wiring drops the pointer + the mei skill + prowl's skills into an
     // agent (or every present one); useChatAgent picks who drives the chat.
     function wireAgent(id) { wireProc.command = ["ryoku-rashin", "wire", id]; wireProc.running = true; }
     function wireAll() { wireProc.command = ["ryoku-rashin", "wire"]; wireProc.running = true; }
@@ -515,7 +515,7 @@ Item {
                     anchors { left: parent.left; bottom: parent.bottom; leftMargin: Tokens.s5; bottomMargin: Tokens.s4 }
                     spacing: 3
                     Text {
-                        text: I18n.tr("RYOKU RASHIN"); color: hx.ink; font.family: pg.fDisplay
+                        text: I18n.tr("MEI RASHIN"); color: hx.ink; font.family: pg.fDisplay
                         font.pixelSize: Math.round(Math.min(pg.bodyW * 0.05, 40))
                     }
                     Row {
@@ -682,7 +682,7 @@ Item {
                 Head { kanji: "\u4e94\u4eba\u8846"; title: I18n.tr("YOUR AGENTS") }
                 Text {
                     width: parent.width
-                    text: I18n.tr("Wire any coding agent to the same living map of this machine. One click drops a pointer into its instructions, links the ryoku skill, and installs prowl's code-intelligence skill.")
+                    text: I18n.tr("Wire any coding agent to the same living map of this machine. One click drops a pointer into its instructions, links the mei skill, and installs prowl's code-intelligence skill.")
                     color: hx.inkDim; font.family: pg.fMono; font.pixelSize: 12; wrapMode: Text.WordWrap; lineHeight: 1.4
                 }
                 Column {

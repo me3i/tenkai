@@ -1,4 +1,4 @@
-// The Kairos launcher's Ryoku Settings preview. Visual only: the variant takes
+// The Kairos launcher's Mei Settings preview. Visual only: the variant takes
 // no settings yet, so nothing here is editable.
 
 pragma ComponentBehavior: Bound

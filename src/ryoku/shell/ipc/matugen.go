@@ -61,7 +61,7 @@ type matugenKnobs struct {
 	Prefer           string          // source-colour pick, e.g. "saturation"
 	SchemeType       string          // matugen -t variant; "" resolves to the default
 	SourceColorIndex int             // 0..4, most dominant first
-	ThemeRyokuApps   bool            // theme the GTK / GUI app suite (apps.toml)
+	ThemeMeiApps   bool            // theme the GTK / GUI app suite (apps.toml)
 	Templates        map[string]bool // per-app roster, keyed by group
 }
 
@@ -72,7 +72,7 @@ var matugenPrefers = map[string]bool{
 	"less-saturation": true, "value": true, "closest-to-fallback": true,
 }
 
-// The default scheme Ryoku generates with. A variant picker (matugen.json
+// The default scheme Mei generates with. A variant picker (matugen.json
 // schemeType) lets a user pick another; tonal-spot stays the default because the
 // desaturating variants (monochrome, neutral) pull the colour out of a wallpaper.
 // The Hub labels those as desaturating instead of hiding the choice.
@@ -97,7 +97,7 @@ func defaultMatugenKnobs() matugenKnobs {
 		Contrast:       0,
 		Prefer:         "saturation",
 		SchemeType:     matugenSchemeType,
-		ThemeRyokuApps: true,
+		ThemeMeiApps: true,
 	}
 }
 
@@ -118,7 +118,7 @@ func readMatugenKnobs() matugenKnobs {
 		Prefer           *string         `json:"prefer"`
 		SchemeType       *string         `json:"schemeType"`
 		SourceColorIndex *int            `json:"sourceColorIndex"`
-		ThemeRyokuApps   *bool           `json:"themeRyokuApps"`
+		ThemeMeiApps   *bool           `json:"themeRyokuApps"`
 		Templates        map[string]bool `json:"templates"`
 	}
 	if json.Unmarshal(b, &doc) != nil {
@@ -145,8 +145,8 @@ func readMatugenKnobs() matugenKnobs {
 	if doc.SourceColorIndex != nil {
 		k.SourceColorIndex = *doc.SourceColorIndex
 	}
-	if doc.ThemeRyokuApps != nil {
-		k.ThemeRyokuApps = *doc.ThemeRyokuApps
+	if doc.ThemeMeiApps != nil {
+		k.ThemeMeiApps = *doc.ThemeMeiApps
 	}
 	k.Templates = doc.Templates
 	return k
@@ -406,7 +406,7 @@ func ffmpegChroma(img string) (float64, bool) {
 // theme.theme is the master; this is its shadow. Other keys in the file
 // (themeApps) are preserved.
 func syncFollowWallpaper(themeName string) {
-	path := filepath.Join(ryokuConfigDir(), "theme.json")
+	path := filepath.Join(meiConfigDir(), "theme.json")
 	doc := map[string]any{}
 	if b, err := os.ReadFile(path); err == nil {
 		_ = json.Unmarshal(b, &doc)
@@ -431,7 +431,7 @@ func syncFollowWallpaper(themeName string) {
 // chrome all read), defaulting ON to match the shell's own Config default: a
 // fresh box with no theme.json (or a file missing the key) follows the wallpaper.
 func matchWallpaperOn() bool {
-	b, err := os.ReadFile(filepath.Join(ryokuConfigDir(), "theme.json"))
+	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "theme.json"))
 	if err != nil {
 		return true
 	}
@@ -450,7 +450,7 @@ func matchWallpaperOn() bool {
 // palette actually lands, unlike stock Adwaita GTK3 which hardcodes its colours.
 // theme.json is the one control-plane file the daemon reads directly.
 func gtkThemeSetting() string {
-	b, err := os.ReadFile(filepath.Join(ryokuConfigDir(), "theme.json"))
+	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "theme.json"))
 	if err != nil {
 		return "adw"
 	}
@@ -469,7 +469,7 @@ func gtkThemeSetting() string {
 
 // resolveGtkTheme turns the gtkTheme knob and the resolved light/dark mode into
 // the gsettings gtk-theme name the daemon sets, or "" for "system" -- where the
-// user owns gtk-theme and Ryoku never writes it. The variant must match the mode
+// user owns gtk-theme and Mei never writes it. The variant must match the mode
 // so a light/dark flip lands on the right stylesheet (adw-gtk3 vs adw-gtk3-dark),
 // since the base carries the accent-derived rules the palette rides on.
 func resolveGtkTheme(mode string) string {
@@ -490,11 +490,11 @@ func resolveGtkTheme(mode string) string {
 	}
 }
 
-// gnomeAccentOn reports whether Ryoku tracks the palette onto GNOME's named
+// gnomeAccentOn reports whether Mei tracks the palette onto GNOME's named
 // accent (contract C3, default true). Off leaves org.gnome.desktop.interface
 // accent-color untouched so a user's own choice stands.
 func gnomeAccentOn() bool {
-	b, err := os.ReadFile(filepath.Join(ryokuConfigDir(), "theme.json"))
+	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "theme.json"))
 	if err != nil {
 		return true
 	}
@@ -512,7 +512,7 @@ func gnomeAccentOn() bool {
 // theme's palette is the catalog's (themePalettes), which the daemon fans into
 // both the shell rail and the app templates so the two share one master.
 func staticThemeName() string {
-	b, err := os.ReadFile(filepath.Join(ryokuConfigDir(), "shell.json"))
+	b, err := os.ReadFile(filepath.Join(meiConfigDir(), "shell.json"))
 	if err != nil {
 		return ""
 	}
@@ -1169,7 +1169,7 @@ func matugenRenderTemplates(shell map[string]string, k matugenKnobs) {
 	// and blanked the GTK sheets when the "Theme apps" master went off. Neither
 	// happens here: no app config outside the project is ever written and there
 	// is no post_hook. Restore the block below (and apps.toml) to opt back in.
-	//   if k.ThemeRyokuApps && themeAppsEnabled() {
+	//   if k.ThemeMeiApps && themeAppsEnabled() {
 	//       matugenRenderFiltered(filepath.Join(dir, "apps.toml"), carrierPath, enabled)
 	//       if enabled("obsidian") { nudgeObsidian() }
 	//   } else {
@@ -1214,7 +1214,7 @@ func nudgeObsidian() {
 		if err != nil || fi.Mode()&os.ModeSymlink == 0 {
 			continue // no link yet (doctor not run) or a user's own file
 		}
-		tmp := link + ".ryoku-tmp"
+		tmp := link + ".mei-tmp"
 		_ = os.Remove(tmp)
 		if os.Symlink(generated, tmp) != nil {
 			continue
@@ -1424,7 +1424,7 @@ func applyKdeColors() {
 			continue
 		}
 		if group.name == "General" {
-			group.rows = setIniRow(group.rows, "ColorScheme", "Ryoku")
+			group.rows = setIniRow(group.rows, "ColorScheme", "Mei")
 		}
 		out = append(out, renderIniGroup(group))
 	}
@@ -1752,11 +1752,11 @@ func matugenTemplateDir() string { return filepath.Join(matugenConfigHome(), "me
 // matugenKnobsPath is the one knob store the Hub appearance page and the daemon
 // share.
 func matugenKnobsPath() string {
-	return filepath.Join(ryokuConfigDir(), "matugen.json")
+	return filepath.Join(meiConfigDir(), "matugen.json")
 }
 
 // matugenColorsPath is the shell palette every Quickshell singleton watches. It
-// lives under the ryoku cache dir; a single reader convention serves the matugen
+// lives under the mei cache dir; a single reader convention serves the matugen
 // palette source the shell singletons watch.
 func matugenColorsPath() string {
 	return filepath.Join(matugenCacheHome(), "mei", "colors.json")

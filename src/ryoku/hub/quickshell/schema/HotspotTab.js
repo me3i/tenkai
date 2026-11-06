@@ -12,7 +12,7 @@ var rows = [
         "label": "Hotspot",
         "desc": "Shares this connection over Wi-Fi",
         "ctl": "sw",
-        "src": "down); nothing is written to any Ryoku config file"
+        "src": "down); nothing is written to any Mei config file"
     },
     {
         "tab": "Hotspot",

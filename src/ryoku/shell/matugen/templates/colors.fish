@@ -1,4 +1,4 @@
-# Ryoku palette for fish and fzf. Rendered by the theme daemon; do not edit.
+# Mei palette for fish and fzf. Rendered by the theme daemon; do not edit.
 #
 # Dropped straight into conf.d, which fish sources on its own, so nothing in the
 # shipped config has to include it. Your ~/.config/fish/user.fish loads last and

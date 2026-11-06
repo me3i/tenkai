@@ -10,7 +10,7 @@ import shell.services
 import "../../../../services/lib/screens.js" as Screens
 import Ryoku.Ui.Singletons
 
-// OkShell's applications-only launcher in Ryoku's live palette. It deliberately
+// OkShell's applications-only launcher in Mei's live palette. It deliberately
 // stays independent of the shared command-palette providers.
 Scope {
     id: root

@@ -12,7 +12,7 @@ import (
 // The niri binds block. niri has no unbind directive and rejects a duplicate
 // chord inside one block, so rebinds.kdl cannot subtract from a seeded block the
 // way the Hyprland split does: it must be the sole, total source of binds. This
-// file translates the shipped Ryoku bind catalogue (ryoku/wm/binds.go) into
+// file translates the shipped Mei bind catalogue (ryoku/wm/binds.go) into
 // niri's own action vocabulary and folds the store's rebinds, unbinds and custom
 // binds into it, resolving every chord collision to exactly one winner (custom
 // over rebound default over static default) so the emitted config never carries
@@ -400,7 +400,7 @@ func bindRows(s niriStore) []wm.BindRow {
 	}
 
 	// niri exclusives would follow here, titled with the compositor's name. Every
-	// niri behaviour Ryoku binds now carries a catalogue id, so there are none;
+	// niri behaviour Mei binds now carries a catalogue id, so there are none;
 	// the section stays a home for a future niri-only bind.
 
 	// Custom binds from desktop.keybinds, in store order. A degenerate bind with

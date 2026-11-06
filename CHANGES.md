@@ -1,5 +1,80 @@
 # CHANGES.md — modifications vs upstream Ryoku
 
+## Deep clean: strip Ryoku mentions, dead ceremony, stale docs (2026-11-06)
+
+The rebrand pass: every useless "Ryoku" mention is gone; what remains is
+functional or legal. No behaviour change beyond the items marked BUG below.
+
+Renamed (internal names, consistently across the tree):
+- Go identifiers and type names in the shell/Hub/wm/ryogami modules
+  (`ryokuConfigDir` → `meiConfigDir`, `ryokuShipped` → `meiShipped`,
+  `ThemeRyokuApps` → `ThemeMeiApps`, …). One name collision was resolved
+  (rice.go duplicated mei_runtime.go's `meiConfigDir`; rice.go's copy dropped).
+- JSON wire contract of the Hub's config-import conflicts: `ryoku` → `mei`
+  end to end (`scanConflict.Mei`, ImportPage `c.mei` / `modelData.mei`,
+  decisions key, tests).
+- Hyprland beziers `ryokuBloom`/`ryokuSettle`/`ryokuWobble` → `mei*`
+  (animations.lua, animations/mei.lua, wm/hyprland/schema.json). Schema's
+  phantom `ryokuTheme` pick replaced with `snap` (it names no existing curve;
+  picking it would have thrown Hyprland's config-error overlay).
+- Component/file renames: `RyokuConfirmationDialog.qml` → `MeiConfirmationDialog.qml`,
+  `qsbar/RyokuPower.js` → `qsbar/MeiPower.js` (imports and references updated),
+  `animations/ryoku.lua` → `animations/mei.lua` — BUG: the loader defaulted to
+  preset "mei" but only `ryoku.lua` existed, so a fresh install would have
+  loaded no animation preset; `mei.lua` makes the default resolve.
+- Global-shortcut dispatches in the bundled `binds.lua` (`ryoku:*` → `mei:*`),
+  matching the shell's `appid: "mei"` namespace (R3, 40d1f43); stale
+  `ryoku.system-update` IPC target → `mei.system-update`.
+- Temp-file suffixes `.ryoku-tmp` → `.mei-tmp`; wake-lighting / idle lock-out
+  dir `ryoku-idle-output` → `mei-idle-output`; shellpref loaders now source
+  `~/.config/bash/mei.bash` / `~/.zshrc`'s `~/.config/zsh/mei.zsh`.
+
+BUG fixed (functional, found by the clean-up):
+- `env.lua` set `RYOKU_POLKIT_AGENT=1`; the daemon reads `MEI_POLKIT_AGENT`,
+  so the bundled config never enabled the Mei polkit agent. Now sets
+  `MEI_POLKIT_AGENT=1`.
+- `theming.go` / `sleepwake.go` shelled out to upstream `ryoku-hub` for
+  wallpaper-adjacent and wake-time lighting work. Both now prefer the sibling
+  `mei-hub` binary (dev .run/bin layout), then PATH and the usual install
+  prefixes; upstream is never exec'd.
+- `hookInstalled` (gpu passthrough) accepted only the `ryoku` marker while the
+  written hook names Mei; it now accepts `Managed by Mei` or the legacy
+  `Managed by Ryoku` so a hybrid box with an existing hook is still recognised.
+
+JSON persisted key kept on purpose:
+- `themeRyokuApps` stays the on-disk key in shell.json/matugen config
+  (rename = silently reset the owner's theming toggle); only the Go struct
+  field was renamed.
+- The import decisions and `____-import` Lua markers in user files are wire
+  formats written into user configs; persisted markers stay compatible.
+
+Removed comments (provenance/ceremony, not attribution):
+- "ported from the reference pill root", "Ported from pill/shell.qml …" in
+  shell.qml/ShellState.qml/fuzzy.js/actions.go/daemon.go; upstream `pill`
+  codename references where they added nothing.
+- Upstream `// ryoku:` section tags in Go were already left by the earlier
+  R3 pass; kept (consistent with 40d1f43).
+
+Docs (stale audits deleted):
+- Deleted: 01-audit.md, 02-deps.md, 02-deps/, 02b-gaps.md, 03-classification.md,
+  04-plan.md, 06-step1.md, loop-log.md, PROGRESS.md, STATUS.md, PARITY.md,
+  CRITERIA.md, keybinds-for-mei.lua, baseline.txt (regenerates via `./mei baseline`).
+- Kept: LIVE-CHECKLIST.md, LIVE-TEST.md, MODULES.md, ROLLBACK.md,
+  PUBLISH-NOTES.md (referenced by `./mei`), tests/, baseline/ (verify-untouched).
+- Fixed dangling references in LIVE-CHECKLIST.md, docs/tests/accept.sh,
+  docs/tests/accept-safety.sh, AGENTS.md.
+
+Kept deliberately (functional or legal):
+- `Ryoku.Blobs` / `Ryoku.Ui` / `Ryoku.FrameBars` (compiled module names),
+  `src/ryoku/` tree layout, `Ryoku` layer namespaces in the bundled Hyprland
+  config, `ryoku-*`/`ryogami*` command and script names (binds exec them),
+  `RyokuHotspot` (the owner's live NetworkManager profile name),
+  `RYOKU_*` env vars (test harnesses set them with t.Setenv), `ryoku.css`
+  Obsidian snippet name (live vaults; doctor re-links it), `ryoku-import`
+  idempotency markers written into user configs, CHANGELOG.md history.
+- `upstream/` is untouched (read-only clone); CREDITS.md, NOTICE, UPSTREAM.md,
+  LICENSE, CHANGES.md attribution stays.
+
 ## Wallpaper picker: SUPER+P opens the in-shell qsbar picker (2026-11-06)
 
 Upstream binds `Super+P` to `ryogami wallpaper ui`, a separate ryogami picker

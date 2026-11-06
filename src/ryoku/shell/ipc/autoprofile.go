@@ -88,7 +88,7 @@ func (d *daemon) watchAutoPowerSaver() {
 			}
 			if to != "" {
 				if err := d.pp.setProfile(to); err != nil {
-					log.Printf("ryoku-shell: auto power profile: set %q failed: %v", to, err)
+					log.Printf("mei-shell: auto power profile: set %q failed: %v", to, err)
 				}
 			}
 			prevAC, first = onAC, false

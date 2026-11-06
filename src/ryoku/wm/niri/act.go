@@ -378,7 +378,7 @@ func normBorderHex(s string) (string, bool) {
 // var so the tests stay silent, and a swallowed error so a session with no
 // notify-send is fine.
 var touchpadNotify = func(title, body string) {
-	_ = exec.Command("notify-send", "-a", "Ryoku", title, body).Run()
+	_ = exec.Command("notify-send", "-a", "Mei", title, body).Run()
 }
 
 // isInternalOutput tells the built-in panel from an external screen the same way

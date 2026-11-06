@@ -7,7 +7,7 @@ import Ryoku.Ui.Singletons
 
 // Credits, the kansha poster. Gratitude as a plate: an ancient tree, its roots
 // gripping the black, dissolves off the right; the left column carries the
-// bilingual title, a Fraunces deck, the projects Ryoku grows from as editorial
+// bilingual title, a Fraunces deck, the projects Mei grows from as editorial
 // type lines (never cards), the one bone placard in the whole app for the
 // crash-test crew, and a self-documenting colophon. Pure space-bone-grotesk --
 // bone on black, no colour, no marble; the tree is fal-generated and graded to
@@ -18,7 +18,7 @@ Item {
     property var hub
     readonly property bool fullBleed: true
 
-    // people + projects Ryoku is built on, reused verbatim from the old page.
+    // people + projects Mei is built on, reused verbatim from the old page.
     // an empty url is a quiet, unlinked credit: no home was given, none invented.
     readonly property var projects: [
         { "name": "qylock",       "by": "Darkkal44",      "role": I18n.tr("lockscreen"),          "url": "https://github.com/Darkkal44/qylock" },
@@ -112,7 +112,7 @@ Item {
         Text {
             anchors.centerIn: parent
             rotation: -90
-            text: "RYOKU  \u00b7  \u611f\u8b1d KANSHA  \u00b7  SHOT ON BLACK"
+            text: "MEI  \u00b7  \u611f\u8b1d KANSHA  \u00b7  SHOT ON BLACK"
             color: Tokens.inkFaint
             font.family: Tokens.mono
             font.pixelSize: Tokens.fTiny

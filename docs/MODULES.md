@@ -114,7 +114,7 @@ stop. Evidence lands in `.run/logs/phase8-*.log` and `.run/shots/phase8-*.png`.
 ## Swap a theme
 
 1. Set `theme.theme` in shell.json:
-   - `"Default"` — Ryoku's built-in dynamic default (orange accents, shipped look)
+   - `"Default"` — Mei's built-in dynamic default (orange accents, shipped look)
    - `"Wallpaper"` — derive every colour from the current wallpaper
    - a static name from `src/ryoku/shell/ipc/themes_gen.go`: `Catppuccin Mocha`,
      `Dracula`, `Everforest Dark Medium`, `Gruvbox Dark Medium`, `Kanagawa Wave`,

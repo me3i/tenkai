@@ -15,7 +15,7 @@ import "../stage/Singletons" as StageCfg
 //     reload)
 //   right-click a widget     = its menu (cycle design, toggle date, lock, snap
 //     to a compass zone, hide) + the same globals
-// Every action writes the same widgets Config the drag and Ryoku Settings do.
+// Every action writes the same widgets Config the drag and Mei Settings do.
 Item {
     id: menu
 
@@ -265,7 +265,7 @@ Item {
         }
 
         // Size + Opacity: discoverable equivalents of the corner-drag resize and
-        // Ryoku Settings' opacity, targeting whichever widget the menu is open
+        // Mei Settings' opacity, targeting whichever widget the menu is open
         // for. Both scrub live and persist on release.
         MenuSection { visible: menu.isWidget; label: I18n.tr("Adjust"); gloss: "調整" }
         MenuSlider {

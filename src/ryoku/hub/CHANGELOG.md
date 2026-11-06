@@ -55,7 +55,7 @@
   `pages/PerformancePage.qml`).
 
 ### Changed
-- **Ryoku Settings is a full-page window.** It opens at 99% of the screen (the
+- **Mei Settings is a full-page window.** It opens at 99% of the screen (the
   Hyprland rule floats it at the same 99% and centres it; niri sizes the column),
   so the settings get the room the layout is designed for instead of a 1200px
   strip (`quickshell/shell.qml`, `hyprland/modules/window_rules.lua`).
@@ -92,7 +92,7 @@
   copy came from (package, built here with commit and date, hyprpm), whether it
   is running, and the verdict when it is not. A plugin is ABI-locked to the
   exact Hyprland build, and an Arch bump of aquamarine or hyprutils between two
-  Ryoku releases left a copy the compositor refused with "version mismatch" on
+  Mei releases left a copy the compositor refused with "version mismatch" on
   every reload while the toggle looked on. Every copy now carries an `.abi`
   receipt, the card says "built for aquamarine 0.14, running 0.15", and
   **Rebuild** builds it here from upstream (its hyprpm.toml pin for the
@@ -107,7 +107,7 @@
   ones; Save loads them. Its settings are detected: the `plugin:<ns>:<key>`
   names read out of the `.so`, typed and defaulted by the compositor once it
   loads, rendered as native controls (switch, stepper, slider, field) and
-  stored under `plugins.extra.<id>.config`, so a plugin nobody in Ryoku has
+  stored under `plugins.extra.<id>.config`, so a plugin nobody in Mei has
   seen still gets a control for every option. **Remove** drops it again.
   hyprpm-installed plugins show on the same page (`backend/hyprplugins_build.go`).
 - **`ryoku-hub hypr plugins list|rebuild|add|remove`.** The backend behind the
@@ -223,7 +223,7 @@
   that read the system setting follow the palette too. Both keys are additive and
   default on absence (`gtkTheme` to `adw`, `gnomeAccent` to on); the hub only
   persists them and asks the daemon to re-apply, so the daemon stays the single
-  writer of gtk-theme and accent-color. A new `ryoku doctor` reconciler converges
+  writer of gtk-theme and accent-color. A new `mei doctor` reconciler converges
   GTK session drift, resetting gsettings gtk-theme to the resolved name for the
   current mode and restoring the settings.ini baselines when they go missing
   (`quickshell/pages/AppearancePage.qml`, `backend/schemes.go`, `backend/hypr.go`,
@@ -289,7 +289,7 @@
 - **The music widget's visualiser has a look picker.** Bars (the default) or a
   smoothed wave, in the Widgets page beside the widget's other options.
 - **Displays gains a per-monitor Interface scale.** A stepper on each monitor's
-  tuning card (below the compositor scale) sizes the Ryoku shell chrome on that
+  tuning card (below the compositor scale) sizes the Mei shell chrome on that
   display from 50% to 200%, separate from the monitor scale apps render at. It
   writes shell.json `displays.ui_scale.<output>`; the Settings window itself
   honours it too.
@@ -322,11 +322,11 @@
   for this class (`bin/ryoku-dev-lint-qml`).
 - **A rice's fastfetch emblem survives updates.** `rice apply` copied the
   emblem over the shipped `fastfetch/fastfetch-emblem.png`, which
-  `ryoku materialize` re-lays on every update, so the readout reset to the
+  `mei materialize` re-lays on every update, so the readout reset to the
   brand mark each time. It now lands on the user-owned `ryoku-logo.<ext>` path
   the Fastfetch page's import uses and repoints `config.jsonc` at it; a new
   `rice emblem` subcommand re-applies the active rice's emblem once a box is on
-  the shipped one, and `ryoku doctor` runs it (`backend/rice.go`,
+  the shipped one, and `mei doctor` runs it (`backend/rice.go`,
   `backend/fastfetch.go`).
 - **The Hub's scheme cards and a rice's colour mode no longer fight the shell's
   theme.** `shell.json` `theme.theme` is the colour master and the daemon shadows
@@ -386,18 +386,18 @@
   and pruned on the next save.
 
 ### Added
-- **Appearance gains a Browsers card.** It explains the Ryoku Theme browser
+- **Appearance gains a Browsers card.** It explains the Mei Theme browser
   extension: Firefox retints live once enabled, Chromium and Brave load it
   unpacked, and web-page recolor toggles in the extension popup.
 - **Animations gains a preset gallery: 13 window animation personalities.** On
-  top of Ryoku's default, the Animations page now offers Dusky, Bounce, Fade,
+  top of Mei's default, the Animations page now offers Dusky, Bounce, Fade,
   Fast, Mechanical, Minimal, Air, Slow-mo, Exaggerated, Hallucination, Rage and
   Off (ported from dusklinux/dusky). Picking one writes `~/.config/ryoku/anim-preset`,
   which the Hyprland loader reads, and reloads live; the curve editor below still
   fine-tunes the active preset.
 - **Animations gains a Shell Motion card: global speed and reduce-motion.** The
   Animations page now carries the shell's own motion controls above the Hyprland
-  window editor: a Speed slider (0.25x to 3x) that scales every Ryoku panel,
+  window editor: a Speed slider (0.25x to 3x) that scales every Mei panel,
   menu and transition live, and a Reduce motion switch that snaps them into place
   for comfort. Both write `shell.json` `theme.motion`, which the ui tokens read
   live, so the whole desktop retimes without a restart.
@@ -480,7 +480,7 @@
   Per-device controls show effect chips in two groups (Ryoku-painted effects and
   the device's own), colour from the wallpaper accent or fixed, per-zone colours,
   brightness, speed, direction, Save to device (where offered), and Hand back
-  (which restores the effect the device was on before Ryoku touched it). Settings
+  (which restores the effect the device was on before Mei touched it). Settings
   live in `~/.config/ryoku/lighting.json` so an update or a shell restart never
   changes a device (`pages/LightingTab.qml`, `pages/AppearancePage.qml`,
   `schema/AppearancePage.js`).
@@ -489,14 +489,14 @@
   devices through the OpenRGB SDK (TCP 127.0.0.1:6742, protocol 5). It starts
   OpenRGB headless as a transient user unit only when asked, bound to loopback,
   and stops it when lighting is switched off; an OpenRGB instance you already run
-  is used as-is and never stopped. Ryoku paints seven effects itself through a
+  is used as-is and never stopped. Mei paints seven effects itself through a
   device's per-LED (Direct) mode: Solid, Breathe, Pulse, Spectrum, Rainbow Wave,
   Comet, and Scanner. They exist because many keyboards advertise effects their
   firmware ignores: an ASUS N-KEY laptop board runs Static, Breathing, Flashing
   and Spectrum Cycle and does nothing for Rainbow Wave, Comet or the reactive
   effects, which was confirmed by capturing OpenRGB's own client bytes (identical
   UPDATE_MODE payloads, so it is the firmware, not the protocol). The mode a
-  device was on when Ryoku first saw it is recorded and restored on hand-back or
+  device was on when Mei first saw it is recorded and restored on hand-back or
   when lighting is switched off, and the device's own memory is written only by an
   explicit Save to device, never as a side effect (`backend/openrgb.go`,
   `backend/lighting.go`, `backend/lightingfx.go`).
@@ -517,8 +517,8 @@
   page, "Import config", brings a config from another Hyprland box or distro onto
   Ryoku: point at a folder, an existing `~/.config`, or a git URL, and it scans
   Hyprland, kitty, fish and fastfetch (plus a generic drop for anything else),
-  shows every keybind clash against Ryoku's shipped binds, and resolves each in
-  place (keep Ryoku's, use yours with an auto unbind so yours wins, or remap).
+  shows every keybind clash against Mei's shipped binds, and resolves each in
+  place (keep Mei's, use yours with an auto unbind so yours wins, or remap).
   Every touched file is backed up first, so the whole import undoes in one step.
   Hyprland keybinds and window rules become GUI-managed settings; the rest
   (settings via `hl.config`, monitors, env, exec, and non-ingestable binds)
@@ -672,7 +672,7 @@
   current value and saved it over the choice. The mode now comes from the last
   applied layout (`system/hardware/display/ryoku-monitor`).
 - **SDR brightness reaches past 2x.** The stepper stopped at 2.0, which is a
-  Ryoku limit and not a Hyprland one (it accepts well beyond that), so SDR
+  Mei limit and not a Hyprland one (it accepts well beyond that), so SDR
   content stayed dim in HDR on a bright panel with the control already at its
   end. The ladder now runs to 6.0, fine to 2.0 and coarser above
   (`quickshell/pages/DisplaysPage.qml`).
@@ -747,7 +747,7 @@
   and are not already on it; the controls use a plain click handler so a tap
   always lands inside the page scroll, which the old compact reorder buttons lost.
   The widget-radius knob and the two-look style switch are gone (they had no live
-  consumer, and `ryoku doctor` strips the dead keys); the band thickness and
+  consumer, and `mei doctor` strips the dead keys); the band thickness and
   corner radius are wired to new keys the shell actually reads (`frameThickness`,
   `frameCorner`), replacing the inert `frameBorder`/`frameRadius`. The per-rail
   auto-hide choice is dropped too: a hover-hidden bar could not be brought back
@@ -757,11 +757,11 @@
   always survives (`pages/BarStudioPage.qml`, `barstudio/ZoneEditor.qml`,
   `barstudio/BarStudioModel.js`, `barstudio/CatalogLabels.qml`,
   `barstudio/qmldir`, `Hub.qml`).
-- **Ryoku Settings now describes the Atoll-only shell instead of the retired
+- **Mei Settings now describes the Atoll-only shell instead of the retired
   style catalogue. The Bar page keeps the two-look Atoll control, live bar
   geometry and preserved sidebar-content controls, and drops style, island and
   sidebar-opener settings that no longer have a runtime consumer. The Desktop
-  Widgets page now edits the wallpaper clock only. The Ryoku theme preset and
+  Widgets page now edits the wallpaper clock only. The Mei theme preset and
   rice look allowlist use Atoll, so an old style cannot be reapplied through a
   preset or imported rice (`schema/BarPage.js`, `schema/WidgetsPage.js`,
   `pages/BarPage.qml`, `pages/WidgetsPage.qml`, `backend/rice.go`,
@@ -814,7 +814,7 @@
   still reads as a colour (`pages/AppearancePage.qml`,
   `hyprland/scripts/ryoku-cmd-folders`).
 - **Theme tab: palette changes go through Save instead of silent auto-apply.**
-  The engine (Wallust / Matugen), scheme, Material 3 tuning, Ryoku interface and
+  The engine (Wallust / Matugen), scheme, Material 3 tuning, Mei interface and
   per-app toggles applied the instant you touched them and never lit the action
   bar, so the Save button stayed greyed and the edits felt lost -- unlike every
   other page in the Hub. They now stage into a draft that raises the shared Save
@@ -835,9 +835,9 @@
   app once. The wallpaper->folder-colour post_hook the PR's older `config.toml`
   had dropped is restored (`backend/matugen.go`, `pages/AppearancePage.qml`).
 - **Matugen: the visualiser, folder icons and window border follow the wallpaper
-  even with Ryoku Interface set to Original.** Those three read
+  even with Mei Interface set to Original.** Those three read
   `~/.cache/wallust/colors.json` directly (no `followWallpaper` gate), so writing
-  the monochrome palette to that file when Ryoku Interface was Original dragged
+  the monochrome palette to that file when Mei Interface was Original dragged
   them mono too, though the toggle only promises to keep the Hub, pill and widgets
   mono. Matugen now always writes the wallpaper's Material 3 palette to
   `colors.json` and keeps the shell mono through `followWallpaper` alone, so on the
@@ -845,7 +845,7 @@
   chrome still honours the toggle (`backend/matugen.go`).
 - **The theme scheme control shows the mode you are actually on.** The palette
   offers Follow, Light, Dark and now Mono; the fourth was missing, so a desktop
-  on the Mono palette (the Ryoku default) lit no segment and the control read as
+  on the Mono palette (the Mei default) lit no segment and the control read as
   if nothing was selected. Mono is now a first-class option, and its blurb no
   longer claims it tracks the wallpaper (`pages/AppearancePage.qml`).
 - **Every page's section eyebrow matches the rail again.** Pages hard-code the
@@ -878,13 +878,13 @@
   right-aligned kanji (Portuguese "Widgets da área de trabalho", "Substituições de
   aplicativos"); short labels are unchanged.
 - **Language > Generate with AI now explains the key file.**
-  `schema/ShellSettingsPage.js` states that Ryoku auto-creates
+  `schema/ShellSettingsPage.js` states that Mei auto-creates
   `~/.config/ryoku/i18n-llm.json` on login and the user pastes an Anthropic/OpenAI
   key into it (button and file were wired but undocumented).
 
 ### Added
 - **Shell settings are flagged in red in the rail.** Every rail section that
-  configures the Ryoku shell rather than the Hyprland compositor now carries a
+  configures the Mei shell rather than the Hyprland compositor now carries a
   small red tick at its inner edge, so the shell pages (Bar, Frame, Desktop,
   Widgets, App Launcher, Lockscreen, Appearance, Connections, Recording, and the
   rest) read apart from the compositor pages (Displays, Input, Cursor, Windows,
@@ -926,7 +926,7 @@
   or Ryoku-native grainy paper chips -- and the Credits page lists Jules3182's
   dotfiles beside the other bar sources (`schema/ShellSettingsPage.js`, `Hub.qml`,
   `pages/CreditsPage.qml`).
-- **Multi-language UI with self-maintaining translations.** Ryoku surfaces read
+- **Multi-language UI with self-maintaining translations.** Mei surfaces read
   through one `I18n` singleton (`Ryoku.Ui`): `I18n.tr("English")` returns the
   current language or the English key as a fallback, so a partly-translated UI is
   never broken. Language comes from `~/.config/ryoku/i18n.json` (default `auto`,
@@ -941,10 +941,10 @@
 - **The Lockscreen page gains an "At sign-in" keyring section.** A compact
   hairline card above the skin gallery, in the page's own bespoke language: a
   three-mode chip row (Unlock at sign-in / Never ask / Ask each time) over a live
-  status line read from `ryoku keyring status --json` (keyring format, the
+  status line read from `mei keyring status --json` (keyring format, the
   daemon, and the caveats -- an encrypted keyring that only unlocks if its
   password is your login password, the autologin conflict). Picking a mode runs
-  `ryoku keyring set <mode>` (pkexec pops polkit for the root PAM half, the same
+  `mei keyring set <mode>` (pkexec pops polkit for the root PAM half, the same
   UX as applying a skin). When a mode is blocked by an encrypted keyring, an
   inline password field converts it (`--convert --password-stdin`, the secret
   fed through stdin, never argv) or "Start fresh" resets it after a confirm. New
@@ -1016,7 +1016,7 @@
   shows the settings you actually reach for; search still finds a hidden knob, and
   flipping the switch reveals them all in place (`SchemaPage.qml`,
   `SettingsSheet.qml`, `Hub.qml`, and the page schemas).
-- **Ryoku Settings reorganized around how you look for a setting, not how it is
+- **Mei Settings reorganized around how you look for a setting, not how it is
   implemented.** The rail is regrouped into task-oriented sections -- OVERVIEW,
   DEVICES (displays, connections, input, GPU), DESKTOP (appearance, shell,
   animations, lockscreen, launcher, widgets), APPS & KEYS (keybinds + window /
@@ -1063,7 +1063,7 @@
   while the drafted `barStyle` is not in it, live as you switch styles in the
   gallery (`schema/ShellSettingsPage.js`, `SettingsSheet.qml`, `SchemaPage.qml`,
   `pages/ShellPage.qml`).
-- **Ryoku Settings writes its generated Hyprland Lua into the `user_edits`
+- **Mei Settings writes its generated Hyprland Lua into the `user_edits`
   overlay.** `settings.lua` and `rebinds.lua` are authored under
   `~/.config/ryoku/user_edits/hypr` (the source that survives updates) and
   reflected into the live `~/.config/hypr`, so a Save still hot-reloads at once
@@ -1162,7 +1162,7 @@
   (`backend/rice.go`, `pages/AppearancePage.qml`).
 
 ### Fixed
-- **The colour picker is Ryoku's own paper-and-ink surface, not a grey web
+- **The colour picker is Mei's own paper-and-ink surface, not a grey web
   dialog.** Clicking a colour swatch opened the platform `ColorDialog`, which
   ignored the theme. It now opens an in-app picker on the bar's own black surface:
   a saturation/value field, a hue rail, a live swatch and a mono hex field, all
@@ -1212,7 +1212,7 @@
   the live list afterwards so the action bar reports what the compositor
   actually accepted instead of assuming the request stuck
   (`pages/DisplaysPage.qml`).
-- **Ryoku Settings fits a 720p screen.** The window rule floats it at 1360x880
+- **Mei Settings fits a 720p screen.** The window rule floats it at 1360x880
   and the window pinned a 1280x820 minimum, so on anything smaller (a 720p
   panel, or a scaled low-res one) the bottom action bar -- Apply itself -- and
   the right-hand controls sat off screen. The window now clamps its maximum
@@ -1232,7 +1232,7 @@
   meant flipping the emblem to Image, finding a small Choose Image button, and
   walking a file dialog, with the art sized in cryptic character columns. The
   emblem is a visual picker now: a wall of ready art you click to set (the
-  Ryoku brand marks and the shipped ryodecors, drawn as real thumbnails) plus
+  Mei brand marks and the shipped ryodecors, drawn as real thumbnails) plus
   a Your image tile that browses or takes a dropped file. The chosen emblem
   lights up in the wall and the readout preview updates live; ready art sets
   its source directly while your own file is imported and copied as before
@@ -1380,7 +1380,7 @@
   cradle gifs) and the specimen posters (katana, camera) moved out of the
   `Ryoku.Ui` module into `ryoku/assets/ryodecors`, laid beside `Wallpapers` and
   `livewalls` where a user can see and swap them. The installer seeds them,
-  `ryoku-desktop` ships them to `/usr/share/ryoku/ryodecors`, and `ryoku doctor`
+  `ryoku-desktop` ships them to `/usr/share/ryoku/ryodecors`, and `mei doctor`
   tops up whatever a release adds -- so existing installs receive them on update,
   not just fresh ones. `Decor`/`Placard` resolve through a new `Ryoku.Ui`
   `Ryodecors` singleton; the editor gallery and custom picks are unchanged. Bake
@@ -1462,8 +1462,8 @@
   - *The reference sheet's full line language, second pass.* A `Reg`
     registration backdrop (faint dot grid, sparse + marks, print-register
     corner crosses) sits under every page; the rail masthead became a framed,
-    corner-ticked poster plate (`力 RYOKU ARCH //SETTINGS_`, a `///` mark);
-    the rail foot carries a genuine, scannable Code 39 plate (`RYOKU HUB`);
+    corner-ticked poster plate (`力 MEI ARCH //SETTINGS_`, a `///` mark);
+    the rail foot carries a genuine, scannable Code 39 plate (`MEI HUB`);
     nav groups wear `01..05` mono indexes with end-ticked rules; the page
     eyebrow runs the full width and closes with `+ ///`; section marks read
     `//TITLE_`; the preview label leads with `//` and the action bar with
@@ -1593,7 +1593,7 @@
   to `~/.config/ryoku/brand.json` and previewed live on your desktop like the
   other shell knobs, with a Save/Revert that follows the same draft model. A
   monochrome mark tints to your accent; a full-colour logo can show as-is. The
-  section states the dimensions and format up front and leaves Ryoku's own apps
+  section states the dimensions and format up front and leaves Mei's own apps
   on their own brand (`ShellSettingsPage.qml`).
 - **Rices: the reworked, full-desktop theming system.** The Appearance
   **Themes** tab is now **Rices**: browse whole-desktop looks as big-preview
@@ -1663,12 +1663,12 @@
   `PageHeader.qml`, `AppOverridesPage.qml`, `WindowRulesPage.qml`,
   `LayerRulesPage.qml`, `AutostartPage.qml`, `EnvironmentPage.qml`).
 - **Config buttons name the file and stop mislabeling your settings as
-  defaults.** The two header buttons now match Ryoku's real config layering.
+  defaults.** The two header buttons now match Mei's real config layering.
   **Edit user.lua** opens `hypr/user.lua`, the hand-written layer loaded last
   that wins over everything, now seeded with a header explaining that your GUI
   changes live elsewhere (`hypr.json`, generated into `settings.lua`) and
   survive updates, so it opens self-explanatory instead of blank. **View
-  defaults** opens only Ryoku's shipped base modules, read-only; your generated
+  defaults** opens only Mei's shipped base modules, read-only; your generated
   `settings.lua` is no longer shown there as if it were a default. Displays
   edits `monitors_user.lua`, the Hub-owned JSON sections keep **Edit config**,
   GPU stays view-only, and every button's tooltip says what it opens and
@@ -1676,7 +1676,7 @@
   `hyprland/user.lua`).
 - **Keybinds steer you to the Hub editor and flag conflicts.** The Custom editor
   checks every combo against the shipped legend and your other custom binds,
-  amber-flagging one that shadows a Ryoku shortcut or duplicates another, and
+  amber-flagging one that shadows a Mei shortcut or duplicates another, and
   both the editor and the legend note that binds added by hand in
   `~/.config/hypr/user.lua` never appear here and are never conflict-checked, so
   the Hub is the place to add them (`KeybindsEditor.qml`, `KeybindLegend.qml`,
@@ -1696,7 +1696,7 @@
 - **The Updates page shows a real, staged update.** Instead of a single progress
   "wave", the running view renders the update's ordered stages as a determinate
   multi-segment bar with the current step's label and a live log tail, streamed
-  from the run-state file `ryoku update` publishes. A failed update gets its own
+  from the run-state file `mei update` publishes. A failed update gets its own
   view naming the step that broke, with a one-click roll back to the pre-update
   snapshot; a completed one flashes a check before folding away. The consent
   prompt's answer is now passed as a positional argument (no shell interpolation
@@ -1793,7 +1793,7 @@
   shipped `hyprland/themes/` folder, the `ryoku-hub hypr theme|themes|colorsource`
   backend, and the `theme.lua` layer that `hyprland.lua` loaded. Colours still
   follow the wallpaper or a fixed Light or Dark palette (Appearance -> Wallpaper).
-  A leftover `~/.config/hypr/theme.lua` is pruned by `ryoku doctor`
+  A leftover `~/.config/hypr/theme.lua` is pruned by `mei doctor`
   (`AppearancePage.qml`, `ThemesPage.qml`, `ThemeTile.qml`, `backend/theme.go`,
   `backend/schemes.go`, `backend/hypr.go`).
 
@@ -1865,7 +1865,7 @@
   edits into unedited fields, so dragging a widget on the desktop while the
   page is open no longer gets clobbered by the next Save (same treatment for
   `visualizer.json` on the Shell page, which the deck's quick toggle writes).
-- "Ryoku Default" on the Themes page is the shipped baseline again: its look
+- "Mei Default" on the Themes page is the shipped baseline again: its look
   had drifted to an older rice (rounding 16, gaps 8/26, border 3), so applying
   it pinned non-default values; its look is now empty and folds to the exact
   `decoration.lua` defaults, and `HyprStore`'s initial draft matches them too.
@@ -1882,7 +1882,7 @@
   seat-writable via systemd uaccess), powering the adapter when the unblock
   lands, instead of asking BlueZ for a Powered=true it refuses.
 - GPU page no longer offers to "fix" a disabled IOMMU it cannot fix. On an
-  Intel host with IOMMU off, the capability engine used to show a warn ("Ryoku
+  Intel host with IOMMU off, the capability engine used to show a warn ("Mei
   can add intel_iommu=on") and a `needs-setup` verdict with an Enable button,
   but the enable path never touched the kernel cmdline, and the one function
   that would (`addCmdlineTokens`) edited the `cmdline:` line that
@@ -1897,7 +1897,7 @@
 ### Added
 - **Security Key/Passkey Support**,
 - Added security key/passkey support for authentication with `pam-u2f`.
-- Added `ryoku security-key` commands for status, enrollment, removal, policy, and PAM wiring.
+- Added `mei security-key` commands for status, enrollment, removal, policy, and PAM wiring.
 - Added support for FIDO2 PIN + touch authentication, including YubiKey FIPS devices that require user verification.
 - Added passkey controls to Lockscreen Settings for sudo, admin prompts, and the SDDM sign-in screen.
 - Added passkey enrollment and removal UI in Lockscreen Settings.
@@ -1939,7 +1939,7 @@
   screen, Profile's twin in build and mood. kansha (感謝) meets the Three Graces
   of Greek myth: the marble trio dissolves off the right the way Lady Justice
   anchors the Profile (dissolve baked into the asset's alpha, so it melts into
-  the canvas with no seam). The projects Ryoku stands on read as editorial type
+  the canvas with no seam). The projects Mei stands on read as editorial type
   lines (name, then role · author in mono, hairline rules, no boxes), each
   opening its home with a click where one is known; a separate band credits the
   alpha and beta testers who keep finding the bugs. `CreditsPage.qml`, a `heart`
@@ -1965,7 +1965,7 @@
   mono headers), plus its enable toggle, host, and a remove action. Changes persist
   to `plugins.json` through `ryoku-plugins-place`, so the desktop retunes live; a
   plugin ships no settings QML, only the schema.
-- Updates: `ryoku update` can pause on a question (enabling the snapshot helpers)
+- Updates: `mei update` can pause on a question (enabling the snapshot helpers)
   and the Updates page renders it inline, in the `UpdateStatus` idiom: an ember
   rule, a headline and detail, and dossier-stamp Install / Skip actions (no
   centred pill modal). The tap writes the choice to the run-state back-channel the
@@ -2004,7 +2004,7 @@
   hairline type-lines, tabular figures) over an ambient, vignetted backdrop.
 - A **Lockscreen** section: the full qylock theme catalogue as a bento grid in the
   Appearance/Extras style, fetched live from the upstream repo (`ryoku-hub lock
-  catalog`) so new and fixed skins appear without a Ryoku release. Each tile loops
+  catalog`) so new and fixed skins appear without a Mei release. Each tile loops
   a preview of the real lockscreen (a local gif for the two vendored clockwork
   skins, the upstream `Assets` gif streamed for the rest, loaded only near the
   viewport). Selecting a skin makes it both the in-session lock (`ryoku-hub lock
@@ -2025,14 +2025,14 @@
   finish, the actual system change, not just colours). Applying one
   (`ryoku-hub hypr theme <slug>`) folds the look onto the appearance store (so
   Look/Borders reflect it), installs its `init.lua` (loaded before settings.lua,
-  so a knob still wins), and reloads. Ships **Ryoku Default** (the shipped look),
+  so a knob still wins), and reloads. Ships **Mei Default** (the shipped look),
   Tokyo Night, Aqua (glass), Catppuccin, Gruvbox, Nord, and Rosé Pine. Colours are
   a **separate toggle**, independent of the theme: they either track the wallpaper
   (wallust) or use the theme's own palette (locked so a wallpaper change keeps it)
   via `ryoku-hub hypr colorsource follow|fixed`. The frame and island stay Ryoku.
-- The settings brand mark uses the real Ryoku icon asset instead of a procedural
+- The settings brand mark uses the real Mei icon asset instead of a procedural
   gradient square.
-- **Ryoku Settings**: the hub is now a full settings app for everything the
+- **Mei Settings**: the hub is now a full settings app for everything the
   Hyprland (Lua) config drives, plus the shell. New sections, each a live editor:
   **Displays** (detect and arrange monitors on a drag canvas with snapping;
   per-monitor resolution, refresh, scale, rotation, adaptive sync, mirror, and
@@ -2082,18 +2082,18 @@
   reflection, and the idle wave, writing `~/.config/ryoku/visualizer.json` the same
   live way. New `NumberField`, `SliderRow`, `Slider`, `ColorField`, `ToggleRow`,
   `ChoiceRow`, `SettingSection`, `VizPreview`, and `ShellSettingsPage` components.
-- An Updates section wired to the `ryoku` CLI (`ryoku status --json`): a
+- An Updates section wired to the `mei` CLI (`mei status --json`): a
   typographic status header (installed version, the pending-update count, and a
   live "checked Xm ago") over the real list of pending package updates (each
   `name old -> new`), with an automatic-check schedule in the top right (Off /
   Hourly / Daily / Weekly, persisted to the hub's TOML via an `update_interval`
   key) that re-runs the check on its cadence. "Update now" runs the real
-  `ryoku update` in a terminal; the page mirrors its progress from the run-state
-  file the CLI publishes (a spinner and a Ryoku wave while it applies), and the
+  `mei update` in a terminal; the page mirrors its progress from the run-state
+  file the CLI publishes (a spinner and a Mei wave while it applies), and the
   shell's update island reads the same file. A live count badge rides the nav
   rail. When the system is current there are no rows ("Everything is up to
   date") and the island stays hidden.
-- Ryoku Hub: the desktop's central control center, a native Qt6/QML app
+- Mei Hub: the desktop's central control center, a native Qt6/QML app
   (Quickshell, not a webview) with Kirigami-style sidebar navigation. Opened with
   `Super + ,`; it floats and centres on top of the current windows via a Hyprland
   window rule.
@@ -2131,12 +2131,12 @@
   plugin placement and host now wear the same dark raised pill (`keyTop` +
   hairline, bright label) as the `Segmented` tab bar and the nav rail, instead of
   a solid ember block. The brand orange stays an accent, never a fill.
-- **GPU section is graphics-only.** It chooses which GPU Ryoku renders on (Hybrid
+- **GPU section is graphics-only.** It chooses which GPU Mei renders on (Hybrid
   / Performance / Passthrough) and sets up the optional GPU-passthrough stack
   (binds the discrete GPU to vfio so a VM can own it), with the readiness dossier
   behind a disclosure instead of filling the page. The specimen card is a sibling
   of the Profile card (carbon, holographic wash, cursor foil, parallax tilt, the
-  Ryoku wave): a VRAM badge, the render GPU as the hero, and both GPUs in a dossier
+  Mei wave): a VRAM badge, the render GPU as the hero, and both GPUs in a dossier
   box with a DISPLAY/FREE marker. Running virtual machines moved to the **ryovm**
   app: the Machine tab, the windowed-VM launcher, and the `ryoku-hub vm`
   subcommand (with `qemu.go`/`vmrun.go`/`vmxml.go`/`vmsnapshot.go`) are removed;
@@ -2152,7 +2152,7 @@
   prompt - outlined ember "stamp" buttons (a thin ember border + mono uppercase
   label, no fill) for the live action and hairline ghost stamps for the rest,
   replacing the generic bright full-pill.
-- The sidebar brand is a centred masthead: the wide-tracked **RYOKU ARCH**
+- The sidebar brand is a centred masthead: the wide-tracked **MEI ARCH**
   wordmark and a "system and shell settings" subtitle sit over a dimmed 力
   backdrop (a soft warm glow and a faint grid, echoing the Profile portrait
   window). The old flat logo image is gone (`brand-icon.png` deleted) and the
@@ -2176,7 +2176,7 @@
   reveals or tucks the rest. Group headers adopt the Profile dossier idiom (a
   brand accent dot, a larger mono label, hairline rules between bands and groups),
   and nav rows gain a hover highlight that previews the selection.
-- Renamed the product to **Ryoku Settings** (window title, sidebar, the `Super +
+- Renamed the product to **Mei Settings** (window title, sidebar, the `Super +
   ,` legend, and the float/centre window rule), keeping the internal `ryoku-hub`
   binary, `quickshell/hub` config, and `qs -c hub` invocation. The sidebar is now
   grouped (Displays & look, Input & shortcuts, Session, Desktop) and the hub opens
@@ -2188,7 +2188,7 @@
 - The **Updates** section tracks the git update channel (`main`) instead of pacman
   packages: the status header, the count badge, and the list show the commits the
   checkout is behind `origin/main` (subject + short hash), driven by the `channel`
-  field `ryoku status --json` now publishes. "Up to date" shows when current.
+  field `mei status --json` now publishes. "Up to date" shows when current.
 
 ### Fixed
 - **Passkey PAM keeps PIN verification.** Applying sudo, admin-prompt, or SDDM
@@ -2211,7 +2211,7 @@
   silently fell back to its embedded theme on every boot (it bit only users who
   had switched skins). `installGreeter` now normalizes the installed greeter to
   root-owned and world-readable, so the picked skin survives a reboot. Covered by
-  `lock_test.go`; `ryoku doctor` heals boxes already broken this way.
+  `lock_test.go`; `mei doctor` heals boxes already broken this way.
 - **Input: "Follow mouse" now takes effect.** The Hub's input default was out of
   sync with the shipped Hyprland config (`input.lua` ships `follow_mouse = 2`, the
   backend and the QML store both assumed `1`), so the diff-based generator wrote no
@@ -2233,7 +2233,7 @@
   once. `ryoku-hub extras` fetches bypass the GitHub raw CDN cache (a unique
   query param plus a `no-cache` header), which had served a stale `registry.json`
   for minutes, so a newly published addon stayed invisible until the CDN expired.
-- Ryoku Hub: `Super + ,` no longer goes dead after the hub is dismissed with the
+- Mei Hub: `Super + ,` no longer goes dead after the hub is dismissed with the
   compositor's close (`Super + Q`). The keybind guards against a second instance
   with `flock` held for the life of the `qs -c hub` process; an external close
   only hid the window while the process kept running, pinning the lock so further

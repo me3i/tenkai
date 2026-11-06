@@ -27,8 +27,8 @@ func loadScheme(mode string) (map[string]string, error) {
 // Quickshell singleton reads) and hands that same palette to matugen, which
 // renders every external app config from it.
 func writePalette(pal map[string]string) {
-	_ = os.MkdirAll(ryokuCacheDir(), 0o755)
-	_ = atomicWrite(filepath.Join(ryokuCacheDir(), "colors.json"), mustJSON(pal), 0o644)
+	_ = os.MkdirAll(meiCacheDir(), 0o755)
+	_ = atomicWrite(filepath.Join(meiCacheDir(), "colors.json"), mustJSON(pal), 0o644)
 	renderApps(pal)
 }
 
@@ -70,8 +70,8 @@ func gtkThemeChoice(s themeState) string {
 func gnomeAccentOn(s themeState) bool { return s.GnomeAccent == nil || *s.GnomeAccent }
 
 // gtkOff is written to the generated GTK stylesheets when app theming is off, so
-// GTK / libadwaita apps drop the Ryoku palette and use their own stock colours.
-const gtkOff = "/* Ryoku: app theming is off; apps use their own colours. */\n"
+// GTK / libadwaita apps drop the Mei palette and use their own stock colours.
+const gtkOff = "/* Mei: app theming is off; apps use their own colours. */\n"
 
 func blankGtk() {
 	for _, rel := range []string{"gtk-3.0/gtk.css", "gtk-4.0/gtk.css"} {
@@ -112,7 +112,7 @@ func selectShellTheme(name string) {
 // wallpaper (the reset); light/dark lock a curated preset that survives wallpaper
 // changes (themePaletteLocked keeps it). Reused by the Appearance control.
 func applyScheme(mode string) error {
-	// Mono and the Ryoku-default brand palette are retired as fixed looks: the
+	// Mono and the Mei-default brand palette are retired as fixed looks: the
 	// desktop follows the wallpaper by default now, so a mono request lands on
 	// the follow path instead of pinning a palette that never tracks the wall.
 	if mode == "mono" {
@@ -185,7 +185,7 @@ func applyThemeApps(on bool) error {
 	st := loadThemeState()
 	st.ThemeApps = &on
 	saveThemeState(st)
-	if pal := readPalette(filepath.Join(ryokuCacheDir(), "colors.json")); pal != nil {
+	if pal := readPalette(filepath.Join(meiCacheDir(), "colors.json")); pal != nil {
 		renderApps(pal)
 	} else if !on {
 		blankGtk()
@@ -245,7 +245,7 @@ type themeState struct {
 	ThemeApps       *bool  `json:"themeApps,omitempty"`
 	// GtkTheme is the GTK base-theme choice: "adw" (default; the
 	// libadwaita-consistent GTK3 theme that follows the palette), "adwaita" (the
-	// stock GNOME look) or "system" (Ryoku never writes gtk-theme). Absent reads
+	// stock GNOME look) or "system" (Mei never writes gtk-theme). Absent reads
 	// as "adw".
 	GtkTheme string `json:"gtkTheme,omitempty"`
 	// GnomeAccent, when on (the default), syncs org.gnome.desktop.interface
@@ -277,7 +277,7 @@ func saveThemeState(s themeState) {
 	_ = atomicWrite(themeStatePath(), mustJSON(s), 0o644)
 }
 
-func ryokuCacheDir() string {
+func meiCacheDir() string {
 	base := os.Getenv("XDG_CACHE_HOME")
 	if base == "" {
 		base = filepath.Join(os.Getenv("HOME"), ".cache")
@@ -300,10 +300,10 @@ func mustJSON(v any) []byte {
 	return b
 }
 
-// applyRyokuTheme resets the desktop to the Ryoku signature in one move: the
+// applyMeiTheme resets the desktop to the Mei signature in one move: the
 // frame-bars style, square corners everywhere, Space Grotesk type across the
 // shell and apps, and the grainy-mono palette. Wired to the Appearance and Rices pages.
-func applyRyokuTheme() error {
+func applyMeiTheme() error {
 	// Merge so sizing, weather and preserved sidebar content choices survive.
 	frameBars, ok := readJSONMap(shellStorePath())["frameBars"].(map[string]any)
 	if !ok {
@@ -328,8 +328,8 @@ func applyRyokuTheme() error {
 	// clear any active-rice marker: the signature is a fresh look, not a rice,
 	// so the Rices page must not keep showing the last rice as applied.
 	setActiveRice("")
-	// the Ryoku mark: the 力 glyph, no custom logo, tinted to the accent, so the
-	// signature brand reads as Ryoku (the desktop name is left as the user set it).
+	// the Mei mark: the 力 glyph, no custom logo, tinted to the accent, so the
+	// signature brand reads as Mei (the desktop name is left as the user set it).
 	mergeBrandJSON(map[string]any{"markText": "力", "markImage": "", "markTint": true})
 	// colours follow the wallpaper (mono is retired) + regen the border lua,
 	// reload hypr and kitty.

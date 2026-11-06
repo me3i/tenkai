@@ -23,7 +23,7 @@ import "../wallpaper" as WallpaperMod
 // monitor by the main shell, carrying the clock. only clicks on bare wallpaper
 // land here, so windows above keep their input. drag = move (snaps to the
 // fade-in grid), right-click a widget = its menu, right-click empty = global
-// menu. every knob is live from Config; drag, menus and Ryoku Settings all
+// menu. every knob is live from Config; drag, menus and Mei Settings all
 // write the same file, so surfaces retune with no reload.
 Scope {
     id: root

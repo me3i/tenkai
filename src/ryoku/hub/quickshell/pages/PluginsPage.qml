@@ -568,7 +568,7 @@ Item {
                                     }
                                     Text {
                                         anchors.verticalCenter: parent.verticalCenter
-                                        text: offer.modelData.bundled ? I18n.tr("bundled with Ryoku") : (offer.modelData.installed ? I18n.tr("installed") : (offer.modelData.desc || ""))
+                                        text: offer.modelData.bundled ? I18n.tr("bundled with Mei") : (offer.modelData.installed ? I18n.tr("installed") : (offer.modelData.desc || ""))
                                         color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fSmall
                                         elide: Text.ElideRight
                                     }

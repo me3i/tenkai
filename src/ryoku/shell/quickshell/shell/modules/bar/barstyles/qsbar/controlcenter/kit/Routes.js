@@ -9,7 +9,7 @@
 // routes: where the bar sits (Bar), the mark and workspaces that make it this
 // user's (Identity), how its widgets are arranged (Layout), what each widget is
 // and does (Widgets), and the dock that rides beside it (Dock). A second, parted
-// group holds Community: every installed bar plugin that is not Ryoku's own, so
+// group holds Community: every installed bar plugin that is not Mei's own, so
 // a widget someone else wrote is never mixed in with the shipped set. What this
 // panel used to also carry -- pickers, desktop widgets, the mid-work switches,
 // the session -- already has a home (the Hub, or quick settings).
@@ -19,7 +19,7 @@ var ROUTES = [
       keywords: "position top bottom form full fit dock notch islands surface border corners frost shadow depth tooltip gap gaps accent colour scale size motion animation auto hide" },
     { id: "identity", label: "Identity", gloss: "SEAL", file: "IdentityRoute", section: "bar",
       desc: "The launcher mark and the workspaces.",
-      keywords: "identity logo mark wordmark word glyph icon kanji launcher brand ryoku arch hyprland workspaces spaces count marker style numbers kanji rings preview" },
+      keywords: "identity logo mark wordmark word glyph icon kanji launcher brand mei arch hyprland workspaces spaces count marker style numbers kanji rings preview" },
     { id: "layout",  label: "Layout",  gloss: "LAYOUT", file: "LayoutRoute", section: "bar",
       desc: "Where each widget sits on the bar.",
       keywords: "arrange order move reorder left center centre right lane add widget plugin unlock drag reset layout hide show" },

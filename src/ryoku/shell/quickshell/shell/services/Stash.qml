@@ -16,7 +16,7 @@ Singleton {
 
     readonly property string home: Quickshell.env("HOME") || ""
     // The Downloads root is the localized XDG dir the session exports (the
-    // ryoku user-environment generator does); ~/Downloads only when it is unset,
+    // mei user-environment generator does); ~/Downloads only when it is unset,
     // so a Spanish desktop lands in ~/Descargas/Stash instead of the generator
     // recreating ~/Downloads on every shell start (#246).
     readonly property string dir: (Quickshell.env("XDG_DOWNLOAD_DIR") || (home + "/Downloads")) + "/Stash"
@@ -121,7 +121,7 @@ Singleton {
         // Nothing here can install a package, so a missing runtime is the one
         // step the wizard has to hand back rather than fix.
         if (root.dockerState === "missing") {
-            setupFail("runtime", I18n.tr("Docker is not installed. `ryoku update` installs it."));
+            setupFail("runtime", I18n.tr("Docker is not installed. `mei update` installs it."));
             return;
         }
         setupMark("runtime", "done");

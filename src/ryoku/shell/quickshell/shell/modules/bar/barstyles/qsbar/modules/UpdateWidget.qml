@@ -65,7 +65,7 @@ Item {
         function onUpdateRefreshTickChanged() { Updates.check() }
     }
 
-    Process { id: runProc; command: ["bash", "-c", "kitty ryoku update"] }
+    Process { id: runProc; command: ["bash", "-c", "kitty mei update"] }
 
     IconText {
         anchors.centerIn: parent

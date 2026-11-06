@@ -172,7 +172,7 @@ func (d *daemon) pickTransition() *pickedTransition {
 // clip after a settings change. A user-driven switch follows the picker's
 // transition block (the skwd keys in ryogami-wall/config.json): off means a
 // plain cut, "random" is a no-repeat pick over the 39-shader skwd catalog, a
-// catalog name pins that shader, and the "ryoku" sentinel (or an unknown value)
+// catalog name pins that shader, and the "mei" sentinel (or an unknown value)
 // falls back to the shell's 22-preset reveal engine, which
 // wallpaper.transition_preset in shell.json can pin further.
 func (d *daemon) transitionFor(mode string) *pickedTransition {

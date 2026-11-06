@@ -1,6 +1,6 @@
 package main
 
-// The effects Ryoku paints itself, through a device's per-LED mode.
+// The effects Mei paints itself, through a device's per-LED mode.
 //
 // A keyboard often ignores half the effects its firmware advertises (an ASUS
 // N-KEY board runs Static, Breathing, Flashing and Spectrum Cycle and nothing
@@ -23,7 +23,7 @@ const (
 	fxFPS  = 30
 )
 
-// fxEffect = one effect Ryoku can draw. `spatial` marks the ones that travel
+// fxEffect = one effect Mei can draw. `spatial` marks the ones that travel
 // across the device, so they are only offered where the LEDs have positions.
 type fxEffect struct {
 	ID    string
@@ -51,7 +51,7 @@ func fxByID(id string) (fxEffect, bool) {
 	return fxEffect{}, false
 }
 
-// paintMode: the mode to sit a device in while Ryoku paints it. Named the way
+// paintMode: the mode to sit a device in while Mei paints it. Named the way
 // OpenRGB names them, most direct first.
 func paintMode(d orgbDevice) (int, orgbMode, bool) {
 	for _, want := range []string{"Direct", "Custom", "Static"} {
@@ -67,7 +67,7 @@ func paintMode(d orgbDevice) (int, orgbMode, bool) {
 	return 0, orgbMode{}, false
 }
 
-// canPaint reports whether Ryoku's own effects are available on this device.
+// canPaint reports whether Mei's own effects are available on this device.
 func canPaint(d orgbDevice) bool {
 	_, _, ok := paintMode(d)
 	return ok
@@ -237,7 +237,7 @@ func packHSV(h, s, v float64) uint32 {
 
 // ── the animator ────────────────────────────────────────────────────────────
 
-// runAnimate paints every managed device that asked for a Ryoku effect, and
+// runAnimate paints every managed device that asked for a Mei effect, and
 // exits once none do (the user picked device effects again, handed the devices
 // back, or switched lighting off). One process for every device, so a keyboard
 // and a mouse stay in step.
@@ -336,7 +336,7 @@ func fxStamp() string {
 	return out
 }
 
-// ensureAnimator starts the painter when a device wants a Ryoku effect, and
+// ensureAnimator starts the painter when a device wants a Mei effect, and
 // leaves it alone otherwise: it exits by itself once nothing needs painting.
 func ensureAnimator(st lightingState) {
 	want := false
@@ -361,7 +361,7 @@ func ensureAnimator(st lightingState) {
 	}
 	_ = exec.Command("systemd-run", "--user", "--collect",
 		"--unit="+fxUnit,
-		"--description=Ryoku lighting effects",
+		"--description=Mei lighting effects",
 		self, "lighting", "animate").Run()
 }
 

@@ -23,7 +23,7 @@ func TestPaintModePrefersDirect(t *testing.T) {
 	if !ok || idx != 0 || m.Name != "Direct" {
 		t.Fatalf("paintMode = %d %q %v", idx, m.Name, ok)
 	}
-	// a device with no per-LED mode cannot be painted, so no Ryoku effect is
+	// a device with no per-LED mode cannot be painted, so no Mei effect is
 	// offered for it and the UI shows only its own effects.
 	plain := orgbDevice{Modes: []orgbMode{{Name: "Static", Flags: modeHasModeColor}}}
 	if canPaint(plain) {

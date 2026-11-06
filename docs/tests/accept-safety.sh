@@ -152,7 +152,7 @@ q2) # no dead code, no personal strings, no ryoku names outside the allowed ones
   ;;
 
 q5) # the documents are there and say what is true
-  for f in docs/MODULES.md CHANGES.md CREDITS.md NOTICE UPSTREAM.md docs/PARITY.md docs/LIVE-CHECKLIST.md docs/CRITERIA.md docs/PROGRESS.md; do
+  for f in docs/MODULES.md docs/LIVE-CHECKLIST.md docs/ROLLBACK.md CHANGES.md CREDITS.md NOTICE UPSTREAM.md; do
     [ -f "$f" ] || fail "the document is missing: $f"
   done
   # Only documents can make an unproven claim: code comments and the

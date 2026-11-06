@@ -1,4 +1,4 @@
-// ryoku-hub is the Go backend for the Ryoku Settings GUI. The Quickshell front end
+// ryoku-hub is the Go backend for the Mei Settings GUI. The Quickshell front end
 // (qs -c hub) shells out to it the same way the rest of the desktop talks to
 // ryoku-shell: a subcommand prints data on stdout or mutates persisted state.
 //

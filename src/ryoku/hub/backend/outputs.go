@@ -190,7 +190,7 @@ type outputProfile struct {
 	Matches bool   `json:"matches"`
 }
 
-func profilesDir() string { return filepath.Join(ryokuConfigDir(), "output-profiles") }
+func profilesDir() string { return filepath.Join(meiConfigDir(), "output-profiles") }
 
 // profileName rejects a name that would escape the profiles dir, since it comes
 // from a text field.

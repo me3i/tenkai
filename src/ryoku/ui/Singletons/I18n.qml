@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// The one translation lookup, shared by every Ryoku surface (Hub, shell, apps,
+// The one translation lookup, shared by every Mei surface (Hub, shell, apps,
 // the wallpaper picker, the greeter). Source-string-as-key:
 // `I18n.tr("Power limit")` returns the current language's string, or the English
 // key itself when there is no translation, so the UI is never broken and

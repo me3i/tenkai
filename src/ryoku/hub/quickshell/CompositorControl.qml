@@ -6,7 +6,7 @@ import Quickshell.Io
 import Ryoku.Ui
 import Ryoku.Ui.Singletons
 
-// The compositor picker on the Global page: every window manager Ryoku can run,
+// The compositor picker on the Global page: every window manager Mei can run,
 // the active one marked, the rest offered as a switch. Selecting a non-active
 // provider hands it up to the confirmation sheet; nothing here mutates the
 // system. Driven entirely by `ryoku-hub wm list`, so it never names a

@@ -4,8 +4,8 @@ import Qt5Compat.GraphicalEffects
 import "Singletons"
 
 // The desktop brand seal, 力 by default. Users swap it globally (their own
-// glyph/text, or an image) from Ryoku Settings -> Shell -> Global; stored in
-// ~/.config/mei/brand.json. Ryoku's own apps (the Hub, ryo* apps) never use
+// glyph/text, or an image) from Mei Settings -> Shell -> Global; stored in
+// ~/.config/mei/brand.json. Mei's own apps (the Hub, ryo* apps) never use
 // this and keep the 力 brand. Drop-in for the old
 // `Text { text: "力"; font.family: Theme.fontJp; color: Theme.brand }` seal:
 // pass the old pixelSize as `size` and the old colour as `color`.

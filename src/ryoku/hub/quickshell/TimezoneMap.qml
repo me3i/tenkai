@@ -7,7 +7,7 @@ import Ryoku.Ui.Singletons
 import "world-land.js" as World
 import "tzmap.js" as Tz
 
-// The world-map time-zone picker (an Ubuntu-style chooser, Ryoku-toned): a live
+// The world-map time-zone picker (an Ubuntu-style chooser, Mei-toned): a live
 // equirectangular map with a day/night terminator, a dot per zone, click-to-pick
 // the nearest zone, a dropped pin, a fuzzy search, and the selected zone's live
 // local clock. Pure UI: it emits `applied(zone)` and lets the host run the

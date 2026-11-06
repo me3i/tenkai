@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// live shell appearance config. one source of truth for the look knobs Ryoku
+// live shell appearance config. one source of truth for the look knobs Mei
 // Settings' Shell section edits, plus the shipped defaults the shell falls back
 // to. JSON at ~/.config/mei/shell.json, watched, so a save in Settings
 // retunes the running shell on the next file event. no reload. defaults here

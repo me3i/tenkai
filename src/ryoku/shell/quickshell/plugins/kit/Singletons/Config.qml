@@ -5,7 +5,7 @@ import Quickshell.Io
 import Ryoku.FrameBars
 
 // live shell appearance config. single source of truth for the look knobs
-// Ryoku Settings' Shell section edits, plus the shipped defaults the shell
+// Mei Settings' Shell section edits, plus the shipped defaults the shell
 // falls back to. JSON at ~/.config/mei/shell.json, watched, so a save in
 // Settings retunes the running shell on the next file event (no reload).
 // defaults here are canonical: Settings mirrors them for reset and seeds

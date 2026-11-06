@@ -20,12 +20,12 @@ import (
 // settings.kdl carries the full effective config, not a diff, because the shipped
 // niri tree has no defaults module: config.kdl plus five comment-only seeds, so
 // settings.kdl and rebinds.kdl are the only writers of real config. A leaf left
-// out here would boot as stock niri, not Ryoku.
+// out here would boot as stock niri, not Mei.
 
 // Appearance: the window-frame, gap, shadow and opacity leaves niri can express.
 // Window blur is deliberately absent: niri 26.04's forced background-effect
 // renders translucent windows opaque instead of frosted on real hardware, so
-// Ryoku does not model it and the neutral blur keys are reported unhonored. The
+// Mei does not model it and the neutral blur keys are reported unhonored. The
 // rest of the neutral appearance model (glow, per-window dim) has no niri setting
 // and is reported unhonored too.
 type Appearance struct {
@@ -328,7 +328,7 @@ func defaultAnim() AnimSpec {
 
 // defaultStore is niri's baseline. It differs from Hyprland where niri has its
 // own opinion (gaps 16, border width 4, no rounding); the pointer and keyboard
-// leaves match the recommended niri session; the wm.niri block is the Ryoku look
+// leaves match the recommended niri session; the wm.niri block is the Mei look
 // for the settings niri owns alone.
 func defaultStore() niriStore {
 	return niriStore{

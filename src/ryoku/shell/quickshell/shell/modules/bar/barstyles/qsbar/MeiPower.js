@@ -1,6 +1,6 @@
 .pragma library
 
-// Backlight and battery shell commands, built on the standard Linux tools Ryoku
+// Backlight and battery shell commands, built on the standard Linux tools Mei
 // ships (brightnessctl, upower). Device detection is /sys-anchored so
 // Quickshell's working directory cannot affect the selected backlight.
 

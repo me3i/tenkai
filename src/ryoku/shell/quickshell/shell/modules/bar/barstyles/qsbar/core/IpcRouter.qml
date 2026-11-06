@@ -90,7 +90,7 @@ Item {
     }
 
     IpcHandler {
-        target: "ryoku.system-update"
+        target: "mei.system-update"
         function refresh(): void { router.systemRefresh() }
     }
 

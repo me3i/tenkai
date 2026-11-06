@@ -97,7 +97,7 @@ function setColor(theme, key, value) {
 
 // Write a parsed palette onto a Theme.qml instance. Missing slots are left at
 // their current value so a partial or malformed palette never blanks the live
-// theme. Ryoku colors.json values are #RRGGBB; #RRGGBBAA is accepted too.
+// theme. Mei colors.json values are #RRGGBB; #RRGGBBAA is accepted too.
 function apply(theme, palette) {
     if (!palette) return;
     setColor(theme, "paper",      palette.paper);

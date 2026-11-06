@@ -15,7 +15,7 @@ import (
 )
 
 // settings.go is the shell's typed configuration, owned by the daemon and served
-// to QML and Ryoku Hub over the "settings" state topic. It is the single writer
+// to QML and Mei Hub over the "settings" state topic. It is the single writer
 // of ~/.config/mei/shell.json: readers subscribe for a live frame, and every
 // change is a settings.patch call, so two writers can never race on the file (a
 // setting silently reverting was the hazard of the Hub and the daemon both
@@ -24,7 +24,7 @@ import (
 // The daemon owns a typed schema for six top-level namespaces (general, theme,
 // bars, menus, notifications, wallpaper). Those are validated: enum membership
 // and integer ranges are rejected, the float strength/contrast/opacity values
-// clamp into range. Every other top-level key in the file (the Ryoku-native look
+// clamp into range. Every other top-level key in the file (the Mei-native look
 // knobs frameRadius, frameBars, weatherLocation, sidebar panes, language, and the
 // rest) is carried through verbatim as passthrough: echoed in the frame and
 // merged on patch, but not validated, because the daemon has no schema for them.
@@ -78,7 +78,7 @@ var (
 		"Reboot", "RecordingIndicator", "Screenshot", "Shutdown", "Tray", "VpnIndicator",
 		"Wallpaper",
 	}
-	// 17 menu widgets. AppLauncher is deliberately absent: Ryoku's launcher is its
+	// 17 menu widgets. AppLauncher is deliberately absent: Mei's launcher is its
 	// own standalone surface, not an in-frame menu widget, so it has no renderer
 	// here (user correction).
 	menuWidgetValues = []string{
@@ -99,7 +99,7 @@ var (
 )
 
 // settings mirrors the reference configuration schema (contract 14), minus the
-// keys Ryoku has no consumer for (see the slice report): the icon-theme group,
+// keys Mei has no consumer for (see the slice report): the icon-theme group,
 // the custom-CSS file, and the app-launcher menu.
 type settings struct {
 	General       generalSettings       `json:"general"`
@@ -1081,7 +1081,7 @@ func (s *settingsStore) watch(quit <-chan struct{}) {
 // the sole writer of shell.json, publishing the current file and re-publishing on
 // every patch, reset, or external edit.
 func (d *daemon) startSettings() {
-	store := newSettingsStore(filepath.Join(ryokuConfigDir(), "shell.json"))
+	store := newSettingsStore(filepath.Join(meiConfigDir(), "shell.json"))
 	d.settings = store
 	t := d.registerTopic("settings")
 

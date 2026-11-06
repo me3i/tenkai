@@ -4,7 +4,7 @@ import Quickshell
 
 // Overview palette + geometry, a focused twin of the shell Theme (docs/ui-ux.md
 // tokens). Accent follows the wallpaper when Match wallpaper is on; the fixed
-// fallback is the Ryoku brand vermillion. Brutalist geometry: radius 0, hairline
+// fallback is the Mei brand vermillion. Brutalist geometry: radius 0, hairline
 // borders, hard offset shadows.
 Singleton {
     readonly property color brand:    Config.matchWallpaper ? Scheme.accent : "#e2342a"
@@ -39,8 +39,8 @@ Singleton {
     readonly property string fontJp:  "Noto Sans CJK JP"
     readonly property string mono:    "JetBrainsMono Nerd Font"
     // brand mark + name, user-overridable via ~/.config/mei/brand.json (Shell ->
-    // Global). defaults to the 力 seal / "Ryoku". BrandMark renders `mark`, or
-    // `markSource` (an image) when set. Ryoku's own apps never read these.
+    // Global). defaults to the 力 seal / "Mei". BrandMark renders `mark`, or
+    // `markSource` (an image) when set. Mei's own apps never read these.
     readonly property string mark: Config.markText.length > 0 ? Config.markText : "M"
     readonly property string markSource: Config.markImage
     readonly property bool markTint: Config.markTint

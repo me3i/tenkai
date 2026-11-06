@@ -105,7 +105,7 @@ func TestRiceCapture(t *testing.T) {
 	t.Skip("rice/sharing is off the keep list (not in AGENTS.md); retained feature, not an acceptance surface")
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	write := func(p, body string) {
@@ -169,7 +169,7 @@ func TestRiceApplyMergesAndRestoreReverts(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 
@@ -212,8 +212,8 @@ func TestRiceApplyMergesAndRestoreReverts(t *testing.T) {
 	if loadThemeState().FollowWallpaper {
 		t.Fatal("a fixed rice must turn off followWallpaper")
 	}
-	if !isFile(filepath.Join(dir, "cache", "ryoku", "colors.json")) {
-		t.Fatal("fixed palette not written to the ryoku cache")
+	if !isFile(filepath.Join(dir, "cache", "mei", "colors.json")) {
+		t.Fatal("fixed palette not written to the mei cache")
 	}
 	reloaded := false
 	for _, c := range calls {
@@ -248,7 +248,7 @@ func TestThemeAppsRoundTrip(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	origRun, origReload := riceRun, riceReload
@@ -309,7 +309,7 @@ func TestRiceTouchesAndExport(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 
 	r := Rice{
-		Schema: riceSchema, Slug: "demo", Name: "Demo", Author: "Ryoku Team",
+		Schema: riceSchema, Slug: "demo", Name: "Demo", Author: "Mei Team",
 		CreatedWith: "0.6.8",
 		Color:       RiceColor{Mode: "fixed", Palette: "palette.json"},
 		Assets:      RiceAssets{Wallpaper: "wall.png"},
@@ -345,7 +345,7 @@ func TestRiceTouchesAndExport(t *testing.T) {
 		t.Fatalf("launcher.json should be present but not provided: %+v", l)
 	}
 	if find("colors.json") == nil {
-		t.Fatal("fixed rice should touch the ryoku palette cache")
+		t.Fatal("fixed rice should touch the mei palette cache")
 	}
 	if find("Desktop wallpaper") == nil {
 		t.Fatal("bundled wallpaper not reported")
@@ -370,7 +370,7 @@ func TestCaptureAllLayersAndTouches(t *testing.T) {
 	t.Skip("rice/sharing is off the keep list (not in AGENTS.md); retained feature, not an acceptance surface")
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	writeDesktopStore(t, `{"appearance":{"rounding":0},"keybinds":[{"keys":"SUPER + T","action":"exec","value":"kitty"}],"windowRules":[{"class":"Spotify","action":"float"}],"input":[]}`)
@@ -413,7 +413,7 @@ func TestSquareShellAndKeybindRoundTrip(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	origRun, origReload := riceRun, riceReload
@@ -475,7 +475,7 @@ func TestCaptureNewStoresDecorsAndLiveWall(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("XDG_STATE_HOME", filepath.Join(dir, "state"))
 	t.Setenv("HOME", dir)
-	for _, d := range []string{filepath.Join(dir, "ryoku"), filepath.Join(dir, "state"), filepath.Join(dir, "pics")} {
+	for _, d := range []string{filepath.Join(dir, "mei"), filepath.Join(dir, "state"), filepath.Join(dir, "pics")} {
 		if err := os.MkdirAll(d, 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -561,7 +561,7 @@ func TestApplyNewStoresBrandAndVideoWall(t *testing.T) {
 	t.Setenv("XDG_CACHE_HOME", filepath.Join(dir, "cache"))
 	t.Setenv("XDG_STATE_HOME", filepath.Join(dir, "state"))
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	var calls []string
@@ -613,7 +613,7 @@ func TestApplyNewStoresBrandAndVideoWall(t *testing.T) {
 	}
 	dec := readJSONMap(decorStorePath())["input.touchpad"].(map[string]any)
 	src, _ := dec["src"].(string)
-	if !strings.HasPrefix(src, "file://"+filepath.Join(dir, "ryoku", "rice-assets", "wave")) {
+	if !strings.HasPrefix(src, "file://"+filepath.Join(dir, "mei", "rice-assets", "wave")) {
 		t.Fatalf("decor src not rehydrated under rice-assets: %q", src)
 	}
 	if !isFile(strings.TrimPrefix(src, "file://")) {
@@ -624,7 +624,7 @@ func TestApplyNewStoresBrandAndVideoWall(t *testing.T) {
 		t.Fatalf("brand layer not applied: %v", br)
 	}
 	mi, _ := br["markImage"].(string)
-	if !strings.HasPrefix(mi, filepath.Join(dir, "ryoku", "rice-assets", "wave")) || !isFile(mi) {
+	if !strings.HasPrefix(mi, filepath.Join(dir, "mei", "rice-assets", "wave")) || !isFile(mi) {
 		t.Fatalf("brand mark not rehydrated: %q", mi)
 	}
 	wantWall := filepath.Join(dir, "Pictures", "livewalls", "wave.mp4")
@@ -661,7 +661,7 @@ func TestSetWallVideoAndImport(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("XDG_STATE_HOME", filepath.Join(dir, "state"))
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	w := func(p, body string) {
@@ -760,7 +760,7 @@ func TestCaptureAppliesThemeAndFastfetch(t *testing.T) {
 	emblem := filepath.Join(dir, "logo.png")
 	w(emblem, "PNG")
 	w(fastfetchConfigPath(), `{"logo":{"type":"kitty-direct","source":"`+emblem+`"},"display":{"key":{"width":9}}}`)
-	w(filepath.Join(dir, "cache", "ryoku", "colors.json"), `{"background":"#101010"}`)
+	w(filepath.Join(dir, "cache", "mei", "colors.json"), `{"background":"#101010"}`)
 
 	r, err := captureRice("Identity", []string{"all"})
 	if err != nil {
@@ -815,7 +815,7 @@ func TestCaptureBundlesReloadCover(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("XDG_STATE_HOME", filepath.Join(dir, "state"))
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	cover := filepath.Join(dir, "cover.gif")
@@ -862,7 +862,7 @@ func TestRehydrateReloadCoverAsset(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", dir)
 	t.Setenv("HOME", dir)
-	if err := os.MkdirAll(filepath.Join(dir, "ryoku"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "mei"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	riceDir := filepath.Join(dir, "rice")
@@ -885,7 +885,7 @@ func TestRehydrateReloadCoverAsset(t *testing.T) {
 		t.Fatalf("reloadCover dropped for a valid rice:// asset: %v", bm)
 	}
 	got, _ := rc["path"].(string)
-	wantPrefix := filepath.Join(dir, "ryoku", "rice-assets", "cov")
+	wantPrefix := filepath.Join(dir, "mei", "rice-assets", "cov")
 	if !strings.HasPrefix(got, wantPrefix) || !isFile(got) {
 		t.Fatalf("reloadCover not rehydrated under rice-assets: %q", got)
 	}

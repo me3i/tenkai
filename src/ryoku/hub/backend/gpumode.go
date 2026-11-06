@@ -1,6 +1,6 @@
 package main
 
-// gpumode.go: read + set which GPU Ryoku renders on. three modes:
+// gpumode.go: read + set which GPU Mei renders on. three modes:
 // Hybrid (no pin), Performance (pin the dGPU), Passthrough (pin the iGPU
 // alone so the dGPU is free for a VM). the actual gpu.lua write goes to
 // `ryoku-gpu mode`, the single owner of AQ_DRM_DEVICES; this layer reports
@@ -45,7 +45,7 @@ func setGpuMode(mode string) error {
 	if mode == "passthrough" && wouldStrandDisplay(report) {
 		return fmt.Errorf("passthrough needs the discrete GPU free, but it is driving your screen right now. Switch the laptop to Hybrid GPU mode in the BIOS/firmware setup (often labelled GPU Mode, MUX, or Hybrid/Optimus) and reboot first, so the built-in GPU drives the display")
 	}
-	if out, err := exec.Command(ryokuGpuBin(), "mode", mode).CombinedOutput(); err != nil {
+	if out, err := exec.Command(meiGpuBin(), "mode", mode).CombinedOutput(); err != nil {
 		return fmt.Errorf("ryoku-gpu mode %s: %v: %s", mode, err, strings.TrimSpace(string(out)))
 	}
 	return printJSON(map[string]string{"mode": mode, "cost": gpuModeCost(mode, report)})
@@ -137,7 +137,7 @@ func gpuLuaPath() string {
 	return filepath.Join(base, "hypr", "gpu.lua")
 }
 
-func ryokuGpuBin() string {
+func meiGpuBin() string {
 	if b := os.Getenv("RYOKU_GPU_BIN"); b != "" {
 		return b
 	}

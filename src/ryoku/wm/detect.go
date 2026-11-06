@@ -98,7 +98,7 @@ func LeafScriptsDir(name string) string {
 }
 
 // configEntries is the file each provider's config tree is read from: the one
-// whose absence means the compositor boots its own defaults instead of Ryoku's
+// whose absence means the compositor boots its own defaults instead of Mei's
 // tree (no keybinds, no autostart). Named per provider because it is the
 // provider's own file, in its own format.
 var configEntries = map[string]string{

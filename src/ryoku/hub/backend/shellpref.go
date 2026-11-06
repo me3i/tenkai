@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	bashLoader = `[ -r "$HOME/.config/bash/ryoku.bash" ] && . "$HOME/.config/bash/ryoku.bash"`
-	zshLoader  = `[ -r "$HOME/.config/zsh/ryoku.zsh" ] && . "$HOME/.config/zsh/ryoku.zsh"`
+	bashLoader = `[ -r "$HOME/.config/bash/mei.bash" ] && . "$HOME/.config/bash/ryoku.bash"`
+	zshLoader  = `[ -r "$HOME/.config/zsh/mei.zsh" ] && . "$HOME/.config/zsh/ryoku.zsh"`
 )
 
 var accountShells = map[string]string{
@@ -111,7 +111,7 @@ func ensureLoaderLast(path, line string) (bool, error) {
 	if string(next) == string(old) {
 		return false, nil
 	}
-	tmp := path + ".ryoku-tmp"
+	tmp := path + ".mei-tmp"
 	if err := os.WriteFile(tmp, next, mode); err != nil {
 		return false, err
 	}
@@ -158,7 +158,7 @@ func setZshPrompt(home, prompt string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err
 	}
-	tmp := path + ".ryoku-tmp"
+	tmp := path + ".mei-tmp"
 	if err := os.WriteFile(tmp, []byte(prompt+"\n"), 0o644); err != nil {
 		return err
 	}
@@ -276,7 +276,7 @@ func syncSessionShell(path string) {
 	// env config and a reload makes newly spawned processes read it.
 	persistShellEnv(path)
 	_ = applyDesktop()
-	_ = runSessionCommand("ryoku", "reload")
+	_ = runSessionCommand("mei", "reload")
 }
 
 // persistShellEnv upserts SHELL into desktop.env under the store lock.

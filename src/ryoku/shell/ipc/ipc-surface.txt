@@ -243,7 +243,7 @@ right
 rounding
 routes
 rows
-ryoku
+mei
 saturation
 saved
 scalable

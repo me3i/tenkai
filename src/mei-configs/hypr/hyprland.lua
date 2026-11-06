@@ -3,7 +3,7 @@
 -- even a pcall'd require() of a missing module in the config-error overlay,
 -- so a fresh home flashed "Your config has errors" on first boot. probe the
 -- path first; a file that exists but is torn or corrupt still degrades via
--- pcall instead of emergency mode, and ryoku doctor repairs it.
+-- pcall instead of emergency mode, and mei doctor repairs it.
 local function optional(mod)
     if package.searchpath == nil or package.searchpath(mod, package.path) then
         local ok, err = pcall(require, mod)
@@ -20,10 +20,10 @@ require("modules.env")
 -- keyboard.lua is user-owned and seeded once, so an update never repairs it. a
 -- hard require made a torn one fail the whole config: emergency mode, black
 -- outputs, and a login loop no snapshot fixed, since ~/.config rides /home.
--- degrade to Hyprland's default layout instead; ryoku doctor reseeds the file.
+-- degrade to Hyprland's default layout instead; mei doctor reseeds the file.
 optional("keyboard")
 -- hardware drop-ins, written at runtime: ryoku-gpu emits gpu.lua, ryoku-monitor
--- emits monitors.lua, both rewritten on a hotplug or GPU reset. ryoku doctor
+-- emits monitors.lua, both rewritten on a hotplug or GPU reset. mei doctor
 -- repairs a corrupt one, autoscale regenerates it next login.
 optional("gpu")
 optional("monitors")

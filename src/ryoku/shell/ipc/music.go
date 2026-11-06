@@ -294,7 +294,7 @@ func (s *musicState) setCanvas(gen int, url string) {
 	s.publish()
 }
 
-// canvasDir is the user's Canvas library, beside the other ryoku config.
+// canvasDir is the user's Canvas library, beside the other mei config.
 func canvasDir() string {
 	base := os.Getenv("XDG_CONFIG_HOME")
 	if base == "" {

@@ -19,7 +19,7 @@ set -euo pipefail
 # the drop-in hyprland.lua require()s. always rewritten in full, never skip-if-exists.
 monitors_conf="${RYOKU_MONITORS_CONF:-${XDG_CONFIG_HOME:-$HOME/.config}/hypr/monitors.lua}"
 
-# Named monitor profiles (Ryoku Settings). keyed by hardware identity, not the
+# Named monitor profiles (Mei Settings). keyed by hardware identity, not the
 # connector, so the layout follows the physical displays across reshuffles.
 monitors_dir="${RYOKU_MONITORS_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/ryoku/monitors}"
 
@@ -29,7 +29,7 @@ monitors_dir="${RYOKU_MONITORS_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/ryoku/moni
 # forced mode or modeline, or a layout you want kept, never fights detection.
 monitors_user="${RYOKU_MONITORS_USER:-${XDG_CONFIG_HOME:-$HOME/.config}/hypr/monitors_user.lua}"
 
-# last layout from Ryoku Settings (Apply, not a named profile). autoscale
+# last layout from Mei Settings (Apply, not a named profile). autoscale
 # recalls it for the connected display set so an explicit choice (hand-set
 # scale above all) survives a relogin instead of being recomputed from DPI.
 # hardware-keyed like a profile but implicit + singular (latest Apply); a
@@ -102,7 +102,7 @@ pinned_outputs() {
     | sed -E 's/.*"([^"]*)".*/\1/' | grep -v '^$' || true
 }
 
-# connector names of currently-connected displays the last applied layout (Ryoku
+# connector names of currently-connected displays the last applied layout (Mei
 # Settings Apply) already configured, matched by hardware identity. A hotplug
 # autoscale skips these in the DPI pass, so plugging in a new monitor never
 # resets a display you already tuned. Empty when nothing was applied.
@@ -300,7 +300,7 @@ intended_modes_json() {
 # outputs whose live mode sits below intent, as "name<TAB>mode" (mode = the
 # intended one to re-assert). highrr/preferred is "below" when the panel
 # advertises a bigger res (or higher refresh at top res) than is live; an
-# explicit Ryoku Settings mode is "below" only while the panel still advertises
+# explicit Mei Settings mode is "below" only while the panel still advertises
 # it and the live mode differs. disabled / mirrored / monitors_user-pinned
 # outputs skipped. $1 = intent obj, $2 = pinned-name array; monitor JSON on stdin.
 drift_specs() {
@@ -336,7 +336,7 @@ drift_specs() {
 # relogin. re-asserting (highrr re-resolves to the now-available top mode; an
 # explicit pick is restored) recovers it in place. respects explicit modes and
 # any monitors_user.lua pin. --check reports drift (exit 1) and changes nothing;
-# that's the read-only signal `ryoku doctor` consumes.
+# that's the read-only signal `mei doctor` consumes.
 settle_modes() {
   local check_only=0
   [[ "${1:-}" == "--check" ]] && check_only=1
@@ -369,7 +369,7 @@ cmd_autoscale() {
     rm -f "$applied_layout"
   else
     # login/hotplug: an explicit choice for this display set wins over DPI
-    # (named profile first, then last Ryoku Settings Apply), so a hand-set
+    # (named profile first, then last Mei Settings Apply), so a hand-set
     # scale isn't reset on relogin.
     local prof
     if prof="$(matching_profile)" && [[ -n $prof ]]; then
@@ -384,7 +384,7 @@ cmd_autoscale() {
   fi
   local pinned
   pinned="$(pinned_outputs)"
-  # a display already tuned in Ryoku Settings (present in the applied layout) keeps
+  # a display already tuned in Mei Settings (present in the applied layout) keeps
   # its scale when another monitor hotplugs; only genuinely new displays are
   # DPI-scaled, so connecting a monitor never resets the one you already set up.
   local known
@@ -436,7 +436,7 @@ cmd_persist() {
 
 # re-assert each output's intended mode so a display that came up at a fallback
 # resolution recovers without a relogin. run at the end of an update and by
-# `ryoku doctor`. --check = report drift (exit 1), no change.
+# `mei doctor`. --check = report drift (exit 1), no change.
 cmd_settle() {
   require_hyprctl
   require_jq
@@ -486,7 +486,7 @@ cmd_toggle() {
   fi
 }
 
-# --- GUI / profile support (Ryoku Settings) ---
+# --- GUI / profile support (Mei Settings) ---
 #
 # the hub reads the live layout with `list`, applies a user-chosen one with
 # `apply` (live only) or `save NAME` (live + named profile), recalls one with
@@ -661,7 +661,7 @@ write_monitors_explicit() {
   fi
   mkdir -p "$(dirname "$monitors_conf")"
   {
-    printf '%s\n' "-- Managed by ryoku-monitor (Ryoku Settings layout). The per-output modes are"
+    printf '%s\n' "-- Managed by ryoku-monitor (Mei Settings layout). The per-output modes are"
     printf '%s\n' "-- the ones chosen in the Displays section. This file is regenerated, so edits"
     printf '%s\n' "-- here are lost: put durable manual overrides in ~/.config/hypr/monitors_user.lua"
     printf '%s\n' "-- (see monitors_user.lua.example), which is loaded after this file and wins."
@@ -690,7 +690,7 @@ write_monitors_explicit() {
   } >"$monitors_conf"
 }
 
-# When a display is set in Ryoku Settings, drop the matching output from an
+# When a display is set in Mei Settings, drop the matching output from an
 # installer-carried monitors_user.lua so the Hub choice wins. The reported bug:
 # a DE layout salvaged onto a fresh install lands in monitors_user.lua, which is
 # require()d after monitors.lua and outranks every Hub edit. Only a file the shell
@@ -878,7 +878,7 @@ Usage: ryoku-monitor <command>
   mirror [SRC] Mirror every other display onto SRC (default: the focused one).
   extend      Clear mirroring and lay displays side by side, DPI-scaled.
   toggle      Switch between mirror and extend.
-  list        Print the connected monitors as JSON (for Ryoku Settings).
+  list        Print the connected monitors as JSON (for Mei Settings).
   apply JSON  Apply an explicit layout live (JSON array of monitor specs).
               Scales snap to the nearest Hyprland-valid value for each mode.
   save NAME JSON  Apply a layout and save it as a hardware-keyed profile.

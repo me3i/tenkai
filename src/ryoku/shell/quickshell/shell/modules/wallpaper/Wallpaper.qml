@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 /**
- * Ryoku wallpaper topic bridge, one instance per monitor (the shell root's
+ * Mei wallpaper topic bridge, one instance per monitor (the shell root's
  * per-screen scope constructs it with `screen`).
  *
  * Ryogami (the Go wallpaper daemon) publishes one coalesced full-state frame

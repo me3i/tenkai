@@ -4,7 +4,7 @@ package main
 // to cache/mei/colors.json. The live wallpaper accent (Hyprland's `wc`) still
 // wins when it is set — these are the floor, not the ceiling: they exist so a
 // session whose palette is available gets its own colour instead of the
-// hardcoded Ryoku red that shipped before the Visuals page had a border
+// hardcoded Mei red that shipped before the Visuals page had a border
 // control. With no palette at all, mono grey.
 
 import (

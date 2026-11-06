@@ -1522,8 +1522,8 @@ Item {
                 anchors { left: parent.left; right: parent.right; top: parent.top }
                 wrapMode: Text.WordWrap
                 text: pg.wmCfgPath
-                    ? I18n.tr("Custom shortcuts layered over the ones Ryoku ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in %1 never appear here and are not conflict-checked.").arg(pg.wmCfgPath)
-                    : I18n.tr("Custom shortcuts layered over the ones Ryoku ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in the compositor's own config never appear here and are not conflict-checked.")
+                    ? I18n.tr("Custom shortcuts layered over the ones Mei ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in %1 never appear here and are not conflict-checked.").arg(pg.wmCfgPath)
+                    : I18n.tr("Custom shortcuts layered over the ones Mei ships and kept in the Hub, so they show in the Shortcuts legend and get conflict-checked. Click record and press the combo -- even SUPER + Q is captured safely -- or type it, e.g. SUPER + J. Binds hand-written in the compositor's own config never appear here and are not conflict-checked.")
                 color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fSmall
                 lineHeight: 1.3
             }

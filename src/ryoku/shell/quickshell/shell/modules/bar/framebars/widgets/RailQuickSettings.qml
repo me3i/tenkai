@@ -5,7 +5,7 @@ import "../../../../components"
 import shell.services
 
 // Quick-settings launch button: opens the main quick-settings menu on left
-// click. Shows the Ryoku brand mark (user decision): the same slot carries the
+// click. Shows the Mei brand mark (user decision): the same slot carries the
 // distro mark in the reference, and the mark is what tells the two shells
 // apart at a glance. Geometry stays the reference 16px icon box.
 Item {

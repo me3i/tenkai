@@ -184,7 +184,7 @@ func bindDsp(action, value string) (string, bool) {
 		return `hl.dsp.window.float({ action = "toggle" })`, true
 	case "global":
 		// A shortcut the shell itself registers (mei:overview, mei:clipboard,
-		// ...). Same form the shipped Ryoku config uses for its own surfaces.
+		// ...). Same form the shipped Mei config uses for its own surfaces.
 		if strings.TrimSpace(value) == "" {
 			return "", false
 		}
@@ -260,7 +260,7 @@ func unbindLua(k meiKeybinds) string {
 }
 
 // meiDefaultBinds is the chord set Mei binds for itself, matching the chords the
-// owner's Ryoku config uses (modules/binds.lua: Super+V clipboard, Super+Tab
+// owner's Mei config uses (modules/binds.lua: Super+V clipboard, Super+Tab
 // overview, Print / Super+Shift+S screenshot) plus Super+P for the wallpaper
 // picker the qsbar hosts in-shell. They are not saved into keybinds.json: they
 // are the shipped defaults the Settings page edits, so a user bind on the same

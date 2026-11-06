@@ -13,7 +13,7 @@ import Ryoku.Ui.Singletons
 // head, a bone-pill tab strip (Wi-Fi / Bluetooth / Hotspot), and a Loader that
 // swaps between three live subtabs. Every backend is a system tool -- the
 // Quickshell Networking/Bluetooth services plus nmcli/bluetoothctl -- so the
-// page applies immediately and writes no Ryoku config. The subtab bodies are
+// page applies immediately and writes no Mei config. The subtab bodies are
 // ported verbatim from the old WifiTab/BluetoothTab/HotspotTab: identical
 // process wiring, identical logic; only the presentation is recast to
 // monochrome. State is by word and inversion, never colour; signal strength is
@@ -1850,7 +1850,7 @@ Item {
 
         readonly property string hsCon: "RyokuHotspot"
         readonly property string hsIface: hs.wifiDev ? (hs.wifiDev.name || "wlan0") : "wlan0"
-        property string hsName: "Ryoku"
+        property string hsName: "Mei"
         property string hsPw: ""
         property bool hsActive: false
         property bool hsBusy: false
@@ -2071,7 +2071,7 @@ Item {
                     field: "name"
                     label: I18n.tr("Network name")
                     value: hs.hsName
-                    placeholder: "Ryoku"
+                    placeholder: "Mei"
                     editing: hs.hsEdit === "name"
                     draft: hs.hsDraft
                     onBeginEdit: { hs.hsDraft = value; hs.hsEdit = "name"; }

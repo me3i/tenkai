@@ -22,7 +22,7 @@ Singleton {
 
     // ── who ──────────────────────────────────────────────────────────────
     readonly property string user: Quickshell.env("USER") || Quickshell.env("LOGNAME") || "user"
-    property string host: "ryoku"
+    property string host: "mei"
 
     // ── uptime ───────────────────────────────────────────────────────────
     property real uptimeSecs: 0

@@ -3,7 +3,7 @@
 // scene-graph MultiEffects (menu glass blur, blobs); threaded is vsync-locked and
 // frees the GUI thread so those effects get regular frame deltas and never ghost
 // or stutter. `basic` idled a touch cheaper on NVIDIA but smeared the live effects
-// when switching menu pages, so this matches the pill's proven render setup.
+// when switching menu pages, so this matches the frame's proven render setup.
 //@ pragma DefaultEnv QSG_RENDER_LOOP=threaded
 //@ pragma DefaultEnv QS_DROP_EXPENSIVE_FONTS=1
 //@ pragma DefaultEnv QT_QUICK_FLICKABLE_WHEEL_DECELERATION=10000
@@ -34,7 +34,7 @@ import "modules/confirm"
 import Ryoku.Ui.Singletons
 
 /**
- * The single resident Ryoku shell instance.
+ * The single resident Mei shell instance.
  *
  * One ShellRoot for the whole desktop. It brings the shared service singletons
  * online, holds the per-monitor ShellState every surface binds its visibility
@@ -465,7 +465,7 @@ ShellRoot {
                 property bool open: ShellState.sessionAction !== ""
                 activeAsync: open || confirmHold.running
                 onOpenChanged: if (!open && active) confirmHold.restart()
-                RyokuConfirmationDialog {
+                MeiConfirmationDialog {
                     modelData: perScreen.modelData
                     action: ShellState.sessionActionMonitor === perScreen.modelData.name ? ShellState.sessionAction : ""
                     message: ShellState.sessionMessage
@@ -627,12 +627,11 @@ ShellRoot {
         st.visualizerPlacing = on;
     }
 
-    // --- Root machinery (ported from the reference pill root) --------------
+    // --- Root machinery ---------------------------------------------------
 
     // Bring the durable services online and prewarm the slow scans so the first
-    // open of each surface is instant. Ported from pill/shell.qml 170-194:
-    // device restore + ddc prewarm and re-arming the persisted Keep-Awake /
-    // Game Mode external inhibitors.
+    // open of each surface is instant: device restore + ddc prewarm and
+    // re-arming the persisted Keep-Awake / Game Mode external inhibitors.
     Component.onCompleted: {
         Devices.restore();
         root.syncCaffeine(Flags.keepAwake ? "start" : "stop");
@@ -761,10 +760,9 @@ ShellRoot {
         function onAuthStepAside(mon, id) { ShellState.closeSurface(id, mon); }
     }
 
-    // Daemon-facing surface channel (Phase 10 points the daemon here). Target
-    // "shell" avoids the live pill's "pill" target; each call maps onto the
-    // ShellState surface bus. Ported from pill/shell.qml 341-364; the SocketServer
-    // fast path (pill 402-411) is deliberately omitted so this instance owns no
+    // Daemon-facing surface channel. Target "shell" to avoid the live shell's
+    // own target name; each call maps onto the ShellState surface bus. The
+    // SocketServer fast path is deliberately omitted so this instance owns no
     // runtime socket and produces zero live side effects alongside the daemon.
     IpcHandler {
         target: "shell"

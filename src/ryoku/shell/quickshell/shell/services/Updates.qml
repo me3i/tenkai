@@ -3,7 +3,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 
-// Live view of the daemon "updates" topic (ryoku status --json). The background
+// Live view of the daemon "updates" topic (mei status --json). The background
 // check lives in the daemon; this just parses the streamed frame so the bar glyph
 // reflects it without polling.
 Singleton {

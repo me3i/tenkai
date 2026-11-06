@@ -107,7 +107,7 @@ Item {
         rmProc.running = true;
     }
 
-    // gpk (GlazePKG, the RyokuArch package manager) needs a tty for its AUR
+    // gpk (GlazePKG) needs a tty for its AUR
     // build and sudo prompts; --hold keeps any error on screen after it exits.
     function installVoxtype() {
         Spawn.run(["kitty", "--hold", "-e", "gpk", "install", "voxtype-bin", "--manager", "aur"]);

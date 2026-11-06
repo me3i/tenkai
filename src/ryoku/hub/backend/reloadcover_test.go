@@ -38,7 +38,7 @@ func writeReloadAsset(t *testing.T, dir, name string, body []byte) string {
 
 func replaceReloadCoverDirWithSymlink(t *testing.T, data string) (string, map[string][]byte) {
 	t.Helper()
-	managed := filepath.Join(data, "ryoku", "reload-cover")
+	managed := filepath.Join(data, "mei", "reload-cover")
 	external := t.TempDir()
 	files := map[string][]byte{
 		strings.Repeat("a", 64) + ".png": []byte("external image"),
@@ -126,7 +126,7 @@ func TestImportReloadCoverCopiesContentAddressedAsset(t *testing.T) {
 		t.Fatal(err)
 	}
 	digest := sha256.Sum256(body)
-	wantPath := filepath.Join(data, "ryoku", "reload-cover", hex.EncodeToString(digest[:])+".png")
+	wantPath := filepath.Join(data, "mei", "reload-cover", hex.EncodeToString(digest[:])+".png")
 	if got.Path != wantPath || got.Name != "Ink Loop.PNG" || got.Kind != "image" || got.Bytes != int64(len(body)) {
 		t.Fatalf("descriptor = %+v, want path=%q name=%q kind=image bytes=%d", got, wantPath, "Ink Loop.PNG", len(body))
 	}
@@ -224,7 +224,7 @@ func TestImportReloadCoverRejectsInvalidDestinationCollision(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			_, data := reloadCoverTestHome(t)
 			source := writeReloadAsset(t, t.TempDir(), "collision.png", body)
-			dir := filepath.Join(data, "ryoku", "reload-cover")
+			dir := filepath.Join(data, "mei", "reload-cover")
 			if err := os.MkdirAll(dir, 0o755); err != nil {
 				t.Fatal(err)
 			}
@@ -243,7 +243,7 @@ func TestImportReloadCoverRejectsFIFODestinationCollision(t *testing.T) {
 	body := []byte("FIFO collision fixture")
 	source := writeReloadAsset(t, t.TempDir(), "collision.png", body)
 	digest := sha256.Sum256(body)
-	dir := filepath.Join(data, "ryoku", "reload-cover")
+	dir := filepath.Join(data, "mei", "reload-cover")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -370,7 +370,7 @@ func TestImportReloadCoverRemovesTemporaryFileWhenSourceGrows(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "64 MiB") {
 		t.Fatalf("growing source error = %v", err)
 	}
-	entries, err := os.ReadDir(filepath.Join(data, "ryoku", "reload-cover"))
+	entries, err := os.ReadDir(filepath.Join(data, "mei", "reload-cover"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -383,7 +383,7 @@ func TestImportReloadCoverRemovesTemporaryFileWhenSourceGrows(t *testing.T) {
 
 func TestPruneReloadCoverKeepsOnlyManagedSelection(t *testing.T) {
 	_, data := reloadCoverTestHome(t)
-	dir := filepath.Join(data, "ryoku", "reload-cover")
+	dir := filepath.Join(data, "mei", "reload-cover")
 	keep := writeReloadAsset(t, dir, strings.Repeat("a", 64)+".png", []byte("keep"))
 	drop := writeReloadAsset(t, dir, strings.Repeat("b", 64)+".gif", []byte("drop"))
 	stray := writeReloadAsset(t, dir, "notes.txt", []byte("user file"))
@@ -422,10 +422,10 @@ func TestPruneReloadCoverRejectsSymlinkedManagedDirectory(t *testing.T) {
 func TestImportReloadCoverKeepsCommittedAssetWhenPruning(t *testing.T) {
 	t.Skip("reload-cover prune is disabled in Mei (boot row hidden; see CHANGES.md)")
 	cfg, data := reloadCoverTestHome(t)
-	dir := filepath.Join(data, "ryoku", "reload-cover")
+	dir := filepath.Join(data, "mei", "reload-cover")
 	committed := writeReloadAsset(t, dir, strings.Repeat("c", 64)+".webm", []byte("committed"))
 	stale := writeReloadAsset(t, dir, strings.Repeat("d", 64)+".png", []byte("stale"))
-	brand := filepath.Join(cfg, "ryoku", "brand.json")
+	brand := filepath.Join(cfg, "mei", "brand.json")
 	if err := os.MkdirAll(filepath.Dir(brand), 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -453,7 +453,7 @@ func TestCommittedReloadCoverPath(t *testing.T) {
 	t.Skip("reload-cover prune is disabled in Mei (boot row hidden; see CHANGES.md)")
 	cfg, _ := reloadCoverTestHome(t)
 	managed := filepath.Join(reloadCoverDir(), strings.Repeat("c", 64)+".webm")
-	path := filepath.Join(cfg, "ryoku", "brand.json")
+	path := filepath.Join(cfg, "mei", "brand.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}

@@ -7,7 +7,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("ryoku-wm-hyprland act cursor.set Bibata-Modern-Ice 24")
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
     -- adw-gtk3-dark, not Adwaita-dark: stock Adwaita GTK3 hardcodes its colours,
-    -- so the palette Ryoku generates barely reaches GTK3 apps, while adw-gtk3
+    -- so the palette Mei generates barely reaches GTK3 apps, while adw-gtk3
     -- derives its rules from the named colours we already emit. The daemon owns
     -- accent-color; do not set it here.
     hl.exec_cmd("gsettings set org.gnome.desktop.interface gtk-theme adw-gtk3-dark")
@@ -34,8 +34,8 @@ hl.on("hyprland.start", function()
     -- Keyring default: no app ever prompts for a keyring password out of the box.
     -- `keyring init` records the mode once and seeds a blank passwordless default
     -- keyring for never-ask (idempotent; a no-op once a mode is chosen). Best
-    -- effort: an old ryoku without the subcommand just fails silently here.
-    hl.exec_cmd("command -v ryoku >/dev/null 2>&1 && ryoku keyring init")
+    -- effort: an old mei without the subcommand just fails silently here.
+    hl.exec_cmd("command -v mei >/dev/null 2>&1 && mei keyring init")
     hl.exec_cmd("command -v ryoku-gpu >/dev/null 2>&1 && ryoku-gpu persist")
     -- Power knobs the kernel forgets across a reboot: the battery charge ceiling
     -- and the PCIe link policy are plain sysfs values, so a stored choice has to
@@ -43,7 +43,7 @@ hl.on("hyprland.start", function()
     -- ~/.config/ryoku/power.json, and on a desktop or a box without the knobs.
     hl.exec_cmd("command -v ryoku-power >/dev/null 2>&1 && ryoku-power apply")
     -- Device lighting: push the stored look back at the keyboards and mice the
-    -- user put under Ryoku's control (wallpaper picker > Settings > Lighting). A no-op, and
+    -- user put under Mei's control (wallpaper picker > Settings > Lighting). A no-op, and
     -- no OpenRGB at all, until lighting is on with a device adopted.
     hl.exec_cmd("command -v ryoku-hub >/dev/null 2>&1 && ryoku-hub lighting apply")
     hl.exec_cmd("command -v ryoku-mic >/dev/null 2>&1 && ryoku-mic")

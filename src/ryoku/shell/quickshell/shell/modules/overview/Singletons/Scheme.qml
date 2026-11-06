@@ -8,7 +8,7 @@ import Quickshell.Io
  * pill and launcher mirror it (each qs config has its own singleton root). Used
  * only when Match wallpaper is on. matugen rewrites ~/.cache/mei/colors.json
  * on every wallpaper change; this watches it so the overview's fill and accent
- * track whatever is on screen. Defaults are the Ryoku brand palette so it looks
+ * track whatever is on screen. Defaults are the Mei brand palette so it looks
  * right before the first matugen run.
  */
 Singleton {

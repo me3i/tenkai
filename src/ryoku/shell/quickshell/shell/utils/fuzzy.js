@@ -1,7 +1,7 @@
 // Ranking for launcher results: prefix beats substring beats subsequence, with a
 // usage-frequency tiebreak. Shared by the apps provider (QML import) and node
-// tests (CommonJS export). The match contract matches the pill launcher's so an
-// entry ranked here lands the same way it did before the rework.
+// tests (CommonJS export). The match contract matches the shipped launcher's, so
+// an entry ranked here lands the same way it always has.
 
 function haystacks(e) {
     var parts = [];

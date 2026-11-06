@@ -6,7 +6,7 @@ import (
 )
 
 // The in-shell wallpaper surface: a default entry plus per-output overrides,
-// published as one `{default, outputs}` frame on the `wallpaper` topic. Ryoku's
+// published as one `{default, outputs}` frame on the `wallpaper` topic. Mei's
 // shell QML renders this frame directly; the entry keys are parsed verbatim by
 // modules/wallpaper/WallpaperFrame.qml. Mute and Volume (0-100) are the
 // in-shell clip's audio, meaningful only for a VideoPath frame.

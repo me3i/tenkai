@@ -39,7 +39,7 @@ func home() string {
 	return h
 }
 
-// stateHome resolves XDG_STATE_HOME (~/.local/state fallback): where Ryoku's
+// stateHome resolves XDG_STATE_HOME (~/.local/state fallback): where Mei's
 // cross-process state files live, including the legacy ryoku-wallpaper path the
 // wallpaper readers (rice capture, the overview backdrop, the Super+W on-air
 // dot, the shell's palette bridge) watch to learn what is on screen.
@@ -95,7 +95,7 @@ func (c config) videoDir() string {
 	if p := resolvePath(c.Paths.VideoWallpaper); p != "" {
 		return p
 	}
-	// Ryoku keeps clips in ~/Pictures/livewalls (the switcher and the old live
+	// Mei keeps clips in ~/Pictures/livewalls (the switcher and the old live
 	// stack both scanned it); fall back to the shared wallpaper dir only when
 	// that folder is absent, mirroring upstream's shared-dir default.
 	if live := filepath.Join(home(), "Pictures", "livewalls"); dirExists(live) {
@@ -186,7 +186,7 @@ func saveRaw(path string, b []byte) {
 	_ = os.Rename(tmp, path)
 }
 
-// contentFit reads the shell's wallpaper fill mode from ryoku's shell.json,
+// contentFit reads the shell's wallpaper fill mode from mei's shell.json,
 // mirroring the Rust daemon: the shell owns that preference, the daemon only
 // echoes it into published frames.
 func contentFit() string {

@@ -12,7 +12,7 @@ import (
 // frontend currently publishes org.freedesktop.portal.ScreenCast. When it does
 // not, an app asking "which screen should I share?" gets no dialog, no stream
 // and no error the user can see -- so the Recording page needs a way to ask.
-// The repair itself belongs to ryoku doctor, which owns the provider seam and
+// The repair itself belongs to mei doctor, which owns the provider seam and
 // the package knowledge; this only reports.
 
 const shareScreenCastInterface = "org.freedesktop.portal.ScreenCast"
@@ -65,7 +65,7 @@ func runShare(args []string) error {
 	case exposed:
 		st.Detail = "apps can offer a screen picker"
 	default:
-		st.Detail = "no app can pick a screen to share; run ryoku doctor to repair the portal"
+		st.Detail = "no app can pick a screen to share; run mei doctor to repair the portal"
 	}
 	return printJSON(st)
 }

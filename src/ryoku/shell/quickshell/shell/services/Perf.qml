@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 // Perf is the shell's one performance-policy singleton and the single reader of
-// ~/.config/mei/performance.json (the file Ryoku Settings' Performance page
+// ~/.config/mei/performance.json (the file Mei Settings' Performance page
 // writes). It folds four inputs into the effective switches every surface obeys:
 //
 //   1. the explicit user toggles in performance.json (lowPowerMode is the master),

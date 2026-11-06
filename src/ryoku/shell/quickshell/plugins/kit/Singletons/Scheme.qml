@@ -4,7 +4,7 @@ import Quickshell
 import Quickshell.Io
 
 // Thin reader of the daemon palette for the plugin kit. The theme daemon is the
-// sole author of colour in Ryoku: a fixed named theme publishes its palette into
+// sole author of colour in Mei: a fixed named theme publishes its palette into
 // shell.json's themePalette key, and follow-the-wallpaper mode writes the live
 // palette to ~/.cache/mei/colors.json. This resolves each role the pill's
 // way -- a named scheme wins, then the live wallpaper palette, then the compiled

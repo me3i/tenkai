@@ -7,8 +7,8 @@
 -- asserted at once and named a moment later, once the shell can show a toast,
 -- so a pad left off is never a mystery; a reload stays silent.
 hl.on("hyprland.start", function()
-    hl.exec_cmd("ryoku wm act input.touchpad restore; sleep 8; ryoku wm act input.touchpad restore login")
+    hl.exec_cmd("mei wm act input.touchpad restore; sleep 8; mei wm act input.touchpad restore login")
 end)
 hl.on("config.reloaded", function()
-    hl.exec_cmd("ryoku wm act input.touchpad restore")
+    hl.exec_cmd("mei wm act input.touchpad restore")
 end)

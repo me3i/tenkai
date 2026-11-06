@@ -55,7 +55,7 @@ Item {
     property string updatingId: ""    // the style whose update is in flight
 
     function browseBarStyles() {
-        // MEI: RyoStore (Ryoku's app store) is off the keep list -- disabled,
+        // MEI: RyoStore (Mei's app store) is off the keep list -- disabled,
         // not deleted. Original: Quickshell.execDetached(["ryostore","open","barstyles"]);
     }
 

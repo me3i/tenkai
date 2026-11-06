@@ -20,7 +20,7 @@ import Ryoku.Ui.Singletons
 //
 // Divergence: the capture backend shells out to grim + wl-copy rather than a
 // bespoke zwlr_screencopy_v1 client -- grim speaks exactly that protocol, and
-// Ryoku already shells out to wl-copy / wf-recorder for the same reasons.
+// Mei already shells out to wl-copy / wf-recorder for the same reasons.
 Singleton {
     id: root
 
@@ -44,7 +44,7 @@ Singleton {
     property var _recordAudio: []          // extra Recorder args for a targeted record
     property var _pending: null            // { flag, val } grim target for the pending shot
 
-    // Ryoku owns its screenshot location; the filename pattern is the reference
+    // Mei owns its screenshot location; the filename pattern is the reference
     // UTC stamp. XDG_PICTURES_DIR honoured, else ~/Pictures, matching ryoshot.
     readonly property string shotsDir: (Quickshell.env("XDG_PICTURES_DIR") || (Quickshell.env("HOME") + "/Pictures")) + "/Screenshots"
 
@@ -169,9 +169,9 @@ Singleton {
             '[ -n "$CLIP" ] && mei-shell clip-copy image/png "$OUT"',
             'mei-shell sound shutter >/dev/null 2>&1 || true',
             'case "$MODE" in',
-            'clipboard) notify-send -a ryoku "Screenshot copied to clipboard" >/dev/null 2>&1 || true ;;',
-            'file) notify-send -a ryoku "Screenshot saved" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
-            '*) notify-send -a ryoku "Screenshot saved & copied" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
+            'clipboard) notify-send -a mei "Screenshot copied to clipboard" >/dev/null 2>&1 || true ;;',
+            'file) notify-send -a mei "Screenshot saved" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
+            '*) notify-send -a mei "Screenshot saved & copied" "Saved to $OUT" >/dev/null 2>&1 || true ;;',
             'esac',
             '[ -n "$BEAUTIFY" ] && RYOSHOT_OPEN="$OUT" flock -n -o /tmp/ryoshot.lock qs -c ryoshot >/dev/null 2>&1 || true'
         ].join("\n");

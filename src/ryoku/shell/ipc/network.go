@@ -82,7 +82,7 @@ type savedConn struct {
 func (d *daemon) startNetwork() {
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
-		log.Printf("ryoku-shell: network disabled: %v", err)
+		log.Printf("mei-shell: network disabled: %v", err)
 		return
 	}
 	n := &networkState{conn: conn, topic: d.registerTopic("network")}
@@ -92,7 +92,7 @@ func (d *daemon) startNetwork() {
 	// all live under nmPath, and nothing else does, so a single rule feeds the
 	// coalescing republisher without a firehose of unrelated system signals.
 	if err := conn.AddMatchSignal(dbus.WithMatchPathNamespace(dbus.ObjectPath(nmPath))); err != nil {
-		log.Printf("ryoku-shell: network signal match failed: %v", err)
+		log.Printf("mei-shell: network signal match failed: %v", err)
 	}
 	sigs := make(chan *dbus.Signal, 64)
 	conn.Signal(sigs)

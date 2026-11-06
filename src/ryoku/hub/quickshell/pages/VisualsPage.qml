@@ -14,7 +14,7 @@ import ".."
 // CRITICAL: Mei never writes the Hyprland config (~/.config/hypr). Every
 // change is a runtime-only Lua evaluation call into the compositor
 // (`hyprctl eval 'hl.config({...})'`; the legacy `hyprctl keyword` verb was
-// removed from Hyprland's Lua IPC, this is the same door Ryoku's provider
+// removed from Hyprland's Lua IPC, this is the same door Mei's provider
 // uses for screenShader/followMouse). A Hyprland reload re-reads
 // decoration.lua/hyprland.lua and resets the runtime from them; Mei
 // re-applies this page's persisted values from the daemon at boot

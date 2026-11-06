@@ -12,7 +12,7 @@ import (
 	wm "ryoku-wm"
 )
 
-// The Hyprland bind legend. Hyprland's shipped shortcuts ARE the neutral Ryoku
+// The Hyprland bind legend. Hyprland's shipped shortcuts ARE the neutral Mei
 // catalogue, registered in ~/.config/hypr/modules/binds.lua and any sibling
 // module that binds through the K() rebind helper. This file parses those Lua
 // binds, matches each against the catalogue by chord, and reports the FULL

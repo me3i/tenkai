@@ -1,4 +1,4 @@
--- The keybind recorder's capture submap. Ryoku Settings enters it (via
+-- The keybind recorder's capture submap. Mei Settings enters it (via
 -- `hyprctl dispatch submap record`) while the user presses a shortcut to record,
 -- then leaves it (`submap reset`) once the chord is captured or cancelled.
 --

@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 // Live config for the desktop visualiser. One or more visualisers can share the
-// desktop: the PRIMARY is the flat top-level config (the one Ryoku Settings'
+// desktop: the PRIMARY is the flat top-level config (the one Mei Settings'
 // Visualizer tab still edits and reset-to-defaults mirrors), and any EXTRAS ride
 // an `extras` list, each a full per-viz object. `active` is the instance the
 // on-desktop editor is tuning. The renderer paints `list` (primary + extras);

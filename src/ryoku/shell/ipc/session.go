@@ -63,7 +63,7 @@ func (d *daemon) startSession() {
 			return map[string]any{"ok": true}, nil
 		}
 		if err := d.wmc.Act(wm.ActionSessionExit); err != nil {
-			log.Printf("ryoku-shell: session logout: %v", err)
+			log.Printf("mei-shell: session logout: %v", err)
 		}
 		return map[string]any{"ok": true}, nil
 	})
@@ -94,19 +94,19 @@ func runSessionAction(action string) {
 	}
 	argv, ok := sessionActionArgv(action)
 	if !ok {
-		log.Printf("ryoku-shell: unknown session action %q", action)
+		log.Printf("mei-shell: unknown session action %q", action)
 		return
 	}
 	cmd := exec.Command(argv[0], argv[1:]...)
 	var stderr strings.Builder
 	cmd.Stderr = &stderr
 	if err := cmd.Start(); err != nil {
-		log.Printf("ryoku-shell: session %s: %v", action, err)
+		log.Printf("mei-shell: session %s: %v", action, err)
 		return
 	}
 	go func() {
 		if err := cmd.Wait(); err != nil {
-			log.Printf("ryoku-shell: session %s: %v: %s", action, err, strings.TrimSpace(stderr.String()))
+			log.Printf("mei-shell: session %s: %v: %s", action, err, strings.TrimSpace(stderr.String()))
 		}
 	}()
 }

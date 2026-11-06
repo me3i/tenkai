@@ -5,7 +5,7 @@ import Quickshell
 import Quickshell.Io
 
 // QML view of the daemon `osd` topic. The volume and mic OSDs read PipeWire
-// directly (Ryoku owns the audio graph in QML), but brightness has no
+// directly (Mei owns the audio graph in QML), but brightness has no
 // QML-observable source: the media keys and the brightness verb both drive the
 // backlight directly, so the daemon watches the primary backlight and pushes
 // {brightness:{seq,value}} here. The brightness OSD shows when `brightnessSeq`

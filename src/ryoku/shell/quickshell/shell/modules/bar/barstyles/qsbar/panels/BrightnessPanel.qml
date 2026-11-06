@@ -3,7 +3,7 @@ import "../modules"
 import Quickshell
 import Quickshell.Io
 import Quickshell.Wayland
-import "../RyokuPower.js" as RyokuPower
+import "../MeiPower.js" as MeiPower
 import Ryoku.Ui.Singletons
 
 PanelWindow {
@@ -49,7 +49,7 @@ PanelWindow {
         if (setRunner.running || queuedSetPercent < 0) return
         var p = queuedSetPercent
         queuedSetPercent = -1
-        setRunner.command = ["bash", "-c", RyokuPower.brightnessSetCmd(p + "%")]
+        setRunner.command = ["bash", "-c", MeiPower.brightnessSetCmd(p + "%")]
         setRunner.running = true
     }
 
@@ -213,7 +213,7 @@ PanelWindow {
 
     Process {
         id: briData
-        command: ["bash", "-c", RyokuPower.brightnessPercentCmd]
+        command: ["bash", "-c", MeiPower.brightnessPercentCmd]
         running: false
         stdout: StdioCollector {
             onStreamFinished: {
@@ -235,7 +235,7 @@ PanelWindow {
     }
     Process {
         id: upRunner
-        command: ["bash", "-c", RyokuPower.brightnessSetCmd("+5%")]
+        command: ["bash", "-c", MeiPower.brightnessSetCmd("+5%")]
         onExited: (code) => {
             briPanel.notifyBrightnessError("Brightness up", code)
             briPanel.refresh()
@@ -243,7 +243,7 @@ PanelWindow {
     }
     Process {
         id: downRunner
-        command: ["bash", "-c", RyokuPower.brightnessSetCmd("5%-")]
+        command: ["bash", "-c", MeiPower.brightnessSetCmd("5%-")]
         onExited: (code) => {
             briPanel.notifyBrightnessError("Brightness down", code)
             briPanel.refresh()

@@ -28,9 +28,9 @@ func parsePerfFlag(b []byte, key string) bool {
 	return v
 }
 
-// ryokuConfigDir is ~/.config/ryoku (honouring XDG_CONFIG_HOME), the dir the
-// Ryoku Settings sections write. Empty only when the home dir is unknowable.
-func ryokuConfigDir() string {
+// meiConfigDir is ~/.config/ryoku (honouring XDG_CONFIG_HOME), the dir the
+// Mei Settings sections write. Empty only when the home dir is unknowable.
+func meiConfigDir() string {
 	dir := os.Getenv("XDG_CONFIG_HOME")
 	if dir == "" {
 		home, err := os.UserHomeDir()
@@ -43,9 +43,9 @@ func ryokuConfigDir() string {
 }
 
 // perfPath is ~/.config/mei/performance.json, the file the Performance section
-// in Ryoku Settings writes. Empty only when the home dir is unknowable.
+// in Mei Settings writes. Empty only when the home dir is unknowable.
 func perfPath() string {
-	dir := ryokuConfigDir()
+	dir := meiConfigDir()
 	if dir == "" {
 		return ""
 	}

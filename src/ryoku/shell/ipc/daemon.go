@@ -33,7 +33,7 @@ type component struct {
 var components = []component{
 	// One consolidated instance renders every surface in-process (bar, backdrop,
 	//	launcher, visualizer, widgets, overview), replacing the old
-	// per-surface Quickshell configs. Always-on, as the pill frame was.
+	// per-surface Quickshell configs. Always-on, as the frame was.
 	{"shell", true},
 }
 
@@ -94,7 +94,7 @@ func moduleDisabled(name string) bool {
 	if name == "" {
 		return false
 	}
-	dir := ryokuConfigDir()
+	dir := meiConfigDir()
 	if dir == "" {
 		return false
 	}
@@ -134,7 +134,7 @@ func componentDisabled(name string) bool {
 	if name == "shell" {
 		return false
 	}
-	// ryoku: with surfaces consolidated into the single shell, per-surface disable
+	// mei: with surfaces consolidated into the single shell, per-surface disable
 	// is now internal to the shell; performance.json's disabledComponents no longer
 	// maps to separate processes, so this only ever guards components that no
 	// longer exist.
@@ -436,7 +436,7 @@ func quitStaleDaemon(path string) {
 }
 
 // setupQmlImportPath puts the active shell config root and home-installed
-// Ryoku plugins on the import path inherited by supervised Quickshell
+// Mei plugins on the import path inherited by supervised Quickshell
 // processes. External Store scenes import stable modules from the config root;
 // dev sessions point at the checkout instead of a materialized copy.
 func setupQmlImportPath() {
@@ -456,7 +456,7 @@ func setupQmlImportPath() {
 	exe, _ := os.Executable()
 	if strings.HasPrefix(exe, home+string(os.PathSeparator)) {
 		dirs = append(dirs, filepath.Join(home, ".local", "lib", "qt6", "qml"))
-	} else if _, err := os.Stat("/usr/lib/qt6/qml/Ryoku/Blobs/qmldir"); err != nil {
+	} else if _, err := os.Stat("/usr/lib/qt6/qml/Mei/Blobs/qmldir"); err != nil {
 		dirs = append(dirs, filepath.Join(home, ".local", "lib", "qt6", "qml"))
 	}
 	prefix := strings.Join(dirs, string(os.PathListSeparator))
@@ -1017,7 +1017,7 @@ func (d *daemon) supervise(name string) {
 		exited := make(chan struct{})
 		if name == "shell" {
 			// A shell that stays up past its crash window is the desktop coming
-			// back after a boot; record it for the boot guard (ryoku boot-guard),
+			// back after a boot; record it for the boot guard (mei boot-guard),
 			// which reverts an update whose next boots never get here.
 			go recordBootOK(exited)
 		}
@@ -1551,7 +1551,7 @@ func (d *daemon) dispatch(line string) string {
 		}
 		if args[0] == "remove" && len(args) >= 2 {
 			// `theme remove <id>` uninstalls a downloaded scheme. Reset the
-			// applied scheme to the Ryoku default first when it is the one being
+			// applied scheme to the Mei default first when it is the one being
 			// removed, so the desktop never keeps a scheme whose files are gone;
 			// the settings store drives the retheme off that write.
 			id := strings.Join(args[1:], " ")
@@ -1681,7 +1681,7 @@ func (d *daemon) voice() string {
 
 // reload restarts every supervised component by terminating it; the supervisor
 // brings it back. It waits for the result: answering "ok" while the surface dies
-// on the same error is what made `ryoku reload` look like it does nothing on a
+// on the same error is what made `mei reload` look like it does nothing on a
 // black screen.
 func (d *daemon) reload() string {
 	_ = beginReloadCover()

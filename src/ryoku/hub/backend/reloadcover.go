@@ -54,7 +54,7 @@ type reloadCoverAsset struct {
 
 
 func reloadCoverDir() string {
-	return filepath.Join(dataHome(), "ryoku", "reload-cover")
+	return filepath.Join(dataHome(), "mei", "reload-cover")
 }
 
 func reloadCoverBrandPath() string {

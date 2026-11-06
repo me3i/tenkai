@@ -7,7 +7,7 @@ import Ryoku.Ui.Singletons
 import "Singletons"
 
 /**
- * Ryoku workspace overview: a full-screen expo, migrated to a per-monitor module
+ * Mei workspace overview: a full-screen expo, migrated to a per-monitor module
  * entry the single resident shell instantiates once per screen. The compositor
  * blurs the desktop behind the "overview" layer (a compositor rule keyed on the
  * layer namespace), so only the workspace cells and their live

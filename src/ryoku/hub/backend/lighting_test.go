@@ -248,10 +248,10 @@ func TestLiftColorKeepsDarkPalettesVisible(t *testing.T) {
 		t.Fatal("a palette already bright enough must pass through untouched")
 	}
 	if got := liftColor("#000000"); got != lightingFallback {
-		t.Fatalf("black = %s, want the Ryoku fallback", got)
+		t.Fatalf("black = %s, want the Mei fallback", got)
 	}
 	if got := liftColor("garbage"); got != lightingFallback {
-		t.Fatalf("nonsense = %s, want the Ryoku fallback", got)
+		t.Fatalf("nonsense = %s, want the Mei fallback", got)
 	}
 }
 
@@ -274,7 +274,7 @@ func TestPunchColorRestoresWashedOutAccents(t *testing.T) {
 		t.Fatalf("dark = %s, want unchanged", got)
 	}
 	if got := punchColor("garbage"); got != lightingFallback {
-		t.Fatalf("nonsense = %s, want the Ryoku fallback", got)
+		t.Fatalf("nonsense = %s, want the Mei fallback", got)
 	}
 }
 

@@ -5,7 +5,7 @@ directory):
 
 - `space-grotesk/` — Space Grotesk (variable weight), used by the bar, the
   launcher and the Settings app. Not in the official Arch repos (only in the
-  third-party `ryoku` repo as `otf-space-grotesk`), so Mei ships it.
+  third-party `mei` repo as `otf-space-grotesk`), so Mei ships it.
 - `fraunces/` — Fraunces (variable, `SOFT,WONK,opsz,wght` axes, romans +
   italics), used for display/serif accents. Not packaged for Arch at all.
 
