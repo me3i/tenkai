@@ -93,20 +93,28 @@ step() {
   printf '%s╰%s╯%s\n' "$B$MG" "$(printf '─%.0s' $(seq 1 $inner_w))" "$R"
 }
 
+# The banner: a six-row hanko seal (天 / 界 stacked inside a double rule) joined
+# to the ANSI-shadow TENKAI block art by a hairline divider. Six rows tall on
+# both sides, 56 columns wide, so it centres with one column of air each side
+# inside the 58-column installer frame. Keep every row exactly 56 columns.
+BANNER_W=56
+BANNER_ROWS=(
+  '╔════╗ │  ████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗'
+  '║    ║ │  ╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║'
+  '║ 天 ║ │     ██║   █████╗  ██╔██╗ ██║█████╔╝ ███████║██║'
+  '║ 界 ║ │     ██║   ██╔══╝  ██║╚██╗██║██╔═██╗ ██╔══██║██║'
+  '║    ║ │     ██║   ███████╗██║ ╚████║██║  ██╗██║  ██║██║'
+  '╚════╝ │     ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝'
+)
+TAGLINE='The Celestial Lite version of Ryoku Quickshell'
+
 # The opened and closed gate of the installer.
 print_banner() {
-  printf '%s\n' "$CY"
-  cat <<'ART'
-   ████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗
-   ╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║
-      ██║   █████╗  ██╔██╗ ██║█████╔╝ ███████║██║
-      ██║   ██╔══╝  ██║╚██╗██║██╔═██╗ ██╔══██║██║
-      ██║   ███████╗██║ ╚████║██║  ██╗██║  ██║██║
-      ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝
-                         天 界
-ART
+  local row
+  printf '\n%s' "$CY$B"
+  for row in "${BANNER_ROWS[@]}"; do printf ' %s\n' "$row"; done
   printf '%s' "$R"
-  printf '%s   天界 — The Celestial Quickshell Environment%s\n' "$GY" "$R"
+  printf '%s      %s%s\n' "$GY" "$TAGLINE" "$R"
   printf '%s   checkout:%s %s\n' "$GY" "$R" "$TENKAI_DIR"
   printf '\n'
 }
@@ -119,18 +127,14 @@ fl() {
 }
 
 print_success() {
-  local W=58
+  local W=58 row
   printf '\n%s╭%s╮%s\n' "$B$GR" "$(printf '─%.0s' $(seq 1 $W))" "$R"
   fl 0 "" 0
-  fl 6 "${CY}${B}████████╗███████╗███╗   ██╗██╗  ██╗ █████╗ ██╗${R}" 46
-  fl 6 "${CY}${B}╚══██╔══╝██╔════╝████╗  ██║██║ ██╔╝██╔══██╗██║${R}" 46
-  fl 6 "${CY}${B}   ██║   █████╗  ██╔██╗ ██║█████╔╝ ███████║██║${R}" 46
-  fl 6 "${CY}${B}   ██║   ██╔══╝  ██║╚██╗██║██╔═██╗ ██╔══██║██║${R}" 46
-  fl 6 "${CY}${B}   ██║   ███████╗██║ ╚████║██║  ██╗██║  ██║██║${R}" 46
-  fl 6 "${CY}${B}   ╚═╝   ╚══════╝╚═╝  ╚═══╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝${R}" 46
-  fl 26 "${CY}${B}天 界${R}" 5
+  for row in "${BANNER_ROWS[@]}"; do fl 1 "${CY}${B}${row}${R}" "$BANNER_W"; done
   fl 0 "" 0
-  fl 13 "${GR}${B}Tenkai is installed and ready.${R}" 31
+  fl 6 "${WH}${TAGLINE}${R}" 46
+  fl 0 "" 0
+  fl 13 "${GR}${B}Tenkai is installed and ready.${R}" 30
   fl 0 "" 0
   fl 9 "${WH}Log out and log back in -- your desktop${R}" 39
   fl 9 "${WH}will be Tenkai.${R}" 15
