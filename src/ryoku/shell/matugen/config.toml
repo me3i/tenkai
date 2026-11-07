@@ -1,0 +1,22 @@
+# Tenkai's minimal matugen config: no post_hook, so a palette pass runs no command
+# of its own and writes only the template outputs it is given.
+#
+# matugen 4.2.0 rejects a config that has no `templates` key at all
+# ("missing field `templates`"), so the table below is required. Upstream's
+# config carries the kitty/hypr/btop/qt6ct templates, the 22-template app fan-out
+# and a post_hook (folder icons + cursor recolor) -- none of that is copied.
+#
+# ONE template is added at seed time by ./tenkai (tenkai_seed_matugen), not here: kitty.
+# Its two paths cannot be baked into this file because they follow the running
+# session's XDG dirs (Tenkai's own template copy in, the session cache out), so the
+# block
+#
+#   [templates.kitty]
+#   input_path  = <XDG_CONFIG_HOME>/tenkai/matugen/templates/kitty-colors.conf
+#   output_path = <XDG_CACHE_HOME>/tenkai/kitty-colors.conf
+#
+# is appended with both ends expanded. In a live session the output is
+# ~/.cache/tenkai/kitty-colors.conf, which is what the owner's kitty.conf includes.
+[config]
+
+[templates]

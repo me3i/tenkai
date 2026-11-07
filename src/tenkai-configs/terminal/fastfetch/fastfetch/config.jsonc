@@ -1,0 +1,100 @@
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+  "logo": {
+    "type": "builtin"
+  },
+  "display": {
+    "color": {
+      "keys": "38;2;248;200;220"
+    },
+    "key": {
+      "width": 9
+    },
+    "percent": {
+      "color": {
+        "green": "38;2;127;191;106",
+        "red": "38;2;226;52;42",
+        "yellow": "38;2;217;164;65"
+      },
+      "type": 9
+    },
+    "separator": "  "
+  },
+  "modules": [
+    "break",
+    {
+      "type": "title",
+      "format": "\u001b[1;38;2;243;237;225m{user-name}\u001b[0m\u001b[38;2;143;135;112m @ \u001b[0m\u001b[1;38;2;243;237;225m{host-name}\u001b[0m"
+    },
+    "break",
+    {
+      "format": "\u001b[38;2;248;200;220m──\u001b[0m \u001b[1;38;2;243;237;225mVITALS\u001b[0m \u001b[38;2;58;46;36m──────────────────────────\u001b[0m",
+      "type": "custom"
+    },
+    {
+      "key": "CPU",
+      "type": "cpu"
+    },
+    {
+      "detectionMethod": "pci",
+      "key": "GPU",
+      "type": "gpu"
+    },
+    {
+      "key": "MEMORY",
+      "type": "memory"
+    },
+    {
+      "key": "DISK",
+      "type": "disk"
+    },
+    "break",
+    {
+      "format": "\u001b[38;2;248;200;220m──\u001b[0m \u001b[1;38;2;243;237;225mSYSTEM\u001b[0m \u001b[38;2;58;46;36m──────────────────────────\u001b[0m",
+      "type": "custom"
+    },
+    {
+      "key": "OS",
+      "text": "echo \"Tenkai Arch Linux\"",
+      "type": "command"
+    },
+    {
+      "key": "BRANCH",
+      "text": "echo \"main\"",
+      "type": "command"
+    },
+    {
+      "key": "KERNEL",
+      "type": "kernel"
+    },
+    {
+      "key": "PKGS",
+      "type": "packages"
+    },
+    "break",
+    {
+      "format": "\u001b[38;2;248;200;220m──\u001b[0m \u001b[1;38;2;243;237;225mSESSION\u001b[0m \u001b[38;2;58;46;36m─────────────────────────\u001b[0m",
+      "type": "custom"
+    },
+    {
+      "key": "UPTIME",
+      "type": "uptime"
+    },
+    {
+      "key": "AGE",
+      "text": "echo $(( ($(date +%s) - $(stat -c %W /)) / 86400 )) days",
+      "type": "command"
+    },
+    {
+      "key": "TERM",
+      "type": "terminal"
+    },
+    "break",
+    {
+      "type": "colors",
+      "symbol": "circle",
+      "paddingLeft": 2
+    },
+    "break"
+  ]
+}

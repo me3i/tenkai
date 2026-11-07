@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# tenkai-app: launch the user's chosen app for a role, or Tenkai's default.
+#
+#	tenkai-app terminal              open the terminal
+#	tenkai-app terminal -- htop      run htop inside it
+#
+# Ported from Tenkai's ryoku-app, trimmed to the role the shell uses
+# (AppLaunch.qml launches every Terminal=true desktop entry through it).
+# The choice lives in ~/.config/tenkai/desktop.json under desktop.apps.terminal
+# (the Settings app writes it); the fallback is kitty, so an unconfigured
+# desktop still opens a terminal.
+set -euo pipefail
+
+# A Quickshell that has crashed once leaves the memfd of the config it came
+# back from in the environment. Quickshell reads that variable before parsing
+# arguments, so a terminal opened from the launcher would draw a second
+# desktop instead of the app. Drop the handle once, here.
+unset __QUICKSHELL_CRASH_INFO_FD __QUICKSHELL_CRASH_DUMP_PID \
+	__QUICKSHELL_CRASH_DUMP_FD __QUICKSHELL_CRASH_LOG_FD \
+	__QUICKSHELL_CRASH_SIGNAL
+
+role="${1:-}"
+[ -n "$role" ] || { echo "usage: tenkai-app <role> [-- <program> [arg...]]" >&2; exit 2; }
+shift
+
+inner=()
+if [ "${1:-}" = "--" ]; then
+	shift
+	inner=("$@")
+	[ ${#inner[@]} -gt 0 ] || { echo "tenkai-app: -- needs a program to run" >&2; exit 2; }
+fi
+
+case "$role" in
+terminal) fallback="kitty" ;;
+run)
+	# A plain program launch: the program comes after "--", so there is no
+	# desktop-app store entry to look up and no fallback to invent.
+	fallback=""
+	;;
+*)
+	echo "tenkai-app: no default for role \"$role\"" >&2
+	exit 1
+	;;
+esac
+
+if [ "$role" = "run" ] && [ ${#inner[@]} -eq 0 ]; then
+	echo "tenkai-app: run needs a program: tenkai-app run -- <program> [arg...]" >&2
+	exit 2
+fi
+
+store="${XDG_CONFIG_HOME:-$HOME/.config}/tenkai/desktop.json"
+cmd=""
+if [ "$role" != "run" ] && [ -r "$store" ] && command -v jq >/dev/null 2>&1; then
+	cmd="$(jq -r --arg r "$role" '.desktop.apps[$r] // empty' "$store" 2>/dev/null || true)"
+fi
+[ -n "$cmd" ] || cmd="$fallback"
+
+# Live trial: an app the launcher starts must run in the owner's real
+# environment, not Tenkai's confined one. TENKAI_APP_HOME carries the real HOME (and
+# the real XDG_* follow from it); Tenkai's own state stays inside the project.
+# The lookup above already read Tenkai's own desktop.json, so the chosen terminal
+# is still the one Tenkai stored.
+if [ -n "${TENKAI_APP_HOME:-}" ]; then
+	export HOME="$TENKAI_APP_HOME"
+	export XDG_CONFIG_HOME="${TENKAI_APP_XDG_CONFIG_HOME:-$HOME/.config}"
+	export XDG_CACHE_HOME="${TENKAI_APP_XDG_CACHE_HOME:-$HOME/.cache}"
+	export XDG_STATE_HOME="${TENKAI_APP_XDG_STATE_HOME:-$HOME/.local/state}"
+	export XDG_DATA_HOME="${TENKAI_APP_XDG_DATA_HOME:-$HOME/.local/share}"
+	export XDG_RUNTIME_DIR="${TENKAI_APP_XDG_RUNTIME_DIR:-$XDG_RUNTIME_DIR}"
+	unset TENKAI_APP_HOME TENKAI_APP_XDG_CONFIG_HOME TENKAI_APP_XDG_CACHE_HOME \
+		TENKAI_APP_XDG_STATE_HOME TENKAI_APP_XDG_DATA_HOME TENKAI_APP_XDG_RUNTIME_DIR
+fi
+
+if [ "$role" = "run" ]; then
+	# A plain program: the launcher already resolved the whole command line,
+	# so there is no terminal to hand it to.
+	exec "${inner[@]}"
+fi
+
+if [ ${#inner[@]} -eq 0 ]; then
+	exec sh -c "$cmd"
+fi
+
+# Handing a program over is per-emulator: kitty and foot take trailing argv.
+read -r -a argv <<<"$cmd"
+case "${argv[0]##*/}" in
+kitty | foot) ;;
+wezterm) argv+=(start --) ;;
+*) argv+=(-e) ;;
+esac
+exec "${argv[@]}" "${inner[@]}"

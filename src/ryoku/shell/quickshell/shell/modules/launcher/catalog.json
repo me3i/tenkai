@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "default": "main",
+  "fallback": "main",
+  "variants": [
+    {
+      "id": "main",
+      "name": "Main",
+      "description": "Compact command palette with a centered RestDashboard image card.",
+      "entrypoint": "variants/main/Main.qml",
+      "preview": "variants/main/Preview.qml",
+      "capabilities": [
+        "shape",
+        "background",
+        "results",
+        "hero"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Tenkai Settings
+GenericName=Settings
+Comment=Configure the Tenkai desktop: appearance, bar and launcher
+Exec=tenkai-shell hub open
+Terminal=false
+Icon=tenkai-hub
+Categories=Settings;DesktopSettings;
+Keywords=hub;settings;preferences;tenkai;configure;appearance;bar;launcher;motion;
