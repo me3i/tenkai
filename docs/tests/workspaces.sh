@@ -22,7 +22,7 @@ note(){ echo "NOTE        $*"; }
 # Clean stale state from prior gates (same fix as F2 isolation bug)
 rm -rf "$RUN/r/quickshell/by-id"/* 2>/dev/null || true
 # Ensure clean exit: stop any leftover Tenkai session
- trap 'cd /home/tenkai/projects/tenkai 2>/dev/null; ./tenkai stop >/dev/null 2>&1' EXIT
+ trap 'cd "$TENKAI" 2>/dev/null; ./tenkai stop >/dev/null 2>&1' EXIT
 # Resolve nested session signature from the actual session directory
 # (same pattern as launcher-check.sh: discover after ./tenkai run)
 SIG=""

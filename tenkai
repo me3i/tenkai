@@ -1311,7 +1311,7 @@ tenkai_is_session_proc() { # $1 = pid -> 0 when it is a Tenkai session process
 # Processes that are provably part of a Tenkai session but are not recorded in
 # .run/pids — e.g. spawned by a test helper that outlived its recorded PIDs.
 # The script itself is skipped, and so are all of its ancestors: an invoking
-# `bash -c '... /home/tenkai/projects/tenkai ...'` carries the project path in its
+# `bash -c '... <project dir> ...'` carries the project path in its
 # cmdline and must never be signalled.
 tenkai_find_leaked() {
   local self=$$ a=$$

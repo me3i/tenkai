@@ -1,7 +1,7 @@
 # Tenkai wallpapers
 
-No wallpapers are shipped in this repo. The owner's current wallpaper is a
-wallhaven upload with no explicit redistribution license, and Tenkai's other
+No wallpapers are shipped in this repo. The owner's current wallpapers are
+uploads with no explicit redistribution license, and Tenkai's other
 candidates are personal photos — redistributing any of them from a public
 repository is not something this repo does.
 
