@@ -303,11 +303,11 @@ EXTRA_PATH="$RUN/deps/bin:" EXTRA_ENV="TENKAI_BRIGHTNESS_FAKE=$RUN/state/s9a-unw
 bar_up && ok "S9a bar renders with a failing brightnessctl" || bad "S9a bar missing"
 r="$( HOME="$RUN/home" XDG_RUNTIME_DIR="$RT" DBUS_SESSION_BUS_ADDRESS="$BUS" "$RUN/bin/tenkai-shell" brightness up 2>&1 )"
 # The verb's convention is the daemon's: an error is "err <verb>: <why>", which
-# the client prints as "ryoku-shell: <verb>: <why>" and exits non-zero. Assert on
+# the client prints as "tenkai-shell: <verb>: <why>" and exits non-zero. Assert on
 # that structure, not on one particular wording: an empty reply here would mean
 # the verb claimed "ok" while the backend could not run at all.
 case "$r" in
-  err\ brightness:*|*"ryoku-shell: brightness:"*)
+  err\ brightness:*|*"tenkai-shell: brightness:"*)
     ok "S9a brightness verb degrades to an error string ($r)" ;;
   *) bad "S9a brightness verb returned '$r'" ;;
 esac
