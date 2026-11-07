@@ -73,15 +73,17 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   CELESTIAL_GOLD=$'\e[38;5;220m' # success, and the closing line
   STAR_WHITE=$'\e[1;37m'         # body text
   TWINKLE_CYAN=$'\e[38;5;212m'   # accents, and the shooting star — hot pink
+  RYOKU_ORANGE=$'\e[38;5;208m'   # the TENKAI block art and the 天界 seal only
   # The earlier names stay as aliases, so no call site has to change.
   THIN=$DEEP_BLUE
   WH=$STAR_WHITE
   GOLD=$CELESTIAL_GOLD
-  CY=$TWINKLE_CYAN               # banner art and info arrows (was cyan)
+  CY=$TWINKLE_CYAN               # info arrows (was cyan)
   BL=$SOFT_PURPLE                # suggested commands (was bold blue)
 else
   R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
   DEEP_BLUE='' SOFT_PURPLE='' CELESTIAL_GOLD='' STAR_WHITE='' TWINKLE_CYAN=''
+  RYOKU_ORANGE=''
   THIN='' GOLD=''
 fi
 
@@ -186,7 +188,7 @@ TAGLINE='The Celestial Lite version of Ryoku Quickshell'
 # The opened and closed gate of the installer.
 print_banner() {
   local row
-  printf '\n%s' "$CY$B"
+  printf '\n%s' "$RYOKU_ORANGE$B"
   for row in "${BANNER_ROWS[@]}"; do printf ' %s\n' "$row"; done
   printf '%s' "$R"
   printf '%s      %s%s\n' "$GY" "$TAGLINE" "$R"
@@ -226,7 +228,7 @@ print_success() {
   _celestial_twinkle
   printf '\n%s╭%s╮%s\n' "$THIN" "$rule" "$R"
   fl 0 "" 0
-  for row in "${BANNER_ROWS[@]}"; do fl 1 "${CY}${B}${row}${R}" "$BANNER_W"; done
+  for row in "${BANNER_ROWS[@]}"; do fl 1 "${RYOKU_ORANGE}${B}${row}${R}" "$BANNER_W"; done
   fl 0 "" 0
   fl 6 "${WH}${TAGLINE}${R}" 46
   fl 0 "" 0
