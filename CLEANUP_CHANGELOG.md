@@ -284,6 +284,59 @@ Also cleaned `panels/qmldir`: removed the `ImageCarouselPanel` registration line
 
 `bash -n` OK, `go build ./...` OK, `./tenkai verify-untouched` PASS.
 
+### Phase 3 — Go backend sweep (execution & memory)
+
+Delivered: **0 files deleted** (no dead Go code found).
+
+#### Finding
+
+Scanned all 4 Go module roots (`hub/backend`, `shell/ipc`, `wm`, `ryogami/daemon`) via function-level cross-referencing. Every `.go` file in `hub/backend/` is reachable through a dependency chain from a kept CLI subcommand or kept module:
+
+- GPU tuning subsystem (`gpuapply.go`, `gputune.go`, `gpudomain.go`, `gpupreset.go`) is interconnected: `cputune.go` → `gputune.go` (Tunable type) → `gpuapply.go` (escalateSelf) + `gpupreset.go` (runGpuPreset). `cputune.go` is the `tenkai cpu` CLI handler (kept: system monitor).
+- Lighting subsystem (`lightingfx.go`) is used by `openrgb.go` (46 refs, kept: lighting/quick settings).
+- Import subsystem (`import_types.go`, `import_parse.go`, `import_apply.go`, `import_undo.go`) is used by `import.go` (kept: import CLI).
+- `desktop_enum.go` is used by `desktop.go` (listCursorThemes, listKbLayouts, listKbVariants).
+- `daemonclient.go` is used by `cputune.go` + `clipboard.go` (daemonCall).
+- `fsutil.go` is used by 10+ files (fileExists, configHome, dataHome).
+
+#### Pre-existing issues found (not introduced by this audit)
+
+- `gpuhook_test.go:43: undefined: sysAction` — pre-existing test compilation issue; not caused by this audit. Does not affect `go build`.
+
+#### Verification
+
+`go build ./...` across all 4 modules — PASS. `go vet` — PASS (except pre-existing gpuhook_test.go issue). `./tenkai verify-untouched` — PASS.
+
+### Phase 4 — Script & dependency stripping
+
+Delivered: **0 files deleted** (all scripts and dependencies are used).
+
+#### Scripts (src/ryoku/shell/scripts/)
+
+All 7 scripts are deployed and used by Tenkai:
+
+- `tenkai-app` — Tenkai's app launcher (5 refs)
+- `tenkai-screenshot` — Tenkai's screenshot tool (4 refs)
+- `ryoku-cmd-brightness` — brightness control, shipped verbatim from Ryoku (5 refs)
+- `ryoku-app` — app launcher helper (18 refs)
+- `ryoku-summon` — window summon (3 refs)
+- `ryoku-volume` — volume control (3 refs)
+- `ryoku-restart-audio` — audio restart (1 ref)
+
+The `ryoku-*` scripts are intentional: they are the original Ryoku helpers that Tenkai's Hyprland keybinds still exec. The `tenkai` script's `TENKAI_OWNED_BINS` list (line 172) and `tenkai_provision_bin()` (line 305) both enumerate all 7 scripts as deployed binaries.
+
+#### install.sh dependencies
+
+Dependency checks cover: Go toolchain, C compiler, cmake, ninja, HIDAPI, pipewire/wireplumber, font tools (fc-cache, fc-list), and font packages (JetBrains Mono Nerd, Space Mono Nerd, Material Symbols). All are used by kept features. No dead dependency checks found in a quick scan.
+
+#### tenkai script
+
+No legacy dead code paths found. The rebrand from "Mei" to "Tenkai" is complete: `CHANGES.md` documents the rename, and the script uses `TENKAI_` prefixes consistently. No "Mei" references remain in active code paths.
+
+#### Verification
+
+`bash -n tenkai && bash -n install.sh` — PASS. `go build ./...` — PASS. `./tenkai verify-untouched` — PASS.
+
 ---
 
 *End of Phase 16 changelog (so far). Append to this file as the next cleanup pass starts; do not
