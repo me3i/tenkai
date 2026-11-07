@@ -5,7 +5,6 @@ BrightnessPanel BrightnessPanel.qml
 DashboardPopup DashboardPopup.qml
 CpuPanel CpuPanel.qml
 GpuPanel GpuPanel.qml
-ImageCarouselPanel ImageCarouselPanel.qml
 MemoryPanel MemoryPanel.qml
 MicrophonePeakMonitor MicrophonePeakMonitor.qml
 MprisPanel MprisPanel.qml
