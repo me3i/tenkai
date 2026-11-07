@@ -70,13 +70,13 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   # ── two colours, one note: a purple UI under a white mark, gold to close ──
   FRAME_PINK=$'\e[38;5;213m'     # the box outlines only: ╭ ─ ╮ │ ╰ ╯
   UI_PURPLE=$'\e[38;5;141m'      # step headers, small text, arrows, spinners
-  BANNER_WHITE=$'\e[1;37m'       # the TENKAI block art and the 天界 seal only
+  BANNER_WHITE=$'\e[1;37m'       # the tagline, step titles and closing lines
   CELESTIAL_GOLD=$'\e[38;5;220m' # success, and the closing line
   # The earlier names stay as aliases, so no call site has to change.
   DEEP_BLUE=$FRAME_PINK          # every frame rule
   SOFT_PURPLE=$UI_PURPLE         # step headers and the turning star
   TWINKLE_CYAN=$UI_PURPLE        # accents, and the shooting star
-  RYOKU_ORANGE=$BANNER_WHITE     # banner art, in white now
+  RYOKU_ORANGE=$DEEP_BLUE        # banner art, in pink now (the frame colour)
   STAR_WHITE=$BANNER_WHITE       # tagline, step titles, closing lines
   THIN=$DEEP_BLUE
   WH=$STAR_WHITE
