@@ -13,8 +13,10 @@
   `ryoku/i18n` (22 MB) — none needed. Anything outside the sparse set is read read-only with
   `git show HEAD:<path>` / `git ls-tree -r HEAD <dir>` (this fetches the blob, it does not
   materialise the tree).
-- Local path: `~/projects/mei/upstream/` — **READ-ONLY. Never edited.** All Mei modifications
-  happen in `src/` and are recorded in `CHANGES.md`.
+- Local path: `~/projects/tenkai/upstream/` — **READ-ONLY. Never edited.** All Tenkai
+  modifications happen in `src/` and are recorded in `CHANGES.md`.
+- **The upstream folder was deleted in Phase 17 to save space. Clone it again if you need to
+  reference the original source.**
 
 Notes:
 - The clone was pre-seeded on this machine on 2026-10-19 09:42 (this machine), before this session

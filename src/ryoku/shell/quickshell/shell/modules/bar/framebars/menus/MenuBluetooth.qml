@@ -151,6 +151,12 @@ Item {
         linkProc.running = false;
         linkProc.running = true;
     }
+    // Deliberately no `running:` binding. link() starts this imperatively
+    // (`running = false; running = true`), and an imperative write would destroy
+    // a binding anyway -- the orphan-process trap documented in
+    // AudioBars.cavaProc. Process defaults to running: false, link() is the only
+    // starter, and its `if (linkProc.running) return` guard means this can never
+    // run twice at once.
     Process { id: linkProc }
 
     RevealerRow {

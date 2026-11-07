@@ -339,5 +339,48 @@ No legacy dead code paths found. The rebrand from "Mei" to "Tenkai" is complete:
 
 ---
 
+# Phase 17 — Blind Spot audit + final documentation pass
+
+## Blind Spot audit (static readiness check before the live switch)
+
+| Check | Result |
+|-------|--------|
+| Dynamic QML loading trap | **None found.** No string-built `source:` concatenates a variable into a `panels/`/`modules/` path; the shell uses `LazyLoader`/`ServiceLoader`. The deleted `MediaBrowserPanel.qml` / `ImageCarouselPanel.qml` have no remaining refs. |
+| Startup lazy-loading | **No bloat.** Only 5 singletons are eager (`shell.qml:79`). Launcher, Overview, clipboard, control-center, dock, osd, notifs, region, capture are all inside `LazyLoader`s. The Settings UI is not instantiated in `shell.qml`. |
+| Stub clutter | **Keep all 18.** Every `.run/bin/` stub shadows a live-system binary Tenkai actually calls; removing one would let exec resolve outside Tenkai. |
+| Go goroutine leaks | **No confirmed leak.** Every `go func()` in `ipc/` is bounded by `ctx.Done`, a `done` channel, or `d.quit`. |
+
+### The 3 "Review Required" items — outcome
+
+| Item | Verdict | Action |
+|------|---------|--------|
+| `PluginPopouts.qml` `discoverProc { running: true }` | **Not a leak.** `bash discover.sh` is one-shot: it runs once at build, prints JSON, exits. No timer repeats it; `reload()` re-arms it only on a real `plugins.json` / store-revision change. | Comment added documenting the one-shot semantics. Gating it on popout-open would break discovery (no plugin list -> no popout to open). |
+| `MenuBluetooth.qml` `Process { id: linkProc }` | **Not a leak.** Quickshell `Process` defaults to `running: false`; `link()` is the only starter and it is guarded by `if (linkProc.running) return`. | Comment added explaining why no `running:` binding is added (an imperative start would destroy it anyway — the AudioBars trap). |
+| `calendar.go` load goroutine | **Real fix applied.** It only checked `generation` *after* every requested year had been read, so a shutdown or rapid re-configure ran the goroutine to completion. | Added `quit <-chan struct{}` (wired to `d.quit`) and a `cancelled(generation)` helper checked at the top of the year loop. |
+
+## Final documentation pass
+
+| File | Change |
+|------|--------|
+| `AGENTS.md` | `user tenkai` -> `user mei`; `upstream/` refs -> "the original Ryoku source (if cloned)" with a note that it was removed in Phase 17. |
+| `UPSTREAM.md` | Local path `~/projects/mei/upstream/` -> `~/projects/tenkai/upstream/`; `Mei` -> `Tenkai`; added the "deleted in Phase 17, clone again if needed" note. |
+| `CREDITS.md` | "Mei is a modified derivative" -> "Tenkai is..."; all remaining `Mei` references -> `Tenkai`. |
+| `ARCHITECTURAL_AUDIT.md` | Frozen-snapshot note added at the very top (file body otherwise untouched). |
+
+## Lock ghost
+
+`src/ryoku/hub/backend/main.go` `usage()` listed `ryoku-hub lock list` / `lock set <slug>`, but there
+is no `case "lock"` branch and the lock screen was removed. Both usage lines deleted.
+
+## Verification (this pass)
+
+- `bash -n tenkai && bash -n install.sh` — PASS.
+- `go build -trimpath -p 2 ./...` — PASS in all four module roots (`hub/backend`, `shell/ipc`,
+  `ryogami/daemon`, `wm`).
+- `go vet ./...` in `shell/ipc` — PASS.
+- `./tenkai verify-untouched` — **PASS**.
+
+---
+
 *End of Phase 16 changelog (so far). Append to this file as the next cleanup pass starts; do not
 edit `ARCHITECTURAL_AUDIT.md` for the same reason.*

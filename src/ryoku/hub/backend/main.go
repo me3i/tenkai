@@ -207,8 +207,6 @@ func usage() {
 	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs profiles")
 	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs save <name> <json>")
 	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs load|rm <name>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub lock list")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub lock set <slug>")
 	fmt.Fprintln(os.Stderr, "  ryoku-hub cpu caps [<profile>]")
 	fmt.Fprintln(os.Stderr, "  ryoku-hub cpu active")
 	fmt.Fprintln(os.Stderr, "  ryoku-hub cpu set <scope> <id> <value>")

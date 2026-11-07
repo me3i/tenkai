@@ -80,6 +80,10 @@ Item {
         }
     }
 
+    // One-shot, not a loop: bash runs discover.sh once when this host is built,
+    // prints the plugin list and exits. Nothing repeats it on a timer -- `running`
+    // is re-armed only by reload(), which fires when plugins.json or the store
+    // revision actually changes -- so this cannot accumulate discover processes.
     Process {
         id: discoverProc
         command: ["bash", root._script]

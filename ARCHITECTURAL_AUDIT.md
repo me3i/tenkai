@@ -1,3 +1,6 @@
+> **NOTE: This is a frozen historical snapshot. The upstream folder has been deleted, and
+> Phase 16 is complete.**
+
 # Tenkai — Architectural Audit Handbook
 
 Read-only architectural audit and component classification for the Tenkai project (`~/projects/tenkai`).

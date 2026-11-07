@@ -2,15 +2,16 @@
 
 Tenkai is a reduced, modular, standalone shell built by **copying and trimming the real
 upstream Ryoku source** (https://github.com/Ryoku-dev/ryoku). It must run on the owner's
-existing Arch + Hyprland session (user `tenkai`). Priorities, in order:
+existing Arch + Hyprland session (user `mei`). Priorities, in order:
 
 1. Visual quality and animations, 2. reuse original code, 3. works independently on the
 existing system, 4. strict no-bloat reduction, 5. modular, 6. measured performance.
 
 ## Layout
 
-- `upstream/` — private clone of Ryoku at a pinned commit. **READ-ONLY. Never edit.**
-- `src/` — the Tenkai tree (copies/adaptations from upstream live here).
+- `upstream/` — the original Ryoku source (if cloned). **READ-ONLY. Never edit.** It was
+  removed in Phase 17 to save space; clone it again if you need to reference the original source.
+- `src/` — the Tenkai tree (copies/adaptations from that source live here).
 - `docs/` — install/verify runbooks: `LIVE-CHECKLIST.md`, `LIVE-TEST.md`, `MODULES.md`,
   `ROLLBACK.md`, `revert-to-previous-shell.sh`, `tests/`, `baseline/` snapshots (not tracked).
 - `tenkai` — control script (`baseline`, `verify-untouched`, `status`, `run`, `stop`, `test`).
@@ -69,7 +70,8 @@ record: why it is needed, RAM/CPU cost, and the process/daemon it spawns. If in 
 
 - Work phase by phase (see `docs/`); **STOP for approval** where the owner marked it
   (Phase 3 review, Phase 5 before installs/destructive changes).
-- Copy and adapt from `upstream/`; never regenerate components "from scratch". Trace
+- Copy and adapt from the original Ryoku source (if cloned); never regenerate components
+  "from scratch". Trace
   dependencies before removing; prefer disabling over deleting. Rename/de-brand only where
   needed; keep attribution and upstream notices.
 - Commit after every phase, with a message stating what changed and how it was verified.

@@ -42,6 +42,10 @@ type calendarState struct {
 	topic    *stateTopic
 	cacheDir string
 	now      func() time.Time
+	// quit is the daemon's shutdown channel. It is the load goroutine's escape
+	// hatch: closing it ends an in-flight load instead of walking every
+	// requested year for a frame no subscriber will ever see.
+	quit <-chan struct{}
 
 	mu         sync.Mutex
 	generation uint64
@@ -144,6 +148,7 @@ func (d *daemon) startCalendar() {
 	s := &calendarState{
 		topic:    d.registerTopic("calendar"),
 		cacheDir: calendarCacheDir(), now: time.Now,
+		quit: d.quit,
 	}
 	s.publish(calendarFrame{Status: "loading", Days: []calendarHoliday{}})
 	d.registerCall("calendar.configure", func(raw json.RawMessage) (any, error) {
@@ -157,6 +162,21 @@ func (d *daemon) startCalendar() {
 		s.configure(request.Region, request.Years)
 		return map[string]any{"ok": true}, nil
 	})
+}
+
+// cancelled reports whether an in-flight load should stop: the daemon is
+// shutting down, or a newer configure has superseded this run. The generation
+// check alone only ran once every requested year had been read, so a shutdown
+// or a rapid re-configure left the goroutine running to completion first.
+func (s *calendarState) cancelled(generation uint64) bool {
+	select {
+	case <-s.quit:
+		return true
+	default:
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return generation != s.generation
 }
 
 func (s *calendarState) configure(region string, years []int) {
@@ -192,6 +212,12 @@ func (s *calendarState) configure(region string, years []int) {
 		source := "cache"
 		lastError := validationError
 		for _, year := range ordered {
+			// Escape hatch: daemon shutdown, or a newer configure that already
+			// bumped the generation, ends this load rather than reading the
+			// remaining years for a frame that can no longer be published.
+			if s.cancelled(generation) {
+				return
+			}
 			loaded, loadedSource, err := s.loadYear(country, subdivision, year)
 			days = append(days, loaded...)
 			if loadedSource == "network" || source == "cache" {
