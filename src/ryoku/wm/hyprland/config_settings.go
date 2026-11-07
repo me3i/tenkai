@@ -606,7 +606,7 @@ func genAppOverride(i int, a AppOverride) string {
 	if len(props) == 0 {
 		return ""
 	}
-	name := fmt.Sprintf("ryoku-app-%d", i+1)
+	name := fmt.Sprintf("tenkai-app-%d", i+1)
 	return fmt.Sprintf("hl.window_rule({ name = %s, match = { %s }, %s })\n",
 		luaStr(name), strings.Join(match, ", "), strings.Join(props, ", "))
 }

@@ -115,7 +115,7 @@ Item {
         }
     }
     function openSettings() {
-        Spawn.run(["sh", "-c", "ryoku-hub config set section widgets; flock -n -o /tmp/tenkai-hub.lock qs -c hub"]);
+        Spawn.run(["sh", "-c", "tenkai-hub config set section widgets; flock -n -o /tmp/tenkai-hub.lock qs -c hub"]);
         menu.close();
     }
     function refreshShell() {

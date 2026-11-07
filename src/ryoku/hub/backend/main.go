@@ -58,100 +58,100 @@ func main() {
 	case "keybinds":
 		b, err := json.Marshal(keybinds())
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 		os.Stdout.Write(b)
 		fmt.Println()
 	case "apps":
 		if err := printApps(); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 		fmt.Println()
 	case "config":
 		if err := runConfig(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "shell":
 		if err := runShellPref(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "desktop":
 		if err := runDesktop(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "wm":
 		if err := runWm(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "overrides":
 		if err := runOverrides(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "outputs":
 		if err := runOutputs(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "cpu":
 		if err := runCpu(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "lighting":
 		if err := runLighting(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "rice":
 		if err := runRice(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "fastfetch":
 		if err := runFastfetch(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "profile":
 		if err := runProfile(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "matugen":
 		if err := runMatugenCmd(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "reload-cover":
 		if err := runReloadCover(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "import":
 		if err := runImport(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "palette-bridge":
 		if err := runPaletteBridge(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "share":
 		if err := runShare(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	case "clipboard":
 		if err := runClipboard(args[1:]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-hub:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-hub:", err)
 			os.Exit(1)
 		}
 	default:
@@ -187,43 +187,43 @@ func runConfig(args []string) error {
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage:")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub keybinds")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub config get <key>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub config set <key> <value>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub shell get|set <fish|bash|zsh>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop get|defaults|cursors|layouts")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop variants <layout>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop save|preview <json>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop restore")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop set-rebind <default> <chosen>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop plugins list")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop plugins rebuild [--all|--stale] [--checkout <dir>] [<id>...]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop plugins add [--inspect] <git-url> [<plugin>...]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub desktop plugins remove <id>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub wm list")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub wm preview <name>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs [list]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs apply <json>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs profiles")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs save <name> <json>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub outputs load|rm <name>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub cpu caps [<profile>]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub cpu active")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub cpu set <scope> <id> <value>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub lighting state|scan|enable|disable|apply")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub lighting set <device> <json>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub lighting accent [#RRGGBB]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub lighting save|release <device>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub palette-bridge status|install|service|integration|doctor [<source>]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub share status")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub rice list|preflight|capture|apply|restore|save|fork|delete|import|publish|setwall|files|export")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub fastfetch get|preview <json>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub fastfetch save <json>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub fastfetch import-logo <path>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub reload-cover import <path>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub reload-cover prune [<managed-path>]")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub clipboard stats|prune")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub import scan <path|url>")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub import apply <decisions.json|->")
-	fmt.Fprintln(os.Stderr, "  ryoku-hub import undo [<ts>]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub keybinds")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub config get <key>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub config set <key> <value>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub shell get|set <fish|bash|zsh>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop get|defaults|cursors|layouts")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop variants <layout>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop save|preview <json>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop restore")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop set-rebind <default> <chosen>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop plugins list")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop plugins rebuild [--all|--stale] [--checkout <dir>] [<id>...]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop plugins add [--inspect] <git-url> [<plugin>...]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub desktop plugins remove <id>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub wm list")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub wm preview <name>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub outputs [list]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub outputs apply <json>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub outputs profiles")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub outputs save <name> <json>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub outputs load|rm <name>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub cpu caps [<profile>]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub cpu active")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub cpu set <scope> <id> <value>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub lighting state|scan|enable|disable|apply")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub lighting set <device> <json>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub lighting accent [#RRGGBB]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub lighting save|release <device>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub palette-bridge status|install|service|integration|doctor [<source>]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub share status")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub rice list|preflight|capture|apply|restore|save|fork|delete|import|publish|setwall|files|export")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub fastfetch get|preview <json>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub fastfetch save <json>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub fastfetch import-logo <path>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub reload-cover import <path>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub reload-cover prune [<managed-path>]")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub clipboard stats|prune")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub import scan <path|url>")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub import apply <decisions.json|->")
+	fmt.Fprintln(os.Stderr, "  tenkai-hub import undo [<ts>]")
 }

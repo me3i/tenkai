@@ -525,6 +525,11 @@ func describeDispatcher(d string) string {
 }
 
 func describeExec(cmd string) string {
+	// The launcher-role prefix, current name first: an imported config may have
+	// been written against either spelling, and both mean the same role.
+	if strings.HasPrefix(cmd, "tenkai-app ") {
+		return strings.TrimPrefix(cmd, "tenkai-app ")
+	}
 	if strings.HasPrefix(cmd, "ryoku-app ") {
 		return strings.TrimPrefix(cmd, "ryoku-app ")
 	}

@@ -344,7 +344,7 @@ func translateBind(b importBind) (string, bool) {
 
 // dispatcherToDsp maps a native dispatcher + args onto the hl.dsp expression.
 // Only forms observed in ryoku/hyprland (binds.lua, resize.lua, fullscreen.lua,
-// lid.lua) and the ryoku-workspace script are emitted.
+// lid.lua) and the tenkai-workspace script are emitted.
 func dispatcherToDsp(disp, args string) (string, bool) {
 	switch disp {
 	case "exec":
@@ -411,7 +411,7 @@ func dirToken(s string) string {
 }
 
 // workspaceArg emits a numeric workspace id bare and anything else (relative
-// r-1, special:name, named) as a Lua string, matching ryoku-workspace's forms.
+// r-1, special:name, named) as a Lua string, matching tenkai-workspace's forms.
 func workspaceArg(args string) string {
 	a := strings.TrimSpace(args)
 	if _, err := strconv.Atoi(a); err == nil {

@@ -4,7 +4,7 @@ hl.on("hyprland.start", function()
     -- might ask for a stored secret. Idempotent: if PAM already started it at
     -- login (unlock-on-login mode), this just re-prints its env and exits.
     hl.exec_cmd("gnome-keyring-daemon --start --components=secrets,pkcs11")
-    hl.exec_cmd("ryoku-wm-hyprland act cursor.set Bibata-Modern-Ice 24")
+    hl.exec_cmd("tenkai-wm-hyprland act cursor.set Bibata-Modern-Ice 24")
     hl.exec_cmd("gsettings set org.gnome.desktop.interface color-scheme prefer-dark")
     -- adw-gtk3-dark, not Adwaita-dark: stock Adwaita GTK3 hardcodes its colours,
     -- so the palette Tenkai generates barely reaches GTK3 apps, while adw-gtk3
@@ -24,7 +24,7 @@ hl.on("hyprland.start", function()
     -- take the session's single agent slot. Stopping it is idempotent and
     -- harmless when it was never started.
     hl.exec_cmd("systemctl --user stop hyprpolkitagent 2>/dev/null || true")
-    hl.exec_cmd("command -v ryoku-monitor >/dev/null 2>&1 && ryoku-monitor autoscale")
+    hl.exec_cmd("command -v tenkai-monitor >/dev/null 2>&1 && tenkai-monitor autoscale")
     -- Per-device Bluetooth codec memory. WirePlumber restores a device's PROFILE
     -- across reconnects but not its A2DP codec, so a user who picked one has to
     -- pick it again every single time the buds come back. `watch` reconciles on
@@ -45,7 +45,7 @@ hl.on("hyprland.start", function()
     -- Device lighting: push the stored look back at the keyboards and mice the
     -- user put under Tenkai's control (wallpaper picker > Settings > Lighting). A no-op, and
     -- no OpenRGB at all, until lighting is on with a device adopted.
-    hl.exec_cmd("command -v ryoku-hub >/dev/null 2>&1 && ryoku-hub lighting apply")
+    hl.exec_cmd("command -v tenkai-hub >/dev/null 2>&1 && tenkai-hub lighting apply")
     hl.exec_cmd("command -v ryoku-mic >/dev/null 2>&1 && ryoku-mic")
     -- Night light: hyprsunset is a plain process a reboot drops, so restore the
     -- warm screen when the user left it on. A no-op when it was off or absent.

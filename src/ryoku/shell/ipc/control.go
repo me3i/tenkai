@@ -54,7 +54,7 @@ func audioArgv(sub string) ([]string, bool) {
 	return nil, false
 }
 
-// brightnessArgv maps a brightness subcommand to a ryoku-cmd-brightness step.
+// brightnessArgv maps a brightness subcommand to a tenkai-cmd-brightness step.
 // The reference stepped brightness by 5 on a 0..100 scale (5%); the helper
 // drives both the laptop backlight and any DDC/CI external monitor at once.
 func brightnessArgv(sub string) ([]string, bool) {
@@ -112,7 +112,7 @@ func (d *daemon) brightness(sub string) string {
 		}
 		return "ok"
 	}
-	if err := exec.Command("ryoku-cmd-brightness", argv...).Run(); err != nil {
+	if err := exec.Command("tenkai-cmd-brightness", argv...).Run(); err != nil {
 		return "err brightness: " + err.Error()
 	}
 	return "ok"

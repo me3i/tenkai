@@ -1838,7 +1838,7 @@ Item {
 
     // ── Hotspot subtab ───────────────────────────────────────────────────────
 
-    // brings the persistent RyokuHotspot NetworkManager profile up/down through
+    // brings the persistent TenkaiHotspot NetworkManager profile up/down through
     // nmcli, with an editable SSID + WPA2 password. state and credentials read
     // straight from NM on entry. name + password ride in as positional args,
     // NEVER spliced into the shell string.
@@ -1848,7 +1848,7 @@ Item {
         readonly property var devices: (typeof Networking !== "undefined" && Networking && Networking.devices) ? Networking.devices.values : []
         readonly property var wifiDev: hs.devices.find(function(d) { return d && d.type === DeviceType.Wifi }) || null
 
-        readonly property string hsCon: "RyokuHotspot"
+        readonly property string hsCon: "TenkaiHotspot"
         readonly property string hsIface: hs.wifiDev ? (hs.wifiDev.name || "wlan0") : "wlan0"
         property string hsName: "Tenkai"
         property string hsPw: ""

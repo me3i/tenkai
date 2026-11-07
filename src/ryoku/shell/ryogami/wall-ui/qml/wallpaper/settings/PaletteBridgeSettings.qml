@@ -27,7 +27,7 @@ Column {
     function refresh() {
         if (!statusProc.running) {
             root._statusBuf = ""
-            statusProc.command = ["ryoku-hub", "palette-bridge", "status", Config.paletteBridgeSource]
+            statusProc.command = ["tenkai-hub", "palette-bridge", "status", Config.paletteBridgeSource]
             statusProc.running = true
         }
     }
@@ -37,7 +37,7 @@ Column {
         root.busy = true
         root.message = label + "…"
         root._actionBuf = ""
-        actionProc.command = ["ryoku-hub", "palette-bridge"].concat(args)
+        actionProc.command = ["tenkai-hub", "palette-bridge"].concat(args)
         actionProc.running = true
     }
 
@@ -96,13 +96,13 @@ Column {
 
     SettingsCard {
         colors: root.colors
-        title: I18n.tr("Ryoku Palette Bridge")
-        subtitle: I18n.tr("Live Ryoku wallpaper colours for Zen, Spotify, and Vesktop.")
+        title: I18n.tr("Tenkai Palette Bridge")
+        subtitle: I18n.tr("Live Tenkai wallpaper colours for Zen, Spotify, and Vesktop.")
 
         RowTextInput {
             colors: root.colors
             title: I18n.tr("Build source")
-            description: I18n.tr("Use a local checkout, or Ryoku's packaged source.")
+            description: I18n.tr("Use a local checkout, or Tenkai's packaged source.")
             value: Config.paletteBridgeSource
             placeholder: "/usr/share/ryoku/palette-bridge"
             onCommit: function(v) {

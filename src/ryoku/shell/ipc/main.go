@@ -69,7 +69,7 @@ func main() {
 	}
 	if args[0] == "daemon" {
 		if err := runDaemon(); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-shell:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-shell:", err)
 			os.Exit(1)
 		}
 		return
@@ -92,7 +92,7 @@ func main() {
 		// ryowalls live preview. Runs standalone -- no daemon round trip -- so the
 		// same generator serves apply and preview from one binary.
 		if err := matugenPreview(args[1]); err != nil {
-			fmt.Fprintln(os.Stderr, "ryoku-shell:", err)
+			fmt.Fprintln(os.Stderr, "tenkai-shell:", err)
 			os.Exit(1)
 		}
 		return
@@ -111,7 +111,7 @@ func main() {
 		os.Exit(runBrowserHost())
 	}
 	if err := sendCommand(strings.Join(args, " ")); err != nil {
-		fmt.Fprintln(os.Stderr, "ryoku-shell:", err)
+		fmt.Fprintln(os.Stderr, "tenkai-shell:", err)
 		os.Exit(1)
 	}
 }
@@ -121,7 +121,7 @@ func main() {
 func sendCommand(line string) error {
 	conn, err := net.DialTimeout("unix", sockPath(), 2*time.Second)
 	if err != nil {
-		return fmt.Errorf("daemon not reachable at %s (is `ryoku-shell daemon` running?)", sockPath())
+		return fmt.Errorf("daemon not reachable at %s (is `tenkai-shell daemon` running?)", sockPath())
 	}
 	defer conn.Close()
 	// Generous: a reload waits for the surface to come back and report, and a
@@ -149,16 +149,16 @@ func sendCommand(line string) error {
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage:")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell daemon")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell launcher")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell overview")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell plugin <id>")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell <visualizer|visualizer-overlay>")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell suspend")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell theme [<scheme>|catalog]")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell gtk apply <light|dark>")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell voice")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell bar <list|catalog|move|show|hide|set|position|form|defaults|settings>")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell dock <show|hide|edge|autohide|pin|unpin|list>")
-	fmt.Fprintln(os.Stderr, "  ryoku-shell <reload|status|ping|quit>")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell daemon")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell launcher")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell overview")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell plugin <id>")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell <visualizer|visualizer-overlay>")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell suspend")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell theme [<scheme>|catalog]")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell gtk apply <light|dark>")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell voice")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell bar <list|catalog|move|show|hide|set|position|form|defaults|settings>")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell dock <show|hide|edge|autohide|pin|unpin|list>")
+	fmt.Fprintln(os.Stderr, "  tenkai-shell <reload|status|ping|quit>")
 }

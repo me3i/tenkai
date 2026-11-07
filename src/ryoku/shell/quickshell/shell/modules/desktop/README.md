@@ -94,7 +94,7 @@ and then starts the guarded Hub process. There is no direct menu-to-Hub IPC.
 `Registry` filters enabled plugins whose placement host is `desktopWidget`.
 The host repeats a stable list of plugin IDs so a placement write updates the
 live entry without rebuilding its service or losing its internal state.
-Placement writes go through `ryoku-plugins-place`, resolved from `RYOKU_SHELL_DIR`
+Placement writes go through `tenkai-plugins-place`, resolved from `TENKAI_SHELL_DIR`
 in a dev run (else the packaged `/usr/bin` name); plugin settings stay in the
 plugin store rather than `widgets.json`.
 

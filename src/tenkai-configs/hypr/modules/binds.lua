@@ -12,7 +12,7 @@ hl.bind(K(mod .. " + T"),         hl.dsp.group.toggle())                        
 -- hl.bind(K(mod .. " + SHIFT + D"), hl.dsp.window.fullscreen({ mode = "maximized" })) -- Maximise
 hl.bind(K(mod .. " + C"),         hl.dsp.window.center())                           -- Centre
 hl.bind(K("ALT + Tab"),           hl.dsp.focus({ last = true }))                    -- Last window
-hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("ryoku-monitor toggle"))         -- mirror or extend displays (monitor layout)
+hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("tenkai-monitor toggle"))         -- mirror or extend displays (monitor layout)
 
 -- Focus and move windows
 hl.bind(K(mod .. " + Left"),          hl.dsp.focus({ direction = "left" }))        -- focus left
@@ -46,29 +46,29 @@ hl.bind(K(mod .. " + CTRL + ALT + Up"),     hl.dsp.workspace.move({ monitor = "u
 hl.bind(K(mod .. " + CTRL + ALT + Down"),   hl.dsp.workspace.move({ monitor = "d" })) -- Send workspace to screen down
 
 -- Apps
-hl.bind(K(mod .. " + Return"),    hl.dsp.exec_cmd("ryoku-app terminal"))           -- terminal
-hl.bind(K(mod .. " + E"),         hl.dsp.exec_cmd("ryoku-app files"))              -- file manager
-hl.bind(K(mod .. " + B"),         hl.dsp.exec_cmd("ryoku-app browser"))            -- browser
-hl.bind(K(mod .. " + N"),         hl.dsp.exec_cmd("ryoku-app editor"))             -- editor
-hl.bind(K(mod .. " + O"),         hl.dsp.exec_cmd("ryoku-app notes"))              -- notes
+hl.bind(K(mod .. " + Return"),    hl.dsp.exec_cmd("tenkai-app terminal"))           -- terminal
+hl.bind(K(mod .. " + E"),         hl.dsp.exec_cmd("tenkai-app files"))              -- file manager
+hl.bind(K(mod .. " + B"),         hl.dsp.exec_cmd("tenkai-app browser"))            -- browser
+hl.bind(K(mod .. " + N"),         hl.dsp.exec_cmd("tenkai-app editor"))             -- editor
+hl.bind(K(mod .. " + O"),         hl.dsp.exec_cmd("tenkai-app notes"))              -- notes
 hl.bind(K(mod .. " + ALT + E"),   hl.dsp.exec_cmd("kitty -e yazi"))               -- yazi file manager
 hl.bind(K(mod .. " + J"),         hl.dsp.exec_cmd("ryotunes"))                     -- open Ryotunes (single-instance: a second press focuses it)
 
 -- Shell surfaces and tools
 hl.bind(K(mod .. " + Space"),     hl.dsp.global("tenkai:launcher"))                 -- open the app launcher
-hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/dev/null || flock -n -o /tmp/ryoku-keys.lock qs -c keys")) -- keybind cheatsheet: toggle (press to open, press again to close)
+hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/dev/null || flock -n -o /tmp/tenkai-keys.lock qs -c keys")) -- keybind cheatsheet: toggle (press to open, press again to close)
 hl.bind(K(mod .. " + Escape"),    hl.dsp.global("tenkai:quicksettings")) -- quick settings: power, logout, restart, shutdown, wifi
 hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("ryogami wallpaper ui"))     -- ryogami wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo
 hl.bind(K(mod .. " + SHIFT + W"), hl.dsp.exec_cmd("ryogami wallpaper random")) -- random wallpaper, random transition
-hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("ryoku-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
+hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("tenkai-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
 hl.bind(K(mod .. " + V"),         hl.dsp.global("tenkai:clipboard")) -- clipboard (sidebar deep link)
 hl.bind(K(mod .. " + Tab"),       hl.dsp.global("tenkai:overview")) -- workspace overview (expo: live previews, drag windows between workspaces, cycle)
 hl.bind(K(mod .. " + ALT + Tab"), hl.dsp.global("tenkai:overview")) -- workspace overview, stepping desktops (Alt+Tab again inside cycles desktops)
 hl.bind(K(mod .. " + M"),         hl.dsp.global("tenkai:visualizer"))        -- toggle the desktop audio visualiser
 hl.bind(K(mod .. " + SHIFT + M"), hl.dsp.global("tenkai:visualizer-overlay")) -- raise the visualiser over windows (flip back to desktop)
 hl.bind(K(mod .. " + ALT + M"),   hl.dsp.global("tenkai:visualizer-place"))   -- move the audio visualiser: drag the ring or orb into place
-hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("ryoku-shell voice"))             -- voice typing: speech-to-text with a mic wave (tap again to stop)
-hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("ryoku-shell hub open"))     -- tenkai settings
+hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("tenkai-shell voice"))             -- voice typing: speech-to-text with a mic wave (tap again to stop)
+hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("tenkai-shell hub open"))     -- tenkai settings
 hl.bind(K(mod .. " + S"),         hl.dsp.global("tenkai:stash"))         -- sidebar: screen time and downloads
 hl.bind(K(mod .. " + SHIFT + S"), hl.dsp.exec_cmd("flock -n -o /tmp/ryoshot.lock qs -c ryoshot"))  -- screenshot: capture, annotate and beautify
 hl.bind(K(mod .. " + SHIFT + C"), hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick a color
@@ -78,12 +78,12 @@ hl.bind(K(mod .. " + mouse:272"), hl.dsp.window.drag(),   { mouse = true })
 hl.bind(K(mod .. " + mouse:273"), hl.dsp.window.resize(), { mouse = true })
 
 -- Workspaces. Super+N focuses the Nth workspace OF THE CURRENT DESKTOP (a
--- desktop is a block of 10 workspace ids; see scripts/ryoku-workspace and the
+-- desktop is a block of 10 workspace ids; see scripts/tenkai-workspace and the
 -- overview). On desktop 2, Super+3 -> ws13, never ws3, so each desktop keeps its
 -- own 1..10 and windows never jump desktops. The helper also pulls the target to
 -- the monitor under the cursor, so the keys drive whichever screen the mouse is
 -- on. Super+Alt+N sends the active window to that slot, staying on this desktop.
-local ws_helper = (os.getenv("HOME") or "") .. "/.config/hypr/scripts/ryoku-workspace"
+local ws_helper = (os.getenv("HOME") or "") .. "/.config/hypr/scripts/tenkai-workspace"
 
 hl.bind(K(mod .. " + H"),          hl.dsp.exec_cmd(ws_helper .. " hide"))          -- hide the focused window in the scratchpad (press again on it to bring it back)
 -- Through the helper, not toggle_special directly: hiding the scratchpad has to
@@ -113,19 +113,19 @@ for i = 1, 10 do
     hl.bind(K(mod .. " + SHIFT + " .. kp_off[i]), hl.dsp.exec_cmd(ws_helper .. " movesilent " .. i))  -- move window quietly to workspace 1-10, number pad NumLock off
 end
 
--- Media and volume keys. ryoku-volume honours the volume panel's BOOST toggle
+-- Media and volume keys. tenkai-volume honours the volume panel's BOOST toggle
 -- (Config.qsbar.audioBoost in shell.json): off = safe 100% cap, on = 150%.
-hl.bind(K("XF86AudioRaiseVolume"), hl.dsp.exec_cmd("ryoku-volume up"),   { locked = true, repeating = true }) -- raise the volume
-hl.bind(K("XF86AudioLowerVolume"), hl.dsp.exec_cmd("ryoku-volume down"), { locked = true, repeating = true }) -- lower the volume
+hl.bind(K("XF86AudioRaiseVolume"), hl.dsp.exec_cmd("tenkai-volume up"),   { locked = true, repeating = true }) -- raise the volume
+hl.bind(K("XF86AudioLowerVolume"), hl.dsp.exec_cmd("tenkai-volume down"), { locked = true, repeating = true }) -- lower the volume
 hl.bind(K("XF86AudioMute"),        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true })
 hl.bind(K("XF86AudioPlay"),        hl.dsp.exec_cmd("playerctl play-pause"),                           { locked = true })
 hl.bind(K("XF86AudioNext"),        hl.dsp.exec_cmd("playerctl next"),                                 { locked = true })
 hl.bind(K("XF86AudioPrev"),        hl.dsp.exec_cmd("playerctl previous"),                             { locked = true })
-hl.bind(K(mod .. " + SHIFT + A"), hl.dsp.exec_cmd("ryoku-restart-audio")) -- recover audio when sound stops coming back
+hl.bind(K(mod .. " + SHIFT + A"), hl.dsp.exec_cmd("tenkai-restart-audio")) -- recover audio when sound stops coming back
 
 -- Brightness keys (laptop backlight + external DDC monitors)
-hl.bind(K("XF86MonBrightnessUp"),   hl.dsp.exec_cmd("ryoku-cmd-brightness +2"), { locked = true, repeating = true }) -- raise screen brightness
-hl.bind(K("XF86MonBrightnessDown"), hl.dsp.exec_cmd("ryoku-cmd-brightness -2"), { locked = true, repeating = true }) -- lower screen brightness
+hl.bind(K("XF86MonBrightnessUp"),   hl.dsp.exec_cmd("tenkai-cmd-brightness +2"), { locked = true, repeating = true }) -- raise screen brightness
+hl.bind(K("XF86MonBrightnessDown"), hl.dsp.exec_cmd("tenkai-cmd-brightness -2"), { locked = true, repeating = true }) -- lower screen brightness
 
 -- Touchpad lock (the FN touchpad key), through the window-manager seam
 hl.bind(K("XF86TouchpadToggle"), hl.dsp.exec_cmd("tenkai wm act input.touchpad toggle"), { locked = true }) -- toggle the touchpad

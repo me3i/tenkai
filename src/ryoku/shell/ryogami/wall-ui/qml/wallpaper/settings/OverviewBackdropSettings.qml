@@ -19,7 +19,7 @@ Flow {
 
     Process {
         running: true
-        command: ["ryoku-hub", "wm", "list"]
+        command: ["tenkai-hub", "wm", "list"]
         stdout: StdioCollector {
             onStreamFinished: {
                 try {

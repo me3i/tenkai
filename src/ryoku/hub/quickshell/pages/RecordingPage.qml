@@ -65,7 +65,7 @@ Item {
     property bool keyActive: false
     property string keyBackendStatus: "disabled"
     property string keyBackendError: ""
-    readonly property string shellSockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ryoku-shell.sock"
+    readonly property string shellSockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
     property real keyPreviewRevision: 0
     property int keyCallSerial: 0
     property int pendingKeySaveId: 0
@@ -222,7 +222,7 @@ Item {
     // it is absent, so the recorder always has a file to read.
     FileView {
         id: cfg
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ryoku/recording.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/recording.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -249,7 +249,7 @@ Item {
 
     FileView {
         id: keyCfg
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ryoku/keypresses.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/keypresses.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -260,7 +260,7 @@ Item {
 
     FileView {
         id: performanceCfg
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ryoku/performance.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/performance.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

@@ -27,7 +27,7 @@ Column {
     property string _sBuf: ""
     Process {
         id: stateProc
-        command: ["ryoku-hub", "lighting", "state"]
+        command: ["tenkai-hub", "lighting", "state"]
         stdout: SplitParser { splitMarker: ""; onRead: function(d) { root._sBuf += d } }
         onExited: {
             try {
@@ -43,7 +43,7 @@ Column {
     property string _cBuf: ""
     Process {
         id: scanProc
-        command: ["ryoku-hub", "lighting", "scan"]
+        command: ["tenkai-hub", "lighting", "scan"]
         stdout: SplitParser { splitMarker: ""; onRead: function(d) { root._cBuf += d } }
         onExited: {
             try {
@@ -70,10 +70,10 @@ Column {
         }
     }
 
-    function _enable(on) { Quickshell.execDetached(["ryoku-hub", "lighting", on ? "enable" : "disable"]); root._enabled = on; refreshTimer.restart() }
-    function _set(key, obj) { Quickshell.execDetached(["ryoku-hub", "lighting", "set", key, JSON.stringify(obj)]); refreshTimer.restart() }
-    function _save(key) { Quickshell.execDetached(["ryoku-hub", "lighting", "save", key]) }
-    function _release(key) { Quickshell.execDetached(["ryoku-hub", "lighting", "release", key]); refreshTimer.restart() }
+    function _enable(on) { Quickshell.execDetached(["tenkai-hub", "lighting", on ? "enable" : "disable"]); root._enabled = on; refreshTimer.restart() }
+    function _set(key, obj) { Quickshell.execDetached(["tenkai-hub", "lighting", "set", key, JSON.stringify(obj)]); refreshTimer.restart() }
+    function _save(key) { Quickshell.execDetached(["tenkai-hub", "lighting", "save", key]) }
+    function _release(key) { Quickshell.execDetached(["tenkai-hub", "lighting", "release", key]); refreshTimer.restart() }
 
     SettingsCard {
         colors: root.colors
@@ -101,7 +101,7 @@ Column {
             RowToggle {
                 colors: root.colors
                 title: I18n.tr("Managed")
-                description: I18n.tr("Let Ryoku drive this device's colour.")
+                description: I18n.tr("Let Tenkai drive this device's colour.")
                 checked: !!modelData.managed
                 onToggle: function(v) { root._set(modelData.key, { managed: v }) }
             }

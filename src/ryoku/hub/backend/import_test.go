@@ -20,7 +20,7 @@ hl.bind(K(mod .. " + Q"), hl.dsp.window.close())      -- close window
 hl.bind(K(mod .. " + F"), hl.dsp.window.fullscreen()) -- fullscreen
 
 -- Apps
-hl.bind(K(mod .. " + Return"), hl.dsp.exec_cmd("ryoku-app terminal")) -- terminal
+hl.bind(K(mod .. " + Return"), hl.dsp.exec_cmd("tenkai-app terminal")) -- terminal
 `
 
 // A migrating user's native hyprland.conf: a shadowing bind (Q), a couple of

@@ -710,7 +710,7 @@ func holdDaemonLock(path string) (*os.File, error) {
 		}
 		if time.Now().After(deadline) {
 			f.Close()
-			return nil, fmt.Errorf("another ryoku-shell daemon holds %s", path)
+			return nil, fmt.Errorf("another tenkai-shell daemon holds %s", path)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

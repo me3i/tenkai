@@ -536,7 +536,7 @@ func newestWindowOf(appID string) (uint64, error) {
 // summon raises an already-open window to the current workspace and focuses it,
 // matched by exact title. niri focuses by id, so the title is resolved to a
 // window here and the newest match wins, mirroring newestWindowOf. Ported from
-// ryoku-summon: a single-instance app strands its window on the workspace it
+// tenkai-summon: a single-instance app strands its window on the workspace it
 // first opened on, and every Quickshell window shares one app id, so the title
 // is the only handle. No match is an error, which lets the keybind fall through
 // to launching the app. MoveWindowToWorkspace pulls the window onto the focused

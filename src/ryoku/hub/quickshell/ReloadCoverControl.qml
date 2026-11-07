@@ -15,7 +15,7 @@ Item {
     property bool busy: false
     readonly property var media: ReloadCoverModel.normalize(descriptor)
     readonly property url rendererSource: ReloadCoverModel.rendererSource(
-        Quickshell.env("RYOKU_SHELL_DIR"),
+        Quickshell.env("TENKAI_SHELL_DIR"),
         Quickshell.env("XDG_CONFIG_HOME"),
         Quickshell.env("HOME"))
 

@@ -495,7 +495,7 @@ Item {
                     label: I18n.tr("Let Tenkai control lighting")
                     desc: !lt.available
                           ? I18n.tr("No supported lighting provider is installed, so no device can be reached.")
-                          : I18n.tr("Your picks are kept in ~/.config/ryoku/lighting.json: an update, a shell restart or a reboot leaves them exactly as they are.")
+                          : I18n.tr("Your picks are kept in ~/.config/tenkai/lighting.json: an update, a shell restart or a reboot leaves them exactly as they are.")
                     controlWidth: 54
                     Sw {
                         anchors.right: parent.right; anchors.verticalCenter: parent.verticalCenter

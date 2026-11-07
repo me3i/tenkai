@@ -15,7 +15,7 @@ import (
 // directly in QML, where Tenkai already owns the audio graph, so their change
 // events and value are observable without the daemon. Brightness has no such
 // QML-observable source: the media keys and the `brightness` verb both drive
-// ryoku-cmd-brightness straight to the backlight, so the daemon watches the
+// tenkai-cmd-brightness straight to the backlight, so the daemon watches the
 // primary backlight and pushes a fraction plus a monotonically rising sequence
 // to the `osd` topic. QML shows the brightness OSD when the sequence advances
 // and binds `value` to the slider; the bucket->icon mapping lives once in QML

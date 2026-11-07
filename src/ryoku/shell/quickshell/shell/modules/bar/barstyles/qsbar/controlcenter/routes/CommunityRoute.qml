@@ -298,7 +298,7 @@ Item {
                                 id: gitField
                                 width: parent.width - addBtn.width - parent.spacing
                                 tabular: true
-                                placeholder: I18n.tr("https://github.com/someone/ryoku-widget  or  ~/my-widget")
+                                placeholder: I18n.tr("https://github.com/someone/tenkai-widget  or  ~/my-widget")
                                 onCommitted: (v) => page.addFrom(v)
                             }
                             Btn {

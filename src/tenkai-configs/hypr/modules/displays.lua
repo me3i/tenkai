@@ -6,7 +6,7 @@
 -- its own, so no repaint nudge is sent from here (a live scale change is not yet
 -- re-fit -- a known renderer gap).
 local function rescale()
-    hl.exec_cmd("command -v ryoku-monitor >/dev/null 2>&1 && ryoku-monitor autoscale")
+    hl.exec_cmd("command -v tenkai-monitor >/dev/null 2>&1 && tenkai-monitor autoscale")
 end
 hl.on("monitor.added", rescale)
 hl.on("monitor.removed", rescale)

@@ -22,7 +22,7 @@ import (
 const (
 	orgbAddr     = "127.0.0.1:6742"
 	orgbProtocol = 5
-	orgbClient   = "ryoku-hub"
+	orgbClient   = "tenkai-hub"
 )
 
 // packet ids (NetworkProtocol.h). Only the ones Tenkai needs.

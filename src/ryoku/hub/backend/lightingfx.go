@@ -351,7 +351,7 @@ func ensureAnimator(st lightingState) {
 	}
 	self, err := os.Executable()
 	if err != nil {
-		self = "ryoku-hub"
+		self = "tenkai-hub"
 	}
 	if _, err := exec.LookPath("systemd-run"); err != nil {
 		cmd := exec.Command(self, "lighting", "animate")

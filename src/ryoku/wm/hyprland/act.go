@@ -285,7 +285,7 @@ func runAct(args []string) error {
 		return touchpad(rest)
 
 	case wm.ActionOutputCycle:
-		// Super+P's job: ryoku-monitor owns the mirror/extend arrangement and
+		// Super+P's job: tenkai-monitor owns the mirror/extend arrangement and
 		// pushes it live, so the seam steps it rather than re-deriving the layout.
 		return runMonitor("toggle")
 
@@ -317,7 +317,7 @@ func runAct(args []string) error {
 }
 
 // summon raises an already-open window to the current workspace and focuses it,
-// matched by exact title. Ported from ryoku-summon: a single-instance app
+// matched by exact title. Ported from tenkai-summon: a single-instance app
 // strands its window on whatever workspace it first opened on, and every
 // Quickshell window shares one app id, so the title is the only handle. The live
 // title is matched first and the initial title second, so a window that retitles
