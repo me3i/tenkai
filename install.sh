@@ -436,6 +436,10 @@ else
 
   go_build shell/ipc tenkai-shell
   go_build hub/backend tenkai-hub
+  # The Hyprland window-manager provider: the neutral binds, window rules and
+  # output layout the Hub and the shell delegate to. Written by the Settings
+  # GUI, so it has to exist before the first open.
+  go_build wm/hyprland tenkai-wm-hyprland
   # The wallpaper daemon shares the session with the shell; without it the
   # wallpaper module has nothing to talk to.
   go_build shell/ryogami/daemon ryogami
@@ -877,22 +881,22 @@ deploy_hypr() {
 }
 deploy_hypr
 
-# --- keybind helpers: the ryoku-* scripts the bundled binds exec --------------
+# --- keybind helpers: the tenkai-* scripts the bundled binds exec --------------
 #
 # modules/binds.lua execs these by bare name, and modules/env.lua puts
 # ~/.local/bin first, so a link there is what makes the key work on a machine
-# that has never had Ryoku installed. Linked, not copied: the checkout stays the
+# that has never had an upstream install. Linked, not copied: the checkout stays the
 # single source. A name that already exists is never overwritten — it is
-# reported and left alone, because a stock Ryoku install has its own copy.
+# reported and left alone, because a stock upstream install has its own copy.
 LOCAL_BIN="$HOME/.local/bin"
 HELPER_SRC=(
-  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-app"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-summon"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-volume"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-restart-audio"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/ryoku-cmd-brightness"
-  "$HYPR_SRC/scripts/ryoku-monitor"
-  "$HYPR_SRC/scripts/ryoku-workspace"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-app"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-summon"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-volume"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-restart-audio"
+  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-cmd-brightness"
+  "$HYPR_SRC/scripts/tenkai-monitor"
+  "$HYPR_SRC/scripts/tenkai-workspace"
 )
 
 deploy_helper_links() {
@@ -1051,7 +1055,7 @@ fi
 
 print_success
 
-say "  ${GY}binaries:${R}  $SYS_GO_BIN/{tenkai-shell,tenkai-hub,ryogami}"
+say "  ${GY}binaries:${R}  $SYS_GO_BIN/{tenkai-shell,tenkai-hub,tenkai-wm-hyprland,ryogami}"
 say "  ${GY}QML:${R}       $QML_ROOT"
 say ""
 say "  ${WH}Next:${R}"

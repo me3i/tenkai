@@ -295,7 +295,7 @@ Item {
     // ── persistence: the page owns widgets.json ──────────────────────────────
     FileView {
         id: cfg
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ryoku/widgets.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/widgets.json"
         blockLoading: true
         watchChanges: true
         printErrors: false
@@ -471,7 +471,7 @@ Item {
     // draft/Save flow entirely.
     property var storeRows: []
 
-    readonly property string shellDir: Quickshell.env("RYOKU_SHELL_DIR")
+    readonly property string shellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string discoverScript: (pg.shellDir && pg.shellDir.length > 0)
         ? pg.shellDir + "/quickshell/plugins/discover.sh"
         : (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/quickshell/plugins/discover.sh"
@@ -501,7 +501,7 @@ Item {
     function placePlugin(id, enabled) {
         if (!id)
             return;
-        storePlaceProc.command = ["ryoku-plugins-place", id, "enabled", enabled ? "true" : "false"];
+        storePlaceProc.command = ["tenkai-plugins-place", id, "enabled", enabled ? "true" : "false"];
         storePlaceProc.running = true;
     }
 
@@ -545,7 +545,7 @@ Item {
     // this shelf without reopening the Hub.
     FileView {
         id: placementWatch
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ryoku/plugins.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/plugins.json"
         watchChanges: true
         printErrors: false
         onFileChanged: pg.refreshStore()

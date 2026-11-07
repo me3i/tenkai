@@ -8,7 +8,7 @@ import (
 )
 
 func TestManagedFilesContent(t *testing.T) {
-	files := managedFiles("nero", "/usr/bin/ryoku-hub")
+	files := managedFiles("nero", "/usr/bin/tenkai-hub")
 	var hook *managedFile
 	for i := range files {
 		if files[i].rel == "etc/libvirt/hooks/qemu" {
@@ -47,7 +47,7 @@ func TestWriteManagedIdempotent(t *testing.T) {
 func TestApplyPlanDryRunWritesNothing(t *testing.T) {
 	root := t.TempDir()
 	t.Setenv("RYOKU_ETC_ROOT", root)
-	if err := applyPlan("enable", "nero", "/usr/bin/ryoku-hub", true); err != nil {
+	if err := applyPlan("enable", "nero", "/usr/bin/tenkai-hub", true); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(root, "etc/libvirt/hooks/qemu")); err == nil {

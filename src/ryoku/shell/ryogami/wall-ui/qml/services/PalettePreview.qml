@@ -32,7 +32,7 @@ Item {
         root.loading = true
         _buf = ""
         proc.running = false
-        proc.command = ["ryoku-shell", "matugen-preview", s]
+        proc.command = ["tenkai-shell", "matugen-preview", s]
         proc.running = true
     }
 

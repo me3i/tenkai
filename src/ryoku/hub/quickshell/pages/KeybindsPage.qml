@@ -884,7 +884,7 @@ Item {
                 Text {
                     width: appsCol.width
                     wrapMode: Text.WordWrap
-                    text: I18n.tr("Pick what each launcher key opens, and rebind the key itself. The key runs the app through ryoku-app, so a swap takes effect on the next press, with no reload.")
+                    text: I18n.tr("Pick what each launcher key opens, and rebind the key itself. The key runs the app through tenkai-app, so a swap takes effect on the next press, with no reload.")
                     color: Tokens.inkMuted; font.family: Tokens.ui
                     font.pixelSize: Tokens.fSmall; lineHeight: 1.3
                 }

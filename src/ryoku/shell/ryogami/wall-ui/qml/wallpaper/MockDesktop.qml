@@ -73,7 +73,7 @@ Item {
         }
         Text {
             anchors.centerIn: parent
-            text: "\u9f8d  ryoku"
+            text: "tenkai"
             color: Qt.rgba(mock.cFg.r, mock.cFg.g, mock.cFg.b, 0.82)
             font.family: Style.fontFamily; font.pixelSize: 10 * mock.s
         }
@@ -118,13 +118,13 @@ Item {
                 }
             }
             Row {
-                Text { text: "ryoku"; color: mock.cGreen; font.family: Style.fontFamilyMono; font.pixelSize: 10 * mock.s; font.weight: Font.DemiBold }
+                Text { text: "tenkai"; color: mock.cGreen; font.family: Style.fontFamilyMono; font.pixelSize: 10 * mock.s; font.weight: Font.DemiBold }
                 Text { text: I18n.tr("@arch"); color: mock.cMag; font.family: Style.fontFamilyMono; font.pixelSize: 10 * mock.s }
                 Text { text: " ~ "; color: mock.cBlue; font.family: Style.fontFamilyMono; font.pixelSize: 10 * mock.s }
                 Text { text: I18n.tr("\u276f fastfetch"); color: mock.cFg; font.family: Style.fontFamilyMono; font.pixelSize: 10 * mock.s }
             }
             Repeater {
-                model: ["OS    Ryoku Linux", "WM    Hyprland", "SH    fish"]
+                model: ["OS    Tenkai Linux", "WM    Hyprland", "SH    fish"]
                 delegate: Row {
                     required property var modelData
                     Text { text: modelData.substring(0, 6); color: mock.cYellow; font.family: Style.fontFamilyMono; font.pixelSize: 9 * mock.s }

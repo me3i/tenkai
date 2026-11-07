@@ -3,12 +3,19 @@
 #
 #	tenkai-app terminal              open the terminal
 #	tenkai-app terminal -- htop      run htop inside it
+#	tenkai-app files                 open the file manager
+#	tenkai-app browser               open the browser
+#	tenkai-app editor                open the editor
+#	tenkai-app notes                 open the notes app
+#	tenkai-app run -- <program>      run a plain program, with no terminal
 #
-# Ported from Tenkai's ryoku-app, trimmed to the role the shell uses
-# (AppLaunch.qml launches every Terminal=true desktop entry through it).
-# The choice lives in ~/.config/tenkai/desktop.json under desktop.apps.terminal
-# (the Settings app writes it); the fallback is kitty, so an unconfigured
-# desktop still opens a terminal.
+# The five roles are the ones the shipped Hyprland binds exec (modules/binds.lua)
+# and the ones the Hub's Default Apps page offers; `run` is the form AppLaunch.qml
+# uses for every Terminal=true desktop entry. The choice lives in
+# ~/.config/tenkai/desktop.json under desktop.apps.<role> (the Settings app is
+# the single writer), so a swap takes effect on the next launch with no reload.
+# The fallbacks match the shipped binds, so an unconfigured desktop behaves
+# exactly as before.
 set -euo pipefail
 
 # A Quickshell that has crashed once leaves the memfd of the config it came
@@ -31,12 +38,11 @@ if [ "${1:-}" = "--" ]; then
 fi
 
 case "$role" in
-terminal) fallback="kitty" ;;
-run)
-	# A plain program launch: the program comes after "--", so there is no
-	# desktop-app store entry to look up and no fallback to invent.
-	fallback=""
-	;;
+# Store-backed roles: resolved below, defaulted here.
+terminal | files | browser | editor | notes) ;;
+# A plain program launch: the program comes after "--", so there is no
+# desktop-app store entry to look up and no fallback to invent.
+run) ;;
 *)
 	echo "tenkai-app: no default for role \"$role\"" >&2
 	exit 1
@@ -48,17 +54,41 @@ if [ "$role" = "run" ] && [ ${#inner[@]} -eq 0 ]; then
 	exit 2
 fi
 
+# The shipped default for each role — what an unconfigured desktop opens, and
+# what the Hub reports as the fallback. `notes` has none: the candidates are
+# Obsidian/Logseq/Joplin/… and only the user can pick, so it notifies instead.
+fallback() {
+	case "$1" in
+	terminal) echo "kitty" ;;
+	files) echo "nautilus" ;;
+	browser)
+		# Zen under either name (the tarball `zen`, the AUR `zen-browser`),
+		# else the shipped Chromium — the same rule the Hub's page uses.
+		if command -v zen >/dev/null 2>&1; then echo "zen"
+		elif command -v zen-browser >/dev/null 2>&1; then echo "zen-browser"
+		else echo "chromium"
+		fi ;;
+	editor) echo "kitty -e nvim" ;;
+	*) echo "" ;;
+	esac
+}
+
 store="${XDG_CONFIG_HOME:-$HOME/.config}/tenkai/desktop.json"
 cmd=""
 if [ "$role" != "run" ] && [ -r "$store" ] && command -v jq >/dev/null 2>&1; then
 	cmd="$(jq -r --arg r "$role" '.desktop.apps[$r] // empty' "$store" 2>/dev/null || true)"
 fi
-[ -n "$cmd" ] || cmd="$fallback"
+[ -n "$cmd" ] || cmd="$(fallback "$role")"
+
+if [ "$role" != "run" ] && [ -z "$cmd" ]; then
+	notify-send "Tenkai" "No app set for \"$role\". Pick one in Settings > Default Apps." 2>/dev/null || true
+	exit 1
+fi
 
 # Live trial: an app the launcher starts must run in the owner's real
 # environment, not Tenkai's confined one. TENKAI_APP_HOME carries the real HOME (and
 # the real XDG_* follow from it); Tenkai's own state stays inside the project.
-# The lookup above already read Tenkai's own desktop.json, so the chosen terminal
+# The lookup above already read Tenkai's own desktop.json, so the chosen app
 # is still the one Tenkai stored.
 if [ -n "${TENKAI_APP_HOME:-}" ]; then
 	export HOME="$TENKAI_APP_HOME"

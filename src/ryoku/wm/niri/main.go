@@ -65,13 +65,13 @@ func main() {
 	// failed still shows what it managed.
 	_ = stdout.Flush()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "ryoku-wm-niri: %v\n", err)
+		fmt.Fprintf(os.Stderr, "tenkai-wm-niri: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 func usage() {
-	fmt.Fprint(os.Stderr, `ryoku-wm-niri: the niri window-manager provider
+	fmt.Fprint(os.Stderr, `tenkai-wm-niri: the niri window-manager provider
 
   caps             capability manifest (JSON)
   act <id> [args]  perform a neutral action

@@ -227,7 +227,7 @@ fi
 D quicksettings; sleep 0.8
 
 echo; echo "=== 10. missing dependency: brightness helper and brightnessctl ==="
-HELPER="$RUN/bin/ryoku-cmd-brightness"
+HELPER="$RUN/bin/tenkai-cmd-brightness"
 [ -x "$HELPER" ] && ok "brightness helper is installed in the nested bin" \
   || bad "brightness helper missing from $RUN/bin"
 if [ -e "$HELPER" ]; then

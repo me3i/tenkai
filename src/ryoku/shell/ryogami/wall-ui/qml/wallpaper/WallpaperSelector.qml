@@ -49,7 +49,7 @@ Scope {
 
   FileView {
     id: shellFile
-    path: Quickshell.env("HOME") + "/.config/ryoku/shell.json"
+    path: Quickshell.env("HOME") + "/.config/tenkai/shell.json"
     watchChanges: true
     onFileChanged: reload()
     onLoaded: {
@@ -66,7 +66,7 @@ Scope {
       var x = Quickshell.env("XDG_STATE_HOME")
       return (x && x.length > 0) ? x : (Quickshell.env("HOME") + "/.local/state")
     }
-    path: _stateHome + "/ryoku/stage-walls.json"
+    path: _stateHome + "/tenkai/stage-walls.json"
     watchChanges: true
     onFileChanged: reload()
     onLoaded: {
@@ -98,7 +98,7 @@ Scope {
 
   function _applyItem(item, forcePicker) {
     if (item && item.kind === "theme") {
-      Quickshell.execDetached(["ryoku-shell", "theme", item.id])
+      Quickshell.execDetached(["tenkai-shell", "theme", item.id])
       wallpaperSelector.themesOpen = false
       _closeAfterApply()
       return
@@ -217,7 +217,7 @@ Scope {
   }
   FolderListModel {
     id: themeLibrary
-    folder: "file://" + wallpaperSelector._dataHome + "/ryoku/themes"
+    folder: "file://" + wallpaperSelector._dataHome + "/tenkai/themes"
     showFiles: false
     showDirs: true
     showDotAndDotDot: false
@@ -225,7 +225,7 @@ Scope {
   }
   FolderListModel {
     id: riceLibrary
-    folder: "file://" + wallpaperSelector._configHome + "/ryoku/rices"
+    folder: "file://" + wallpaperSelector._configHome + "/tenkai/rices"
     showFiles: false
     showDirs: true
     showDotAndDotDot: false
@@ -233,11 +233,11 @@ Scope {
   }
   Timer { id: _themeReload; interval: 600; onTriggered: wallpaperSelector._loadThemes() }
   function _captureRice(name) {
-    Quickshell.execDetached(["ryoku-hub", "rice", "capture", name, "all"])
+    Quickshell.execDetached(["tenkai-hub", "rice", "capture", name, "all"])
     _riceReload.restart()
   }
   function _deleteRice(slug) {
-    Quickshell.execDetached(["ryoku-hub", "rice", "delete", slug])
+    Quickshell.execDetached(["tenkai-hub", "rice", "delete", slug])
     _riceReload.restart()
   }
   Timer { id: _riceReload; interval: 1200; onTriggered: wallpaperSelector._reloadRices() }
@@ -245,7 +245,7 @@ Scope {
   property string _themeBuf: ""
   Process {
     id: _themeProc
-    command: ["ryoku-shell", "theme", "catalog"]
+    command: ["tenkai-shell", "theme", "catalog"]
     stdout: SplitParser {
       splitMarker: ""
       onRead: data => wallpaperSelector._themeBuf += data
@@ -283,7 +283,7 @@ Scope {
   property string _riceBuf: ""
   Process {
     id: _riceProc
-    command: ["ryoku-hub", "rice", "list"]
+    command: ["tenkai-hub", "rice", "list"]
     stdout: SplitParser {
       splitMarker: ""
       onRead: data => wallpaperSelector._riceBuf += data
@@ -753,7 +753,7 @@ Scope {
         Config.saveKey("matugen.mode", mode)
         DaemonClient.retheme(Config.matugenScheme, mode, Config.matugenColorIndex)
       }
-      onFollowToggled: Quickshell.execDetached(["ryoku-shell", "theme", "Wallpaper"])
+      onFollowToggled: Quickshell.execDetached(["tenkai-shell", "theme", "Wallpaper"])
       visible: !wallpaperSelector.browseOpen
       enabled: wallpaperSelector._filterBarShown
       opacity: (wallpaperSelector.browseOpen || !wallpaperSelector._filterBarShown) ? 0 : 1
@@ -2966,17 +2966,17 @@ Scope {
         open: true
         rice: wallpaperSelector._workshopRice
         onApplyRequested: function(slug) {
-          Quickshell.execDetached(["ryoku-hub", "rice", "apply", slug, "all"])
+          Quickshell.execDetached(["tenkai-hub", "rice", "apply", slug, "all"])
           wallpaperSelector._workshopOpen = false
           wallpaperSelector.ricesOpen = false
           _closeAfterApply()
         }
         onForkRequested: function(slug) {
-          Quickshell.execDetached(["ryoku-hub", "rice", "fork", slug])
+          Quickshell.execDetached(["tenkai-hub", "rice", "fork", slug])
           _riceReload.restart()
         }
         onRestoreRequested: {
-          Quickshell.execDetached(["ryoku-hub", "rice", "restore"])
+          Quickshell.execDetached(["tenkai-hub", "rice", "restore"])
           wallpaperSelector._workshopOpen = false
           wallpaperSelector.ricesOpen = false
         }
@@ -2990,10 +2990,10 @@ Scope {
           wallpaperSelector._capturePromptOpen = true
         }
         onExportRequested: function(slug, folder) {
-          Quickshell.execDetached(["ryoku-hub", "rice", "export", slug, folder])
+          Quickshell.execDetached(["tenkai-hub", "rice", "export", slug, folder])
         }
         onImportRequested: function(folder) {
-          Quickshell.execDetached(["ryoku-hub", "rice", "import", folder])
+          Quickshell.execDetached(["tenkai-hub", "rice", "import", folder])
           _riceReload.restart()
         }
         onCloseRequested: {

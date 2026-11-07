@@ -1134,7 +1134,7 @@ func exportReadme(r Rice) string {
 	if len(r.Look["decor"]) > 0 {
 		b.WriteString("  decor-*      the desktop decors' pictures\n")
 	}
-	fmt.Fprintf(&b, "\nDrop this folder into ~/.config/ryoku/rices/ and apply it from\nTenkai Settings > Appearance > Rices, or `ryoku-hub rice apply %s`.\n", r.Slug)
+	fmt.Fprintf(&b, "\nDrop this folder into ~/.config/tenkai/rices/ and apply it from\nTenkai Settings > Appearance > Rices, or `tenkai-hub rice apply %s`.\n", r.Slug)
 	return b.String()
 }
 

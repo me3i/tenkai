@@ -80,7 +80,7 @@ func (i *login1Inhibitor) acquire(ctx context.Context) error {
 	).Store(&fd); err != nil {
 		return err
 	}
-	i.fd = os.NewFile(uintptr(fd), "ryoku-shell-sleep-"+i.mode)
+	i.fd = os.NewFile(uintptr(fd), "tenkai-shell-sleep-"+i.mode)
 	if i.fd == nil {
 		return os.ErrInvalid
 	}
@@ -815,13 +815,13 @@ func (d *daemon) connectSleepGuard() (_ *connectedSleepGuard, err error) {
 	block := &login1Inhibitor{
 		conn: conn,
 		mode: "block",
-		name: "ryoku-shell",
+		name: "tenkai-shell",
 		why:  "route suspend through a compositor-secure session lock",
 	}
 	delay := &login1SleepDelay{login1Inhibitor: &login1Inhibitor{
 		conn: conn,
 		mode: "delay",
-		name: "ryoku-shell",
+		name: "tenkai-shell",
 		why:  "finish securing the session lock before suspend",
 	}}
 	cycle := &sleepCycle{

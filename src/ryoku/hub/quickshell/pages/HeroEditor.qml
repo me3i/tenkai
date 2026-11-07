@@ -18,7 +18,7 @@ Item {
     id: ed
     signal done()
 
-    readonly property string profileDir: (Quickshell.env("HOME") || "") + "/.config/ryoku/profile"
+    readonly property string profileDir: (Quickshell.env("HOME") || "") + "/.config/tenkai/profile"
 
     property string heroKind: ProfileStore.get("hero.kind", "default")
     property string heroSource: ProfileStore.get("hero.source", "")
@@ -248,7 +248,7 @@ Item {
                             color: Tokens.inkFaint
                             font.family: Tokens.mono
                             font.pixelSize: Tokens.fTiny
-                            text: I18n.tr("A custom image is dithered live. To bake your own art into this gallery:\n  ryodither <image> --out ~/Pictures/ryodecors\n(needs Pillow; add --invert for a dark subject on a pale ground). Hand-tune any field in ~/.config/ryoku/profile.json. Full guide: docs/profile.md.")
+                            text: I18n.tr("A custom image is dithered live. To bake your own art into this gallery:\n  ryodither <image> --out ~/Pictures/ryodecors\n(needs Pillow; add --invert for a dark subject on a pale ground). Hand-tune any field in ~/.config/tenkai/profile.json. Full guide: docs/profile.md.")
                         }
                     }
 

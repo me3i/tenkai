@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# merge a plugin placement change into ~/.config/ryoku/plugins.json. used by:
+# merge a plugin placement change into ~/.config/tenkai/plugins.json. used by:
 # the desktop layer (drag commits a free position), Tenkai Settings (any
 # placement edit), and the installer (seed/forget a plugin's settings block).
 # Registry's file watch sees it and retunes every surface, no reload.
 #
-#   ryoku-plugins-place <id> desktopWidget <x> <y> [scale] [locked] [opacity]
-#   ryoku-plugins-place <id> framePopout <edge> <align> <hoverW> <hoverH>
-#   ryoku-plugins-place <id> host <hostName>
-#   ryoku-plugins-place <id> enabled <true|false>
-#   ryoku-plugins-place <id> settings <json>   merge a settings object
-#   ryoku-plugins-place <id> seed              inject the manifest preset block
-#   ryoku-plugins-place <id> forget            drop the whole entry (uninstall)
+#   tenkai-plugins-place <id> desktopWidget <x> <y> [scale] [locked] [opacity]
+#   tenkai-plugins-place <id> framePopout <edge> <align> <hoverW> <hoverH>
+#   tenkai-plugins-place <id> host <hostName>
+#   tenkai-plugins-place <id> enabled <true|false>
+#   tenkai-plugins-place <id> settings <json>   merge a settings object
+#   tenkai-plugins-place <id> seed              inject the manifest preset block
+#   tenkai-plugins-place <id> forget            drop the whole entry (uninstall)
 set -euo pipefail
 
 cfg_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-f="$cfg_home/ryoku/plugins.json"
+f="$cfg_home/tenkai/plugins.json"
 mkdir -p "$(dirname "$f")"
 lock="$f.lock"
 exec 9>"$lock"
@@ -41,9 +41,9 @@ id="${1:?id required}"; field="${2:?field required}"; shift 2
 manifest_for() {
 	local pid="$1" d
 	local -a dirs=()
-	local pdir="${RYOSTORE_PLUGINS_DIR:-${RYOKU_PLUGINS_DIR:-}}"
+	local pdir="${RYOSTORE_PLUGINS_DIR:-${TENKAI_PLUGINS_DIR:-}}"
 	[ -n "$pdir" ] && IFS=':' read -r -a dirs <<<"$pdir"
-	dirs+=("$data_home/ryoku/plugins")
+	dirs+=("$data_home/tenkai/plugins")
 	for d in "${dirs[@]}"; do
 		[ -n "$d" ] && [ -f "$d/$pid/manifest.json" ] && { printf '%s\n' "$d/$pid/manifest.json"; return 0; }
 	done
@@ -132,7 +132,7 @@ forget)
 	jq --arg id "$id" 'del(.[$id])' "$f" >"$tmp" && mv "$tmp" "$f"
 	;;
 *)
-	echo "usage: ryoku-plugins-place <id> desktopWidget <x> <y> | framePopout <edge> <align> <hoverW> <hoverH> | host <name> | enabled <bool> | settings <json> | seed | restore <json|null> <file-existed> | forget" >&2
+	echo "usage: tenkai-plugins-place <id> desktopWidget <x> <y> | framePopout <edge> <align> <hoverW> <hoverH> | host <name> | enabled <bool> | settings <json> | seed | restore <json|null> <file-existed> | forget" >&2
 	exit 2
 	;;
 esac

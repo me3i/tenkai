@@ -531,7 +531,7 @@ Item {
                 height: hero.height * pg.f("hero.zoom", 1.0)
                 x: (hero.width - width) * pg.f("hero.focalX", 0.5)
                 y: (hero.height - height) * pg.f("hero.focalY", 0.4)
-                source: hero.src.length > 0 ? ("file://" + (Quickshell.env("HOME") || "") + "/.config/ryoku/profile/" + hero.src) : ""
+                source: hero.src.length > 0 ? ("file://" + (Quickshell.env("HOME") || "") + "/.config/tenkai/profile/" + hero.src) : ""
                 dotScale: pg.f("hero.dither", 1.0)
                 invert: pg.f("hero.invert", false)
                 fillMode: Image.PreserveAspectCrop
@@ -992,7 +992,7 @@ Item {
         id: grabTimer
         interval: 60
         onTriggered: {
-            const path = (Quickshell.env("HOME") || "") + "/Pictures/ryoku-profile-" + Qt.formatDate(new Date(), "yyyyMMdd") + ".png";
+            const path = (Quickshell.env("HOME") || "") + "/Pictures/tenkai-profile-" + Qt.formatDate(new Date(), "yyyyMMdd") + ".png";
             pg.grabToImage(function (res) { res.saveToFile(path); pg.grabbing = false; }, Qt.size(pg.width * 2, pg.height * 2));
         }
     }
@@ -1003,7 +1003,7 @@ Item {
         foldersOnly: true
         startFolder: "file://" + (Quickshell.env("HOME") || "")
         onPicked: (p) => {
-            profileProc.command = ["tenkai-hub", "profile", "export", ("" + p).replace("file://", "") + "/ryoku-" + pg.fv(SysInfo.sysUser) + ".ryoprofile"];
+            profileProc.command = ["tenkai-hub", "profile", "export", ("" + p).replace("file://", "") + "/tenkai-" + pg.fv(SysInfo.sysUser) + ".ryoprofile"];
             profileProc.running = true;
             exportDlg.active = false;
         }

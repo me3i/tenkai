@@ -4,9 +4,9 @@
 # entries also require their Store receipt, whose version is authoritative:
 #   { "id", "dir", "version", "manifest": {...}, "placement": {...} }
 # sources, first wins on duplicate id:
-#   $RYOSTORE_PLUGINS_DIR (dev override, colon-separated; legacy RYOKU_PLUGINS_DIR still read)
-#   ~/.local/share/ryoku/plugins (receipt-owned Store products only)
-# placement + per-plugin settings live in ~/.config/ryoku/plugins.json:
+#   $RYOSTORE_PLUGINS_DIR (dev override, colon-separated; legacy TENKAI_PLUGINS_DIR still read)
+#   ~/.local/share/tenkai/plugins (receipt-owned Store products only)
+# placement + per-plugin settings live in ~/.config/tenkai/plugins.json:
 #   { "<id>": { "enabled": bool, "host": "...", "<host>": {...}, "key": "...",
 #               "settings": {...} } }
 # no entry or enabled=false = skipped. the shell only loads what the user
@@ -24,8 +24,8 @@ set -euo pipefail
 cfg_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 state_home="${XDG_STATE_HOME:-$HOME/.local/state}"
-state_root="$state_home/ryoku/store"
-installed_root="$data_home/ryoku/plugins"
+state_root="$state_home/tenkai/store"
+installed_root="$data_home/tenkai/plugins"
 
 # --all = every installed plugin (Settings wants that). default = only enabled
 # (the runtime wants that).
@@ -43,7 +43,7 @@ manifest_files=()
 manifest_dirs=()
 manifest_pinned=()
 dirs=()
-plugins_dir="${RYOSTORE_PLUGINS_DIR:-${RYOKU_PLUGINS_DIR:-}}"
+plugins_dir="${RYOSTORE_PLUGINS_DIR:-${TENKAI_PLUGINS_DIR:-}}"
 if [ -n "$plugins_dir" ]; then
 	IFS=':' read -r -a extra <<<"$plugins_dir"
 	dirs+=("${extra[@]}")
@@ -102,8 +102,8 @@ if [ -s "$state_root/plugins.json" ] && [ -r "$state_root/plugins.json" ]; then
 	index_src="$state_root/plugins.json"
 fi
 user_src=/dev/null
-if [ -s "$cfg_home/ryoku/plugins.json" ] && [ -r "$cfg_home/ryoku/plugins.json" ]; then
-	user_src="$cfg_home/ryoku/plugins.json"
+if [ -s "$cfg_home/tenkai/plugins.json" ] && [ -r "$cfg_home/tenkai/plugins.json" ]; then
+	user_src="$cfg_home/tenkai/plugins.json"
 fi
 
 # path lists travel as one separator-joined string: the record separator cannot

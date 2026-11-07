@@ -18,7 +18,7 @@ Column {
 
     FileView {
         id: matugenFile
-        path: Quickshell.env("HOME") + "/.config/ryoku/matugen.json"
+        path: Quickshell.env("HOME") + "/.config/tenkai/matugen.json"
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {
@@ -157,7 +157,7 @@ Column {
                     onToggle: function(v) {
                         var patch = {}
                         patch[modelData] = v
-                        Quickshell.execDetached(["ryoku-hub", "desktop", "matugen", "set",
+                        Quickshell.execDetached(["tenkai-hub", "desktop", "matugen", "set",
                             JSON.stringify({ templates: patch })])
                     }
                 }

@@ -155,12 +155,12 @@ QtObject {
 
     // The ryogami daemon reads the wallpaper engine options from shell.json,
     // so the picker reads and patches the same file it does.
-    readonly property string ryokuShellPath: (Quickshell.env("XDG_CONFIG_HOME") || (homeDir + "/.config")) + "/ryoku/shell.json"
+    readonly property string tenkaiShellPath: (Quickshell.env("XDG_CONFIG_HOME") || (homeDir + "/.config")) + "/tenkai/shell.json"
 
     property var _shell: ({})
 
     property var _shellFile: FileView {
-        path: Config.ryokuShellPath
+        path: Config.tenkaiShellPath
         watchChanges: true
         onLoaded: Config._reparseShell()
         onFileChanged: { reload(); Config._reparseShell() }
@@ -199,7 +199,7 @@ QtObject {
     }
 
     property var _shellWriter: FileView {
-        path: Config.ryokuShellPath
+        path: Config.tenkaiShellPath
         preload: true
     }
 
@@ -246,7 +246,7 @@ QtObject {
         catch (e) { config._matugenKnobs = {} }
     }
     property var _matugenKnobsFile: FileView {
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (homeDir + "/.config")) + "/ryoku/matugen.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (homeDir + "/.config")) + "/tenkai/matugen.json"
         watchChanges: true
         onLoaded: config._reparseMatugenKnobs()
         onFileChanged: { reload(); config._reparseMatugenKnobs() }

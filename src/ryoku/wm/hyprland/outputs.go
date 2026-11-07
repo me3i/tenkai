@@ -14,12 +14,12 @@ import (
 )
 
 // outputs is the write half of the display seam for Hyprland: it renders the
-// neutral output layout the editor built into the spec ryoku-monitor applies,
+// neutral output layout the editor built into the spec tenkai-monitor applies,
 // which is the one place the DPI ladder, scale snapping and CVT-modeline forcing
-// live. ryoku-monitor writes monitors.lua and pushes the layout live through
+// live. tenkai-monitor writes monitors.lua and pushes the layout live through
 // hl.monitor, so the compositor needs no reload after.
 
-// monitorSpec is one entry of the layout ryoku-monitor's `apply` reads. Mirror
+// monitorSpec is one entry of the layout tenkai-monitor's `apply` reads. Mirror
 // and the colour pipeline (cm + sdrbrightness) are the CapOutputMirror /
 // CapOutputHdr leaves of OutputLayout, mapped straight through so the page's
 // mirror and HDR controls drive the path they always did.
@@ -67,10 +67,10 @@ func runOutputs(args []string) error {
 	return enc.Encode(rep)
 }
 
-// layoutToSpecs maps the neutral layout onto the spec ryoku-monitor reads. An
+// layoutToSpecs maps the neutral layout onto the spec tenkai-monitor reads. An
 // empty mode becomes preferred, a zero scale becomes 1 and a bool VRR becomes
-// ryoku-monitor's 0/1, so an output the editor left on auto still applies rather
-// than sending a value ryoku-monitor would reject.
+// tenkai-monitor's 0/1, so an output the editor left on auto still applies rather
+// than sending a value tenkai-monitor would reject.
 func layoutToSpecs(layout []wm.OutputLayout) []monitorSpec {
 	specs := make([]monitorSpec, 0, len(layout))
 	for _, o := range layout {
@@ -93,7 +93,7 @@ func layoutToSpecs(layout []wm.OutputLayout) []monitorSpec {
 	return specs
 }
 
-// modeOrPreferred maps an empty mode onto ryoku-monitor's automatic mode, so an
+// modeOrPreferred maps an empty mode onto tenkai-monitor's automatic mode, so an
 // output the editor left on auto comes up at its best available mode.
 func modeOrPreferred(mode string) string {
 	if mode == "" {
@@ -103,7 +103,7 @@ func modeOrPreferred(mode string) string {
 }
 
 // scaleOrOne keeps a zero (automatic) scale at 1, the safe default Hyprland
-// accepts for any mode; ryoku-monitor then snaps a real value to the valid ladder.
+// accepts for any mode; tenkai-monitor then snaps a real value to the valid ladder.
 func scaleOrOne(scale float64) float64 {
 	if scale <= 0 {
 		return 1
@@ -111,7 +111,7 @@ func scaleOrOne(scale float64) float64 {
 	return scale
 }
 
-// sdrOrOne keeps a zero SDR brightness at 1x: ryoku-monitor only honours it in
+// sdrOrOne keeps a zero SDR brightness at 1x: tenkai-monitor only honours it in
 // HDR, and 1x is the neutral value that leaves SDR content untouched.
 func sdrOrOne(v float64) float64 {
 	if v <= 0 {
@@ -127,18 +127,18 @@ func boolToInt(b bool) int {
 	return 0
 }
 
-// runMonitor drives ryoku-monitor, the Hyprland display engine, discarding its
+// runMonitor drives tenkai-monitor, the Hyprland display engine, discarding its
 // stdout so its progress line never mixes with the JSON report the seam prints.
 func runMonitor(args ...string) error {
-	cmd := exec.Command("ryoku-monitor", args...)
+	cmd := exec.Command("tenkai-monitor", args...)
 	var stderr bytes.Buffer
 	cmd.Stdout = io.Discard
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
 		if msg := strings.TrimSpace(stderr.String()); msg != "" {
-			return fmt.Errorf("ryoku-monitor apply: %w: %s", err, msg)
+			return fmt.Errorf("tenkai-monitor apply: %w: %s", err, msg)
 		}
-		return fmt.Errorf("ryoku-monitor apply: %w", err)
+		return fmt.Errorf("tenkai-monitor apply: %w", err)
 	}
 	return nil
 }

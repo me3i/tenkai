@@ -177,7 +177,7 @@ Item {
     // when it is absent, so downstream consumers always have a file to read.
     FileView {
         id: cfg
-        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/ryoku/performance.json"
+        path: (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/tenkai/performance.json"
         blockLoading: true
         watchChanges: true
         printErrors: false

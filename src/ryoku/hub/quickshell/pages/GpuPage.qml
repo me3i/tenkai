@@ -215,7 +215,7 @@ Item {
     }
     function enableInTerminal() {
         Spawn.run(["kitty", "--class", "ryoku-gpu", "-e", "sh", "-c",
-            "ryoku-hub gpu apply enable; echo; read -n1 -rsp 'Done. Press any key to close…'; echo"]);
+            "tenkai-hub gpu apply enable; echo; read -n1 -rsp 'Done. Press any key to close…'; echo"]);
         pg.planning = false;
         pg.planText = "";
         pg.enabling = true;
@@ -244,7 +244,7 @@ Item {
                     console.log("gpu: caps parse failed: " + e);
                 }
             }
-            pg.capsError = capsErr.text.trim() || ("ryoku-hub gpu caps exited " + code);
+            pg.capsError = capsErr.text.trim() || ("tenkai-hub gpu caps exited " + code);
         }
     }
     Process {
@@ -441,7 +441,7 @@ done
     component TuneCell: SettingRow {
         id: tc
         property var tunable: ({})
-        property string scope: ""      // non-empty routes writes through `ryoku-hub cpu set <scope>`
+        property string scope: ""      // non-empty routes writes through `tenkai-hub cpu set <scope>`
         readonly property string knd: tc.tunable.kind || ""
         readonly property int optCount: (tc.tunable.options || []).length
 

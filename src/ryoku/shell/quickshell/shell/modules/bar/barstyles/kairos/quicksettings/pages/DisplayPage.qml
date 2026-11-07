@@ -37,9 +37,9 @@ Column {
     readonly property var scaleTargets: [1, 1.25, 1.5, 1.75, 2]
 
     function monitorCmd(args) {
-        var script = 'if command -v ryoku-monitor >/dev/null 2>&1; then exec ryoku-monitor "$@"; '
-            + 'else exec "$HOME/.local/bin/ryoku-monitor" "$@"; fi';
-        return ["sh", "-c", script, "ryoku-monitor"].concat(args);
+        var script = 'if command -v tenkai-monitor >/dev/null 2>&1; then exec tenkai-monitor "$@"; '
+            + 'else exec "$HOME/.local/bin/tenkai-monitor" "$@"; fi';
+        return ["sh", "-c", script, "tenkai-monitor"].concat(args);
     }
     function isInternal(name) { return /eDP|LVDS/i.test(String(name || "")); }
     function ladderOf(m) {

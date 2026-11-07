@@ -11,7 +11,7 @@ import (
 // short list of common candidates. `ryoku-hub apps` reports which candidates are
 // installed (a binary on PATH) so the page can show them as chips; the field
 // still accepts any command. The chosen command is stored in hypr.json "apps"
-// and launched by the ryoku-app resolver (and exported as env by genApps).
+// and launched by the tenkai-app resolver (and exported as env by genApps).
 
 type appCandidate struct {
 	Label     string `json:"label"`
@@ -23,7 +23,7 @@ type appRole struct {
 	Role       string         `json:"role"`
 	Label      string         `json:"label"`
 	Fallback   string         `json:"fallback"`        // the shipped default when unset
-	Combo      string         `json:"combo,omitempty"` // shipped combo bound to `ryoku-app <role>`
+	Combo      string         `json:"combo,omitempty"` // shipped combo bound to `tenkai-app <role>`
 	Candidates []appCandidate `json:"candidates"`
 }
 
@@ -90,7 +90,7 @@ func appRoles() []appRole {
 	combos := roleCombos()
 	for _, d := range appRoleDefs {
 		fallback := d.Fallback
-		// Browser default follows ryoku-app: Zen when installed (under either the
+		// Browser default follows tenkai-app: Zen when installed (under either the
 		// tarball name `zen` or the AUR `zen-browser`), else the shipped Chromium.
 		if d.Role == "browser" {
 			if cmd, ok := resolveCandidate("zen|zen-browser"); ok {
@@ -107,7 +107,7 @@ func appRoles() []appRole {
 	return out
 }
 
-// roleCombos maps each app role to the shipped combo its `ryoku-app <role>`
+// roleCombos maps each app role to the shipped combo its `tenkai-app <role>`
 // launch is bound to in binds.lua, so the Keybinds page can show and rebind the
 // key beside the app. A role with no shipped bind is absent.
 func roleCombos() map[string]string {
@@ -125,10 +125,10 @@ func roleCombos() map[string]string {
 			continue
 		}
 		em := reExec.FindStringSubmatch(m[2])
-		if em == nil || !strings.HasPrefix(strings.TrimSpace(em[1]), "ryoku-app ") {
+		if em == nil || !strings.HasPrefix(strings.TrimSpace(em[1]), "tenkai-app ") {
 			continue
 		}
-		role := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(em[1]), "ryoku-app "))
+		role := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(em[1]), "tenkai-app "))
 		if _, combo := resolveKeys(m[1], ""); combo != "" {
 			out[role] = combo
 		}

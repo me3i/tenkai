@@ -141,7 +141,7 @@ func runDesktop(args []string) error {
 			return printJSON(map[string]string{"scheme": currentScheme()})
 		}
 		return applyScheme(args[1])
-	case "ryoku-theme":
+	case "tenkai-theme":
 		return applyTenkaiTheme()
 	case "theme-apps":
 		if len(args) < 2 {

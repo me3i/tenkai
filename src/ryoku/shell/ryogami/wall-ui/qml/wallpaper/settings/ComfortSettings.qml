@@ -21,7 +21,7 @@ Column {
     property int _brightness: 100
     property bool _warm: false
     property int _temp: 4000
-    readonly property string _sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ryoku-shell.sock"
+    readonly property string _sockPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-shell.sock"
 
     function applyNightFrame(line) {
         try {

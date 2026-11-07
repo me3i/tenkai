@@ -12,7 +12,7 @@ import "services"
 QtObject {
     id: colors
 
-    property string colorFilePath: Quickshell.env("HOME") + "/.cache/ryoku/colors.json"
+    property string colorFilePath: Quickshell.env("HOME") + "/.cache/tenkai/colors.json"
 
     property var colorFileView: FileView {
         path: BootstrapService.ready ? colors.colorFilePath : ""

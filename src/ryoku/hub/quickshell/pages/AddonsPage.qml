@@ -64,7 +64,7 @@ Item {
         });
     }
 
-    readonly property string shellDir: Quickshell.env("RYOKU_SHELL_DIR")
+    readonly property string shellDir: Quickshell.env("TENKAI_SHELL_DIR")
     readonly property string script: (pg.shellDir && pg.shellDir.length > 0)
         ? pg.shellDir + "/quickshell/plugins/discover.sh"
         : (Quickshell.env("XDG_CONFIG_HOME") || (Quickshell.env("HOME") + "/.config")) + "/quickshell/plugins/discover.sh"
@@ -128,7 +128,7 @@ Item {
     function place(id, field, a, b, c, d) {
         if (!id)
             return;
-        var args = ["ryoku-plugins-place", id, field];
+        var args = ["tenkai-plugins-place", id, field];
         for (var v of [a, b, c, d])
             if (v !== undefined)
                 args.push("" + v);
@@ -140,7 +140,7 @@ Item {
             return;
         var obj = {};
         obj[key] = value;
-        settingsProc.command = ["ryoku-plugins-place", id, "settings", JSON.stringify(obj)];
+        settingsProc.command = ["tenkai-plugins-place", id, "settings", JSON.stringify(obj)];
         settingsProc.running = true;
     }
     // remove drops the whole plugins.json entry (forget) then deletes the
@@ -1017,7 +1017,7 @@ Item {
                                 anchors.right: parent.right
                                 visible: placer.centered
                                 wrapMode: Text.WordWrap
-                                text: I18n.tr("A centred popout has no hover edge: open it with its keybind, or with ryoku-shell plugin <id>. It shares the middle of the screen with quick settings (Super+Escape) and the stash (Super+S), and the shell shows one surface at a time, so they take turns instead of overlapping.")
+                                text: I18n.tr("A centred popout has no hover edge: open it with its keybind, or with tenkai-shell plugin <id>. It shares the middle of the screen with quick settings (Super+Escape) and the stash (Super+S), and the shell shows one surface at a time, so they take turns instead of overlapping.")
                                 color: Tokens.inkMuted; font.family: Tokens.ui; font.pixelSize: Tokens.fTiny
                             }
                         }

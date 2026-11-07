@@ -487,7 +487,7 @@ Item {
         }
         Text {
             width: Math.min(parent.width, 720)
-            text: I18n.tr("Bring another setup onto Ryoku. Everything it touches is backed up.")
+            text: I18n.tr("Bring another setup onto Tenkai. Everything it touches is backed up.")
             color: Tokens.inkMuted; font.family: Tokens.ui
             font.pixelSize: Tokens.fBody; wrapMode: Text.WordWrap
         }
@@ -656,7 +656,7 @@ Item {
                             }
                             Text {
                                 width: parent.width
-                                text: I18n.tr("It looks like you came from another %1 setup. Scan it to bring your keybinds, rules and app configs onto Ryoku.").arg(pg.providerCased())
+                                text: I18n.tr("It looks like you came from another %1 setup. Scan it to bring your keybinds, rules and app configs onto Tenkai.").arg(pg.providerCased())
                                 color: Tokens.inkMuted; font.family: Tokens.ui
                                 font.pixelSize: Tokens.fSmall; wrapMode: Text.WordWrap
                             }

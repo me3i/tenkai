@@ -11,7 +11,7 @@ local function optional(mod)
             -- degrade, but say so: a syntax error in a hand-edited drop-in
             -- (user.lua, monitors_user.lua) otherwise vanishes without a trace
             -- and the user is left guessing why their edits do nothing.
-            print("ryoku: optional config module '" .. mod .. "' failed to load: " .. tostring(err))
+            print("tenkai: optional config module '" .. mod .. "' failed to load: " .. tostring(err))
         end
     end
 end
@@ -22,13 +22,13 @@ require("modules.env")
 -- outputs, and a login loop no snapshot fixed, since ~/.config rides /home.
 -- degrade to Hyprland's default layout instead; tenkai doctor reseeds the file.
 optional("keyboard")
--- hardware drop-ins, written at runtime: ryoku-gpu emits gpu.lua, ryoku-monitor
+-- hardware drop-ins, written at runtime: ryoku-gpu emits gpu.lua, tenkai-monitor
 -- emits monitors.lua, both rewritten on a hotplug or GPU reset. tenkai doctor
 -- repairs a corrupt one, autoscale regenerates it next login.
 optional("gpu")
 optional("monitors")
 -- hand-written overrides: ~/.config/hypr/monitors_user.lua, never shipped,
--- never touched by ryoku-monitor. loaded after the generated monitors.lua so a
+-- never touched by tenkai-monitor. loaded after the generated monitors.lua so a
 -- pinned panel (fake-EDID needing a forced mode or modeline, a pinned layout)
 -- wins. see monitors_user.lua.example.
 optional("monitors_user")
@@ -46,7 +46,7 @@ require("modules.lid")
 require("modules.window_rules")
 require("modules.autostart")
 
--- machine-state written by the hub (ryoku-hub), never shipped. after the base
+-- machine-state written by the hub (tenkai-hub), never shipped. after the base
 -- modules so the GUI's tweaks override the defaults, before user.lua so a
 -- hand-written user file still wins.
 optional("settings")

@@ -116,7 +116,7 @@ func selfExe() string {
 	if e, err := os.Executable(); err == nil {
 		return e
 	}
-	return "ryoku-hub"
+	return "tenkai-hub"
 }
 
 // invokingUser = the human behind the action. PKEXEC_UID when escalated, else
@@ -149,14 +149,14 @@ type managedFile struct {
 }
 
 func managedFiles(user, exe string) []managedFile {
-	gpuBin := exe // ryoku-hub. the hook also needs ryoku-gpu, resolved below.
+	gpuBin := exe // tenkai-hub. the hook also needs ryoku-gpu, resolved below.
 	ryokuGpu := "ryoku-gpu"
 	if p, err := exec.LookPath("ryoku-gpu"); err == nil {
 		ryokuGpu = p
 	}
 	hook := "#!/bin/bash\n" +
-		"# Managed by Ryoku (ryoku-hub gpu apply). libvirt calls this for every domain;\n" +
-		"# we forward the Ryoku VM's prepare/release to ryoku-hub, which binds the dGPU to\n" +
+		"# Managed by Tenkai (tenkai-hub gpu apply). libvirt calls this for every domain;\n" +
+		"# we forward the Tenkai VM's prepare/release to tenkai-hub, which binds the dGPU to\n" +
 		"# vfio-pci on start and hands it back on stop.\n" +
 		"export RYOKU_GPU_BIN=" + shellQuote(ryokuGpu) + "\n" +
 		"guest=\"$1\"; op=\"$2\"\n" +
@@ -182,8 +182,8 @@ func kvmfrModuleAvailable() bool {
 	return exec.Command("modinfo", "kvmfr").Run() == nil
 }
 
-const polkitRule = `// Managed by Ryoku. Let the libvirt group manage libvirt without a password so the
-// Ryoku VM launches straight from the app launcher.
+const polkitRule = `// Managed by Tenkai. Let the libvirt group manage libvirt without a password so the
+// Tenkai VM launches straight from the app launcher.
 polkit.addRule(function(action, subject) {
   if (action.id == "org.libvirt.unix.manage" && subject.isInGroup("libvirt")) {
     return polkit.Result.YES;

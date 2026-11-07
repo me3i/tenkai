@@ -111,8 +111,8 @@ Item {
     property string promptTitle: ""
     property string promptDetail: ""
     property var promptOptions: []
-    readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ryoku-update.json"
-    readonly property string answerPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/ryoku-update-answer"
+    readonly property string statePath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-update.json"
+    readonly property string answerPath: (Quickshell.env("XDG_RUNTIME_DIR") || "/tmp") + "/tenkai-update-answer"
 
     // the fill fraction for the shared progress track. `tenkai update` may report
     // an explicit progress, but even when it only advances the stage list we can

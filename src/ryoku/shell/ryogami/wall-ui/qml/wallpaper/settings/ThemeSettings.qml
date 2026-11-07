@@ -13,12 +13,12 @@ Column {
     property var _theme: ({ themeApps: true, gtkTheme: "adw", gnomeAccent: false })
     property var _mat: ({ lightnessDark: 0, lightnessLight: 0, prefer: "saturation", sourceColorIndex: 0 })
 
-    function _runHub(args) { Quickshell.execDetached(["ryoku-hub"].concat(args)) }
-    function _matugenSet(patch) { Quickshell.execDetached(["ryoku-hub", "desktop", "matugen", "set", JSON.stringify(patch)]) }
+    function _runHub(args) { Quickshell.execDetached(["tenkai-hub"].concat(args)) }
+    function _matugenSet(patch) { Quickshell.execDetached(["tenkai-hub", "desktop", "matugen", "set", JSON.stringify(patch)]) }
 
     FileView {
         id: themeFile
-        path: Quickshell.env("HOME") + "/.config/ryoku/theme.json"
+        path: Quickshell.env("HOME") + "/.config/tenkai/theme.json"
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {
@@ -31,7 +31,7 @@ Column {
 
     FileView {
         id: matugenFile
-        path: Quickshell.env("HOME") + "/.config/ryoku/matugen.json"
+        path: Quickshell.env("HOME") + "/.config/tenkai/matugen.json"
         watchChanges: true
         onFileChanged: reload()
         onLoaded: {
@@ -223,10 +223,10 @@ Column {
 
         RowAction {
             colors: root.colors
-            title: I18n.tr("Ryoku signature")
-            description: I18n.tr("Apply the Ryoku theme: frame bars, zero roundness, mono scheme.")
+            title: I18n.tr("Tenkai signature")
+            description: I18n.tr("Apply the Tenkai theme: frame bars, zero roundness, mono scheme.")
             valueLabel: I18n.tr("APPLY")
-            onClicked: root._runHub(["desktop", "ryoku-theme"])
+            onClicked: root._runHub(["desktop", "tenkai-theme"])
         }
     }
 
