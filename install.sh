@@ -67,14 +67,16 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   YL=$'\e[1;33m'
   RD=$'\e[1;31m'
 
-  # ── the celestial sky: pink and magenta, one gold note at the end ──
-  DEEP_BLUE=$'\e[38;5;176m'      # every frame rule — soft muted pink
-  SOFT_PURPLE=$'\e[38;5;213m'    # step headers and the turning star — orchid
+  # ── two colours, one note: a purple UI under a white mark, gold to close ──
+  UI_PURPLE=$'\e[38;5;141m'      # frames, step headers, small text, spinners
+  BANNER_WHITE=$'\e[1;37m'       # the TENKAI block art and the 天界 seal only
   CELESTIAL_GOLD=$'\e[38;5;220m' # success, and the closing line
-  STAR_WHITE=$'\e[1;37m'         # body text
-  TWINKLE_CYAN=$'\e[38;5;212m'   # accents, and the shooting star — hot pink
-  RYOKU_ORANGE=$'\e[38;5;208m'   # the TENKAI block art and the 天界 seal only
   # The earlier names stay as aliases, so no call site has to change.
+  DEEP_BLUE=$UI_PURPLE           # every frame rule
+  SOFT_PURPLE=$UI_PURPLE         # step headers and the turning star
+  TWINKLE_CYAN=$UI_PURPLE        # accents, and the shooting star
+  RYOKU_ORANGE=$BANNER_WHITE     # banner art, in white now
+  STAR_WHITE=$BANNER_WHITE       # tagline, step titles, closing lines
   THIN=$DEEP_BLUE
   WH=$STAR_WHITE
   GOLD=$CELESTIAL_GOLD
@@ -82,8 +84,8 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   BL=$SOFT_PURPLE                # suggested commands (was bold blue)
 else
   R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
-  DEEP_BLUE='' SOFT_PURPLE='' CELESTIAL_GOLD='' STAR_WHITE='' TWINKLE_CYAN=''
-  RYOKU_ORANGE=''
+  UI_PURPLE='' BANNER_WHITE='' CELESTIAL_GOLD=''
+  DEEP_BLUE='' SOFT_PURPLE='' STAR_WHITE='' TWINKLE_CYAN='' RYOKU_ORANGE=''
   THIN='' GOLD=''
 fi
 
@@ -104,8 +106,8 @@ _motion() { [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "$DRY_RUN" = 0 ]; }
 _celestial_glyphs=(✦ ✧ ✶ ✷ ✸ ✹ ✺ ✻)
 
 # The animation loop itself, always started in the background.
-# $1 = label, $2 = spin|star. In spin mode one glyph turns, alternating orchid
-# and pink on each step; in star mode a single star crosses a strip of sky.
+# $1 = label, $2 = spin|star. In spin mode one glyph turns, cycling the glyph
+# shape each step; in star mode a single star crosses a strip of sky.
 _celestial_sky() {
   local label="$1" mode="$2" i=0 j=0 k cells col
   while :; do
@@ -232,7 +234,7 @@ print_success() {
   fl 0 "" 0
   fl 6 "${WH}${TAGLINE}${R}" 46
   fl 0 "" 0
-  # The closing line arrives: hot pink, then orchid, then it settles on gold.
+  # The closing line arrives: purple, twice, then it settles on gold.
   if _motion; then
     for c in "$TWINKLE_CYAN" "$SOFT_PURPLE" "$CELESTIAL_GOLD"; do
       fl 14 "${c}${B}Tenkai is installed and ready.${R}" 30
