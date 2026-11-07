@@ -226,5 +226,65 @@ step messages, so they are left for a later pass / the owner to decide:
 
 ---
 
+## Phase 17 — System-wide audit (Phase 1: asset purge)
+
+Phase lead: buffy. Branch: `phase17-audit` (off `dac38d5`). Baseline commit: `6994f84`.
+
+### Phase 1 — Asset purge (disk & memory)
+
+Delivered: **38 files, 3055 deletions, ≈1.68 MB** (`b476537`).
+
+#### Deleted
+
+**qsbar/assets/ (7 files):** `codex.svg`, `hdd-mark.svg`, `arch-header-arch.png`, `arch-header-linux.png`, `bob2.png` (1.7 KB), `bob3.png` (41 KB), `omacom-text.png` — zero references anywhere in the project.
+
+**ui/art/ + hub/quickshell/art/ (4 files):** `graces.svg` (55 KB), `helm.svg` (26 KB), `justice.svg` (76 KB), `dither-torii.png` (599 KB) — zero references.
+
+**fastfetch (1 file):** `tenkai-logo.png` (722 KB) — zero references. Only `fastfetch-emblem.png` and `tenkai-logo.png.1bit.png` are used by the rice system; the blind `find -type f` in install.sh would have deployed this dead file on every install.
+
+**matugen/templates/ (26 files, 192 KB):** All non-kitty template files. `config.toml` has an empty `[templates]` section; only `kitty-colors.conf` is copied by `tenkai_seed_matugen()`. Kept: `kitty-colors.conf`.
+
+#### Kept (verified alive)
+
+- `components/icons/*.svg` (152 files, ≈608 KB): loaded dynamically by `SymbolIcon.qml` via `Qt.resolvedUrl("icons/" + name + "-symbolic.svg")`. Partial trace (20 names) did not reveal unused glyphs; the full set is the icon fallback available to data-driven `name` values. **Not deleted — Review Required for full data-flow trace.**
+- `fastfetch-emblem.png` + `tenkai-logo.png.1bit.png`: referenced by `rice.go`.
+- All 11 fonts in `shell/assets/fonts/`: loaded by `Fonts.qml` singleton, exposed to Settings Appearance font picker.
+- `grain.png`, `profile-hero.png`, `roots.png`, `hands-adam.png`: all referenced.
+- `kitty-colors.conf`: copied by `tenkai_seed_matugen()`.
+
+#### Review Required
+
+- **`components/icons/*.svg` (152 files):** Dynamic loading via `SymbolIcon.qml` means any icon whose `name` is passed as `root.icon` or `root.iconName` could be loaded. Full data-flow tracing of all `icon`/`iconName` sources needed to identify genuinely unused glyphs. Not deleted; flagged for Phase 2–3 deeper inspection.
+
+#### Verification
+
+`bash -n tenkai && bash -n install.sh` — PASS. `go build ./...` — PASS. `./tenkai verify-untouched` — PASS.
+
+### Phase 2 — QML deep clean (RAM & CPU)
+
+Delivered: **2 QML panel files, 1293 deletions, ≈61 KB** (`8eac401`).
+
+#### Deleted
+
+**qsbar/panels/ (2 files):** `ImageCarouselPanel.qml` (35 KB) — zero references outside its qmldir entry; dead picker variant. `MediaBrowserPanel.qml` (26 KB) — zero references anywhere, not even in qmldir; dead panel file.
+
+Also cleaned `panels/qmldir`: removed the `ImageCarouselPanel` registration line.
+
+#### Kept (Review Required — too deeply integrated to delete safely in this pass)
+
+- `Needle.qml` (17 KB): AI chat service, heavily referenced by `Actions.qml` (Super+S panel, ~50 refs). Not on keep list but deeply integrated.
+- `Stash.qml` (18 KB): download manager, heavily referenced by `Dock.qml` + `Desktop.qml`. Not on keep list but deeply integrated.
+- `VoxtypeWidget.qml` (2.3 KB): voice typing, referenced by `Theme.qml` + `BarSlot.qml` (core bar files). Not on keep list, wired into bar architecture.
+- `AiUsagePanel.qml` (24 KB): AI usage panel, referenced by `Theme.qml` + `ClaudeWidget.qml` + `VariantRoot.qml`. Not on keep list.
+- AI rendering cluster (`AiBarInset.qml`, `AiPanelSurface.qml`, `ConnectedBarInset.qml`, `ConnectedPanelSurface.qml`): wired into `BarSlot.qml` + 20+ panel files. Core bar infrastructure.
+- `CloudflareSpeedTest.qml` (12 KB): speed test widget, referenced by `NetworkPanel.qml`. Sub-feature of network (which IS kept).
+- `components/icons/*.svg` (152 files, ≈608 KB): dynamic loading via `SymbolIcon.qml`; need full data-flow trace of `root.icon`/`root.iconName` sources to identify unused glyphs.
+
+#### Verification
+
+`bash -n` OK, `go build ./...` OK, `./tenkai verify-untouched` PASS.
+
+---
+
 *End of Phase 16 changelog (so far). Append to this file as the next cleanup pass starts; do not
 edit `ARCHITECTURAL_AUDIT.md` for the same reason.*
