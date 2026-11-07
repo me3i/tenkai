@@ -14,3 +14,11 @@ upstream/
 # it owns. That is the owner's own setup, so it is not in the public repo.
 docs/baseline/
 docs/baseline.txt
+
+# AI tooling state (Freebuff project marker); never commit
+.freebuff
+
+# Compiled binaries from local `go build` verification runs; never commit
+src/ryoku/hub/backend/ryoku-hub
+src/ryoku/shell/ipc/ryoku-shell
+src/ryoku/shell/ryogami/daemon/ryogami
