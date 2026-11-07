@@ -62,23 +62,23 @@ if [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   D=$'\e[2m'   # dim
   WH=$'\e[1;37m'
   GY=$'\e[0;90m'
-  CY=$'\e[1;36m'
   GR=$'\e[1;32m'
   MG=$'\e[1;35m'
-  BL=$'\e[1;34m'
   YL=$'\e[1;33m'
   RD=$'\e[1;31m'
 
-  # ── the night sky ──
-  DEEP_BLUE=$'\e[38;5;26m'       # every frame rule
-  SOFT_PURPLE=$'\e[38;5;141m'    # step headers and the turning star
+  # ── the celestial sky: pink and magenta, one gold note at the end ──
+  DEEP_BLUE=$'\e[38;5;176m'      # every frame rule — soft muted pink
+  SOFT_PURPLE=$'\e[38;5;213m'    # step headers and the turning star — orchid
   CELESTIAL_GOLD=$'\e[38;5;220m' # success, and the closing line
   STAR_WHITE=$'\e[1;37m'         # body text
-  TWINKLE_CYAN=$'\e[38;5;51m'    # accents, and the shooting star
+  TWINKLE_CYAN=$'\e[38;5;212m'   # accents, and the shooting star — hot pink
   # The earlier names stay as aliases, so no call site has to change.
   THIN=$DEEP_BLUE
   WH=$STAR_WHITE
   GOLD=$CELESTIAL_GOLD
+  CY=$TWINKLE_CYAN               # banner art and info arrows (was cyan)
+  BL=$SOFT_PURPLE                # suggested commands (was bold blue)
 else
   R='' B='' D='' WH='' GY='' CY='' GR='' MG='' BL='' YL='' RD=''
   DEEP_BLUE='' SOFT_PURPLE='' CELESTIAL_GOLD='' STAR_WHITE='' TWINKLE_CYAN=''
@@ -102,8 +102,8 @@ _motion() { [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "$DRY_RUN" = 0 ]; }
 _celestial_glyphs=(✦ ✧ ✶ ✷ ✸ ✹ ✺ ✻)
 
 # The animation loop itself, always started in the background.
-# $1 = label, $2 = spin|star. In spin mode one glyph turns, alternating purple
-# and cyan on each step; in star mode a single star crosses a strip of sky.
+# $1 = label, $2 = spin|star. In spin mode one glyph turns, alternating orchid
+# and pink on each step; in star mode a single star crosses a strip of sky.
 _celestial_sky() {
   local label="$1" mode="$2" i=0 j=0 k cells col
   while :; do
@@ -230,7 +230,7 @@ print_success() {
   fl 0 "" 0
   fl 6 "${WH}${TAGLINE}${R}" 46
   fl 0 "" 0
-  # The closing line arrives: cyan, then purple, then it settles on gold.
+  # The closing line arrives: hot pink, then orchid, then it settles on gold.
   if _motion; then
     for c in "$TWINKLE_CYAN" "$SOFT_PURPLE" "$CELESTIAL_GOLD"; do
       fl 14 "${c}${B}Tenkai is installed and ready.${R}" 30
