@@ -11,18 +11,14 @@ pragma ComponentBehavior: Bound
 
 import Quickshell
 import shell.services
-import "modules/visualizer/Singletons" as VizCfg
-import "modules/stage/Singletons" as StageCfg
 import "components"
 import "modules/wallpaper"
 import "modules/wallpaper/Singletons" as WallCfg
 import "modules/desktop"
-import "modules/visualizer"
 import "modules/bar"
 import "modules/controlcenter"
 import "modules/dock"
 import "modules/launcher"
-import "modules/overview"
 import "modules/clipboard"
 import QtQuick
 import Quickshell.Io
@@ -206,64 +202,11 @@ ShellRoot {
             // itself must stay visible -- step 5 found that `active: false` left
             // the screen showing Hyprland's built-in wallpaper. Widgets stay
             // off: `widgetsEnabled: false` gates every tile, the glass backdrop
-            // and the plugin repeater below.
-            Desktop {
-                id: desktop
-                screen: perScreen.modelData
-                active: true
-                widgetsEnabled: false
-                wallpaperUrl: wallpaper.wallpaperUrl
-                wallpaperPath: wallpaper.wallpaperPath
-                wallpaperFit: wallpaper.fit
-                wallpaperTransition: wallpaper.transition
-                videoUrl: wallpaper.videoUrl
-                wallpaperLive: wallpaper.live
-                videoMuted: wallpaper.videoMuted
-                videoVolume: wallpaper.videoVolume
-            }
-
-            // A blurred copy of the wallpaper for the compositor's overview
-            // backdrop, mapped below the desktop so it shows only in the
-            // overview. Built only where the capability and the user's setting
-            // both ask for it; a box with the backdrop off never pays for it.
-            LazyLoader {
-                id: backdropLoader
-                activeAsync: Wm.caps.overviewBackdrop === true && WallCfg.OverviewBackdropConfig.enabled
-                OverviewBackdrop {
-                    screen: perScreen.modelData
-                    available: Wm.caps.overviewBackdrop === true
-                    overviewOpen: Wm.overviewOpen
-                    wallpaperUrl: wallpaper.wallpaperUrl
-                }
-            }
-
-            // Stage now renders entirely inside the desktop surface (one stack:
+            // Overview backdrop removed (cut in F3 overview commit).
+                        // Stage now renders entirely inside the desktop surface (one stack:
             // backdrop, layers, widgets), so there is no separate Background
-            // surface here (docs/stage.md). Built on first enable or first
-            // placement; cava and its buffers never exist while the visualizer
-            // is off.
-            LazyLoader {
-                id: vizLoader
-                activeAsync: VizCfg.Config.enabled || (perScreen.st && perScreen.st.visualizerPlacing)
-                Visualizer {
-                    id: perScreenViz
-                    screen: perScreen.modelData
-                    mode: !VizCfg.Config.enabled ? "off"
-                        : (perScreen.st && perScreen.st.visualizerOverlay ? "overlay" : "desktop")
-                    placing: perScreen.st ? perScreen.st.visualizerPlacing : false
-                    // The desktop hosts the visualizer behind the cut-outs while the
-                    // stage is on; this surface steps aside (cava keeps running).
-                    // A rebuilt monitor stack (DPMS off/on, a lid close/open) starts
-                    // with no wallpaper frame, so hostsVisualizer briefly reads false
-                    // even for a stage wallpaper: stay suppressed until the frame
-                    // lands, or the surface maps full-screen and pulses for a few
-                    // seconds on every resume.
-                    suppressed: desktop.hostsVisualizer || !wallpaper.reloadReady
-                    onPlacingDone: if (perScreen.st) perScreen.st.visualizerPlacing = false
-                }
-            }
-
-            // The frame bar (Phase 2): reads its own reveal from this slice.
+            // surface here (docs/stage.md).
+                        // The frame bar (Phase 2): reads its own reveal from this slice.
             // TENKAI: gated, so bar=false creates no bar window at all (not just a
             // hidden one). LazyLoader is the pattern the other toggle surfaces
             // here already use.
@@ -289,7 +232,6 @@ ShellRoot {
                     screen: perScreen.modelData
                     // Edit widgets steps the dock back so the whole desktop is the canvas.
                     visible: Dock.cfg("enabled", false)
-                        && !(StageCfg.StageSession.widgets && StageCfg.StageSession.monitor === perScreen.modelData.name)
                 }
             }
 
@@ -333,27 +275,7 @@ ShellRoot {
                 }
             }
             Timer { id: launcherHold; interval: 15000 }
-            LazyLoader {
-                id: overviewLoader
-                property bool open: perScreen.st ? perScreen.st.overviewOpen : false
-                property bool showNow: false
-                activeAsync: open || overviewHold.running
-                onItemChanged: if (overviewLoader.item) Qt.callLater(function() { overviewLoader.showNow = overviewLoader.open; })
-                onOpenChanged: {
-                    if (overviewLoader.open) {
-                        if (overviewLoader.item) overviewLoader.showNow = true;
-                        return;
-                    }
-                    overviewLoader.showNow = false;
-                    if (overviewLoader.active) overviewHold.restart();
-                }
-                OverviewSurface {
-                    screen: perScreen.modelData
-                    active: overviewLoader.showNow
-                    onRequestClose: if (perScreen.st) perScreen.st.overviewOpen = false
-                }
-            }
-            Timer { id: overviewHold; interval: 15000 }
+
             LazyLoader {
                 id: clipboardLoader
                 property bool open: perScreen.st ? perScreen.st.clipboardOpen : false
@@ -507,17 +429,6 @@ ShellRoot {
             else if (Wm.caps.windowGeometry && st)
                 st.overviewOpen = !st.overviewOpen;
             break;
-        case "visualizer":
-            VizCfg.Config.setEnabled(!VizCfg.Config.enabled);
-            break;
-        case "visualizer-overlay":
-            if (st)
-                st.visualizerOverlay = !st.visualizerOverlay;
-            break;
-        case "visualizer-place":
-            if (st)
-                root.placeVisualizer(!st.visualizerPlacing);
-            break;
         case "quicksettings":
             ShellState.requestSurfaceActive("quick-settings", undefined);
             break;
@@ -543,6 +454,7 @@ ShellRoot {
         }
     }
 
+
     // The style-independent half of the surface bus. With no global-shortcuts
     // protocol a keybind reaches a surface only by spawning `ryoku-shell <id>`,
     // which arrives here as a surfaceRequested. Frame-menu surfaces are opened by
@@ -558,14 +470,12 @@ ShellRoot {
             case "launcher":
             case "overview":
             case "clipboard":
-            case "visualizer":
-            case "visualizer-overlay":
-            case "visualizer-place":
                 root.toggleSurface(id);
                 break;
             }
         }
     }
+
 
     // In-process global shortcuts. Each dispatches to the one toggleSurface
     // mapping above, so the compositor's global-shortcut bind and a `ryoku-shell`
@@ -587,31 +497,12 @@ ShellRoot {
     }
     // On/off is the persisted key, so the keybind, the Hub switch and the next
     // restart all read the same answer. Only the layer is per-monitor memory.
-    CustomShortcut {
-        name: "visualizer"
-        description: I18n.tr("Cycle the desktop audio visualiser off and on")
-        onPressed: root.toggleSurface("visualizer")
-    }
-    CustomShortcut {
-        name: "visualizer-overlay"
-        description: I18n.tr("Toggle the audio visualiser overlay over windows")
-        onPressed: root.toggleSurface("visualizer-overlay")
-    }
-    CustomShortcut {
-        name: "visualizer-place"
-        description: I18n.tr("Grab the audio visualiser's ring or orb and drag it into place")
-        onPressed: root.toggleSurface("visualizer-place")
-    }
+
+
+
 
     // Aiming a hidden spectrum aims nothing, so placing it shows it first.
-    function placeVisualizer(on) {
-        const st = ShellState.forActive();
-        if (!st)
-            return;
-        if (on && !VizCfg.Config.enabled)
-            VizCfg.Config.setEnabled(true);
-        st.visualizerPlacing = on;
-    }
+
 
     // --- Root machinery ---------------------------------------------------
 
@@ -790,19 +681,7 @@ ShellRoot {
 
     // The Hub's "Place on the desktop" button lands here: a slider cannot let a
     // user drop a ring where they want it, so the shell hands them the shape.
-    IpcHandler {
-        target: "visualizer"
-        function place(): void {
-            const st = ShellState.forActive();
-            if (st)
-                root.placeVisualizer(true);
-        }
-        function done(): void {
-            const st = ShellState.forActive();
-            if (st)
-                root.placeVisualizer(false);
-        }
-    }
+
 
 
     // Menu global shortcuts: open a bar surface on the focused monitor. Each
