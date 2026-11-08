@@ -22,29 +22,44 @@ everything that could not justify its own weight — the AI panel, the lock
 screen and the D-Bus service behind it, the network reach of the background
 services, and every component that failed a necessity test.
 
-The result is the same desktop with less in it: faster to start, lighter at
-idle, and visually indistinguishable from the shell it came from. Tenkai is a
-derivative work, not a competing vision.
+The result is the same desktop with less in it. Tenkai is a derivative work,
+not a competing vision. "Less in it" is a statement about what is missing, not a
+benchmark: the only idle-memory figure on record predates this audit and was not
+re-measured here (see *Lighter by removal* below).
 
 ## Features
 
 Everything below is inherited from Ryoku and kept intact. The Tenkai work is
 the subtraction.
 
-- **The exact visual identity.** The bar, the surfaces, the palette engine and
-  the motion language are unchanged — a Tenkai screenshot and a Ryoku
-  screenshot are the same picture. Nothing was restyled, re-skinned or
-  "improved".
+- **The same visual identity.** The bar, the surfaces, the palette engine and
+  the motion language are inherited unchanged in the QML that ships here, and
+  nothing was restyled, re-skinned or "improved" beyond what
+  [`CHANGES.md`](CHANGES.md) lists. **UNVERIFIED:** that a Tenkai screenshot and
+  a Ryoku screenshot are the same picture. Producing the pair means running both
+  shells, and this project does not run either in the owner's live session.
 - **The same core workflows.** App launcher, workspace overview, quick
   settings, wallpaper picker, clipboard history, notifications and the system
   tray all behave exactly as they did before the fork.
-- **Lighter by removal.** Every component was dependency-traced and put
-  through a necessity test before it was kept. Measured on a live 144 Hz
-  session: **482 MB RSS / 231 MB PSS** idle, **~0.3–0.6 s CPU per 60 s**
-  (live trial, 2026-11-01).
-- **No AI, no lock screen, no phone-home.** The launcher's AI panel is hard
-  off, the lock screen and its `org.freedesktop.ScreenSaver` service are gone,
-  and the weather, radio and update probes never open a socket.
+- **Lighter by removal, not by benchmark.** Every component was dependency-
+  traced and put through a necessity test before it was kept. The figures this
+  README used to lead with — 482 MB RSS / 231 MB PSS idle, ~0.3–0.6 s CPU per
+  60 s — come from a live trial on 2026-11-01 and were **not** re-measured in
+  this audit, because that needs a running Tenkai session. For scale, the shell
+  processes of the Ryoku session these numbers are compared against measured
+  **513 MB RSS / 315 MB PSS** on 2026-11-08 (ryoku-shell + qs + ryogami). Two
+  numbers from two different builds on two different days are not a benchmark,
+  and "lighter" here means fewer components, not a proven memory win.
+- **No AI, no lock screen, no phone-home.** The launcher's AI panel is off. This
+  tree contains no lock screen and no code that registers
+  `org.freedesktop.ScreenSaver` (`grep -rn ScreenSaver` over the sources: no
+  hits); the live session's ScreenSaver name is held by the shell that was
+  already running, not by Tenkai. Network: the weather widget ships disabled
+  (`weatherEnabled: false`) and queries `api.open-meteo.com` only if you switch
+  it on; package updates are not probed over the network; the notification and
+  tray names are the standard ones, see [`docs/DBUS.md`](docs/DBUS.md). The
+  bundled wallpaper picker **does** use the network (GitHub, motionbgs.com,
+  moewalls.com) when you open it.
 - **Nothing hidden.** Every deviation from upstream is recorded in
   [`CHANGES.md`](CHANGES.md); the pinned upstream commit is in
   [`UPSTREAM.md`](UPSTREAM.md); attribution is in [`CREDITS.md`](CREDITS.md).

@@ -21,10 +21,11 @@ Item {
     // The screen, set by Frame's per-monitor Loader.
     property var modelData: null
 
-    // TENKAI: the in-shell wallpaper picker lives on the hosted bar system
-    // (VariantRoot -> Theme.openImagePicker), so Frame forwards a `wallpaper`
-    // surface request here instead of launching the external ryogami picker this
-    // build does not ship.
+    // TENKAI: the bar's own wallpaper surface request is forwarded to the hosted
+    // bar system (VariantRoot -> Theme.openImagePicker), so the bar never spawns a
+    // second picker. This build DOES ship the external ryogami picker
+    // (src/tenkai_core/shell/ryogami/wall-ui/, installed to .run/ryogami-wall-ui)
+    // and Super+P opens it; that is a separate entry point, not this one.
     function openPicker(mode) {
         if (host.item)
             host.item.openPicker(mode);
