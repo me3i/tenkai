@@ -187,7 +187,7 @@ ShellRoot {
             id: perScreen
             required property var modelData
             readonly property var st: ShellState.forScreen(modelData)
-            readonly property bool reloadReady: wallpaper.reloadReady && desktop.reloadReady
+            readonly property bool reloadReady: wallpaper.reloadReady && wallpaper.reloadReady
             onReloadReadyChanged: root.setReloadScreenReady(modelData.name, reloadReady)
             Component.onCompleted: root.setReloadScreenReady(modelData.name, reloadReady)
 

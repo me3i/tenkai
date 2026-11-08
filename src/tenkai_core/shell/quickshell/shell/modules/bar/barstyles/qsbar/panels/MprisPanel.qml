@@ -97,6 +97,9 @@ PanelWindow {
     onVisibleChanged: {
         AudioBars.setActive(mprisPanel, mprisPanel.visible)
         // Ask the script what the graph actually looks like. The state file is
+        // watched, but it is replaced by a rename, and a card that opens showing
+        // last week's curve is worse than one that costs a process to be right.
+    }
     Component.onDestruction: AudioBars.setActive(mprisPanel, false)
 
     property real reveal: root.mprisVisible ? 1 : 0
@@ -600,3 +603,6 @@ PanelWindow {
             }
 
             Rectangle { width: parent.width; height: 1; color: root.sep }
+}
+}
+}
