@@ -61,7 +61,7 @@ type matugenKnobs struct {
 	Prefer           string          // source-colour pick, e.g. "saturation"
 	SchemeType       string          // matugen -t variant; "" resolves to the default
 	SourceColorIndex int             // 0..4, most dominant first
-	ThemeTenkaiApps   bool            // theme the GTK / GUI app suite (apps.toml)
+	ThemeTenkaiApps  bool            // theme the GTK / GUI app suite (apps.toml)
 	Templates        map[string]bool // per-app roster, keyed by group
 }
 
@@ -93,10 +93,10 @@ var matugenSchemes = map[string]bool{
 // user picks Light. "smart" let a bright wallpaper turn the whole shell light.
 func defaultMatugenKnobs() matugenKnobs {
 	return matugenKnobs{
-		Mode:           "dark",
-		Contrast:       0,
-		Prefer:         "saturation",
-		SchemeType:     matugenSchemeType,
+		Mode:            "dark",
+		Contrast:        0,
+		Prefer:          "saturation",
+		SchemeType:      matugenSchemeType,
 		ThemeTenkaiApps: true,
 	}
 }
@@ -111,16 +111,16 @@ func readMatugenKnobs() matugenKnobs {
 		return k
 	}
 	var doc struct {
-		Mode             *string         `json:"mode"`
-		Contrast         *float64        `json:"contrast"`
-		LightnessDark    *float64        `json:"lightnessDark"`
-		LightnessLight   *float64        `json:"lightnessLight"`
-		Prefer           *string         `json:"prefer"`
-		SchemeType       *string         `json:"schemeType"`
-		SourceColorIndex *int            `json:"sourceColorIndex"`
+		Mode             *string  `json:"mode"`
+		Contrast         *float64 `json:"contrast"`
+		LightnessDark    *float64 `json:"lightnessDark"`
+		LightnessLight   *float64 `json:"lightnessLight"`
+		Prefer           *string  `json:"prefer"`
+		SchemeType       *string  `json:"schemeType"`
+		SourceColorIndex *int     `json:"sourceColorIndex"`
 		// COMPAT: on-disk settings key, kept as written by earlier versions.
-		ThemeTenkaiApps   *bool           `json:"themeRyokuApps"`
-		Templates        map[string]bool `json:"templates"`
+		ThemeTenkaiApps *bool           `json:"themeRyokuApps"`
+		Templates       map[string]bool `json:"templates"`
 	}
 	if json.Unmarshal(b, &doc) != nil {
 		return k

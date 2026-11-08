@@ -13,23 +13,23 @@ import (
 // Rust daemon's sqlite row exactly, though the Go store persists them as one
 // JSON index instead of a database.
 type Entry struct {
-	Key        string  `json:"key"`
-	Name       string  `json:"name"`
-	Type       string  `json:"type"`
-	Thumb      string  `json:"thumb"`
-	ThumbSm    string  `json:"thumb_sm"`
-	Favourite  int     `json:"favourite"`
-	Hue        int     `json:"hue"`
-	Sat        int     `json:"sat"`
-	Richness   int     `json:"richness"`
-	VideoFile  string  `json:"video_file"`
-	VideoPrev  string  `json:"video_prev"`
-	WeID       string  `json:"we_id"`
-	Filesize   int64   `json:"filesize"`
-	Width      int     `json:"width"`
-	Height     int     `json:"height"`
-	Mtime      int64   `json:"mtime"`
-	ApplyCount int     `json:"apply_count"`
+	Key        string `json:"key"`
+	Name       string `json:"name"`
+	Type       string `json:"type"`
+	Thumb      string `json:"thumb"`
+	ThumbSm    string `json:"thumb_sm"`
+	Favourite  int    `json:"favourite"`
+	Hue        int    `json:"hue"`
+	Sat        int    `json:"sat"`
+	Richness   int    `json:"richness"`
+	VideoFile  string `json:"video_file"`
+	VideoPrev  string `json:"video_prev"`
+	WeID       string `json:"we_id"`
+	Filesize   int64  `json:"filesize"`
+	Width      int    `json:"width"`
+	Height     int    `json:"height"`
+	Mtime      int64  `json:"mtime"`
+	ApplyCount int    `json:"apply_count"`
 }
 
 // store holds the wallpaper catalog and the small state kv the picker persists

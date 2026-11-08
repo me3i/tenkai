@@ -123,7 +123,6 @@ func (c config) wallpapersEnabled() bool {
 	return c.Features.Wallpapers == nil || *c.Features.Wallpapers
 }
 
-
 func (c config) restoreEnabled() bool {
 	return c.RestoreOnStartup == nil || *c.RestoreOnStartup
 }

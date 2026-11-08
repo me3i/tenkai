@@ -627,7 +627,6 @@ func snapshotStores(slot string) error {
 	return nil
 }
 
-
 // ensureBaseline snapshots the pristine pre-rice setup exactly once; it is never
 // overwritten, so the user can always return to how the machine shipped/was.
 func ensureBaseline() {
@@ -860,8 +859,6 @@ func applyRice(slug string, layers []string) error {
 	riceReload()
 	return nil
 }
-
-
 
 // --- active rice + compatibility -------------------------------------------
 
@@ -1273,7 +1270,7 @@ func preflightData() map[string]any {
 		"widgets":    len(readJSONMap(widgetsStorePath())) > 0,
 		"visualizer": len(readJSONMap(visualizerStorePath())) > 0,
 		"fastfetch":  isFile(fastfetchConfigPath()),
-			"layers":     layers,
+		"layers":     layers,
 		"fixed":      !loadThemeState().FollowWallpaper,
 		"themeApps":  themeAppsOn(loadThemeState()),
 	}

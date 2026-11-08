@@ -10,18 +10,18 @@ import (
 )
 
 type matugenConfig struct {
-	Mode             string          `json:"mode"`             // "dark", "light", "smart"
-	Contrast         float64         `json:"contrast"`         // -1.0 to 1.0
-	LightnessDark    float64         `json:"lightnessDark"`    // -1.0 to 1.0
-	LightnessLight   float64         `json:"lightnessLight"`   // -1.0 to 1.0
-	Prefer           string          `json:"prefer"`           // "dominant" or "vibrant"
-	SchemeType       string          `json:"schemeType"`       // matugen -t variant
-	SourceColorIndex int             `json:"sourceColorIndex"` // 0..4
+	Mode             string  `json:"mode"`             // "dark", "light", "smart"
+	Contrast         float64 `json:"contrast"`         // -1.0 to 1.0
+	LightnessDark    float64 `json:"lightnessDark"`    // -1.0 to 1.0
+	LightnessLight   float64 `json:"lightnessLight"`   // -1.0 to 1.0
+	Prefer           string  `json:"prefer"`           // "dominant" or "vibrant"
+	SchemeType       string  `json:"schemeType"`       // matugen -t variant
+	SourceColorIndex int     `json:"sourceColorIndex"` // 0..4
 	// COMPAT: the JSON tag keeps its old spelling because it is the on-disk key in
 	// shell.json/matugen.json — renaming it would orphan every stored settings file.
 	// The Go name is Tenkai; only the wire/disk key is legacy. See docs/COMPAT.md.
-	ThemeTenkaiApps   bool            `json:"themeRyokuApps"`   // theme Tenkai's native shell & apps
-	Templates        map[string]bool `json:"templates"`        // app -> bool
+	ThemeTenkaiApps bool            `json:"themeRyokuApps"` // theme Tenkai's native shell & apps
+	Templates       map[string]bool `json:"templates"`      // app -> bool
 }
 
 func hexToRGB(hex string) (int, int, int) {
@@ -136,7 +136,7 @@ func defaultMatugenConfig() matugenConfig {
 		Prefer:           "saturation",
 		SchemeType:       "scheme-tonal-spot",
 		SourceColorIndex: 0,
-		ThemeTenkaiApps:   true,
+		ThemeTenkaiApps:  true,
 		Templates: map[string]bool{
 			"btop":      true,
 			"qt":        true,

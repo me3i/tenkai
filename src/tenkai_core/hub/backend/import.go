@@ -53,11 +53,11 @@ type scanItem struct {
 }
 
 type scanConflict struct {
-	Combo string        `json:"combo"` // display form
-	Norm  string        `json:"norm"`  // stable key, opaque to UI/CLI
+	Combo  string         `json:"combo"` // display form
+	Norm   string         `json:"norm"`  // stable key, opaque to UI/CLI
 	Tenkai conflictTenkai `json:"tenkai"`
-	Mine  conflictMine  `json:"mine"`
-	Kind  string        `json:"kind"` // shipped | duplicate
+	Mine   conflictMine   `json:"mine"`
+	Kind   string         `json:"kind"` // shipped | duplicate
 }
 
 type conflictTenkai struct {

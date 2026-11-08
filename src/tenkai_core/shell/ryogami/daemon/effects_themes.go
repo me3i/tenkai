@@ -213,4 +213,3 @@ func themeLookup(name string) ([][3]uint8, bool) {
 	}
 	return nil, false
 }
-

@@ -93,10 +93,10 @@ func runCaps() error {
 		WorkspaceModel: wm.WorkspaceModelDynamic,
 		// wm.niri.* keys stay in the store untouched while another compositor
 		// is active, so they are still there on the way back.
-		SettingDomains: []string{"desktop", "wm." + wm.ProviderNiri},
-		ConfigFiles:    wm.ConfigFiles(wm.ProviderNiri),
-		GeneratedFiles: wm.GeneratedConfig(wm.ProviderNiri),
-		PortalBackend:  "gnome",
+		SettingDomains:    []string{"desktop", "wm." + wm.ProviderNiri},
+		ConfigFiles:       wm.ConfigFiles(wm.ProviderNiri),
+		GeneratedFiles:    wm.GeneratedConfig(wm.ProviderNiri),
+		PortalBackend:     "gnome",
 		NightLightProcess: "gammastep",
 		Packages:          compositorPackages,
 		WindowRuleActions: windowRuleActions,

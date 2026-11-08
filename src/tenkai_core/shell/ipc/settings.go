@@ -102,7 +102,7 @@ var (
 // keys Tenkai has no consumer for (see the slice report): the icon-theme group,
 // the custom-CSS file, and the app-launcher menu.
 type settings struct {
-	General       generalSettings       `json:"general"`
+	General generalSettings `json:"general"`
 	// Modules is Tenkai's switchboard: one explicit enable flag per shell module.
 	// A missing key means ON (moduleEnabled), so an older shell.json keeps every
 	// module. Read by the daemon (moduleDisabled) and by the QML (Config.modules).

@@ -366,7 +366,6 @@ func dictationReady() bool {
 	return exec.Command("systemctl", "--user", "is-active", "--quiet", "voxtype.service").Run() == nil
 }
 
-
 func stateDir() string {
 	if d := os.Getenv("XDG_STATE_HOME"); d != "" {
 		return d

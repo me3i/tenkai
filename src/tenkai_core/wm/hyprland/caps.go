@@ -89,10 +89,10 @@ func runCaps() error {
 		WorkspaceModel: wm.WorkspaceModelFixed,
 		// wm.hyprland.* keys stay in the store untouched while another
 		// compositor is active, so they are still there on the way back.
-		SettingDomains: []string{"desktop", "wm." + wm.ProviderHyprland},
-		ConfigFiles:    wm.ConfigFiles(wm.ProviderHyprland),
-		GeneratedFiles: wm.GeneratedConfig(wm.ProviderHyprland),
-		PortalBackend:  "hyprland",
+		SettingDomains:    []string{"desktop", "wm." + wm.ProviderHyprland},
+		ConfigFiles:       wm.ConfigFiles(wm.ProviderHyprland),
+		GeneratedFiles:    wm.GeneratedConfig(wm.ProviderHyprland),
+		PortalBackend:     "hyprland",
 		NightLightProcess: "hyprsunset",
 		Packages:          compositorPackages,
 		WindowRuleActions: windowRuleActions,

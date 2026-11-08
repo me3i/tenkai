@@ -113,7 +113,7 @@ type ffLogo struct {
 	Source       string `json:"source"`
 	Width        int    `json:"width"`
 	Height       int    `json:"height"`
-	Padding      int    `json:"padding"`      // left, the one the UI exposes
+	Padding      int    `json:"padding"` // left, the one the UI exposes
 	PaddingRight int    `json:"paddingRight"`
 	PaddingTop   int    `json:"paddingTop"`
 	// Dither is on when Source names a baked 1-bit sibling; it rides the source
