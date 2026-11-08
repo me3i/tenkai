@@ -197,6 +197,28 @@ Singleton {
     readonly property real windowOpacity: Config.frameOpacity
 
     // --- fonts ----------------------------------------------------------------
+    // Fraunces ships in-tree (src/tenkai-assets/fonts/fraunces) but is not
+    // installed system-wide, and install.sh's user-local font directory is
+    // outside the fontconfig search path a live run uses (XDG_DATA_HOME points
+    // into .run). Registering the file with Qt directly, the same way the hub's
+    // Rashin page loads Archivo Black, makes the display face independent of
+    // both. Fallback stays the family name, so a failed load keeps the old
+    // behaviour instead of breaking the clock and calendar.
+    FontLoader {
+        id: frauncesRegular
+        source: Qt.resolvedUrl("../../../../../tenkai-assets/fonts/fraunces/Fraunces[SOFT,WONK,opsz,wght].ttf")
+        onStatusChanged: {
+            if (status === FontLoader.Ready)
+                console.info("Theme: Fraunces loaded as '" + name + "'")
+            else if (status === FontLoader.Error)
+                console.warn("Theme: Fraunces failed to load; display text falls back to the system sans")
+        }
+    }
+    FontLoader {
+        id: frauncesItalic
+        source: Qt.resolvedUrl("../../../../../tenkai-assets/fonts/fraunces/Fraunces-Italic[SOFT,WONK,opsz,wght].ttf")
+    }
+
     // Primary is the shell UI face; empty resolves to the platform default sans,
     // matching the reference's inherited system font. secondary/tertiary are
     // override slots that inherit primary until a theme sets them.
@@ -210,7 +232,8 @@ Singleton {
     readonly property int fontXxl: 32
     readonly property int fontXxxl: 48
     // Tenkai-specific faces: a serif display, a monospace, and a CJK face.
-    readonly property string display: "Fraunces"
+    readonly property string display: frauncesRegular.status === FontLoader.Ready
+                                            ? frauncesRegular.name : "Fraunces"
     readonly property string mono:    "JetBrainsMono Nerd Font"
     readonly property string fontJp:  "Noto Sans CJK JP"
 
