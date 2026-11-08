@@ -1417,6 +1417,13 @@ cmd_stop() {
     [ -d "/proc/$pid" ] || continue
     local c
     c="$(cat "/proc/$pid/cmdline" 2>/dev/null | tr '\0' ' ' || true)"
+    # A recorded pid that has already exited can still have a /proc entry if its
+    # parent has not reaped it yet; its cmdline is then empty. That is "nothing to
+    # signal", not a foreign process, so name it for what it is.
+    if [ -z "$c" ]; then
+      note "SKIP  pid=$pid (already exited; nothing to signal)"
+      continue
+    fi
     if [[ "$c" != *"$TENKAI_DIR"* ]]; then
       note "SKIP  pid=$pid (cmdline does not contain project path)"
       continue
