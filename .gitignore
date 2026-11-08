@@ -24,3 +24,13 @@ src/tenkai_core/hub/backend/ryoku-hub
 src/tenkai_core/shell/ipc/tenkai-shell
 src/tenkai_core/shell/ipc/ryoku-shell
 src/tenkai_core/shell/ryogami/daemon/ryogami
+
+# Build output — CMake trees, object files and the shell plugin's build dir.
+# Verified before adding: `git ls-files | grep -E '(build/|\.(o|so|bin)$)'` is empty.
+src/tenkai_core/shell/plugin/build/
+build/
+dist/
+/bin/
+*.o
+*.so
+*.bin
