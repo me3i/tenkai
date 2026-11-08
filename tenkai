@@ -131,6 +131,11 @@ local_prev_shell_name(){ local_conf TENKAI_PREV_SHELL_NAME; }
 local_prev_shell_start(){ local_conf TENKAI_PREV_SHELL_START; }
 local_prev_shell_stop(){ local_conf TENKAI_PREV_SHELL_STOP; }
 LIVE_BACKUP_DIR="$RUN_DIR/live-backup"
+# A live run may reuse the real XDG_RUNTIME_DIR, where the previous shell's own
+# daemons already own sockets of the same name (ryogami.sock in particular).
+# Record which of them existed BEFORE the run, so live-stop deletes only the
+# sockets this run created. Deleting a foreign socket is a live-session write.
+LIVE_PRE_SOCKETS="$RUN_DIR/live-sockets-pre.txt"
 
 die()  { printf 'tenkai: %s\n' "$*" >&2; exit 1; }
 note() { printf '%s\n' "$*"; }
@@ -2630,6 +2635,12 @@ cmd_live() {
   fi
 
   # 4. module flags and the session script
+  # Which socket paths already exist in the live runtime dir? Anything listed
+  # here belongs to someone else (the old shell) and must survive live-stop.
+  : > "$LIVE_PRE_SOCKETS"
+  for s in "$rt/tenkai-shell.sock" "$rt/ryogami.sock" "$rt/tenkai-hub.lock"; do
+    [ -e "$s" ] && printf '%s\n' "$s" >> "$LIVE_PRE_SOCKETS"
+  done
   live_write_modules "$profile"
   write_live_session "$profile" "$wl" "$sig" "$rt" 0
   : > "$LIVE_PID_FILE"
@@ -2709,8 +2720,15 @@ cmd_live_stop() {
   fi
   local rt="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
   for s in "$rt/tenkai-shell.sock" "$rt/ryogami.sock" "$rt/tenkai-hub.lock"; do
-    [ -e "$s" ] && { rm -f "$s"; note "removed $s"; }
+    [ -e "$s" ] || continue
+    # Never delete a socket a foreign process owned before this run started.
+    if [ -f "$LIVE_PRE_SOCKETS" ] && grep -Fxq "$s" "$LIVE_PRE_SOCKETS"; then
+      note "kept $s (existed before this live run; not Tenkai's to delete)"
+      continue
+    fi
+    rm -f "$s"; note "removed $s"
   done
+  rm -f "$LIVE_PRE_SOCKETS"
   if [ -f "$LIVE_TOOLS_FILE" ]; then
     while read -r tp _; do
       [ -n "${tp:-}" ] && [ -d "/proc/$tp" ] && { note "TERM  monitor pid=$tp"; kill -TERM "$tp" 2>/dev/null || true; }
