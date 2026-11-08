@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-// The shipped Ryoku bind catalogue: one neutral list of every keybind the
+// The shipped Tenkai bind catalogue: one neutral list of every keybind the
 // desktop offers, described by what it does rather than by any compositor's
 // binding language. A provider reads this catalogue, resolves the user's
 // rebinds, marks what its compositor cannot honour, and reports the result as
@@ -23,7 +23,7 @@ type BindKind string
 
 const (
 	BindWM     BindKind = "wm"     // the window manager performs it
-	BindShell  BindKind = "shell"  // the Ryoku shell performs it
+	BindShell  BindKind = "shell"  // the Tenkai shell performs it
 	BindApp    BindKind = "app"    // it launches or focuses an app
 	BindCustom BindKind = "custom" // a compositor's own bind, outside the shared set
 )
@@ -51,7 +51,7 @@ type BindRow struct {
 	Unhonored string `json:"unhonored,omitempty"`
 }
 
-// CatalogBind is one shipped Ryoku bind, compositor-neutral. It is the raw
+// CatalogBind is one shipped Tenkai bind, compositor-neutral. It is the raw
 // material a provider turns into a BindRow.
 type CatalogBind struct {
 	ID       string
@@ -166,7 +166,7 @@ var catalogue = []CatalogBind{
 	{ID: "shell.visualizerOverlay", Category: "Shell", Label: "Visualiser over windows", Hint: "Raise it above windows; again to flip back", Chord: "SUPER + SHIFT + M", Kind: BindShell},
 	{ID: "shell.visualizerPlace", Category: "Shell", Label: "Place the visualiser", Hint: "Drag the ring or orb into place", Chord: "SUPER + ALT + M", Kind: BindShell},
 	{ID: "shell.voice", Category: "Shell", Label: "Voice typing", Hint: "Speech to text; tap again to stop", Chord: "SUPER + grave", Kind: BindShell},
-	{ID: "shell.settings", Category: "Shell", Label: "Ryoku settings", Chord: "SUPER + comma", Kind: BindShell},
+	{ID: "shell.settings", Category: "Shell", Label: "Tenkai settings", Chord: "SUPER + comma", Kind: BindShell},
 	{ID: "shell.stash", Category: "Shell", Label: "Stash", Hint: "Screen time and downloads", Chord: "SUPER + S", Kind: BindShell},
 	{ID: "shell.screenshot", Category: "Shell", Label: "Screenshot", Hint: "Capture, annotate and beautify", Chord: "SUPER + SHIFT + S", Kind: BindShell},
 	{ID: "shell.screenshotPrint", Category: "Shell", Label: "Screenshot", Chord: "Print", Kind: BindShell},

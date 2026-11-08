@@ -52,7 +52,7 @@ func Open() *Client {
 }
 
 // OpenNamed targets a compositor the caller is not in: the installer preparing a
-// target, and `ryoku wm use <name>` previewing a switch.
+// target, and `tenkai wm use <name>` previewing a switch.
 func OpenNamed(name string) *Client {
 	return &Client{
 		detection: Detection{Name: name, Live: false, Source: "explicit"},
@@ -187,7 +187,7 @@ func (c *Client) Apply(storePath string) (ApplyReport, error) {
 
 // DryRun asks a provider what it could not honour if the store were applied to
 // it, and writes nothing. Ungated, unlike Preview: the question is answerable
-// by any provider, and it is how `ryoku wm use` and the Hub tell a user what a
+// by any provider, and it is how `tenkai wm use` and the Hub tell a user what a
 // switch would cost BEFORE the target owns the config. Calling Apply here would
 // author the target compositor's config as a side effect of asking.
 func (c *Client) DryRun(storePath string) (ApplyReport, error) {
@@ -283,7 +283,7 @@ func (c *Client) Schema() ([]json.RawMessage, error) {
 }
 
 // Binds is the effective bind legend the active provider reports: the shared
-// Ryoku catalogue resolved against the user's rebinds, each row struck or
+// Tenkai catalogue resolved against the user's rebinds, each row struck or
 // annotated where the running compositor cannot honour it, followed by that
 // compositor's own binds as custom rows. One list, so the cheatsheet and the Hub
 // read the legend from the seam instead of parsing a compositor's own config.

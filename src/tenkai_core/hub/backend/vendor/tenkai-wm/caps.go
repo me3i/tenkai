@@ -1,4 +1,4 @@
-// Package wm is the seam between the Ryoku desktop and the window manager under
+// Package wm is the seam between the Tenkai desktop and the window manager under
 // it. A provider binary implements four verbs (caps, watch, act, apply) and
 // nothing else needs to know which compositor is running.
 //
