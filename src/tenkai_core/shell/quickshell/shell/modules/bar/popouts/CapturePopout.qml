@@ -551,15 +551,6 @@ Item {
                 visible: !Recorder.anyActive
                 IconToggle {
                     glyph: "keyboard"
-                    // A bubble is one line sized to its text, so these stay labels:
-                    // a sentence overflows the card and clips at its edge.
-                    tip: Keypresses.backendStatus === "error"
-                        ? Keypresses.backendError
-                        : I18n.tr("Show key presses")
-                    on: Keypresses.active
-                    onToggled: Keypresses.toggle()
-                }
-                IconToggle {
                     glyph: "webcam"
                     tip: I18n.tr("Webcam mirror")
                     on: Camera.active

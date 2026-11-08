@@ -24,7 +24,6 @@ singleton Devices Devices.qml
 singleton Weather Weather.qml
 singleton Updates Updates.qml
 singleton Camera Camera.qml
-singleton Keypresses Keypresses.qml
 singleton Toggles Toggles.qml
 singleton VoiceBars VoiceBars.qml
 singleton Capture Capture.qml

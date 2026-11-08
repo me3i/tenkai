@@ -480,15 +480,6 @@ Item {
                 RecordButton { s: hud.s; glyph: Recorder.optMic ? "mic" : "mic-off"; tint: Recorder.optMic ? Theme.onSurface : Theme.onSurfaceVariant; onTapped: Recorder.optMic = !Recorder.optMic }
                 RecordButton { s: hud.s; glyph: "webcam"; tint: Camera.active ? Theme.onSurface : Theme.onSurfaceVariant; onTapped: Camera.toggle() }
                 RecordButton {
-                    id: keyToggle
-                    s: hud.s
-                    glyph: "keyboard"
-                    tint: Keypresses.active ? Theme.onSurface : Theme.onSurfaceVariant
-                    checked: Keypresses.active
-                    checkable: true
-                    tip: I18n.tr("KEY PRESSES · PREVIEW ONLY\nRecording has not started.")
-                    onTapped: Keypresses.toggle()
-                }
 
                 Rectangle {
                     width: (hud.layoutVertical ? 18 : 1) * hud.s

@@ -77,7 +77,7 @@ ShellRoot {
     // Construct the shared services (ShellState's per-monitor state now, heavier
     // providers as surfaces migrate) at load rather than on the first keybind.
     ServiceLoader {
-        services: [ShellState, ScreenTime, Keypresses, KeyboardLayout, Idle]
+        services: [ShellState, ScreenTime, KeyboardLayout, Idle]
     }
 
     // The control centre's own surface host. It is built only when the bar is
@@ -405,13 +405,6 @@ ShellRoot {
                 }
             }
             LazyLoader {
-                id: osdKeyboardLoader
-                activeAsync: root.warm >= 1
-                KeyboardOsdWindow {
-                    modelData: perScreen.modelData
-                }
-            }
-            LazyLoader {
                 id: notifsLoader
                 activeAsync: root.warm >= 1 || Notifs.popups.length > 0
                 NotificationPopups {
@@ -448,14 +441,6 @@ ShellRoot {
                 }
             }
             Timer { id: cameraHold; interval: 20000 }
-            LazyLoader {
-                id: keypressLoader
-                property bool open: Keypresses.active
-                activeAsync: open || keypressHold.running
-                onOpenChanged: if (!open && active) keypressHold.restart()
-                KeypressOverlay {
-                    modelData: perScreen.modelData
-                }
             }
             Timer { id: keypressHold; interval: 20000 }
             // Shown only on the monitor whose frame bar raised it; the positive
@@ -817,22 +802,7 @@ ShellRoot {
                 root.placeVisualizer(false);
         }
     }
-
-    IpcHandler {
-        target: "keypresses"
-        readonly property bool active: Keypresses.active
-        readonly property string status: Keypresses.backendStatus
-        readonly property string lastEvent: Keypresses.lastEventSignature
-        readonly property string theme: Keypresses.theme
-        readonly property string mode: Keypresses.mode
-        readonly property real revision: Keypresses.previewRevision
-        function activate(theme: string, mode: string, revision: string): void {
-            Keypresses.activatePreview(theme, mode, revision);
         }
-        function deactivate(revision: string): void {
-            Keypresses.deactivatePreview(revision);
-        }
-        function toggle(): void { Keypresses.toggle(); }
     }
     // Menu global shortcuts: open a bar surface on the focused monitor. Each
     // dispatches to the one toggleSurface mapping so the compositor bind and the
