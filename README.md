@@ -73,7 +73,7 @@ the subtraction.
 | `Super + D` | App Launcher |
 | `Super + Enter` | Open Terminal |
 | `Super + W` | Close Window |
-| `Super + 1…4` | Switch Workspaces |
+| `Super + 1,2,3,4,...` | Switch Workspaces |
 | `Super + Tab` | Workspace Overview |
 | `Super + P` | Wallpaper Picker |
 | `Super + V` | Clipboard History |
