@@ -11,7 +11,7 @@ import (
 	"strings"
 	"syscall"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // One neutral action id in, one niri request out. The only file allowed to

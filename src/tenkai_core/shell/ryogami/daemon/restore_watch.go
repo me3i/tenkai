@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // At login the wallpaper file (a late mount) or the outputs (a late monitor)

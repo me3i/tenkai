@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // outputs is the write half of the display seam for Hyprland: it renders the

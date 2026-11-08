@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 type refreshMask uint8

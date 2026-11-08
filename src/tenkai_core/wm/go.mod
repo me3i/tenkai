@@ -1,4 +1,4 @@
-module ryoku-wm
+module tenkai-wm
 
 go 1.22
 

@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // testStubbed reports whether Tenkai is running a nested test session, where the

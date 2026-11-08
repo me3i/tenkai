@@ -3,7 +3,7 @@ package main
 import (
 	"sync"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // wmClient is the daemon's single window-manager seam handle, shared by the

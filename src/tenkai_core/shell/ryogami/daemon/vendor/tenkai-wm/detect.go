@@ -11,7 +11,7 @@ import (
 // The only place allowed to care which compositor is running. It resolves an
 // identity into a provider name once; every later decision reads Caps.
 
-// Provider names name a binary (ryoku-wm-<name>) and a settings domain
+// Provider names name a binary (tenkai-wm-<name>) and a settings domain
 // (wm.<name>.*), so they are part of the on-disk contract.
 const (
 	ProviderHyprland = "hyprland"
@@ -207,12 +207,12 @@ func ResetPaths(name string) []string {
 // reshuffle between runs.
 func Providers() []string { return []string{ProviderHyprland, ProviderNiri} }
 
-// Detect resolves the active provider: MEI_WM so a developer can drive one
+// Detect resolves the active provider: RYOKU_WM so a developer can drive one
 // without that session, then a live session handle, then XDG_CURRENT_DESKTOP,
 // then a config tree.
 func Detect() Detection {
-	if forced := strings.TrimSpace(os.Getenv("MEI_WM")); forced != "" {
-		return Detection{Name: forced, Live: liveFor(forced), Source: "MEI_WM"}
+	if forced := strings.TrimSpace(os.Getenv("RYOKU_WM")); forced != "" {
+		return Detection{Name: forced, Live: liveFor(forced), Source: "RYOKU_WM"}
 	}
 	for _, p := range envProviders {
 		if h := os.Getenv(p.env); h != "" && handleAlive(p.socket(h)) {

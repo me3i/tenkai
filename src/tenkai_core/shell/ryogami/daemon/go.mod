@@ -2,6 +2,6 @@ module ryogami
 
 go 1.22
 
-require ryoku-wm v0.0.0
+require tenkai-wm v0.0.0
 
-replace ryoku-wm => ../../../wm
+replace tenkai-wm => ../../../wm

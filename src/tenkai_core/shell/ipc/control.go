@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // control.go adds the reference control surface to the CLI over the existing

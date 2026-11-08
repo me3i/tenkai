@@ -126,7 +126,7 @@ Item {
         var line = "tenkai wm use " + sh.shq(sh.target.name)
             + (removing ? " --remove-previous" : " --keep-previous");
         line += "; echo; read -n1 -rsp " + sh.shq(I18n.tr("Done. Press any key to close.")) + "; echo";
-        Spawn.run(["kitty", "--class", "ryoku-wm-switch", "-e", "sh", "-c", line]);
+        Spawn.run(["kitty", "--class", "tenkai-wm-switch", "-e", "sh", "-c", line]);
         sh.close();
     }
     function logOut() { Spawn.run(["tenkai", "wm", "act", "session.exit"]); }

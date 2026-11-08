@@ -40,7 +40,7 @@ Singleton {
         schemaProc.running = false;
         schemaProc.running = true;
         // TENKAI: the "unhonored" list is never fetched. The verb shells out to
-        // `ryoku-wm-hyprland apply <store> --preview`, whose --preview pushes the
+        // `tenkai-wm-hyprland apply <store> --preview`, whose --preview pushes the
         // whole appearance (gaps, size, border) onto the live compositor with the
         // provider's *defaults* when no store exists — so asking a read-only
         // question repainted the whole window frame, every time the Hub opened.

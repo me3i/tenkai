@@ -11,7 +11,7 @@ import (
 	"sync"
 	"syscall"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // ryoku-hub desktop is the neutral window-manager settings backend. It owns
@@ -279,6 +279,9 @@ func saveDesktop(raw string) error {
 		// showing the packaged fallback until the next palette change. The
 		// full build rasterises eleven sizes, so it runs off the save path.
 		if after == wm.CursorThemeMaterial && before != after {
+			// COMPAT: the recolor helper ships in a Ryoku package under this exact
+			// name; Tenkai only stubs it in .run/bin so the call cannot reach the live
+			// system binary. Renaming it here would not rename the installed tool.
 			go func() { _ = exec.Command("ryoku-cursor-material-recolor", "--force", "--full").Run() }()
 		}
 		return nil

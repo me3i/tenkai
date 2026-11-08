@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The neutral settings store as Hyprland reads it: the typed override model the

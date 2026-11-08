@@ -3,7 +3,7 @@ package main
 import (
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // Taming the windows apps open maximised. niri honours a client's set_maximized

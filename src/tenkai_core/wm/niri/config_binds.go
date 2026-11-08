@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The niri binds block. niri has no unbind directive and rejects a duplicate

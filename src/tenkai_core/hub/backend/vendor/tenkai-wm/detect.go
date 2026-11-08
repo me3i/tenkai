@@ -11,7 +11,7 @@ import (
 // The only place allowed to care which compositor is running. It resolves an
 // identity into a provider name once; every later decision reads Caps.
 
-// Provider names name a binary (ryoku-wm-<name>) and a settings domain
+// Provider names name a binary (tenkai-wm-<name>) and a settings domain
 // (wm.<name>.*), so they are part of the on-disk contract.
 const (
 	ProviderHyprland = "hyprland"

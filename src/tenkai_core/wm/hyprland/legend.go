@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The Hyprland bind legend. Hyprland's shipped shortcuts ARE the neutral Tenkai

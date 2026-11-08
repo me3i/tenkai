@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // settings.go is the shell's typed configuration, owned by the daemon and served

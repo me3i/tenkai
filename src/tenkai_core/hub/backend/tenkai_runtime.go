@@ -34,7 +34,7 @@ import (
 	"strconv"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // tenkaiConfigDir is Tenkai's own settings dir. In a Tenkai session XDG_CONFIG_HOME is

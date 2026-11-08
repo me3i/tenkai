@@ -12,7 +12,7 @@ import (
 	"syscall"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // theming.go is what ryoku-shell keeps of the old wallpaper file after Ryogami

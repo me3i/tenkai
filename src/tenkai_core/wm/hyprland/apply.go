@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // apply, defaults and session: the write half of the seam for Hyprland. apply

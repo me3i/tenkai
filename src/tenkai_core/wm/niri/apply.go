@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // apply and defaults: the write half of the seam for niri. apply renders the

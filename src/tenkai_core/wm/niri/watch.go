@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // niri's event stream carries the whole picture: a connect replays full

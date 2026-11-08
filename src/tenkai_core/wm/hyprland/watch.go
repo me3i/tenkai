@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // Two properties must survive any rewrite here:

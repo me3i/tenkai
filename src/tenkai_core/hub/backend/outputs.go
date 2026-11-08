@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // outputs is the display page's backend. It enumerates the connected screens

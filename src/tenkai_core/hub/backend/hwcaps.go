@@ -594,6 +594,9 @@ func kvmfrPresent(root string) bool {
 
 func hookInstalled(root string) bool {
 	b, err := os.ReadFile(filepath.Join(root, "etc/libvirt/hooks/qemu"))
+	// COMPAT: a libvirt hook written by an older build carries "Managed by Ryoku";
+	// accept both markers so an already-installed hook is still recognised as ours
+	// instead of being installed twice or reported as foreign. See docs/COMPAT.md.
 	return err == nil && (strings.Contains(string(b), "Managed by Tenkai") || strings.Contains(string(b), "Managed by Ryoku"))
 }
 

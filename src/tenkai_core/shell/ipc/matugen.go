@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // matugen.go is the dynamic colour pipeline and the sole renderer of the
@@ -118,6 +118,7 @@ func readMatugenKnobs() matugenKnobs {
 		Prefer           *string         `json:"prefer"`
 		SchemeType       *string         `json:"schemeType"`
 		SourceColorIndex *int            `json:"sourceColorIndex"`
+		// COMPAT: on-disk settings key, kept as written by earlier versions.
 		ThemeTenkaiApps   *bool           `json:"themeRyokuApps"`
 		Templates        map[string]bool `json:"templates"`
 	}

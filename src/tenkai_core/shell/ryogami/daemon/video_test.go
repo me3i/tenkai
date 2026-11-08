@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 func TestLiveFps(t *testing.T) {

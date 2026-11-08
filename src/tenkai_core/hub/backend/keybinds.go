@@ -1,7 +1,7 @@
 package main
 
 import (
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The keybind legend the Hub keybinds page and the Super+K cheatsheet draw. It

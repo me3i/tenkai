@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // Every entry here must actually be honoured in act or apply. Claiming one this

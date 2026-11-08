@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // widgetwatch frees the desktop-widget layer's memory when windows cover the

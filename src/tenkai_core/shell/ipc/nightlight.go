@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // nightlight.go owns the night light so its state is a pushed topic instead of

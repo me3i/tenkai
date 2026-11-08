@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // Every entry here must actually be honoured in act, apply or plugins. Claiming

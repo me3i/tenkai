@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// stubProvider installs a fake ryoku-wm-<name> on PATH that prints out on every
+// stubProvider installs a fake tenkai-wm-<name> on PATH that prints out on every
 // verb, and forces detection to it, so keybinds() drives a known binds answer
 // with no live compositor. wm.Open() reads RYOKU_WM first, so the name here is
 // the provider keybinds() will run.
@@ -17,7 +17,7 @@ func stubProvider(t *testing.T, name, out string) {
 	// printf is a shell builtin, so the script needs no tool from PATH; that lets
 	// the test hold PATH to just this dir and still emit the stubbed answer.
 	script := "#!/bin/sh\nprintf '%s' '" + out + "'\n"
-	if err := os.WriteFile(filepath.Join(bin, "ryoku-wm-"+name), []byte(script), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(bin, "tenkai-wm-"+name), []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin)
@@ -132,7 +132,7 @@ func TestKeybindsJSONShape(t *testing.T) {
 // the Hub gets an empty, non-nil set and shows its empty state rather than a
 // partial or stale sheet.
 func TestKeybindsEmptyOnProviderError(t *testing.T) {
-	t.Setenv("PATH", t.TempDir()) // ryoku-wm-missing is not here, so binds fails
+	t.Setenv("PATH", t.TempDir()) // tenkai-wm-missing is not here, so binds fails
 	t.Setenv("RYOKU_WM", "missing")
 
 	l := keybinds()

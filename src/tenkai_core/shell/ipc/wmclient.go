@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The daemon reaches the compositor only through d.wmc and the state its watcher

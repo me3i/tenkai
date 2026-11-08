@@ -46,7 +46,7 @@ func Open() *Client {
 	d := Detect()
 	c := &Client{detection: d}
 	if d.Name != "" {
-		c.bin = "ryoku-wm-" + d.Name
+		c.bin = "tenkai-wm-" + d.Name
 	}
 	return c
 }
@@ -56,7 +56,7 @@ func Open() *Client {
 func OpenNamed(name string) *Client {
 	return &Client{
 		detection: Detection{Name: name, Live: false, Source: "explicit"},
-		bin:       "ryoku-wm-" + name,
+		bin:       "tenkai-wm-" + name,
 	}
 }
 

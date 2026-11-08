@@ -3,7 +3,7 @@
 // PluginsPage as data: the Hyprland compositor plugins Tenkai bundles, one tab
 // each, paired with the status and rebuild card the page draws for it. The tab
 // titles are the names `ryoku-hub desktop plugins list` reports. The settings
-// rows now live with the provider (ryoku-wm-hyprland schema, page "plugins"), so
+// rows now live with the provider (tenkai-wm-hyprland schema, page "plugins"), so
 // this file only names which bundled plugins get a card.
 //
 // A plugin the user adds from git gets its rows from the settings the backend

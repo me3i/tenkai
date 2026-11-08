@@ -10,7 +10,7 @@ import (
 	"strings"
 	"syscall"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // One neutral action id in, one Hyprland dispatcher out. The only file allowed

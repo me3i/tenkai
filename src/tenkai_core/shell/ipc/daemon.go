@@ -19,7 +19,7 @@ import (
 	"syscall"
 	"time"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // component is a Quickshell config the daemon keeps alive. Persistent components

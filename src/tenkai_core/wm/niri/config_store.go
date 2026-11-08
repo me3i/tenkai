@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The neutral settings store as niri reads it: the desktop.* fields niri can

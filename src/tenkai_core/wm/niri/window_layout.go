@@ -1,6 +1,6 @@
 package main
 
-import wm "ryoku-wm"
+import wm "tenkai-wm"
 
 // How niri sized a window, read back from its tile geometry. niri 26.04 carries
 // no maximized or fullscreen flag in the window JSON, so size against the output

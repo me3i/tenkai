@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // The runtime-override builders are the whole "practical without writing

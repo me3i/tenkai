@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // ryoku-hub wm is the neutral compositor-switch backend for the Hub. It answers

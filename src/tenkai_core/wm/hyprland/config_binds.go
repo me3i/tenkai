@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // Keybind, unbind and rebind emission for the generated Hyprland config.

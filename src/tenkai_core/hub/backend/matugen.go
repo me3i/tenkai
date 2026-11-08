@@ -17,6 +17,9 @@ type matugenConfig struct {
 	Prefer           string          `json:"prefer"`           // "dominant" or "vibrant"
 	SchemeType       string          `json:"schemeType"`       // matugen -t variant
 	SourceColorIndex int             `json:"sourceColorIndex"` // 0..4
+	// COMPAT: the JSON tag keeps its old spelling because it is the on-disk key in
+	// shell.json/matugen.json — renaming it would orphan every stored settings file.
+	// The Go name is Tenkai; only the wire/disk key is legacy. See docs/COMPAT.md.
 	ThemeTenkaiApps   bool            `json:"themeRyokuApps"`   // theme Tenkai's native shell & apps
 	Templates        map[string]bool `json:"templates"`        // app -> bool
 }

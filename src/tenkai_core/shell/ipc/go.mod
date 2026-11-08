@@ -8,6 +8,6 @@ require github.com/godbus/dbus/v5 v5.2.2
 
 require golang.org/x/sys v0.27.0
 
-require ryoku-wm v0.0.0
+require tenkai-wm v0.0.0
 
-replace ryoku-wm => ../../wm
+replace tenkai-wm => ../../wm

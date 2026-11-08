@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	wm "ryoku-wm"
+	wm "tenkai-wm"
 )
 
 // TestPublishGreeterPrimary: the Displays apply records the layout's main output
