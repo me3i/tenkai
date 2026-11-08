@@ -1,7 +1,8 @@
 import QtQuick
 import Quickshell
-import shell.services
-import Tenkai.Ui.Singletons
+import "../../../../../services"
+import Ryoku.Ui.Singletons
+import ".."
 import "../../Singletons"
 import "../../../../../utils/fuzzy.js" as Fuzzy
 import "appactions.js" as AppActions
