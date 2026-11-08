@@ -12,7 +12,7 @@ pragma ComponentBehavior: Bound
 import Quickshell
 import shell.services
 
-import "modules/stage/Singletons" as StageCfg
+
 import "components"
 import "modules/wallpaper"
 import "modules/wallpaper/Singletons" as WallCfg
@@ -289,7 +289,7 @@ ShellRoot {
                     screen: perScreen.modelData
                     // Edit widgets steps the dock back so the whole desktop is the canvas.
                     visible: Dock.cfg("enabled", false)
-                        && !(StageCfg.StageSession.widgets && StageCfg.StageSession.monitor === perScreen.modelData.name)
+
                 }
             }
 
