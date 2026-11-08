@@ -22,7 +22,7 @@ import "modules/bar"
 import "modules/controlcenter"
 import "modules/dock"
 import "modules/launcher"
-import "modules/overview"
+
 import "modules/clipboard"
 import QtQuick
 import Quickshell.Io
@@ -77,7 +77,7 @@ ShellRoot {
     // Construct the shared services (ShellState's per-monitor state now, heavier
     // providers as surfaces migrate) at load rather than on the first keybind.
     ServiceLoader {
-        services: [ShellState, ScreenTime, KeyboardLayout, Idle]
+        services: [ShellState, ScreenTime, Keypresses, KeyboardLayout, Idle]
     }
 
     // The control centre's own surface host. It is built only when the bar is
@@ -222,20 +222,20 @@ ShellRoot {
                 videoVolume: wallpaper.videoVolume
             }
 
-            // A blurred copy of the wallpaper for the compositor's overview
-            // backdrop, mapped below the desktop so it shows only in the
-            // overview. Built only where the capability and the user's setting
-            // both ask for it; a box with the backdrop off never pays for it.
-            LazyLoader {
-                id: backdropLoader
-                activeAsync: Wm.caps.overviewBackdrop === true && WallCfg.OverviewBackdropConfig.enabled
-                OverviewBackdrop {
-                    screen: perScreen.modelData
-                    available: Wm.caps.overviewBackdrop === true
-                    overviewOpen: Wm.overviewOpen
-                    wallpaperUrl: wallpaper.wallpaperUrl
-                }
-            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
             // Stage now renders entirely inside the desktop surface (one stack:
             // backdrop, layers, widgets), so there is no separate Background
@@ -333,47 +333,47 @@ ShellRoot {
                 }
             }
             Timer { id: launcherHold; interval: 15000 }
-            LazyLoader {
-                id: overviewLoader
-                property bool open: perScreen.st ? perScreen.st.overviewOpen : false
-                property bool showNow: false
-                activeAsync: open || overviewHold.running
-                onItemChanged: if (overviewLoader.item) Qt.callLater(function() { overviewLoader.showNow = overviewLoader.open; })
-                onOpenChanged: {
-                    if (overviewLoader.open) {
-                        if (overviewLoader.item) overviewLoader.showNow = true;
-                        return;
-                    }
-                    overviewLoader.showNow = false;
-                    if (overviewLoader.active) overviewHold.restart();
-                }
-                OverviewSurface {
-                    screen: perScreen.modelData
-                    active: overviewLoader.showNow
-                    onRequestClose: if (perScreen.st) perScreen.st.overviewOpen = false
-                }
-            }
-            Timer { id: overviewHold; interval: 15000 }
-            LazyLoader {
-                id: clipboardLoader
-                property bool open: perScreen.st ? perScreen.st.clipboardOpen : false
-                property bool showNow: false
-                activeAsync: open || clipboardHold.running
-                onItemChanged: if (clipboardLoader.item) Qt.callLater(function() { clipboardLoader.showNow = clipboardLoader.open; })
-                onOpenChanged: {
-                    if (clipboardLoader.open) {
-                        if (clipboardLoader.item) clipboardLoader.showNow = true;
-                        return;
-                    }
-                    clipboardLoader.showNow = false;
-                    if (clipboardLoader.active) clipboardHold.restart();
-                }
-                ClipboardSurface {
-                    screen: perScreen.modelData
-                    active: clipboardLoader.showNow
-                    onRequestClose: if (perScreen.st) perScreen.st.clipboardOpen = false
-                }
-            }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             Timer { id: clipboardHold; interval: 15000 }
             // Shell-wide per-monitor surfaces. The OSDs and the popup column are
             // small and event-driven (a keypress or an arriving toast must never
@@ -402,6 +402,13 @@ ShellRoot {
                 OsdWindow {
                     modelData: perScreen.modelData
                     kind: "brightness"
+                }
+            }
+            LazyLoader {
+                id: osdKeyboardLoader
+                activeAsync: root.warm >= 1
+                KeyboardOsdWindow {
+                    modelData: perScreen.modelData
                 }
             }
             LazyLoader {
@@ -441,6 +448,14 @@ ShellRoot {
                 }
             }
             Timer { id: cameraHold; interval: 20000 }
+            LazyLoader {
+                id: keypressLoader
+                property bool open: Keypresses.active
+                activeAsync: open || keypressHold.running
+                onOpenChanged: if (!open && active) keypressHold.restart()
+                KeypressOverlay {
+                    modelData: perScreen.modelData
+                }
             }
             Timer { id: keypressHold; interval: 20000 }
             // Shown only on the monitor whose frame bar raised it; the positive
@@ -500,12 +515,6 @@ ShellRoot {
             if (st)
                 st.launcherOpen = !st.launcherOpen;
             break;
-        case "overview":
-            if (Wm.caps.nativeOverview)
-                Wm.toggleOverview();
-            else if (Wm.caps.windowGeometry && st)
-                st.overviewOpen = !st.overviewOpen;
-            break;
         case "visualizer":
             VizCfg.Config.setEnabled(!VizCfg.Config.enabled);
             break;
@@ -555,7 +564,6 @@ ShellRoot {
             switch (id) {
             case "barToggle":
             case "launcher":
-            case "overview":
             case "clipboard":
             case "visualizer":
             case "visualizer-overlay":
@@ -579,11 +587,11 @@ ShellRoot {
         description: I18n.tr("Toggle the app launcher on the active monitor")
         onPressed: root.toggleSurface("launcher")
     }
-    CustomShortcut {
-        name: "overview"
-        description: I18n.tr("Toggle the workspace overview on the active monitor")
-        onPressed: root.toggleSurface("overview")
-    }
+
+
+
+
+
     // On/off is the persisted key, so the keybind, the Hub switch and the next
     // restart all read the same answer. Only the layer is per-monitor memory.
     CustomShortcut {
@@ -802,7 +810,22 @@ ShellRoot {
                 root.placeVisualizer(false);
         }
     }
+
+    IpcHandler {
+        target: "keypresses"
+        readonly property bool active: Keypresses.active
+        readonly property string status: Keypresses.backendStatus
+        readonly property string lastEvent: Keypresses.lastEventSignature
+        readonly property string theme: Keypresses.theme
+        readonly property string mode: Keypresses.mode
+        readonly property real revision: Keypresses.previewRevision
+        function activate(theme: string, mode: string, revision: string): void {
+            Keypresses.activatePreview(theme, mode, revision);
         }
+        function deactivate(revision: string): void {
+            Keypresses.deactivatePreview(revision);
+        }
+        function toggle(): void { Keypresses.toggle(); }
     }
     // Menu global shortcuts: open a bar surface on the focused monitor. Each
     // dispatches to the one toggleSurface mapping so the compositor bind and the
