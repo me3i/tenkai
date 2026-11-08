@@ -6,7 +6,10 @@ Tenkai is an **opinionated, lightweight fork of Ryoku**
 It is a **modified derivative work**: the upstream tree is kept and reduced,
 never re-implemented from scratch. Ryoku and Tenkai are distributed under the
 **GNU General Public License version 3 or later (GPL-3.0-or-later)**.
-The upstream licence and notice are kept verbatim in `LICENSE` and `NOTICE`.
+The upstream licence is kept verbatim in `LICENSE`, and `NOTICE` reproduces the
+notice of the pinned commit byte for byte (34 lines, sha256 `062137be…`) followed
+by a clearly delimited Tenkai addendum. Verify it with
+`head -34 NOTICE | sha256sum`.
 
 Tenkai is not affiliated with, endorsed by, or connected to the Ryoku project.
 

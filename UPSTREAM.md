@@ -15,8 +15,21 @@
   materialise the tree).
 - Local path: `~/projects/tenkai/upstream/` — **READ-ONLY. Never edited.** All Tenkai
   modifications happen in `src/` and are recorded in `CHANGES.md`.
-- **The upstream folder was deleted in Phase 17 to save space. Clone it again if you need to
-  reference the original source.**
+- **The upstream folder is not present in a fresh clone.** It was deleted in Phase 17 to
+  reclaim disk space, and it is not tracked here. Re-create it exactly like this (network
+  required, ~38 MB of blobs for the sparse set):
+
+  ```bash
+  cd ~/projects/tenkai
+  git clone --filter=blob:none --sparse https://github.com/Ryoku-dev/ryoku upstream
+  cd upstream
+  git sparse-checkout set docs ryoku/shell ryoku/hub ryoku/hyprland ryoku/wm ryoku/ui \
+      ryoku/palette-bridge
+  git checkout 98a0368253d9628be72b853985878a5db90e1547
+  ```
+
+  Read it read-only; never edit it. Any blob outside the sparse set is still reachable with
+  `git show 98a0368:<path>` without materialising the tree.
 
 Notes:
 - The clone was pre-seeded on this machine on 2026-10-19 09:42 (this machine), before this session
@@ -35,6 +48,14 @@ be recovered if the working clone is ever lost.
 
 ## Licence provenance
 
-`LICENSE` (GPL-3.0) and the first 152 lines of `NOTICE` are byte-identical to
-upstream at the pinned commit; the hashes to verify that are in
-`docs/ATTRIBUTION.md`.
+`LICENSE` (GPL-3.0) and `NOTICE` are byte-identical to upstream at the pinned commit:
+
+```
+3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986  LICENSE
+062137be76c0d594a089130445ad82495e745b67cdf677aa71be065d40635732  NOTICE lines 1-34
+```
+
+`NOTICE` is 34 lines upstream at the pin (1497 bytes). Everything after the ruled
+delimiter in this repo's `NOTICE` is Tenkai's addendum and is not upstream text. Note that
+upstream HEAD today has a much longer NOTICE (152 lines); the extra paragraphs credit
+components added after the pin, and this NOTICE quotes the ones Tenkai still ships.

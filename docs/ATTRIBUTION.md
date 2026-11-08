@@ -11,7 +11,14 @@ later (GPL-3.0-or-later)**.
 | File | Claim | How to check |
 | --- | --- | --- |
 | `LICENSE` | GPL-3.0, **byte-identical to upstream** | `sha256sum LICENSE` = `3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986`; upstream `LICENSE` at the pinned commit has the same hash (TESTED, 2026-11-08) |
-| `NOTICE` | upstream notice **verbatim**, followed by a delimited Tenkai addendum | `head -152 NOTICE \| sha256sum` = `fa40700e93a3621ae793193a2f3ec16f21375afc85a319325ea4b95148878c24`; that is the sha256 of upstream `NOTICE` (TESTED, 2026-11-08) |
+| `NOTICE` | upstream notice at the **pinned commit** (34 lines), followed by a delimited Tenkai addendum | `head -34 NOTICE \| sha256sum` = `062137be76c0d594a089130445ad82495e745b67cdf677aa71be065d40635732`, which equals upstream `NOTICE` at `98a0368` (TESTED 2026-11-08; `cmp` reports the 34 lines byte-identical) |
+
+An earlier revision of this file quoted upstream HEAD's 152-line notice instead
+(`head -152 NOTICE` = `fa40700e…`). That was the wrong reference: the pin's notice
+is 34 lines, and a fork must reproduce the notice of the commit it forked from.
+Upstream HEAD's longer notice credits components added after the pin; the ones
+Tenkai still ships are quoted inside the addendum, and the ones the reduction
+removed are named there and listed at the end of this file.
 
 Upstream `NOTICE` is GPL-3 material; it is kept whole, including the notices for
 components Tenkai later removed (Nomarchy, iNiR/Shima, Serpantinum, Stage, the

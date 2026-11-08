@@ -67,6 +67,19 @@ shell, a panel that needs a host, a power menu that was dead). That is
 deliberate: they are the audit that says what Tenkai has to cover, and they name
 no one. The private copies in `.local/private/` hold the specifics.
 
+## What actually happened on 2026-11-08 (read this)
+
+The procedure above was **not** used for the publish that made this repository
+public. The public repository was created by force-pushing the full working
+history, 213 commits, so every pre-scrub commit is public: the previous shell's
+name, `/home/mei`, and the `docs/baseline/` session snapshot added in `0ba3273`
+(process list, D-Bus names, `XDG_RUNTIME_DIR`, Hyprland instance signature). Those
+files were later deleted from the tree (`b76cc00`), but the commits remain.
+
+The exposure and the decision not to rewrite history are recorded in
+`docs/PRIVACY.md`. Treat `export-clean` as the procedure for any *future*
+repository, not as a description of this one.
+
 ## Checklist before the first push
 
 - [ ] `./tenkai scrub-check` → PASS
