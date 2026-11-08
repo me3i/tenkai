@@ -697,8 +697,38 @@ live_unit_for_pid() {
   return 0
 }
 
+# Is this pid part of Tenkai itself? Tenkai is allowed to hold the names it is
+# supposed to hold (the notification server, the tray watcher) once it is the
+# shell in the session; the check below exists to catch a FOREIGN process taking
+# them, not to flag Tenkai's own. Three signals, cheapest first:
+#   1. the cmdline carries the project path (qs -c <project config>, tenkai-shell
+#      under .run/bin, a nested run, ...),
+#   2. the pid is one ./tenkai recorded in .run/{pids,live-pids},
+#   3. the binary sits under <project>/.run/.
+tenkai_owned_pid() { # $1 = pid -> 0 when the process is Tenkai's
+  local p="$1" cmd
+  [ -n "${p:-}" ] && [ -r "/proc/$p/cmdline" ] || return 1
+  cmd="$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null)"
+  [ -n "$cmd" ] || return 1
+  case "$cmd" in *"${TENKAI_DIR:-/nonexistent-tenkai}"*) return 0 ;; esac
+  local f
+  for f in "$PID_FILE" "$LIVE_PID_FILE"; do
+    [ -f "$f" ] || continue
+    awk -v p="$p" '{ sub(/[^0-9].*$/, ""); if ($0 == p) found = 1 } END { exit(found ? 0 : 1) }' "$f" && return 0
+  done
+  case "$cmd" in *"/.run/"*) return 0 ;; esac
+  return 1
+}
+
+tenkai_pid_label() { # $1 = pid -> short "what is this" for the printed line
+  local p="$1" cmd
+  cmd="$(tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null)"
+  printf '%s' "${cmd%% *}"
+}
+
 # Prints one line per changed owner with its verdict; returns 0 only when EVERY
-# change is attributable to a live system unit (=> WARN), 1 if any is not (=> FAIL).
+# change is attributable to Tenkai itself or to a live system unit (=> WARN), 1
+# if any belongs to a foreign process (=> FAIL).
 dbus_owner_changes_check() { # $1 baseline NAME<TAB>PID, $2 current NAME<TAB>PID
   local base="$1" cur="$2" name bpid cpid unit rc=0
   while IFS= read -r name; do
@@ -714,6 +744,11 @@ dbus_owner_changes_check() { # $1 baseline NAME<TAB>PID, $2 current NAME<TAB>PID
     # (a name held by a pid no unit claims) stays fatal below.
     if [ "$cpid" = "-" ]; then
       printf '      LAPSED    %-44s %s -> -  (unowned right now: the provider is restarting; Tenkai holds nothing)\n' "$name" "$bpid"
+      continue
+    fi
+    if tenkai_owned_pid "$cpid"; then
+      printf '      TENKAI    %-44s %s -> %s  (held by Tenkai itself: %s)\n' \
+        "$name" "$bpid" "$cpid" "$(tenkai_pid_label "$cpid")"
       continue
     fi
     unit="$(live_unit_for_pid "$cpid" || true)"
@@ -961,13 +996,13 @@ cmd_verify_untouched() {
     note "OK    session bus: all watched names still owned by the same PID"
   elif owner_out="$(dbus_owner_changes_check "$tmp/base-watched.tsv" "$tmp/dbus-watched.tsv")"; then
     [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
-    note "WARN  every changed owner belongs to a LIVE system unit — its MainPID or a"
-    note "      process inside it (attributed above): external"
-    note "      churn, like the live idle service restarting and re-taking its name."
+    note "WARN  every changed owner is attributable: Tenkai itself, or a LIVE system"
+    note "      unit (its MainPID or a process inside it) — external churn, like the"
+    note "      live idle service restarting and re-taking its name."
   else
     [ -n "$owner_out" ] && printf '%s\n' "$owner_out"
-    note "FAIL  a watched D-Bus name changed owner and the new owner is NOT a live system unit"
-    note "      (a Tenkai shell must never take these):"
+    note "FAIL  a watched D-Bus name changed owner and the new owner is neither Tenkai"
+    note "      nor a live system unit — a foreign process holds it:"
     rc=1
   fi
 
