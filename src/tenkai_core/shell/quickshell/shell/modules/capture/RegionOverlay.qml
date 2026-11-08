@@ -52,7 +52,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    WlrLayershell.namespace: "ryoku-region"
+    WlrLayershell.namespace: "tenkai-region"
 
     anchors { top: true; bottom: true; left: true; right: true }
 

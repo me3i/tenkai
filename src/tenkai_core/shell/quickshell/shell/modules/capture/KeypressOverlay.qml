@@ -48,7 +48,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    WlrLayershell.namespace: "ryoku-keypresses"
+    WlrLayershell.namespace: "tenkai-keypresses"
     anchors { top: true; bottom: true; left: true; right: true }
 
     mask: Region {

@@ -15,7 +15,7 @@ PanelWindow {
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "ryoku-tray"
+    WlrLayershell.namespace: "tenkai-tray"
     // no mask → whole overlay is interactive (modal): click-outside + ESC work
 
     readonly property int barBottom: root.v2BarHeight

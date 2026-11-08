@@ -57,7 +57,7 @@ Item {
         color: "transparent"
         exclusionMode: ExclusionMode.Ignore
         WlrLayershell.layer: WlrLayer.Background
-        WlrLayershell.namespace: "ryoku-overview-backdrop"
+        WlrLayershell.namespace: "tenkai-overview-backdrop"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         anchors {

@@ -119,7 +119,7 @@ PanelWindow {
     anchors { top: true; bottom: true; left: true; right: true }
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
-    WlrLayershell.namespace: "ryoku-control"
+    WlrLayershell.namespace: "tenkai-control"
     WlrLayershell.keyboardFocus: cc.root.controlVisible ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.None
 
     property real reveal: cc.root.controlVisible ? 1 : 0

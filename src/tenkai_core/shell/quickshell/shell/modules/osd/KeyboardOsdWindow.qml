@@ -40,7 +40,7 @@ PanelWindow {
 
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    WlrLayershell.namespace: "ryoku-keyboard-osd"
+    WlrLayershell.namespace: "tenkai-keyboard-osd"
 
     anchors.top: true
     anchors.left: true

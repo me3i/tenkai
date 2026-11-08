@@ -2064,8 +2064,8 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
       printf 'global-shortcut\ttenkai:%s\tshortcut name registered by the shell\n' "$sc"
     done
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
-    printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
-    printf 'layer-namespace\tryoku-osd\tOSD, only on a brightness/volume change\n'
+    printf 'layer-namespace\ttenkai-control\tquick settings surface, only while it is open\n'
+    printf 'layer-namespace\ttenkai-osd\tOSD, only on a brightness/volume change\n'
     printf 'layer-namespace\ttenkai-widgets\tthe transparent desktop-widget layer (always mapped)\n'
     printf 'socket\t%s\ttenkai-shell control socket\n' "$rt/tenkai-shell.sock"
     ;;
@@ -2076,11 +2076,11 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     printf 'dbus-name\torg.freedesktop.Notifications\tnotification server\n'
     printf 'dbus-name\torg.kde.StatusNotifierWatcher\ttray watcher\n'
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
-    printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
-    printf 'layer-namespace\tryoku-osd\tOSD surface\n'
+    printf 'layer-namespace\ttenkai-control\tquick settings surface, only while it is open\n'
+    printf 'layer-namespace\ttenkai-osd\tOSD surface\n'
     printf 'layer-namespace\ttenkai-frame\tthe bar (top edge)\n'
-    printf 'layer-namespace\tryoku-tray\tthe tray (edge panel)\n'
-    printf 'layer-namespace\tryoku-notifications\tnotification column (edge)\n'
+    printf 'layer-namespace\ttenkai-tray\tthe tray (edge panel)\n'
+    printf 'layer-namespace\ttenkai-notifications\tnotification column (edge)\n'
     printf 'layer-namespace\twallpaper-bg\tthe wallpaper\n'
     printf 'socket\t%s\ttenkai-shell control socket\n' "$rt/tenkai-shell.sock"
     printf 'socket\t%s\tryogami socket\n' "$rt/ryogami.sock"

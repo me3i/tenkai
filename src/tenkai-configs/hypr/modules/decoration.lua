@@ -111,7 +111,7 @@ hl.layer_rule({
 -- a surface that never left.
 hl.layer_rule({
   name    = "notifications-noanim",
-  match   = { namespace = "^ryoku-notifications$" },
+  match   = { namespace = "^tenkai-notifications$" },
   no_anim = true,
 })
 -- ignore_alpha keeps the frost inside the card: the launcher's surface reserves
@@ -141,7 +141,7 @@ hl.layer_rule({
 -- desktop behind its dim scrim so the card reads on any wallpaper, and suppress
 -- the compositor's layer animation because QML owns the fade.
 hl.layer_rule({
-  name    = "ryoku-keys-blur",
+  name    = "tenkai-keys-blur",
   match   = { namespace = "^ryoku-keys$" },
   blur    = not no_blur,
   no_anim = true,

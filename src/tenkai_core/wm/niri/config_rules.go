@@ -12,7 +12,7 @@ import (
 // overviewBackdropNamespace is the layer-shell namespace the shell maps its
 // blurred overview-wallpaper surface under. The provider and the shell agree on
 // this exact string: the shell names the surface, this rule routes it.
-const overviewBackdropNamespace = "ryoku-overview-backdrop"
+const overviewBackdropNamespace = "tenkai-overview-backdrop"
 
 // writeLayerRules lifts the shell's overview-backdrop surface into niri's
 // backdrop, then emits each user layer rule. The backdrop rule is always first

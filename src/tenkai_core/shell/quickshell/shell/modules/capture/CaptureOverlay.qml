@@ -52,7 +52,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
-    WlrLayershell.namespace: "ryoku-capture"
+    WlrLayershell.namespace: "tenkai-capture"
 
     anchors { top: true; bottom: true; left: true; right: true }
 

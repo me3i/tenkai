@@ -23,7 +23,7 @@ PanelWindow {
 
     color: "transparent"
     visible: overlay.shown
-    WlrLayershell.namespace: "ryoku-dock-menu"
+    WlrLayershell.namespace: "tenkai-dock-menu"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
     exclusionMode: ExclusionMode.Ignore

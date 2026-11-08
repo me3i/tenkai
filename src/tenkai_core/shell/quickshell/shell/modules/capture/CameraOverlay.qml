@@ -57,7 +57,7 @@ PanelWindow {
     exclusionMode: ExclusionMode.Ignore
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
-    WlrLayershell.namespace: "ryoku-camera"
+    WlrLayershell.namespace: "tenkai-camera"
 
     anchors { top: true; bottom: true; left: true; right: true }
 
