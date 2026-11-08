@@ -1,6 +1,7 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import Quickshell.Io
 import Quickshell.Services.Notifications
 import Tenkai.Ui.Singletons
 
@@ -19,6 +20,42 @@ Singleton {
 
     // Shell-owned Do Not Disturb; gates popups only.
     property bool dnd: false
+
+    // TENKAI: option B of docs/DBUS.md. org.freedesktop.Notifications is a
+    // single-owner name, and NotificationServer cannot be told to give it back
+    // (see the Loader at the bottom), so the guard has to run BEFORE the server
+    // is instantiated: ask the bus who owns the name and only create the server
+    // when nobody does. GetNameOwner exits non-zero when the name has no owner,
+    // which is exactly the "free" answer; a missing busctl lands on the same
+    // path and degrades to claiming the name (option A) instead of losing
+    // notifications entirely.
+    property bool notifNameChecked: false
+    property bool notifNameOwned: false
+
+    Process {
+        id: notifNameProbe
+        command: ["busctl", "--user", "call", "org.freedesktop.DBus",
+                  "/org/freedesktop/DBus", "org.freedesktop.DBus",
+                  "GetNameOwner", "s", "org.freedesktop.Notifications"]
+        onExited: function(code) {
+            root.notifNameOwned = code === 0;
+            root.notifNameChecked = true;
+        }
+    }
+
+    // Someone else owns the name: do not fight it, and keep re-asking so that a
+    // shell that exits later does not leave notifications off for this session.
+    Timer {
+        interval: 10000
+        repeat: true
+        running: root.notifNameOwned && Config.moduleOn("notifications")
+        onTriggered: {
+            if (!notifNameProbe.running)
+                notifNameProbe.running = true;
+        }
+    }
+
+    Component.onCompleted: notifNameProbe.running = true
 
     // popup_duration: the reference wayle builder default. Quickshell's server
     // carries no popup timer, so the shell owns it.
@@ -233,7 +270,10 @@ Singleton {
     readonly property alias server: serverLoader.item
     Loader {
         id: serverLoader
-        active: Config.moduleOn("notifications")
+        // Notifications stay off until the ownership probe has answered, so a
+        // session where another process already serves notifications keeps that
+        // server instead of two shells stealing the name from each other.
+        active: Config.moduleOn("notifications") && root.notifNameChecked && !root.notifNameOwned
         sourceComponent: Component {
     NotificationServer {
         id: server

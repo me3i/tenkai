@@ -1,7 +1,8 @@
 # DBUS.md — the two well-known names Tenkai claims
 
-**Status: DECISION PENDING (owner).** This file records the evidence and the
-options; nothing here chooses for you. No code changed for B2.
+**Status: DECIDED — option B, implemented.** The tray half was already option B
+in the code; the notifications half now has the same guard. See "What was
+implemented" at the end for the exact diff and what is and is not verified.
 
 ## The names
 
@@ -40,7 +41,7 @@ units must be stopped/masked while Tenkai runs. Consequence: two shells cannot
 coexist in one session; the last one to start wins and the first one loses its
 notifications and tray silently.
 
-**Option B — standard names, but back off if already owned (recommended).**
+**Option B — standard names, but back off if already owned (CHOSEN).**
 Same claims, plus a start-up guard: before claiming, read
 `org.freedesktop.DBus.GetNameOwner`; if another process already owns the name,
 print one line and leave the name alone instead of fighting for it. The
@@ -66,3 +67,33 @@ the standard names to be usable.
 
 The two-shell case is the one to decide about; the other rows are already
 well-defined by the code above.
+
+## What was implemented (option B)
+
+**Tray — already option B, unchanged.** `tenkai-shell` claims
+`org.kde.StatusNotifierWatcher` with `dbus.NameFlagDoNotQueue` and sets
+`isWatcher` only when the reply is `RequestNameReplyPrimaryOwner`
+(`src/tenkai_core/shell/ipc/tray.go:139-140`). If another watcher owns the name,
+the daemon runs host-only. No code change was needed; this document previously
+described the tray as if it fought for the name, which was wrong.
+
+**Notifications — guard added.** `Notifs.qml` now probes ownership with
+
+```
+busctl --user call org.freedesktop.DBus /org/freedesktop/DBus \
+  org.freedesktop.DBus GetNameOwner s org.freedesktop.Notifications
+```
+
+before the `Loader` that instantiates `NotificationServer` is allowed to activate:
+
+* exit 0 → another process owns the name → the server is never created, so the
+  existing server keeps the session's notifications, and a 10 s timer re-probes
+  so a later exit does not leave them off for the rest of the session;
+* non-zero exit (no owner, or no `busctl`) → the server is created and claims the
+  name, i.e. the previous behaviour.
+
+**Verification.** `qmllint` on the file exits 0. The runtime behaviour is
+**UNVERIFIED**: proving it needs two shells in one session, which this pass is
+not allowed to run. The claim in the code is the D-Bus semantics of
+`GetNameOwner` (it raises `org.freedesktop.DBus.Error.NameHasNoOwner` when
+unowned), not an observation of Tenkai.

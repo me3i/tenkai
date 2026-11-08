@@ -309,6 +309,10 @@ func applyTenkaiTheme() error {
 	if !ok {
 		frameBars = map[string]any{}
 	}
+	// COMPAT: "ryoku-frame" is the stored value in every existing shell.json, and
+	// FrameBars.js validates against it; renaming the style id would leave users
+	// on a value the normaliser rejects. It is a settings key, not a label.
+	// See docs/COMPAT.md.
 	frameBars["style"] = "ryoku-frame"
 	mergeShellJSON(map[string]any{
 		"frameBars":   frameBars,

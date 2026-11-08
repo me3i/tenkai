@@ -85,6 +85,10 @@ function normalize(raw, barCatalog, menuCatalog) {
     const base = defaultConfig(menuCatalog);
     const source = isObject(raw) ? raw : {};
     const output = defaultConfig(menuCatalog);
+    // COMPAT: "ryoku-frame" is the value already stored in shell.json (written by
+    // hub/backend/schemes.go); it is validated here so those settings keep
+    // working. Renaming it needs a migration, not a search-and-replace. See
+    // docs/COMPAT.md.
     output.style = source.style === "slate-frame" || source.style === "ryoku-frame" ? source.style : base.style;
     for (const edge of ["top", "left", "bottom", "right"]) {
         const rail = isObject(source.rails) && isObject(source.rails[edge]) ? source.rails[edge] : {};
