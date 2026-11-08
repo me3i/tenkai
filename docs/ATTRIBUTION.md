@@ -41,6 +41,42 @@ Sound files and their upstream credits (from `NOTICE`):
 `shutter.oga` (freesound user horsthorstensen, CC-BY-SA),
 `volume-change.oga` (Lucas McCallister, CC-BY-SA).
 
+## Font audit (2026-11-08) — blocking for a public repository
+
+Every bundled font file was opened with fontTools and its `name` table read
+(IDs 0/1/13/14), plus the OS/2 `fsType` embedding bit. Hashes are of the file as
+committed. `fsType` legal values: 0 installable, 2 restricted, 4 preview & print,
+8 editable.
+
+| File | Face | sha256 (first 16) | fsType | Embedded licence text | Verdict |
+| --- | --- | --- | --- | --- | --- |
+| `src/tenkai-assets/fonts/space-grotesk/SpaceGrotesk[wght].ttf` | Space Grotesk | `acad6de1fc93436f` | 0 | SIL OFL 1.1 + `OFL.txt` beside it | **REDISTRIBUTABLE** (OFL-1.1) |
+| `src/tenkai-assets/fonts/fraunces/Fraunces[SOFT,WONK,opsz,wght].ttf` | Fraunces | `177ff6c0f14e5550` | 0 | SIL OFL 1.1 + `OFL.txt` beside it | **REDISTRIBUTABLE** (OFL-1.1) |
+| `src/tenkai-assets/fonts/fraunces/Fraunces-Italic[SOFT,WONK,opsz,wght].ttf` | Fraunces Italic | `b24448c43702fac4` | 0 | SIL OFL 1.1 + `OFL.txt` beside it | **REDISTRIBUTABLE** (OFL-1.1) |
+| `src/tenkai_core/hub/quickshell/fonts/archivo-black.ttf` | Archivo Black | `9b1ac3e5da896e88` | 0 | "Copyright 2017 The Archivo Black Project Authors", licence URL `scripts.sil.org/OFL` | **REDISTRIBUTABLE** (OFL-1.1, per `Omnibus-Type/ArchivoBlack`) |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/unrealised.ttf` | Unrealised | `c74b41cd9581d745` | 0 | "Free for personal, non-profit use. Commercial use requires a license." | **PERSONAL-USE-ONLY** — PUBLIC-REPO-LEGAL-RISK |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/daydream-demo.otf` | Daydream (demo) | `7394a7524cade9f5` | 0 | "(c) 2020 by DoubleGum." File name says *demo* | **PERSONAL-USE-ONLY (demo cut)** — PUBLIC-REPO-LEGAL-RISK |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/vip-rawy-regular.otf` | VIP Rawy | `76b2ddd7c0753356` | 8 | "Typeface © (ar.photoshop.3abber.com). 2014. All Rights Reserved" | **PROPRIETARY** — PUBLIC-REPO-LEGAL-RISK |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/jf-flat-regular.otf` | JF Flat | `e59d6beae4aa7072` | 8 | "Copyright © 2014 ( Jozoor Fonts ) All Rights Reserved" | **PROPRIETARY** — PUBLIC-REPO-LEGAL-RISK |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/overhead.ttf` | Overhead BRK | `1a445fcc8937b516` | 2 | "∆NIGMA FONTS [e-mail] kentpw@norwich.net" — freeware, no terms shipped | **UNKNOWN (freeware, restricted embedding)** — risk |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/abberancy.ttf` | Abberancy | `6710865ce96c16e6` | 0 | "© 1998 Ray Larabie. This font is freeware. Read attached text file for details." — **no text file is attached** | **UNKNOWN (Larabie freeware, terms file missing)** — risk |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/xenophobia-nominal.ttf` | Xenophobia | `623e9896aa0d531e` | 2 | "©2001 Joiro Hatgaya | Freeware, but look at readme file." — **no readme shipped** | **UNKNOWN (freeware, terms file missing)** — risk |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/reckoner.ttf` | Reckoner | `4d5f5a1be2de030b` | 4 | none — no copyright, no licence | **UNKNOWN** — risk |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/reckoner-bold.ttf` | Reckoner Bold | `fdce2218319deda6` | 4 | none | **UNKNOWN** — risk |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/sabana-regular.ttf` | sabana | `2b50edc787292acd` | 4 | none | **UNKNOWN** — risk |
+| `src/tenkai_core/shell/quickshell/shell/assets/fonts/vexa-light.ttf` | VEXA light R | `09eebd5d877b1cd7` | 0 | "Typeface © (your company). 2021. All Rights Reserved" — a *placeholder* copyright line, i.e. the designer never filled it in | **UNKNOWN/PROPRIETARY** — PUBLIC-REPO-LEGAL-RISK |
+
+None of the eleven flagged files has a readme, licence or purchase receipt beside
+it: `git ls-files` under `shell/assets/fonts/` returns only the font binaries.
+All eleven arrive from upstream Ryoku, so this is inherited, not introduced here.
+
+**STOPPED for the owner.** Removing or replacing these fonts is a copyright
+decision, not an engineering one, so nothing was deleted. Each is referenced by
+one or two QML files (a font picker list); removing them means editing that list
+too. Options: (a) delete the flagged files and their list entries, (b) keep the
+repository private, (c) replace them with OFL faces and keep the names as
+aliases.
+
 ## Fonts
 
 15 font files are distributed in the tree. Two families ship with their licence
