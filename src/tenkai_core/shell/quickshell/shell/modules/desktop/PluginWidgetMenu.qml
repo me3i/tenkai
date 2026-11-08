@@ -51,7 +51,10 @@ Item {
     signal lockToggled(string id)
     signal settingChanged(string id, string key, var value)
     signal sizeChanged(string id, real scale)
-    signal opacityChanged(string id, real opacity)
+    // Not `opacityChanged`: QQuickItem already generates that change signal for its
+    // own `opacity` property, and redeclaring it is an invalid override (Qt logged
+    // "Duplicate signal name" on every start).
+    signal widgetOpacityChanged(string id, real opacity)
 
     function openFor(id, locked, x, y, manifest, placement) {
         menu.scope = id;
@@ -158,7 +161,7 @@ Item {
             value: menu.opacityLive
             valueText: Math.round(opacitySlider.value * 100) + "%"
             onMoved: (v) => menu.opacityLive = v
-            onReleased: (v) => { menu.opacityLive = v; menu.opacityChanged(menu.scope, v); }
+            onReleased: (v) => { menu.opacityLive = v; menu.widgetOpacityChanged(menu.scope, v); }
         }
 
         // ── colour (only when the plugin declares it honours a host accent) ──
