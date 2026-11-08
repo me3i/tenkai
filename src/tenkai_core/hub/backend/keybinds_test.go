@@ -9,7 +9,7 @@ import (
 
 // stubProvider installs a fake tenkai-wm-<name> on PATH that prints out on every
 // verb, and forces detection to it, so keybinds() drives a known binds answer
-// with no live compositor. wm.Open() reads RYOKU_WM first, so the name here is
+// with no live compositor. wm.Open() reads TENKAI_WM first, so the name here is
 // the provider keybinds() will run.
 func stubProvider(t *testing.T, name, out string) {
 	t.Helper()
@@ -21,7 +21,7 @@ func stubProvider(t *testing.T, name, out string) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin)
-	t.Setenv("RYOKU_WM", name)
+	t.Setenv("TENKAI_WM", name)
 }
 
 func catByName(l legend, name string) *category {
@@ -133,7 +133,7 @@ func TestKeybindsJSONShape(t *testing.T) {
 // partial or stale sheet.
 func TestKeybindsEmptyOnProviderError(t *testing.T) {
 	t.Setenv("PATH", t.TempDir()) // tenkai-wm-missing is not here, so binds fails
-	t.Setenv("RYOKU_WM", "missing")
+	t.Setenv("TENKAI_WM", "missing")
 
 	l := keybinds()
 	if l.Categories == nil {
