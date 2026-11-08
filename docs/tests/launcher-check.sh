@@ -40,14 +40,14 @@ if [ -f "$RUN/pids" ]; then bad "a Tenkai session is already running; refusing t
 # minutes that is a startup failure, not a race, and the diagnostics say why.
 QS=""
 for _ in $(seq 1 400); do
-  QS=$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
+  QS=$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)
   [ -n "$QS" ] && break
   sleep 0.3
 done
 if [ -z "$QS" ]; then
   bad "no shell process after 120 s"
   echo "--- diagnostics ---"
-  ps -eo pid,args | grep -F "$TENKAI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  ps -eo pid,args | grep -F "$TENKAI/src/tenkai_core" | grep -v grep || echo "(no process mentions the project)"
   for f in "$RUN"/logs/shell*.log "$RUN"/state/tenkai/surfaces/shell.log; do
     [ -f "$f" ] && { echo "--- $f (last 20) ---"; tail -n 20 "$f"; }
   done
@@ -152,7 +152,7 @@ for _ in $(seq 1 30); do
 done
 [ "$n" = "0" ] && ok "Esc closes the launcher (0 layers)" || bad "launcher layers after Esc: $n"
 
-c=$(pgrep -fc "qs -p $TENKAI/src/ryoku/shell/quickshell/shell")
+c=$(pgrep -fc "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell")
 [ "$c" = "1" ] && ok "exactly one shell/launcher instance" || bad "qs instance count: $c"
 
 if ss -tunp 2>/dev/null | grep -q "pid=$QS,"; then

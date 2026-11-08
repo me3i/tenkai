@@ -284,10 +284,10 @@ tenkai_seed_matugen() { # $1 = the cache dir this session's palette pass writes 
   # nothing outside the project, and a live one writes ~/.cache/tenkai only.
   local cache="${1:?no cache dir given}" cfg="$RUN_DIR/config/tenkai/matugen"
   mkdir -p "$cfg/templates" "$cache/tenkai"
-  cp -f "$TENKAI_DIR/src/ryoku/shell/matugen/templates/kitty-colors.conf" \
+  cp -f "$TENKAI_DIR/src/tenkai_core/shell/matugen/templates/kitty-colors.conf" \
         "$cfg/templates/kitty-colors.conf"
   {
-    cat "$TENKAI_DIR/src/ryoku/shell/matugen/config.toml"
+    cat "$TENKAI_DIR/src/tenkai_core/shell/matugen/config.toml"
     printf '\n[templates.kitty]\ninput_path = "%s"\noutput_path = "%s"\n' \
       "$cfg/templates/kitty-colors.conf" "$cache/tenkai/kitty-colors.conf"
   } > "$cfg/config.toml"
@@ -304,7 +304,7 @@ tenkai_provision_bin() { # build the .run/bin shadow: project copies + stubs + i
   # resolving the live system's /usr/bin copy of the same name.
   for n in tenkai-app tenkai-screenshot tenkai-cmd-brightness \
            tenkai-summon tenkai-volume tenkai-restart-audio; do
-    src="$TENKAI_DIR/src/ryoku/shell/scripts/$n"
+    src="$TENKAI_DIR/src/tenkai_core/shell/scripts/$n"
     [ -f "$src" ] || continue
     ln -sfn "$src" "$RUN_DIR/bin/$n"
   done
@@ -416,7 +416,7 @@ cache_warn_re() {
 # the btop theme and the Qt palette — whenever the owner changes wallpaper. Tenkai
 # must never write those (its own matugen config renders only the kitty template,
 # into ~/.cache/tenkai,
-# and its app fan-out is switched off in src/ryoku/shell/ipc/matugen.go), so a
+# and its app fan-out is switched off in src/tenkai_core/shell/ipc/matugen.go), so a
 # change there has to be attributable before it is called a leak.
 #
 # Attribution is by CONTENT, not by path: the live config is re-rendered into a
@@ -438,7 +438,7 @@ live_matugen_renders() {
   command -v matugen >/dev/null 2>&1 || return 1
   [ -f "$want" ] || return 1
   # A carrier in matugen's json shape, built from the live palette the same way
-  # the daemon builds it (matugenCarrier, src/ryoku/shell/ipc/matugen.go).
+  # the daemon builds it (matugenCarrier, src/tenkai_core/shell/ipc/matugen.go).
   carrier="$LIVE_MATUGEN_PALETTE"
   [ -f "$carrier" ] || return 1
   scratch="$(mktemp -d "${TMPDIR:-/tmp}/tenkai-livemtg.XXXXXX")" || return 1
@@ -1497,19 +1497,19 @@ prepare_nested_home() {
   fi
   # Role launcher (AppLaunch.qml runs every Terminal=true entry through it).
   # Symlinked, so the session always uses the source script.
-  if [ -f "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-app" ]; then
-    ln -sfn "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-app" "$RUN_DIR/bin/tenkai-app"
+  if [ -f "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-app" ]; then
+    ln -sfn "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-app" "$RUN_DIR/bin/tenkai-app"
   fi
   # Screenshot helper: a local grim/slurp capture into the user's Pictures
   # folder. No upload, no share service, no network call.
-  if [ -f "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-screenshot" ]; then
-    ln -sfn "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-screenshot" "$RUN_DIR/bin/tenkai-screenshot"
+  if [ -f "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-screenshot" ]; then
+    ln -sfn "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-screenshot" "$RUN_DIR/bin/tenkai-screenshot"
   fi
   # Brightness helper (tenkai-shell's `brightness` verb execs it by this name;
   # the script itself is copied from upstream and kept verbatim except for
   # honest error reporting). Symlinked, so the session always uses source.
-  if [ -f "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-cmd-brightness" ]; then
-    ln -sfn "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-cmd-brightness" "$RUN_DIR/bin/tenkai-cmd-brightness"
+  if [ -f "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-cmd-brightness" ]; then
+    ln -sfn "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-cmd-brightness" "$RUN_DIR/bin/tenkai-cmd-brightness"
   fi
   # R1: complete .run/bin — Tenkai's own scripts linked, every live-system helper
   # name the kept code calls shadowed by an inert stub, inventory written for
@@ -1565,7 +1565,7 @@ if [ "\${TENKAI_ENV_SCRUBBED:-0}" != "1" ]; then
       "PATH=\$RUN/bin:$TENKAI_SYSTEM_PATH"
       "QML2_IMPORT_PATH=\$RUN/qml"
       "QML_IMPORT_PATH=\$RUN/qml"
-      "TENKAI_SHELL_DIR=\$TENKAI_DIR/src/ryoku/shell"
+      "TENKAI_SHELL_DIR=\$TENKAI_DIR/src/tenkai_core/shell"
       "QT_QPA_PLATFORM=wayland"
       "QT_AUTO_SCREEN_SCALE_FACTOR=1"
       "QSG_RENDER_LOOP=threaded")
@@ -1607,7 +1607,7 @@ export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
 export PATH="\$RUN/bin:$TENKAI_SYSTEM_PATH"
 export QML2_IMPORT_PATH="\$RUN/qml"
 export QML_IMPORT_PATH="\$RUN/qml"
-export TENKAI_SHELL_DIR="\$TENKAI_DIR/src/ryoku/shell"
+export TENKAI_SHELL_DIR="\$TENKAI_DIR/src/tenkai_core/shell"
 # Test-mode stub: suppresses session power actions (QML SessionActions + the
 # tenkai-shell daemon). Nested tests only; a real run does not set this.
 # The test stub can be turned off only to prove the TENKAI_STUB_POWER guard; the
@@ -1737,7 +1737,7 @@ cmd_accept(){ docs/tests/accept.sh "$@"; }
 
 cmd_run() {
   [ -x "$RUN_DIR/bin/tenkai-shell" ] || die "tenkai-shell not built — run the Phase 6 build first"
-  [ -d "$RUN_DIR/qml/Ryoku/Ui" ] || die "QML modules not assembled under .run/qml"
+  [ -d "$RUN_DIR/qml/Tenkai/Ui" ] || die "QML modules not assembled under .run/qml"
   # The picker is bundled, never read from /usr/share/ryogami; install.sh's
   # build step assembles it beside the binaries.
   [ -f "$RUN_DIR/ryogami-wall-ui/shell.qml" ] || die "bundled wallpaper picker missing — run install.sh to assemble .run/ryogami-wall-ui"
@@ -2075,8 +2075,12 @@ walk(d)
 
 live_dbus_owner() { # $1 = well-known name -> owning pid (or empty)
   # The read must never abort the caller: a bus that is not reachable is
-  # simply "nobody owns it".
-  busctl --user list --no-pager 2>/dev/null | awk -v n="$1" '$1==n {print $2; exit}' || true
+  # simply "nobody owns it". A row whose CONNECTION reads "(activatable)" is
+  # a service DEFINITION with no live connection (dunst ships one for
+  # Notifications): nobody holds the name, so the answer is empty -- only a
+  # real connection must refuse. A real owner with an unresolvable pid still
+  # prints "-" (owned, be conservative).
+  busctl --user list --no-pager 2>/dev/null | awk -v n="$1" '$1==n && $0 !~ /\(activatable\)/ {print $2; exit}' || true
 }
 
 live_shortcut_owner() { # $1 = shortcut name -> "yes" if the live session has it
@@ -2203,7 +2207,7 @@ export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
 export PATH="\$RUN/bin:$TENKAI_SYSTEM_PATH"
 export QML2_IMPORT_PATH="\$RUN/qml"
 export QML_IMPORT_PATH="\$RUN/qml"
-export TENKAI_SHELL_DIR="\$TENKAI_DIR/src/ryoku/shell"
+export TENKAI_SHELL_DIR="\$TENKAI_DIR/src/tenkai_core/shell"
 export TENKAI_APP_HOME="__REAL_HOME__"
 export TENKAI_APP_XDG_RUNTIME_DIR="$rt"
 # A live run is not a test run: TENKAI_TEST is deliberately NOT set. But no power
@@ -2389,7 +2393,7 @@ cmd_start() {
   # 4. the self-monitor
   local q="" i=0
   while [ $i -lt 120 ]; do
-    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $TENKAI_DIR/src/ryoku/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
+    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $TENKAI_DIR/src/tenkai_core/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
     [ -n "$q" ] && break
     i=$((i + 1)); sleep 0.5
   done
@@ -2575,7 +2579,7 @@ cmd_live() {
   # 5. wait for the shell to come up, then the self-monitor
   local q="" i=0
   while [ $i -lt 120 ]; do
-    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $TENKAI_DIR/src/ryoku/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
+    q="$(ps -eo pid,args 2>/dev/null | grep -F "qs -p $TENKAI_DIR/src/tenkai_core/shell/quickshell/shell" | grep -v grep | awk 'NR==1{print $1}' || true)"
     [ -n "$q" ] && break
     i=$((i + 1)); sleep 0.5
   done

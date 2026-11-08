@@ -39,7 +39,7 @@ for p in $(pgrep -f "^qs -p $TENKAI/" 2>/dev/null); do
     kill -TERM "$p" 2>/dev/null || true
   fi
 done
-if pgrep -f "^qs -p $TENKAI/src/ryoku/shell|^$RUN/bin/tenkai-shell daemon" >/dev/null 2>&1; then
+if pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell|^$RUN/bin/tenkai-shell daemon" >/dev/null 2>&1; then
   bad "a nested session is already running; refusing to cold-start over it"
   echo "RESULT: FAIL"; exit 1
 fi

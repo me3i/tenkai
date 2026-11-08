@@ -101,15 +101,15 @@ s8) # nothing is written outside the project
   ;;
 
 q1) # the code is clean
-  find src/ryoku/shell/quickshell -name '*.qml' -print0 2>/dev/null | \
-    xargs -0 -n1 -I{} sh -c 'qmllint -I src/ryoku/shell/quickshell/shell "{}" 2>&1 | grep -i "error" | head -3' | head -10
-  if find src/ryoku/shell/quickshell -name '*.qml' -print0 2>/dev/null | \
-       xargs -0 -n1 -I{} sh -c 'qmllint -I src/ryoku/shell/quickshell/shell "{}" 2>&1 | grep -qi "error"' | grep -q .; then
+  find src/tenkai_core/shell/quickshell -name '*.qml' -print0 2>/dev/null | \
+    xargs -0 -n1 -I{} sh -c 'qmllint -I src/tenkai_core/shell/quickshell/shell "{}" 2>&1 | grep -i "error" | head -3' | head -10
+  if find src/tenkai_core/shell/quickshell -name '*.qml' -print0 2>/dev/null | \
+       xargs -0 -n1 -I{} sh -c 'qmllint -I src/tenkai_core/shell/quickshell/shell "{}" 2>&1 | grep -qi "error"' | grep -q .; then
     fail "qmllint reports errors in the kept QML"
   fi
-  ( cd src/ryoku/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go vet ./... >/dev/null 2>&1 ) || fail "go vet failed"
-  ( cd src/ryoku/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go build -o /dev/null ./... >/dev/null 2>&1 ) || fail "go build failed"
-  ( cd src/ryoku/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go test ./... >"$RUN/logs/accept-go-test.log" 2>&1 ) || fail "go test failed (see $RUN/logs/accept-go-test.log)"
+  ( cd src/tenkai_core/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go vet ./... >/dev/null 2>&1 ) || fail "go vet failed"
+  ( cd src/tenkai_core/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go build -o /dev/null ./... >/dev/null 2>&1 ) || fail "go build failed"
+  ( cd src/tenkai_core/shell/ipc && GOFLAGS=-mod=vendor GOPROXY=off go test ./... >"$RUN/logs/accept-go-test.log" 2>&1 ) || fail "go test failed (see $RUN/logs/accept-go-test.log)"
   if command -v shellcheck >/dev/null 2>&1; then
     shellcheck -S warning tenkai docs/tests/*.sh >"$RUN/logs/accept-shellcheck.log" 2>&1 || fail "shellcheck found something (see $RUN/logs/accept-shellcheck.log)"
     ok "shellcheck is clean"
@@ -131,7 +131,7 @@ q2) # no dead code, no personal strings, no ryoku names outside the allowed ones
   fi
   # a ryoku-named string outside the places where it belongs.
   # Allowed on purpose: the helper binaries keep their real names
-  # (ryoku-cmd-brightness, ryoku-cmd-radio, ryoku-eq, ...); `src/ryoku` is
+  # (ryoku-cmd-brightness, ryoku-cmd-radio, ryoku-eq, ...); `src/tenkai_core` is
   # this project's own path; `ryoku-frame` is the layer-shell namespace the
   # live Hyprland layer rules point at, so renaming it would need a config
   # change that is out of bounds.
@@ -145,8 +145,8 @@ q2) # no dead code, no personal strings, no ryoku names outside the allowed ones
   unreferenced=""
   while IFS= read -r f; do
     b="$(basename "$f" .qml)"
-    grep -rq "\b$b\b" src/ryoku/shell/quickshell/shell --include='*.qml' 2>/dev/null || unreferenced="$unreferenced $b"
-  done < <(find src/ryoku/shell/quickshell/shell -name '*.qml' -not -path '*/services/*' -not -path '*/modules/*' 2>/dev/null)
+    grep -rq "\b$b\b" src/tenkai_core/shell/quickshell/shell --include='*.qml' 2>/dev/null || unreferenced="$unreferenced $b"
+  done < <(find src/tenkai_core/shell/quickshell/shell -name '*.qml' -not -path '*/services/*' -not -path '*/modules/*' 2>/dev/null)
   [ -z "$unreferenced" ] || fail "a QML file is never referenced:$unreferenced"
   ok "no dead code and no stray names"
   ;;

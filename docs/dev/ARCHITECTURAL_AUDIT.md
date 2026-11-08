@@ -35,20 +35,20 @@ The tree is **not** a clean-slate product. It is a reduced Ryoku build with a la
 
 - `tenkai` — the 2698-line control script (bash). This is the single entry point for baseline, verify-untouched, verify-prove, env-check, status, run/stop/test, wallpaper, live/start, scrub-check, export-clean, live-stop, live-status, and the env/owned/shadow/system tool lists.
 - `AGENTS.md` — root-level; keep list, workflow, honesty/reporting, licensing, non-negotiable safety rules 1–9. **There is no `docs/STATUS.md`, `docs/PARITY.md`, or `docs/AGENTS.md` in this checkout.** The AGENTS doc lives at repo root.
-- `src/ryoku/{hub,shell,ui,wm}` — copied/adapted upstream material.
-- `src/ryoku/shell/ipc/` — the `ryoku-shell` Go daemon source tree.
-- `src/ryoku/shell/quickshell/shell/` — the Quickshell shell entry, services, components, bar, launcher, modules, and singletons.
-- `src/ryoku/hub/backend/` — the Hub backend Go tree.
-- `src/ryoku/wm/` — the window-manager seam Go tree.
-- `src/ryoku/shell/scripts/` — Tenkai-owned shell scripts (7 files).
-- `src/ryoku/shell/ryogami/` — ryogami wall-picker/daemon material.
-- `src/ryoku/shell/matugen/` — matugen theming config/templates.
+- `src/tenkai_core/{hub,shell,ui,wm}` — copied/adapted upstream material.
+- `src/tenkai_core/shell/ipc/` — the `ryoku-shell` Go daemon source tree.
+- `src/tenkai_core/shell/quickshell/shell/` — the Quickshell shell entry, services, components, bar, launcher, modules, and singletons.
+- `src/tenkai_core/hub/backend/` — the Hub backend Go tree.
+- `src/tenkai_core/wm/` — the window-manager seam Go tree.
+- `src/tenkai_core/shell/scripts/` — Tenkai-owned shell scripts (7 files).
+- `src/tenkai_core/shell/ryogami/` — ryogami wall-picker/daemon material.
+- `src/tenkai_core/shell/matugen/` — matugen theming config/templates.
 - `.run/` — runtime state; XDG overrides, Go dirs, sockets, pids, binaries.
 - `docs/` — phase docs, `baseline/`, `tests/`.
 
 ### 2.2 The real shell-script surface
 
-There is **no** `src/ryoku/scripts/` directory in this checkout. The real Tenkai-owned shell scripts live under `src/ryoku/shell/scripts/` and there are 7 of them:
+There is **no** `src/tenkai_core/scripts/` directory in this checkout. The real Tenkai-owned shell scripts live under `src/tenkai_core/shell/scripts/` and there are 7 of them:
 
 - `ryoku-app`
 - `ryoku-cmd-brightness`
@@ -71,16 +71,16 @@ The earlier references to a "4 project scripts" surface are stale. The correct, 
 
 ### 2.4 Go surfaces
 
-- `src/ryoku/shell/ipc/` — module `ryoku-shell`, Go entrypoint `main.go`.
-- `src/ryoku/shell/ipc/vendor/` — vendored dependencies.
-- `src/ryoku/shell/ryogami/daemon/` — ryogami Go daemon.
-- `src/ryoku/hub/backend/` — Hub backend Go tree.
-- `src/ryoku/wm/` — WM seam Go tree.
+- `src/tenkai_core/shell/ipc/` — module `ryoku-shell`, Go entrypoint `main.go`.
+- `src/tenkai_core/shell/ipc/vendor/` — vendored dependencies.
+- `src/tenkai_core/shell/ryogami/daemon/` — ryogami Go daemon.
+- `src/tenkai_core/hub/backend/` — Hub backend Go tree.
+- `src/tenkai_core/wm/` — WM seam Go tree.
 
 ### 2.5 Asset/config surfaces
 
-- `src/ryoku/shell/matugen/` — `config.toml`, `apps.toml`, `templates/` (27 files).
-- `src/ryoku/shell/ryogami/wall-ui/` — bundled picker qml + `data/matugen/templates/` (14 files).
+- `src/tenkai_core/shell/matugen/` — `config.toml`, `apps.toml`, `templates/` (27 files).
+- `src/tenkai_core/shell/ryogami/wall-ui/` — bundled picker qml + `data/matugen/templates/` (14 files).
 - `docs/baseline/` — 9 snapshot files (the real persisted snapshot set).
 - `docs/tests/` — 37 test/helper files.
 - `fonts/` — Fraunces (~415KB + ~360KB), SpaceGrotesk (~137KB).
@@ -97,7 +97,7 @@ The earlier references to a "4 project scripts" surface are stale. The correct, 
 
 ### 3.1 Go dependencies — real, minimal set
 
-**`src/ryoku/shell/ipc/go.mod`:**
+**`src/tenkai_core/shell/ipc/go.mod`:**
 - module `ryoku-shell`
 - Go 1.26, toolchain `go1.26.5`
 - requires:
@@ -105,23 +105,23 @@ The earlier references to a "4 project scripts" surface are stale. The correct, 
   - `golang.org/x/sys v0.27.0`
   - `ryoku-wm v0.0.0` (replace `../../wm`)
 
-**`src/ryoku/shell/ipc/go.sum`:** 4 lines. Exactly 2 upstream modules + their go.mod hashes (`godbus/dbus`, `golang.org/x/sys`).
+**`src/tenkai_core/shell/ipc/go.sum`:** 4 lines. Exactly 2 upstream modules + their go.mod hashes (`godbus/dbus`, `golang.org/x/sys`).
 
-**`src/ryoku/shell/ipc/vendor/modules.txt`:** vendored:
+**`src/tenkai_core/shell/ipc/vendor/modules.txt`:** vendored:
 - `github.com/godbus/dbus/v5`
 - `golang.org/x/sys/unix`
 - `ryoku-wm v0.0.0 => ../../wm`
 
-**`src/ryoku/shell/ipc/vendor/ryoku-wm/`:** vendor shim tree, 8 files: `action.go`, `binds.go`, `caps.go`, `client.go`, `cursor.go`, `detect.go`, `reclaim.go`, `state.go`.
+**`src/tenkai_core/shell/ipc/vendor/ryoku-wm/`:** vendor shim tree, 8 files: `action.go`, `binds.go`, `caps.go`, `client.go`, `cursor.go`, `detect.go`, `reclaim.go`, `state.go`.
 
-**`src/ryoku/wm/go.mod`:** module `ryoku-wm`, Go 1.22, requires `BurntSushi/toml v1.6.0`; vendor subdir present.
+**`src/tenkai_core/wm/go.mod`:** module `ryoku-wm`, Go 1.22, requires `BurntSushi/toml v1.6.0`; vendor subdir present.
 
 So the shell-side Go dependency graph is effectively:
 - Go stdlib
 - `github.com/godbus/dbus/v5`
 - `golang.org/x/sys/unix`
 - vendored local `ryoku-wm` (replace `../../wm`)
-- `ryoku-wm` itself requires `BurntSushi/toml v1.6.0` (also vendored under `src/ryoku/wm/vendor`).
+- `ryoku-wm` itself requires `BurntSushi/toml v1.6.0` (also vendored under `src/tenkai_core/wm/vendor`).
 
 There is no outbound http/net dependency from the shell daemon for holiday fetching — that path is compiled out in `calendar.go`.
 
@@ -132,7 +132,7 @@ There is no outbound http/net dependency from the shell daemon for holiday fetch
 - `ryoku-wm v0.0.0` (replace `../../wm`)
 - `ryostore v0.0.0` (replace `../../apps/ryostore/backend`)
 
-**`src/ryoku/hub/backend/go.sum`:** 6 lines.
+**`src/tenkai_core/hub/backend/go.sum`:** 6 lines.
 
 The Go import scan across `ipc/*.go` (non-test) is noisy when done with naïve `rg` because string-literal fragments match; the true import set, file by file, is Go stdlib + `godbus/dbus/v5` + `golang.org/x/sys/unix` + vendored local `ryoku-wm`. Holiday fetch is compiled out in `calendar.go`.
 
@@ -149,7 +149,7 @@ The Go import scan across `ipc/*.go` (non-test) is noisy when done with naïve `
 
 ### 3.3 Shell binaries and `.run/bin`
 
-`src/ryoku/shell/ipc/main.go` is the daemon build entry. It exports the CLI surface:
+`src/tenkai_core/shell/ipc/main.go` is the daemon build entry. It exports the CLI surface:
 - `ryoku-shell daemon`
 - `ryoku-shell __clip-ingest` (internal `wl-paste --watch` helper)
 - `ryoku-shell theme catalog` (standalone, compiled-in catalog)
@@ -168,7 +168,7 @@ Home guard: the binary derives the expected home from its own executable path an
   - `tenkai-wm-hyprland` (~6.4MB)
 - 1 small shim: `matugen` (4KB)
 - 18 tiny stubs (4KB each)
-- 7 symlinks to `src/ryoku/shell/scripts/`:
+- 7 symlinks to `src/tenkai_core/shell/scripts/`:
   - `tenkai-app`
   - `tenkai-screenshot`
   - `ryoku-cmd-brightness`
@@ -318,7 +318,7 @@ Settings app: Appearance + Shell pages only.
 
 Settings must never write or generate Hyprland config.
 
-This is enforced by the severed `applyDesktop()` in `src/ryoku/hub/backend/desktop.go`. That function is disabled, not deleted, and currently returns `nil`.
+This is enforced by the severed `applyDesktop()` in `src/tenkai_core/hub/backend/desktop.go`. That function is disabled, not deleted, and currently returns `nil`.
 
 The file explicitly notes:
 - `applyDesktop` is the one function that materialises Hyprland config (`settings.lua` / `rebinds.lua` / `user_edits`) and reloads the compositor.
@@ -443,11 +443,11 @@ Several services reach the daemon via `tenkai-shell.sock`: `Tray.qml`, `Network.
 
 ### 10.5 Tray — no trayxd here
 
-This tree has **no** trayxd client or server. There is no `src/ryoku/shell/trayxd/` directory.
+This tree has **no** trayxd client or server. There is no `src/tenkai_core/shell/trayxd/` directory.
 
 The system tray path is:
-- `src/ryoku/shell/ipc/tray.go` — Go StatusNotifierWatcher implementation, StatusNotifierItem registration, dbusmenu tree walking, icon resolution, tray item activation/context menu/scroll/menu events.
-- `src/ryoku/shell/quickshell/shell/services/Tray.qml` — QML singleton that subscribes to the daemon `tray` topic over `tenkai-shell.sock` and exposes click intents back to the daemon.
+- `src/tenkai_core/shell/ipc/tray.go` — Go StatusNotifierWatcher implementation, StatusNotifierItem registration, dbusmenu tree walking, icon resolution, tray item activation/context menu/scroll/menu events.
+- `src/tenkai_core/shell/quickshell/shell/services/Tray.qml` — QML singleton that subscribes to the daemon `tray` topic over `tenkai-shell.sock` and exposes click intents back to the daemon.
 
 `Tray.qml` imports only `QtQuick`, `Quickshell`, `Quickshell.Io`. It does not import or reference any trayxd binary. Tray icon resolution is the Go precedence chain in `resolveTrayIcon`: item-supplied `icon_theme_path` → ambient theme name → nearest ARGB pixmap converted to RGBA → generic `application-x-executable-symbolic` fallback. The ARGB→RGBA conversion is pure Go `image` + `image/png` code with no external imaging library at that site.
 
@@ -486,7 +486,7 @@ There is a tray-symbolic.svg asset (`components/icons/tray-symbolic.svg`) and se
 
 ## 12. System and project scripts
 
-### 12.1 Project scripts (7, under `src/ryoku/shell/scripts/`)
+### 12.1 Project scripts (7, under `src/tenkai_core/shell/scripts/`)
 
 - `ryoku-app` — zen/kitty/nautilus fallbacks, `jq`, `notify-send`
 - `ryoku-cmd-brightness` — brightnessctl/ddcutil/flock/ddcutil detect
@@ -527,7 +527,7 @@ The classification below is per-component, using the keep list verbatim. Where a
 
 **Classification:** Kept.
 
-**Evidence path:** `src/ryoku/shell/quickshell/shell/modules/bar/`, barstyles, framebars, panel, popouts; shell.qml imports `modules/bar` and `modules/controlcenter`.
+**Evidence path:** `src/tenkai_core/shell/quickshell/shell/modules/bar/`, barstyles, framebars, panel, popouts; shell.qml imports `modules/bar` and `modules/controlcenter`.
 
 **What it does in this tree:** the bar module drives the top bar surface and style variants; bar-side tray widgets exist in barstyles/qsbar and kairos. qsbar carries thumbnail-heavy carousels (MediaBrowserPanel/Carousel/Hearthstone, ImageCarouselPanel/Carousel/Hearthstone) that use `bash -c … ffmpegthumbnailer … / magick …`.
 
@@ -616,7 +616,7 @@ The classification below is per-component, using the keep list verbatim. Where a
 - Evidence: notifications surface in keep list; daemon notification path over `tenkai-shell.sock`.
 
 **Wallpaper selector + matugen theming:**
-- Evidence: `modules/wallpaper`; `ryogami` daemon + wall-ui; `matugen/` config + 27 templates; `src/ryoku/shell/ryogami/wall-ui/data/matugen/templates/` (14 files); matugen shim in `.run/bin` enforcing TENKAI config only.
+- Evidence: `modules/wallpaper`; `ryogami` daemon + wall-ui; `matugen/` config + 27 templates; `src/tenkai_core/shell/ryogami/wall-ui/data/matugen/templates/` (14 files); matugen shim in `.run/bin` enforcing TENKAI config only.
 - Why kept: wallpaper selector + matugen theming is on the keep list.
 - Kat: shim refuses live `~/.config/matugen` path; Tenkai seeds only the kitty template of the matugen output set.
 
@@ -665,7 +665,7 @@ If the owner approves Phase 16, the next step is to review this report's explici
 ## Appendix A. Stale-reference conditions to flag
 
 - `tenkai-configs/` and `tenkai-assets/` are empty in this checkout; several docs memos reference them as though they hold real persisted sets. The real persisted snapshot set is `docs/baseline/`.
-- `src/ryoku/scripts/` does not exist in this checkout; the real Tenkai-owned project scripts are the 7 files under `src/ryoku/shell/scripts/`. Earlier references to a "4 project scripts" surface are stale.
+- `src/tenkai_core/scripts/` does not exist in this checkout; the real Tenkai-owned project scripts are the 7 files under `src/tenkai_core/shell/scripts/`. Earlier references to a "4 project scripts" surface are stale.
 - AGENTS.md lives at repo root; there is no `docs/STATUS.md`, `docs/PARITY.md`, or `docs/AGENTS.md` in this checkout.
 
 ## Appendix B. What this audit did not do (honesty markers)
@@ -683,7 +683,7 @@ For each excluded/optional item, the opt-back-in path is:
 
 - trayxd-based tray: add the trayxd client/server sources and build steps to the project and re-point the tray surface at them. This tree currently has none.
 - any hub feature not on the keep list (GPU passthrough, voxtype, openrgb, import/qmk, asusd, fastfetch importer, shellpref, etc.): these are present in the Hub backend code but not kept by Tenkai's Settings/app scope; re-enabling is a keep-list expansion decision, not a bug fix.
-- hub `applyDesktop()` restore: return the documented body in `src/ryoku/hub/backend/desktop.go` (and related reload paths), then re-evaluate the Settings→Hyprland write boundary against the keep list. This is intentionally disabled now.
+- hub `applyDesktop()` restore: return the documented body in `src/tenkai_core/hub/backend/desktop.go` (and related reload paths), then re-evaluate the Settings→Hyprland write boundary against the keep list. This is intentionally disabled now.
 
 ---
 

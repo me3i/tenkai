@@ -76,14 +76,14 @@ ok "nested instance reachable ($SIG)"
 # 120 s that is a startup failure, not a race, and the diagnostics say why.
 QS=""
 for _ in $(seq 1 400); do
-  QS=$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
+  QS=$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)
   [ -n "$QS" ] && break
   sleep 0.3
 done
 if [ -z "$QS" ]; then
   bad "bar shell process not seen after 120 s"
   echo "--- diagnostics ---"
-  ps -eo pid,args | grep -F "$TENKAI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  ps -eo pid,args | grep -F "$TENKAI/src/tenkai_core" | grep -v grep || echo "(no process mentions the project)"
   echo "--- shell log tail ---"
   tail -30 "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
   echo "RESULT: FAIL"; exit 1
@@ -94,14 +94,14 @@ fi
 # 120 s that is a startup failure, not a race, and the diagnostics say why.
 QS=""
 for _ in $(seq 1 400); do
-  QS=$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
+  QS=$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)
   [ -n "$QS" ] && break
   sleep 0.3
 done
 if [ -z "$QS" ]; then
   bad "bar shell process not seen after 120 s"
   echo "--- diagnostics ---"
-  ps -eo pid,args | grep -F "$TENKAI/src/ryoku" | grep -v grep || echo "(no process mentions the project)"
+  ps -eo pid,args | grep -F "$TENKAI/src/tenkai_core" | grep -v grep || echo "(no process mentions the project)"
   echo "--- shell log tail ---"
   tail -30 "$RUN/state/tenkai/surfaces/shell.log" 2>/dev/null || echo "(no shell log)"
   echo "RESULT: FAIL"; exit 1

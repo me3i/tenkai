@@ -55,7 +55,7 @@ echo; echo "=== launch ==="
 ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
 for _ in $(seq 1 240); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done
@@ -261,7 +261,7 @@ PROBE="$(PATH="$FAKE:$PATH" bash -c 'BL=$(ryoku-hw-backlight 2>/dev/null); brigh
 echo; echo "=== 12. five-minute idle capture ==="
 idle_pids() {
   { pgrep -f "^$RUN/bin/tenkai-shell"
-    pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell"
+    pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell"
     pgrep -f "^Hyprland -c $RUN"
     pgrep -x ryogami; pgrep -x matugen; pgrep -x tenkai-hub; } 2>/dev/null | sort -u
 }
@@ -289,7 +289,7 @@ echo; echo "=== 11. clean shutdown ==="
 ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
 trap - EXIT
 for _ in $(seq 1 120); do
-  pgrep -f "^$RUN/bin/tenkai-shell|^qs -p $TENKAI/src/ryoku/shell|^Hyprland -c $RUN" >/dev/null 2>&1 || break
+  pgrep -f "^$RUN/bin/tenkai-shell|^qs -p $TENKAI/src/tenkai_core/shell|^Hyprland -c $RUN" >/dev/null 2>&1 || break
   sleep 0.25
 done
 stray=""
@@ -297,7 +297,7 @@ for p in $(pgrep -f "^$RUN/bin/" 2>/dev/null || true); do
   tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI" && stray="$stray $p"
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
-  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/ryoku" && stray="$stray qs:$p"
+  tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/tenkai_core" && stray="$stray qs:$p"
 done
 for p in $(pgrep -x tenkai-hub 2>/dev/null || true); do stray="$stray hub:$p"; done
 [ -z "$stray" ] && ok "no Tenkai process left" || bad "strays:$stray"

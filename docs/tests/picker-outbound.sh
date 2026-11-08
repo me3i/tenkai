@@ -27,7 +27,7 @@ start(){
   ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai run ) >/dev/null 2>&1
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ -n "$QS" ] && break; sleep 0.3
   done
   [ -n "$SIG" ] && [ -n "$QS" ] || { bad "the nested session did not come up"; return 1; }
@@ -39,17 +39,17 @@ echo "picker outbound audit: $(date -Is)"
 
 echo; echo "=== 1. no outbound code in the wallpaper path ==="
 hits="$(grep -rInE "^[^#]*\b(http://|https://|http\.Get|http\.Client|net/http)\b" \
-        src/ryoku/shell/ryogami/daemon/ \
-        src/ryoku/shell/ipc/ryogami.go \
-        src/ryoku/shell/quickshell/shell/modules/wallpaper/ \
-        src/ryoku/shell/quickshell/shell/services/Wallpaper.qml 2>/dev/null | grep -v "^.*: *[/*]" || true)"
+        src/tenkai_core/shell/ryogami/daemon/ \
+        src/tenkai_core/shell/ipc/ryogami.go \
+        src/tenkai_core/shell/quickshell/shell/modules/wallpaper/ \
+        src/tenkai_core/shell/quickshell/shell/services/Wallpaper.qml 2>/dev/null | grep -v "^.*: *[/*]" || true)"
 if [ -z "$hits" ]; then
   ok "no http/URL code in the wallpaper daemon, the bridge or the wallpaper QML"
 else
   bad "outbound code in the wallpaper path:"; echo "$hits" | head -5 | sed 's/^/     /'
 fi
 for name in wallhaven wallhaven.cc steamgridd wallpaper-api; do
-  if grep -rIn "$name" src/ryoku/shell/ryogami/daemon/ src/ryoku/shell/quickshell/shell/modules/wallpaper/ 2>/dev/null | grep -v "^[^\n]*: *//" | head -2; then
+  if grep -rIn "$name" src/tenkai_core/shell/ryogami/daemon/ src/tenkai_core/shell/quickshell/shell/modules/wallpaper/ 2>/dev/null | grep -v "^[^\n]*: *//" | head -2; then
     bad "the picker mentions $name"
   else
     ok "the picker does not mention $name"

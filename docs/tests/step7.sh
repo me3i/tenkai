@@ -26,10 +26,10 @@ echo "=== STATIC: one host, daemon only ==="
 QML_OWNERS="$(grep -rl "$WATCH" "$TENKAI/src" --include=*.qml 2>/dev/null | wc -l)"
 if [ "$QML_OWNERS" = 0 ]; then ok "no QML file names the watcher: the daemon is the only host"
 else bad "QML names the watcher: $(grep -rl "$WATCH" "$TENKAI/src" --include=*.qml)"; fi
-if grep -q "watcherName      = \"$WATCH\"" "$TENKAI/src/ryoku/shell/ipc/tray.go"; then
+if grep -q "watcherName      = \"$WATCH\"" "$TENKAI/src/tenkai_core/shell/ipc/tray.go"; then
   ok "tray.go declares the single watcher name"
 else bad "tray.go does not declare $WATCH"; fi
-if grep -q 'registerCall("tray.activate"' "$TENKAI/src/ryoku/shell/ipc/tray.go"; then
+if grep -q 'registerCall("tray.activate"' "$TENKAI/src/tenkai_core/shell/ipc/tray.go"; then
   ok "daemon exposes the tray control verbs"
 else bad "no tray control verbs"; fi
 
@@ -47,7 +47,7 @@ XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || {
 SIG=""; QS=""
 for _ in $(seq 1 150); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done
@@ -251,7 +251,7 @@ for n in ryogami matugen tenkai-shell tenkai-hub; do
   done
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
-  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/ryoku"; then stray="$stray quickshell=$p"; fi
+  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/tenkai_core"; then stray="$stray quickshell=$p"; fi
 done
 [ -z "$stray" ] && ok "clean shutdown: no stray ryogami / matugen / tenkai-shell / project quickshell" || bad "stray:$stray"
 if ls "$RT"/hypr/*/.socket.sock >/dev/null 2>&1; then bad "a nested control socket is still up"

@@ -19,6 +19,8 @@ docs/baseline.txt
 .freebuff
 
 # Compiled binaries from local `go build` verification runs; never commit
-src/ryoku/hub/backend/ryoku-hub
-src/ryoku/shell/ipc/ryoku-shell
-src/ryoku/shell/ryogami/daemon/ryogami
+src/tenkai_core/hub/backend/tenkai-hub
+src/tenkai_core/hub/backend/ryoku-hub
+src/tenkai_core/shell/ipc/tenkai-shell
+src/tenkai_core/shell/ipc/ryoku-shell
+src/tenkai_core/shell/ryogami/daemon/ryogami

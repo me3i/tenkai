@@ -55,7 +55,7 @@ the subtraction.
 
 | Key | Action |
 |---|---|
-| `Super + Space` | App Launcher |
+| `Super + D` | App Launcher |
 | `Super + Enter` | Open Terminal |
 | `Super + W` | Close Window |
 | `Super + 1…4` | Switch Workspaces |
@@ -160,7 +160,7 @@ Tenkai also builds on the work of others:
 - **QS Bar** — the bar style, from HANCORE-linux's
   [Quickshell Rise](https://github.com/HANCORE-linux/quickshell-dots),
   credited at
-  `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/Scene.qml:1`.
+  `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/Scene.qml:1`.
 - **Fonts** — Space Grotesk and Fraunces, SIL Open Font License 1.1; Nerd
   Fonts glyphs for terminal coverage, each under its own licence.
 

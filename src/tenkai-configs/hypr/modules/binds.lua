@@ -55,7 +55,7 @@ hl.bind(K(mod .. " + ALT + E"),   hl.dsp.exec_cmd("kitty -e yazi"))             
 hl.bind(K(mod .. " + J"),         hl.dsp.exec_cmd("ryotunes"))                     -- open Ryotunes (single-instance: a second press focuses it)
 
 -- Shell surfaces and tools
-hl.bind(K(mod .. " + Space"),     hl.dsp.global("tenkai:launcher"))                 -- open the app launcher
+hl.bind(K(mod .. " + D"), hl.dsp.global("tenkai:launcher"))                 -- open the app launcher
 hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/dev/null || flock -n -o /tmp/tenkai-keys.lock qs -c keys")) -- keybind cheatsheet: toggle (press to open, press again to close)
 hl.bind(K(mod .. " + Escape"),    hl.dsp.global("tenkai:quicksettings")) -- quick settings: power, logout, restart, shutdown, wifi
 hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("ryogami wallpaper ui"))     -- ryogami wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo

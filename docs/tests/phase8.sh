@@ -88,7 +88,7 @@ start() { # EXTRA_PATH optionally prefixes PATH, EXTRA_ENV adds VAR=VALUE (depen
   SIG=""; QS=""
   for _ in $(seq 1 200); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ "$SIG" != "$old_sig" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] \
       && [ -n "$QS" ] && [ "$QS" != "$old_qs" ] && break
     SIG=""; QS=""
@@ -102,7 +102,7 @@ start() { # EXTRA_PATH optionally prefixes PATH, EXTRA_ENV adds VAR=VALUE (depen
   # wait for the count to settle before calling it contamination.
   nqs=""
   for _ in $(seq 1 40); do
-    nqs="$(pgrep -fc "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+    nqs="$(pgrep -fc "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" 2>/dev/null || true)"
     [ "$nqs" = 1 ] && break
     sleep 0.25
   done
@@ -134,7 +134,7 @@ stopit() {
   local dying_qs="$QS" dying_daemon="$DPID" i nq nd
   ( cd "$TENKAI" && XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
   for i in $(seq 1 180); do
-    nq="$(pgrep -fc "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+    nq="$(pgrep -fc "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" 2>/dev/null || true)"
     nd="$(pgrep -fc "^$RUN/bin/tenkai-shell daemon" 2>/dev/null || true)"
     { [ "$nq" = 0 ] || [ "$nq" = "" ]; } && { [ "$nd" = 0 ] || [ "$nd" = "" ]; } && break
     sleep 0.25
@@ -145,7 +145,7 @@ stopit() {
     tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI" && kill -TERM "$p" 2>/dev/null
   done
   sleep 1
-  nq="$(pgrep -fc "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" 2>/dev/null || true)"
+  nq="$(pgrep -fc "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" 2>/dev/null || true)"
   nd="$(pgrep -fc "^$RUN/bin/tenkai-shell daemon" 2>/dev/null || true)"
   if { [ "${nq:-0}" != 0 ]; } || { [ "${nd:-0}" != 0 ]; }; then
     bad "stop left shells=$nq daemons=$nd; aborting so the next scenario is not contaminated"
@@ -286,7 +286,7 @@ e="$(new_shell_errors "$SHELLLOG_BEFORE")"
 [ -z "$e" ] && ok "S8 no new QML errors" || bad "S8 QML errors: $e"
 stopit
 pgrep -f "^$RUN/bin/tenkai-shell daemon" >/dev/null && bad "S8 daemon survived stop" || ok "S8 no stray daemon after stop"
-pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" >/dev/null && bad "S8 shell survived stop" || ok "S8 no stray shell after stop"
+pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" >/dev/null && bad "S8 shell survived stop" || ok "S8 no stray shell after stop"
 
 # ------------------------------------------------------- S9 missing deps
 echo; echo "=== S9a: brightness backend unavailable ==="

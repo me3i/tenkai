@@ -84,7 +84,7 @@ echo; echo "=== 3. Tenkai starts on the same bus and takes both names ==="
 SIG=""; QS=""
 for _ in $(seq 1 200); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done
@@ -109,7 +109,7 @@ echo; echo "=== 4. stopping Tenkai releases both names ==="
 ( cd "$TENKAI" && env -u HYPRLAND_INSTANCE_SIGNATURE -u WAYLAND_DISPLAY \
     XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" ./tenkai stop ) >/dev/null 2>&1
 pgrep -f "^$RUN/bin/tenkai-shell daemon" >/dev/null && bad "a daemon survived" || ok "no daemon left"
-pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" >/dev/null && bad "a shell survived" || ok "no shell left"
+pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" >/dev/null && bad "a shell survived" || ok "no shell left"
 wait_free && ok "both names released after Tenkai stopped" || bad "names still owned: $(owner $NOTIF) / $(owner $WATCH)"
 
 echo; echo "=== 5. close the private bus ==="

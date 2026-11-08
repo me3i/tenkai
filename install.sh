@@ -9,7 +9,7 @@
 #
 # What it does, in order:
 #   1. dependency check (pacman list printed, nothing installed)
-#   2. build: the three Go daemons, the Ryoku.Blobs C++/QML plugin, and the
+#   2. build: the three Go daemons, the Tenkai.Blobs C++/QML plugin, and the
 #      QML module tree under .run/qml
 #   3. systemd user units (tenkai-shell.service, tenkai-hub.service) + daemon-reload
 #   4. Hyprland autostart: `tenkai start` — INTERACTIVE y/N ONLY, never --yes
@@ -39,7 +39,7 @@ set -uo pipefail
 TENKAI_DIR="${TENKAI_DIR:-$(cd "$(dirname "$0")" && pwd)}"
 RUN="$TENKAI_DIR/.run"
 SYS_GO_BIN="$RUN/bin"
-QML_ROOT="$RUN/qml/Ryoku"
+QML_ROOT="$RUN/qml/Tenkai"
 BLOBS_BUILD="$RUN/build/blobs"
 UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 HYPR_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
@@ -352,7 +352,7 @@ check_pkg go go
 check_pkg cmake cmake
 check_pkg matugen matugen
 check_pkg kitty kitty
-# Audio is driven through `wpctl` (src/ryoku/shell/ipc/control.go:81), which ships
+# Audio is driven through `wpctl` (src/tenkai_core/shell/ipc/control.go:81), which ships
 # with wireplumber; pipewire comes in with it. `pw-cli` was checked here but is
 # never called by the shell.
 check_pkg wireplumber wpctl
@@ -424,7 +424,7 @@ else
   _go_build_one() { ( cd "$1" && nice -n 10 go build -trimpath -p 2 -o "$2" ./ ); }
 
   go_build() { # $1 = source dir, $2 = output name
-    local src="$TENKAI_DIR/src/ryoku/$1" out="$SYS_GO_BIN/$2"
+    local src="$TENKAI_DIR/src/tenkai_core/$1" out="$SYS_GO_BIN/$2"
     [ -d "$src" ] || die "missing source dir: $src"
     celestial_spin "building $2" spin \
       "cd ${src#$TENKAI_DIR/} && nice -n 10 go build -trimpath -p 2 -o $out ./" \
@@ -444,23 +444,23 @@ else
   # wallpaper module has nothing to talk to.
   go_build shell/ryogami/daemon ryogami
 
-  # Ryoku.Blobs — the SDF metaball plugin behind the frame. Prebuilt upstream
+  # Tenkai.Blobs — the SDF metaball plugin behind the frame. Prebuilt upstream
   # because a target machine has no toolchain; here we do have one.
-  [ -d "$TENKAI_DIR/src/ryoku/shell/plugin" ] || die "missing src/ryoku/shell/plugin"
+  [ -d "$TENKAI_DIR/src/tenkai_core/shell/plugin" ] || die "missing src/tenkai_core/shell/plugin"
   CMAKE_GEN=()
   command -v ninja >/dev/null 2>&1 && CMAKE_GEN=(-G Ninja)
-  celestial_spin "configuring Ryoku.Blobs" spin \
-    "cmake -S src/ryoku/shell/plugin -B .run/build/blobs ${CMAKE_GEN[*]} -DCMAKE_BUILD_TYPE=Release" \
-    cmake -S "$TENKAI_DIR/src/ryoku/shell/plugin" -B "$BLOBS_BUILD" \
+  celestial_spin "configuring Tenkai.Blobs" spin \
+    "cmake -S src/tenkai_core/shell/plugin -B .run/build/blobs ${CMAKE_GEN[*]} -DCMAKE_BUILD_TYPE=Release" \
+    cmake -S "$TENKAI_DIR/src/tenkai_core/shell/plugin" -B "$BLOBS_BUILD" \
       "${CMAKE_GEN[@]}" -DCMAKE_BUILD_TYPE=Release \
     || die "cmake configure failed (Qt6 6.5+ with Quick/ShaderTools/Multimedia is required)"
   # The long one: a comet crosses the sky while the SDF plugin compiles.
-  celestial_spin "building Ryoku.Blobs" star "nice -n 10 cmake --build .run/build/blobs -j2" \
+  celestial_spin "building Tenkai.Blobs" star "nice -n 10 cmake --build .run/build/blobs -j2" \
     nice -n 10 cmake --build "$BLOBS_BUILD" -j2 \
     || die "cmake build failed"
   # A dry run configures/builds nothing; only a real run may assert the artifact.
   if [ "$DRY_RUN" = 0 ]; then
-    [ -d "$BLOBS_BUILD/qml/Ryoku/Blobs" ] || die "the Blobs module was not produced"
+    [ -d "$BLOBS_BUILD/qml/Tenkai/Blobs" ] || die "the Blobs module was not produced"
   fi
 
   # One QML import path for the whole tree. `cp -a src/. dst/` overwrites in
@@ -474,17 +474,17 @@ else
     mkdir -p "$2"
     run cp -a "$1/." "$2/"
   }
-  sync_dir "$TENKAI_DIR/src/ryoku/ui" "$QML_ROOT/Ui"
-  sync_dir "$TENKAI_DIR/src/ryoku/shell/framebars" "$QML_ROOT/FrameBars"
-  sync_dir "$TENKAI_DIR/src/ryoku/shell/quickshell/plugins/kit" "$QML_ROOT/PluginKit"
-  sync_dir "$TENKAI_DIR/src/ryoku/wm/hyprland/qml" "$QML_ROOT/Wm/Hyprland"
-  sync_dir "$BLOBS_BUILD/qml/Ryoku/Blobs" "$QML_ROOT/Blobs"
+  sync_dir "$TENKAI_DIR/src/tenkai_core/ui" "$QML_ROOT/Ui"
+  sync_dir "$TENKAI_DIR/src/tenkai_core/shell/framebars" "$QML_ROOT/FrameBars"
+  sync_dir "$TENKAI_DIR/src/tenkai_core/shell/quickshell/plugins/kit" "$QML_ROOT/PluginKit"
+  sync_dir "$TENKAI_DIR/src/tenkai_core/wm/hyprland/qml" "$QML_ROOT/Wm/Hyprland"
+  sync_dir "$BLOBS_BUILD/qml/Tenkai/Blobs" "$QML_ROOT/Blobs"
 
   # The wallpaper picker (ryogami's wall-ui), bundled so the daemon never reads
   # the distro's /usr/share/ryogami. It lives beside the binary, not under
   # .run/qml, because the daemon hands this directory to the picker as
   # RYOGAMI_WALL_INSTALL and the picker resolves its scripts from that root.
-  WALL_UI_SRC="$TENKAI_DIR/src/ryoku/shell/ryogami/wall-ui"
+  WALL_UI_SRC="$TENKAI_DIR/src/tenkai_core/shell/ryogami/wall-ui"
   WALL_UI_DST="$RUN/ryogami-wall-ui"
   sync_dir "$WALL_UI_SRC" "$WALL_UI_DST"
   [ -d "$WALL_UI_SRC/data/scripts" ] && sync_dir "$WALL_UI_SRC/data/scripts" "$WALL_UI_DST/scripts"
@@ -890,11 +890,11 @@ deploy_hypr
 # reported and left alone, because a stock upstream install has its own copy.
 LOCAL_BIN="$HOME/.local/bin"
 HELPER_SRC=(
-  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-app"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-summon"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-volume"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-restart-audio"
-  "$TENKAI_DIR/src/ryoku/shell/scripts/tenkai-cmd-brightness"
+  "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-app"
+  "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-summon"
+  "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-volume"
+  "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-restart-audio"
+  "$TENKAI_DIR/src/tenkai_core/shell/scripts/tenkai-cmd-brightness"
   "$HYPR_SRC/scripts/tenkai-monitor"
   "$HYPR_SRC/scripts/tenkai-workspace"
 )

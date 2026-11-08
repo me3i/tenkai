@@ -14,7 +14,7 @@ Tenkai is not affiliated with, endorsed by, or connected to the Ryoku project.
 
 The bar is derived from **QS Bar (Quickshell Rise)** by HANCORE-linux
 (<https://github.com/HANCORE-linux/quickshell-dots>); the credit comment is kept
-at `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/Scene.qml:1`.
+at `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/Scene.qml:1`.
 
 ## Frame-blob renderer
 

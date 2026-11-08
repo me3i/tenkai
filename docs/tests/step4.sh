@@ -54,7 +54,7 @@ XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || {
 SIG=""; QS=""
 for _ in $(seq 1 90); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -n "$QS" ] && break
   sleep 0.5
 done
@@ -147,7 +147,7 @@ shot hub-open
 [ -e "$RT/tenkai-hub.lock" ] && ok "hub lock is \$XDG_RUNTIME_DIR/tenkai-hub.lock" || note "tenkai-hub.lock not seen (flock -o may unlink on exit)"
 
 note "rail sections in source (active block only):"
-AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$TENKAI/src/ryoku/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
+AKEYS="$(awk '/readonly property var groups/{f=1} f{print} f&&/^    ]$/{exit}' "$TENKAI/src/tenkai_core/hub/quickshell/Hub.qml" | grep -o 'key: "[^"]*"' | cut -d'"' -f2 | sort | tr '\n' ' ')"
 echo "    $AKEYS"
 # The kept rail, asserted per key rather than as one exact string: the list grows
 # as pages ship (Visuals, Fastfetch, Window Manager, Displays, Keybinds,
@@ -232,7 +232,7 @@ if [ "$MOT_PROVEN" = 1 ]; then
   echo; note "--- restarting Tenkai (stop + run) to prove persistence ---"
   "$TENKAI/tenkai" stop >/dev/null 2>&1; sleep 3
   XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run >/dev/null 2>&1
-  for _ in $(seq 1 60); do QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"; [ -n "$QS" ] && break; sleep 0.5; done
+  for _ in $(seq 1 60); do QS="$(pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"; [ -n "$QS" ] && break; sleep 0.5; done
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
   export HYPRLAND_INSTANCE_SIGNATURE="$SIG"
   MON="$(H -j monitors | jq -r '.[0].name' 2>/dev/null)"; H keyword monitor "$MON,1600x1000,auto,1" >/dev/null 2>&1
@@ -297,7 +297,7 @@ else ok "no QML errors in the hub/shell logs (portal/pipewire noise excluded)"; 
 if command -v qmllint >/dev/null 2>&1; then
   syn=0
   for f in Hub.qml pages/VisualsPage.qml pages/FastfetchPage.qml pages/WindowManagerPage.qml pages/AnimationsPage.qml pages/GlobalPage.qml pages/DesktopPage.qml pages/BarStudioPage.qml pages/LauncherPage.qml; do
-    if qmllint "$TENKAI/src/ryoku/hub/quickshell/$f" 2>&1 | grep -qi 'syntax error'; then bad "syntax error in $f"; syn=1; fi
+    if qmllint "$TENKAI/src/tenkai_core/hub/quickshell/$f" 2>&1 | grep -qi 'syntax error'; then bad "syntax error in $f"; syn=1; fi
   done
   [ "$syn" = 0 ] && ok "qmllint: no syntax errors in the nine edited hub files"
 else note "qmllint unavailable"; fi

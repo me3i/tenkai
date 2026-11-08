@@ -31,7 +31,7 @@ start(){ # $1 = extra env assignments for the session (TENKAI_STUB_POWER=1 ...)
   SIG=""; QS=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ -n "$QS" ] && break
     sleep 0.3
   done
@@ -111,7 +111,7 @@ ShellRoot {
     }
 }
 EOF
-out=$(env TENKAI_STUB_POWER=1 QML2_IMPORT_PATH="$TENKAI/src/ryoku/shell/quickshell:$RUN/qml" \
+out=$(env TENKAI_STUB_POWER=1 QML2_IMPORT_PATH="$TENKAI/src/tenkai_core/shell/quickshell:$RUN/qml" \
       XDG_RUNTIME_DIR="$RT" WAYLAND_DISPLAY=wayland-1 HYPRLAND_INSTANCE_SIGNATURE="$SIG" \
       timeout 25 qs -p /tmp/tenkai-power-stubtest 2>&1 | grep -E "power-stubtest|tenkai-stub" | sed 's/^/   /')
 printf '%s\n' "$out"

@@ -35,7 +35,7 @@ hash_real() {
 }
 
 echo "=== STATIC PROOF ==="
-if (cd "$TENKAI/src/ryoku/shell/ryogami/daemon" && go list -deps . 2>/dev/null | grep -qx 'net/http'); then
+if (cd "$TENKAI/src/tenkai_core/shell/ryogami/daemon" && go list -deps . 2>/dev/null | grep -qx 'net/http'); then
   bad "net/http is in the ryogami dependency graph"
 else
   ok "net/http is NOT in the ryogami dependency graph (unix sockets only)"
@@ -84,7 +84,7 @@ XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || {
 SIG=""; QS=""
 for _ in $(seq 1 120); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -n "$QS" ] && break
   sleep 0.5
 done
@@ -305,7 +305,7 @@ for n in ryogami matugen tenkai-shell tenkai-hub; do
   done
 done
 for p in $(pgrep -x quickshell 2>/dev/null || true); do
-  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/ryoku"; then stray="$stray quickshell=$p"; fi
+  if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q "$TENKAI/src/tenkai_core"; then stray="$stray quickshell=$p"; fi
 done
 [ -z "$stray" ] && ok "clean shutdown: no stray ryogami / matugen / tenkai-shell / project quickshell" || bad "stray:$stray"
 

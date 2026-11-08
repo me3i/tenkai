@@ -39,15 +39,15 @@ Two sub-decisions shaped what got removed vs kept:
 
 | File | Lines | Why it was necessary | Revertible? |
 |------|-------|----------------------|-------------|
-| `src/ryoku/hub/backend/gpu.go` | 35 | Standalone dead GPU module; not on the keep list, no kept component depends on it at file level. | Yes — restore from `upstream/` or `git` reflog. Not a kept surface. |
-| `src/ryoku/hub/backend/gpumode.go` | 145 | Dead, isolated. | Yes — same. |
-| `src/ryoku/hub/backend/gpumux.go` | 85 | Dead, isolated. | Yes — same. |
-| `src/ryoku/hub/backend/gpuhook.go` | 145 | Dead, isolated. | Yes — same. |
-| `src/ryoku/hub/backend/gpuvm.go` | 453 | Dead, isolated VM orchestration; nothing kept calls it. | Yes — same. |
-| `src/ryoku/hub/backend/voxtype.go` | 324 | Restored from upstream to supply `configHome()`/`dataHome()`; then deleted as part of Step 2 because the *dispatcher* `runVoxtype` and the `voxtype` CLI branch are not on the keep list. The generic `configHome()`/`dataHome()` helpers were moved to `fsutil.go` before deletion so the kept matugen/import/rice/wm/desktop/schemes/reloadcover code keeps compiling. If a future keep-list change wants the dictation/voxtype backend back, restore from `upstream/ryoku/hub/backend/voxtype.go` and re-add the `case "voxtype"` branch to `main.go`. | Yes — restore from `upstream/`. |
+| `src/tenkai_core/hub/backend/gpu.go` | 35 | Standalone dead GPU module; not on the keep list, no kept component depends on it at file level. | Yes — restore from `upstream/` or `git` reflog. Not a kept surface. |
+| `src/tenkai_core/hub/backend/gpumode.go` | 145 | Dead, isolated. | Yes — same. |
+| `src/tenkai_core/hub/backend/gpumux.go` | 85 | Dead, isolated. | Yes — same. |
+| `src/tenkai_core/hub/backend/gpuhook.go` | 145 | Dead, isolated. | Yes — same. |
+| `src/tenkai_core/hub/backend/gpuvm.go` | 453 | Dead, isolated VM orchestration; nothing kept calls it. | Yes — same. |
+| `src/tenkai_core/hub/backend/voxtype.go` | 324 | Restored from upstream to supply `configHome()`/`dataHome()`; then deleted as part of Step 2 because the *dispatcher* `runVoxtype` and the `voxtype` CLI branch are not on the keep list. The generic `configHome()`/`dataHome()` helpers were moved to `fsutil.go` before deletion so the kept matugen/import/rice/wm/desktop/schemes/reloadcover code keeps compiling. If a future keep-list change wants the dictation/voxtype backend back, restore from `upstream/ryoku/hub/backend/voxtype.go` and re-add the `case "voxtype"` branch to `main.go`. | Yes — restore from `upstream/`. |
 
 **How verified:** `git diff --stat` shows these six deletions. The hub backend builds cleanly
-(`go build -trimpath -p 2 ./...` inside `src/ryoku/hub/backend`) with none of these files on disk.
+(`go build -trimpath -p 2 ./...` inside `src/tenkai_core/hub/backend`) with none of these files on disk.
 
 ### 2.2 Hub backend — dead dispatch + usage lines removed from `main.go` (edit)
 
@@ -60,7 +60,7 @@ Two sub-decisions shaped what got removed vs kept:
 | `voxtype` usage lines in `usage()` | Removed to match the removed dispatch branch. | Yes — re-add. |
 | `import` usage lines in `usage()` — **kept** | Kept because the import subcommand is kept. | n/a (kept) |
 
-**How verified:** `git diff src/ryoku/hub/backend/main.go` shows only the `gpu`/`voxtype`
+**How verified:** `git diff src/tenkai_core/hub/backend/main.go` shows only the `gpu`/`voxtype`
 branches and their usage lines gone; the `import` branch is untouched. Build is clean.
 
 ### 2.3 Shell IPC — dead pill code stripped from `actions.go` (edit)
@@ -70,8 +70,8 @@ branches and their usage lines gone; the `import` branch is untouched. Build is 
 | Dead `pillSockPath()` / `pillSocketCall()` / `pillIpc()` block | The frame shell was consolidated into the single shell instance, which serves no command socket. These helpers (and their socket fast path) are dead in production. The comment said they were "retained for a future cutover" — they are not, so they were stripped. | Yes — restore from `git` reflog / the previous commit. |
 | Unused `"net"` import in `actions.go` | Removed because removing the socket code made `net` unused. Clean build requires no unused imports. | Yes — re-add `"net"` if the socket code returns. |
 
-**How verified:** `git diff src/ryoku/shell/ipc/actions.go` shows the block and the import gone.
-`shellIpc` is still present. `go build` inside `src/ryoku/shell/ipc` is clean.
+**How verified:** `git diff src/tenkai_core/shell/ipc/actions.go` shows the block and the import gone.
+`shellIpc` is still present. `go build` inside `src/tenkai_core/shell/ipc` is clean.
 
 ### 2.4 Picker variants — dead carousel/Hearthstone/qmldir entries (edit)
 
@@ -80,10 +80,10 @@ no longer reachable in the Tenkai build.
 
 | File | What changed | Why it was necessary | Revertible? |
 |------|-------------|----------------------|-------------|
-| `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/panels/qmldir` | Removed `ImageCarouselCarousel`, `ImageCarouselHearthstone`, `MediaBrowserCarousel`, `MediaBrowserHearthstone` entries. | These four variant panel entries are unreachable: the picker is now `"tanzaku"` only (see 2.5). Without the qmldir entries the QML engine will not resolve them, and the files they point to are dead weight. | Yes — restore the four lines from `upstream/` / git reflog. |
-| `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/Theme.qml` | Trimmed `pickerStyle` default comment from `"tanzaku", "hearthstone", "carousel"` to `"tanzaku"`; trimmed the picker validation branch from `ps === "hearthstone" || ps === "carousel" || ps === "tanzaku"` to `ps === "tanzaku"`. | The other two picker styles are not kept in Tenkai. Leaving the branches in would let a hand-editable config silently switch to a dead style. | Yes — re-add the branches + comment. |
-| `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/VariantRoot.qml` | Removed the duplicate "Picker variants" comment (the block was already empty). | The comment claimed there were picker variants below it; there are none. Stale comment. | Yes — re-add the comment. |
-| `src/ryoku/hub/quickshell/pages/DesktopPage.qml` | Trimmed `pickerOptions` to `["tanzaku"]`. | Mirrors the qsbar side; the other options are not kept. | Yes — re-add. |
+| `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/panels/qmldir` | Removed `ImageCarouselCarousel`, `ImageCarouselHearthstone`, `MediaBrowserCarousel`, `MediaBrowserHearthstone` entries. | These four variant panel entries are unreachable: the picker is now `"tanzaku"` only (see 2.5). Without the qmldir entries the QML engine will not resolve them, and the files they point to are dead weight. | Yes — restore the four lines from `upstream/` / git reflog. |
+| `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/Theme.qml` | Trimmed `pickerStyle` default comment from `"tanzaku", "hearthstone", "carousel"` to `"tanzaku"`; trimmed the picker validation branch from `ps === "hearthstone" || ps === "carousel" || ps === "tanzaku"` to `ps === "tanzaku"`. | The other two picker styles are not kept in Tenkai. Leaving the branches in would let a hand-editable config silently switch to a dead style. | Yes — re-add the branches + comment. |
+| `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/VariantRoot.qml` | Removed the duplicate "Picker variants" comment (the block was already empty). | The comment claimed there were picker variants below it; there are none. Stale comment. | Yes — re-add the comment. |
+| `src/tenkai_core/hub/quickshell/pages/DesktopPage.qml` | Trimmed `pickerOptions` to `["tanzaku"]`. | Mirrors the qsbar side; the other options are not kept. | Yes — re-add. |
 
 **How verified:** `git diff` on the four files shows the edits above. No non-test file references
 `ImageCarouselHearthstone`, `ImageCarouselCarousel`, `MediaBrowserHearthstone`, or `MediaBrowserCarousel`
@@ -96,8 +96,8 @@ phase's edits and would mislead a reader.
 
 | File | What changed | Why it was necessary | Revertible? |
 |------|-------------|----------------------|-------------|
-| `src/ryoku/hub/backend/gpudomain.go` | Removed stale sentence "Kept separate from gpuvm.go's orchestration so both are unit-tested as functions of their inputs, with no virsh or sysfs in the way." | `gpuvm.go` is deleted in this phase, so the cross-reference is now a lie. The kept summary is "pure libvirt-domain builder + CPU-pinning planner." | Yes — re-add the sentence. |
-| `src/ryoku/hub/backend/tenkai_runtime.go` | Reworded "(import_parse.go)" reference in `bindDsp`'s doc comment to "the config-import layer would generate". | `import_parse.go` is internal to the import layer; the comment should not name an internal file that readers of `tenkai_runtime.go` do not need to chase. | Yes — re-add "(import_parse.go)". |
+| `src/tenkai_core/hub/backend/gpudomain.go` | Removed stale sentence "Kept separate from gpuvm.go's orchestration so both are unit-tested as functions of their inputs, with no virsh or sysfs in the way." | `gpuvm.go` is deleted in this phase, so the cross-reference is now a lie. The kept summary is "pure libvirt-domain builder + CPU-pinning planner." | Yes — re-add the sentence. |
+| `src/tenkai_core/hub/backend/tenkai_runtime.go` | Reworded "(import_parse.go)" reference in `bindDsp`'s doc comment to "the config-import layer would generate". | `import_parse.go` is internal to the import layer; the comment should not name an internal file that readers of `tenkai_runtime.go` do not need to chase. | Yes — re-add "(import_parse.go)". |
 
 **How verified:** `git diff` on both files shows only those comment lines changed.
 
@@ -110,15 +110,15 @@ case removed again. They are listed here for the record so the changelog is comp
 
 | File | Action | Why | Revertible / re-deletable? |
 |------|--------|-----|-----------------------------|
-| `src/ryoku/hub/backend/import.go` | Restored from `HEAD` (git), retained. | Supplies `bindsPath`, `reBind`, `reExec`, `resolveKeys`, `pendingWrite`, etc. The import layer is on the keep list. | n/a (kept) |
-| `src/ryoku/hub/backend/import_apply.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
-| `src/ryoku/hub/backend/import_parse.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
-| `src/ryoku/hub/backend/import_types.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
-| `src/ryoku/hub/backend/import_undo.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
-| `src/ryoku/hub/backend/gputune.go` | Restored from `HEAD`, retained. | Supplies `Tunable`, `tuneInputs`, `gpuProbe`, `buildTunables()`, `runGpuTune()`. GPU tuning is on the keep list. | n/a (kept) |
-| `src/ryoku/hub/backend/gpuapply.go` | Restored from `upstream/ryoku/hub/backend/gpuapply.go`, edited (Tenkai→Ryoku), retained. | Supplies `runGpuApply`, `escalateSelf`, `ttyRun` so the hub builds; not itself a kept surface in Tenkai's reduced form, but it is the live home of `escalateSelf`/`ttyRun` and is kept on disk for now because other kept code may reference it. | Yes — restore from `upstream/` if a future step re-enables the passthrough stack; or remove if nothing kept calls it. |
-| `src/ryoku/hub/backend/voxtype.go` | Restored from `upstream/ryoku/hub/backend/voxtype.go`, edited (Tenkai→Ryoku), then **deleted** as part of Step 2. | Was needed to supply `configHome()`/`dataHome()` so the hub built after the restore. Those two generic helpers were moved to `fsutil.go` before deletion; the voxtype-specific code (`runVoxtype`, `buildVoxtypeConfig`, `ensureVoxtypeUnit`, etc.) was dead and removed with the file. | Yes — restore from `upstream/` if the Dictation page returns to the keep list. |
-| `src/ryoku/hub/backend/lock.go` + `lock_test.go` | Copied from `upstream/` to fix a missing-symbol build error; `lock.go`'s duplicate `fileExists` was removed (kept unique in `fsutil.go`). | Build-fix probe only. | The files are **not committed**; see §5. |
+| `src/tenkai_core/hub/backend/import.go` | Restored from `HEAD` (git), retained. | Supplies `bindsPath`, `reBind`, `reExec`, `resolveKeys`, `pendingWrite`, etc. The import layer is on the keep list. | n/a (kept) |
+| `src/tenkai_core/hub/backend/import_apply.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
+| `src/tenkai_core/hub/backend/import_parse.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
+| `src/tenkai_core/hub/backend/import_types.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
+| `src/tenkai_core/hub/backend/import_undo.go` | Restored from `HEAD`, retained. | Part of the import layer. | n/a (kept) |
+| `src/tenkai_core/hub/backend/gputune.go` | Restored from `HEAD`, retained. | Supplies `Tunable`, `tuneInputs`, `gpuProbe`, `buildTunables()`, `runGpuTune()`. GPU tuning is on the keep list. | n/a (kept) |
+| `src/tenkai_core/hub/backend/gpuapply.go` | Restored from `upstream/ryoku/hub/backend/gpuapply.go`, edited (Tenkai→Ryoku), retained. | Supplies `runGpuApply`, `escalateSelf`, `ttyRun` so the hub builds; not itself a kept surface in Tenkai's reduced form, but it is the live home of `escalateSelf`/`ttyRun` and is kept on disk for now because other kept code may reference it. | Yes — restore from `upstream/` if a future step re-enables the passthrough stack; or remove if nothing kept calls it. |
+| `src/tenkai_core/hub/backend/voxtype.go` | Restored from `upstream/ryoku/hub/backend/voxtype.go`, edited (Tenkai→Ryoku), then **deleted** as part of Step 2. | Was needed to supply `configHome()`/`dataHome()` so the hub built after the restore. Those two generic helpers were moved to `fsutil.go` before deletion; the voxtype-specific code (`runVoxtype`, `buildVoxtypeConfig`, `ensureVoxtypeUnit`, etc.) was dead and removed with the file. | Yes — restore from `upstream/` if the Dictation page returns to the keep list. |
+| `src/tenkai_core/hub/backend/lock.go` + `lock_test.go` | Copied from `upstream/` to fix a missing-symbol build error; `lock.go`'s duplicate `fileExists` was removed (kept unique in `fsutil.go`). | Build-fix probe only. | The files are **not committed**; see §5. |
 
 ---
 
@@ -141,11 +141,11 @@ These are explicitly retained and were not touched in this phase (beyond the com
 
 | Path | Kind | Why it exists | Action |
 |------|------|---------------|--------|
-| `src/ryoku/hub/backend/ryoku-hub` | Statically-linked ELF x86-64 build artifact | Built during this phase's verification; not part of the source tree. | Leave untracked. Clean up with `go clean` or delete locally; never commit. |
-| `src/ryoku/hub/backend/lock.go` | Untracked copy from `upstream/` used as a build-fix probe | Only needed to diagnose the duplicate-`fileExists` issue; the final fix keeps the symbol in `fsutil.go`. | Leave untracked / delete locally; do not commit unless a later step re-uses it. |
-| `src/ryoku/hub/backend/lock_test.go` | Same probe's test file | Same as above. | Same. |
-| `src/ryoku/shell/ipc/ryoku-shell` | Build artifact | Built during IPC verification. | Leave untracked / delete locally; do not commit. |
-| `src/ryoku/shell/ryogami/daemon/ryogami` | Build artifact | Built during ryogami verification. | Leave untracked / delete locally; do not commit. |
+| `src/tenkai_core/hub/backend/ryoku-hub` | Statically-linked ELF x86-64 build artifact | Built during this phase's verification; not part of the source tree. | Leave untracked. Clean up with `go clean` or delete locally; never commit. |
+| `src/tenkai_core/hub/backend/lock.go` | Untracked copy from `upstream/` used as a build-fix probe | Only needed to diagnose the duplicate-`fileExists` issue; the final fix keeps the symbol in `fsutil.go`. | Leave untracked / delete locally; do not commit unless a later step re-uses it. |
+| `src/tenkai_core/hub/backend/lock_test.go` | Same probe's test file | Same as above. | Same. |
+| `src/tenkai_core/shell/ipc/ryoku-shell` | Build artifact | Built during IPC verification. | Leave untracked / delete locally; do not commit. |
+| `src/tenkai_core/shell/ryogami/daemon/ryogami` | Build artifact | Built during ryogami verification. | Leave untracked / delete locally; do not commit. |
 | `ARCHITECTURAL_AUDIT.md` | New file, project root | Frozen historical "Before" snapshot; intentionally untracked here so the committed tree stays clean until/unless the owner wants it shipped. | Do not commit as part of this phase unless the owner asks. |
 
 > `git stash list` still holds `stash@{0}: On main: phase16-pre-restore-snapshot: working tree before hub edits`.
@@ -178,7 +178,7 @@ owner's decision via `docs/LIVE-TEST.md`, not part of this cleanup pass.
 
 - [ ] `bash -n tenkai && bash -n install.sh` — both scripts parse.
 - [ ] `go build -trimpath -p 2 ./...` clean on all four module roots:
-  `src/ryoku/hub/backend`, `src/ryoku/shell/ipc`, `src/ryoku/shell/ryogami/daemon`, `src/ryoku/wm`.
+  `src/tenkai_core/hub/backend`, `src/tenkai_core/shell/ipc`, `src/tenkai_core/shell/ryogami/daemon`, `src/tenkai_core/wm`.
 - [ ] `./tenkai verify-untouched` — PASS (live config hashes identical to `docs/baseline/`).
 - [ ] `./install.sh --dry-run` — succeeds, prints nothing destructive.
 - [ ] `git log --oneline -6` — shows the Phase-16 commits in order.
@@ -220,8 +220,8 @@ step messages, so they are left for a later pass / the owner to decide:
   for the owner. (The lock screen itself is not on this phase's keep list.)
 - **`Tenkai` product-name usage throughout `README.md`, `install.sh`, `tenkai`, and the Go source.**
   The checkout is named `tenkai/` and the control script/binary are `tenkai*`, but the Go source
-  lives in `src/ryoku/` and the hub/shell binaries are `ryoku-hub`/`ryoku-shell`. The README's tree
-  entry for `src/ryoku/` was fixed in Step 1 (line 108 only). A wider rename is a larger decision
+  lives in `src/tenkai_core/` and the hub/shell binaries are `ryoku-hub`/`ryoku-shell`. The README's tree
+  entry for `src/tenkai_core/` was fixed in Step 1 (line 108 only). A wider rename is a larger decision
   the owner has not asked for.
 
 ---
@@ -311,7 +311,7 @@ Scanned all 4 Go module roots (`hub/backend`, `shell/ipc`, `wm`, `ryogami/daemon
 
 Delivered: **0 files deleted** (all scripts and dependencies are used).
 
-#### Scripts (src/ryoku/shell/scripts/)
+#### Scripts (src/tenkai_core/shell/scripts/)
 
 All 7 scripts are deployed and used by Tenkai:
 
@@ -369,7 +369,7 @@ No legacy dead code paths found. The rebrand from "Mei" to "Tenkai" is complete:
 
 ## Lock ghost
 
-`src/ryoku/hub/backend/main.go` `usage()` listed `ryoku-hub lock list` / `lock set <slug>`, but there
+`src/tenkai_core/hub/backend/main.go` `usage()` listed `ryoku-hub lock list` / `lock set <slug>`, but there
 is no `case "lock"` branch and the lock screen was removed. Both usage lines deleted.
 
 ## Verification (this pass)

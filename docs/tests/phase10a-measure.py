@@ -120,9 +120,9 @@ def classify(strict=False):
                 if arg == "-p":
                     project = argv[i + 1]
                     break
-            if "/src/ryoku/shell/quickshell/shell" in project:
+            if "/src/tenkai_core/shell/quickshell/shell" in project:
                 label = "qs"
-            elif "/src/ryoku/hub/quickshell" in project:
+            elif "/src/tenkai_core/hub/quickshell" in project:
                 label = "hub-qs"
         elif exe == "tenkai-shell" and "daemon" in argv:
             label = "tenkai-shell"
@@ -156,7 +156,7 @@ def project_hubs():
             if arg == "-p":
                 project = argv[i + 1]
                 break
-        if project.startswith(TENKAI + "/") and "/src/ryoku/hub/quickshell" in project:
+        if project.startswith(TENKAI + "/") and "/src/tenkai_core/hub/quickshell" in project:
             found.append((pid, project))
     return found
 

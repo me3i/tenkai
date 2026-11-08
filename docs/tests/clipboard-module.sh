@@ -26,7 +26,7 @@ start(){
   SIG=""; QS=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ -n "$QS" ] && break
     sleep 0.3
   done

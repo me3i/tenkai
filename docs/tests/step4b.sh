@@ -19,21 +19,21 @@ bad() { echo "FAIL        $*"; fail=1; }
 note(){ echo "NOTE        $*"; }
 
 echo "=== STATIC PROOF (no session needed) ==="
-if (cd "$TENKAI/src/ryoku/shell/ipc" && go list -deps . 2>/dev/null | grep -qx 'net/http'); then
+if (cd "$TENKAI/src/tenkai_core/shell/ipc" && go list -deps . 2>/dev/null | grep -qx 'net/http'); then
   bad "net/http is still in the daemon dependency graph"
 else
   ok "net/http is NOT in the daemon dependency graph (go list -deps)"
 fi
-if (cd "$TENKAI/src/ryoku/shell/ipc" && go list -deps . 2>/dev/null | grep -qx 'net'); then
+if (cd "$TENKAI/src/tenkai_core/shell/ipc" && go list -deps . 2>/dev/null | grep -qx 'net'); then
   note "the 'net' package is linked (unix sockets only)"
 fi
-grep -rn 'net/http\|http\.Client' "$TENKAI/src/ryoku/shell/ipc"/*.go | grep -v '// ' | grep -q . \
+grep -rn 'net/http\|http\.Client' "$TENKAI/src/tenkai_core/shell/ipc"/*.go | grep -v '// ' | grep -q . \
   && bad "an http reference survives in the daemon source" \
   || ok "no net/http import or http.Client in the daemon source (comments only)"
-for pair in "src/ryoku/hub/quickshell/SettingsSheet.qml:CHANGE ON MAP" \
-            "src/ryoku/hub/quickshell/pages/LauncherPage.qml:Show weather" \
-            "src/ryoku/shell/quickshell/shell/modules/launcher/variants/main/Preview.qml:readonly property bool showWeather: false" \
-            "src/ryoku/shell/quickshell/shell/modules/launcher/variants/hero/Preview.qml:visible: false   // TENKAI"; do
+for pair in "src/tenkai_core/hub/quickshell/SettingsSheet.qml:CHANGE ON MAP" \
+            "src/tenkai_core/hub/quickshell/pages/LauncherPage.qml:Show weather" \
+            "src/tenkai_core/shell/quickshell/shell/modules/launcher/variants/main/Preview.qml:readonly property bool showWeather: false" \
+            "src/tenkai_core/shell/quickshell/shell/modules/launcher/variants/hero/Preview.qml:visible: false   // TENKAI"; do
   f="${pair%%:*}"; pat="${pair#*:}"
   grep -qF "$pat" "$TENKAI/$f" && ok "UI marker present: $(basename "$f") <- $pat" || bad "UI marker missing: $f <- $pat"
 done
@@ -47,7 +47,7 @@ XDG_RUNTIME_DIR="$HOST_XDG" WAYLAND_DISPLAY="$HOST_WL" "$TENKAI/tenkai" run || {
 SIG=""; QS=""
 for _ in $(seq 1 90); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -n "$QS" ] && break
   sleep 0.5
 done

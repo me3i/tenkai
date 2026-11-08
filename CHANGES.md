@@ -1,6 +1,6 @@
 ## Wallpaper picker bundled (2026-11-06)
 
-- `ryogami`'s picker is now Tenkai's own: `src/ryoku/shell/ryogami/wall-ui/` is a verbatim
+- `ryogami`'s picker is now Tenkai's own: `src/tenkai_core/shell/ryogami/wall-ui/` is a verbatim
   copy of upstream's `wall-ui`, assembled by `install.sh` into `.run/ryogami-wall-ui/`
   (`scripts/` and `data/matugen/` keep the layout `Config.qml` resolves from
   `RYOGAMI_WALL_INSTALL`).
@@ -107,7 +107,7 @@ Docs (stale audits deleted):
 
 Kept deliberately (functional or legal):
 - `Ryoku.Blobs` / `Ryoku.Ui` / `Ryoku.FrameBars` (compiled module names),
-  `src/ryoku/` tree layout, `Ryoku` layer namespaces in the bundled Hyprland
+  `src/tenkai_core/` tree layout, `Ryoku` layer namespaces in the bundled Hyprland
   config, `ryoku-*`/`ryogami*` command and script names (binds exec them),
   `RyokuHotspot` (the owner's live NetworkManager profile name),
   `RYOKU_*` env vars (test harnesses set them with t.Setenv), `ryoku.css`
@@ -375,10 +375,10 @@ Pinned upstream: see `UPSTREAM.md`. Mei is built by copying and adapting upstrea
 
 ## Phase 9 follow-up — brightness helper restored
 
-`ryoku-cmd-brightness` was referenced by `src/ryoku/shell/ipc/control.go` but never copied into
+`ryoku-cmd-brightness` was referenced by `src/tenkai_core/shell/ipc/control.go` but never copied into
 `src/`, so the hub's `brightness` verb (the `XF86MonBrightnessUp`/`Down` path) always failed.
 The QML fader used `brightnessctl` directly and worked, which hid the gap. Copied the upstream
-script to `src/ryoku/shell/scripts/ryoku-cmd-brightness` (kept the upstream name because
+script to `src/tenkai_core/shell/scripts/ryoku-cmd-brightness` (kept the upstream name because
 `control.go` execs it by name) and symlinked it into `$RUN/bin` in `mei`.
 
 MEI change vs upstream: the upstream script swallowed every failure (`|| true`). If a backlight
@@ -448,7 +448,7 @@ Deviations from upstream: `modules` is a Mei-only key; upstream's `performance.j
 
 ## Phase 7 — step 7: system tray (qsbar)
 
-One watcher host (`src/ryoku/shell/ipc/tray.go`); the bar draws the icons and
+One watcher host (`src/tenkai_core/shell/ipc/tray.go`); the bar draws the icons and
 `panels/TrayMenu.qml` is the themed menu. Two upstream defects were fixed so the keep-list tray
 actually shows and works.
 
@@ -456,7 +456,7 @@ actually shows and works.
 
 | File | Change |
 |---|---|
-| `src/ryoku/shell/ipc/tray.go` | `refreshMenu()` decoded `GetLayout` as two body arguments, but the reply is ONE struct `(u(ia{sv}av))`; every call failed with `dbus.Store: length mismatch`, so no tray menu was ever loaded. It now decodes the struct and logs a failure. |
+| `src/tenkai_core/shell/ipc/tray.go` | `refreshMenu()` decoded `GetLayout` as two body arguments, but the reply is ONE struct `(u(ia{sv}av))`; every call failed with `dbus.Store: length mismatch`, so no tray menu was ever loaded. It now decodes the struct and logs a failure. |
 | `.../qsbar/modules/TrayWidget.qml` | Repeater fed by `trayModel`, refreshed in `onItemsChanged` (the model bound straight at the services singleton resolved empty in the bar instance and never re-fired); removed the circular `visible: trayRow.implicitWidth > 0` gate; right-click opens the item's dbusmenu when it has one; publishes `trayAnchorX`; auto-pins new services |
 | `.../qsbar/Theme.qml` | `trayAutoPinned` / `trayAutoPin()` (pin each service once), `trayAnchorX` (screen x of the icon row) |
 | `.../qsbar/VariantRoot.qml` | qsbar IPC for tests/keybinds: `trayState`, `trayActivate`, `trayMenu`, `trayMenuClose`, `trayMenuEvent`, `trayPanel`, `trayTogglePin` |
@@ -505,7 +505,7 @@ raced the kept server for `org.freedesktop.Notifications` and wrote a private
 
 | File | Change |
 |---|---|
-| `src/ryoku/shell/quickshell/shell/services/Notifs.qml` | unchanged; it remains the only `NotificationServer` (`Notifs.qml:230`) |
+| `src/tenkai_core/shell/quickshell/shell/services/Notifs.qml` | unchanged; it remains the only `NotificationServer` (`Notifs.qml:230`) |
 | `.../barstyles/qsbar/panels/NotificationPanel.qml` | rewritten as a view over `Services.Notifs.history`: no server, no cache, no live map (`+17 / -139`) |
 | `.../barstyles/qsbar/VariantRoot.qml` | qsbar IPC for tests/keybinds: `notifications(open)`, `dnd(on)`, `notifDismissLatest()`, `notifClearAll()`, `notifInvoke(id,key)`, `notifState()` |
 | `mei` (test template) | the session writes `$DBUS_SESSION_BUS_ADDRESS` to `.run/bus`, so a harness reaches the nested bus without guessing its path |
@@ -555,9 +555,9 @@ lines, verify-untouched PASS at both ends.
 ### a. HOME guard in every state-writing binary
 
 `homeGuard()` is the first statement of `main()` in all four binaries: `mei-shell`
-(`src/ryoku/shell/ipc/main.go`), `ryogami` (`src/ryoku/shell/ryogami/daemon/main.go`), `mei-hub`
-(`src/ryoku/hub/backend/main.go`) and `mei-hub`'s sibling provider `mei-wm-hyprland`
-(`src/ryoku/wm/hyprland/main.go`). It derives the allowed home from the executable path
+(`src/tenkai_core/shell/ipc/main.go`), `ryogami` (`src/tenkai_core/shell/ryogami/daemon/main.go`), `mei-hub`
+(`src/tenkai_core/hub/backend/main.go`) and `mei-hub`'s sibling provider `mei-wm-hyprland`
+(`src/tenkai_core/wm/hyprland/main.go`). It derives the allowed home from the executable path
 (`<project>/.run/bin/<binary>` -> `<project>/.run/home`), so a binary copied anywhere else fails
 closed; `HOME` unset also fails. It applies to client verbs too (`ryogami wallpaper`, `mei-hub
 config get`), because a client with the real HOME resolves the real cache dir — the precise shape
@@ -611,7 +611,7 @@ assertions). Screenshots in `.run/shots/step5-*.png`.
 
 ### Copied / not copied
 
-- `src/ryoku/shell/ryogami/daemon/` copied from `upstream/ryoku/shell/ryogami/daemon`
+- `src/tenkai_core/shell/ryogami/daemon/` copied from `upstream/ryoku/shell/ryogami/daemon`
   (536 KB, vendor included) and built to `.run/bin/ryogami`.
 - **`ryogami/wall-ui/` is NOT copied** (114 files). The picker shell brings Wallhaven/a game launcher
   browser services (outbound) and upstream's `pkill -f "quickshell .*<qml>"` launch path; it
@@ -657,7 +657,7 @@ assertions). Screenshots in `.run/shots/step5-*.png`.
 
 ### matugen: minimal config, no app fan-out
 
-- `src/ryoku/shell/matugen/config.toml` is now `[config]` + an **empty `[templates]`**.
+- `src/tenkai_core/shell/matugen/config.toml` is now `[config]` + an **empty `[templates]`**.
   matugen 4.2.0 rejects a file containing only `[config]` (`TOML parse error ... missing field
   templates`), verified by running it directly; the empty table renders nothing. `./mei run`
   seeds it to `$XDG_CONFIG_HOME/mei/matugen/config.toml`.
@@ -670,7 +670,7 @@ assertions). Screenshots in `.run/shots/step5-*.png`.
   `matugenReload()` except `nudgePalette()` (no gsettings/libadwaita accent, no gtk-theme
   flip, no `pkill -USR1 kitty`, no KDE colours). Upstream bodies are kept commented in place.
 - `matugenEnsureDirs()` trimmed from 24 app directories to `cache/mei` + `cache/matugen`.
-- `src/ryoku/shell/matugen/{apps.toml,templates/}` remain but are unreferenced.
+- `src/tenkai_core/shell/matugen/{apps.toml,templates/}` remain but are unreferenced.
 
 ### Palette bridge off
 
@@ -709,12 +709,12 @@ Three follow-ups the owner asked for before approving step 5. Verified with
 Weather, music and calendar are off the keep list and "zero outbound connections" is a stated
 goal, so the HTTP client is **removed from the daemon**, not merely left dormant:
 
-- `src/ryoku/shell/ipc/weather.go`: dropped `net/http` + the `http.Client`; `getJSON` is a stub
+- `src/tenkai_core/shell/ipc/weather.go`: dropped `net/http` + the `http.Client`; `getJSON` is a stub
   that returns `wxErrNetwork` ("mei: outbound network disabled"). Every weather poll lands on its
   existing error path.
-- `src/ryoku/shell/ipc/music.go`: dropped `net/http` + the `http.Client`; `cacheArt` returns a
+- `src/tenkai_core/shell/ipc/music.go`: dropped `net/http` + the `http.Client`; `cacheArt` returns a
   cached cover if one exists (never fetches) and `getJSON` (lyrics/canvas) is a stub.
-- `src/ryoku/shell/ipc/calendar.go`: dropped `net/http` + the `http.Client`; the holiday-service
+- `src/tenkai_core/shell/ipc/calendar.go`: dropped `net/http` + the `http.Client`; the holiday-service
   fetch is compiled out (a cached year is still served, even stale; with no cache the year is
   unavailable). The dead `calendarAPI`/`baseURL` were removed too.
 - Proven: `go list -deps` on the daemon does **not** contain `net/http` (only `net`, for unix
@@ -724,7 +724,7 @@ goal, so the HTTP client is **removed from the daemon**, not merely left dormant
 
 ### 2. "CHANGE ON MAP" hidden
 
-`src/ryoku/hub/quickshell/SettingsSheet.qml`: the timezone row's `CHANGE ON MAP` button is
+`src/tenkai_core/hub/quickshell/SettingsSheet.qml`: the timezone row's `CHANGE ON MAP` button is
 `visible: false` (it did nothing; the timezone is display-only). Kept in place, not deleted.
 
 ### 3. The launcher's weather widget is off (it was already offline)
@@ -750,7 +750,7 @@ change, so it is left for the owner to call.
 
 ## Phase 6 — step 4: Settings app (`mei-hub`)
 
-Manifest scope (`docs/04-plan.md` 6.4): the Ryoku Settings app, copied to `src/ryoku/hub` and
+Manifest scope (`docs/04-plan.md` 6.4): the Ryoku Settings app, copied to `src/tenkai_core/hub` and
 kept as **five pages only** — General, Appearance, Bar, Launcher, Motion. It persists to
 `$XDG_CONFIG_HOME/mei` and **cannot write Hyprland config**. Everything else is **disabled, not
 deleted** (original blocks are kept commented in place).
@@ -787,7 +787,7 @@ deleted** (original blocks are kept commented in place).
 
 - `MOTION` (Hyprland window editor) and `FOCUS FLASH` cards are `visible:false`; `animPresetGet`
   is pinned off. The **SHELL MOTION** card is kept: `theme.motion.scale` (Speed) and
-  `theme.motion.reduce`, which `src/ryoku/ui/Singletons/Tokens.qml` reads for every `dur()`.
+  `theme.motion.reduce`, which `src/tenkai_core/ui/Singletons/Tokens.qml` reads for every `dur()`.
 - Those two keys are written live via `Settings.patch`, so they are outside the hub's
   draft/save ledger. `Hub.qml:resetDefaults()` now also calls `Settings.reset("theme.motion")`,
   otherwise RESET TO DEFAULTS left the shell's motion changed.
@@ -871,7 +871,7 @@ face). No CJK glyph is rendered anywhere in the kept surfaces.
   `FORM`, `SURFACE`, `GAPS`, `HUE`, `IMPORT`, `ADD`, `BEHAVIOUR`, `PINNED`, `MARK`, `TEXT`,
   `NUMBERS`, `DOTS`, `SAMPLE`, `PARTS`; `LayoutRoute` 引入 → `IMPORT`).
 - `.../controlcenter/kit/CcWorkspacePreview.qml`: workspace numerals 一二三四五 → `1..5`.
-- `src/ryoku/ui/Empty.qml`: the 空 ornament → `M` (brand mark); comment updated.
+- `src/tenkai_core/ui/Empty.qml`: the 空 ornament → `M` (brand mark); comment updated.
 
 ### Binary rebrand completion
 
@@ -938,7 +938,7 @@ names, env prefixes, and `ryogami` stay as-is. Attribution kept/added.
 
 ### Wordmark (bar left module)
 
-- `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/Theme.qml`
+- `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/Theme.qml`
   - `launcherLogoText` default `"ryoku"` → `"mei"`; `launcherLogoIcon` default
     `"ryoku"` → `"mei"`.
   - text options: `"ryoku"` removed, `"mei"` added first.
@@ -1005,27 +1005,27 @@ Deliverable: `docs/06-step1.md`. Stop point: launcher/sidebar/notifications/Sett
 
 ### Copied into `src/` (upstream = `98a0368`, v0.75.5-beta.20)
 
-- `ryoku/shell/quickshell/{shell,plugins}` → `src/ryoku/shell/quickshell/{shell,plugins}`
-- `ryoku/ui` → `src/ryoku/ui`; `ryoku/shell/framebars` → `src/ryoku/shell/framebars`
-- `ryoku/wm` → `src/ryoku/wm`; `ryoku/shell/{ipc,plugin,matugen}` → `src/ryoku/shell/…`
+- `ryoku/shell/quickshell/{shell,plugins}` → `src/tenkai_core/shell/quickshell/{shell,plugins}`
+- `ryoku/ui` → `src/tenkai_core/ui`; `ryoku/shell/framebars` → `src/tenkai_core/shell/framebars`
+- `ryoku/wm` → `src/tenkai_core/wm`; `ryoku/shell/{ipc,plugin,matugen}` → `src/tenkai_core/shell/…`
 - Upstream `tests/`, `qa/`, CI files stripped. Vendored Go deps kept so builds are offline.
 
 ### Source modifications
 
-- `src/ryoku/wm/hyprland/caps.go`: removed `CapLiveConfigEval`, `CapConfigReload`,
+- `src/tenkai_core/wm/hyprland/caps.go`: removed `CapLiveConfigEval`, `CapConfigReload`,
   `CapPaletteBorder` (Mei never writes Hyprland config).
-- `src/ryoku/shell/ipc/daemon.go`: `bootstrap()` reduced to `startSettings`, `startTray`,
+- `src/tenkai_core/shell/ipc/daemon.go`: `bootstrap()` reduced to `startSettings`, `startTray`,
   `startMusic`, `startNetwork`, `startNightlight`, `paintWorker`, `watchMatugenKnobs`, `startWM`,
   `startComponents`. Removed weather/updates/calendar, keypress, clipboard, polkit, session,
   power sounds, sleep/wake, auto power saver, leds/hub, ryogami, stage.
-- `src/ryoku/shell/ipc/control.go`: hub lock moved from `/tmp/ryoku-hub.lock` to
+- `src/tenkai_core/shell/ipc/control.go`: hub lock moved from `/tmp/ryoku-hub.lock` to
   `$XDG_RUNTIME_DIR/mei-hub.lock`.
-- `src/ryoku/wm/hyprland/watch.go`: if `.socket2.sock` is missing, poll `hyprctl` every 500 ms
+- `src/tenkai_core/wm/hyprland/watch.go`: if `.socket2.sock` is missing, poll `hyprctl` every 500 ms
   (`socketExists`, `pollOnce`). Only reachable in the nested test (see below); the live session
   keeps the event-driven path.
-- `src/ryoku/shell/quickshell/shell/shell.qml`: `Desktop` → `active: false`,
+- `src/tenkai_core/shell/quickshell/shell/shell.qml`: `Desktop` → `active: false`,
   `widgetsEnabled: false` (desktop clock/calendar is off-list).
-- `src/ryoku/shell/matugen/config.toml`: reduced to `[config]` — no templates, no post-hook, so
+- `src/tenkai_core/shell/matugen/config.toml`: reduced to `[config]` — no templates, no post-hook, so
   matugen cannot write into the owner's home.
 - Renames (source-wide): `RYOKU_*` → `MEI_*` (SHELL_DIR/PATH/POLKIT_AGENT/STATE_PATH/
   SCREENRECORD_DIR/SCREENSHOT_DIR/PLUGINS_DIR/WM), `ryoku-shell.sock` → `mei-shell.sock`,

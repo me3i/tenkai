@@ -32,7 +32,7 @@ VK() { "$TENKAI/docs/tests/tools/nested-input.sh" "$RUN/tools/vkbd/vkbd" "$@"; }
 SIG=""; QS=""
 for _ in $(seq 1 120); do
   SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-  QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+  QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
   [ -n "$SIG" ] && [ -S "$RT/hypr/$SIG/.socket.sock" ] && [ -n "$QS" ] && break
   sleep 0.3
 done

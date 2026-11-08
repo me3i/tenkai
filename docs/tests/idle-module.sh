@@ -48,7 +48,7 @@ start(){
   SIG=""; QS=""; WD=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
     WD="$(ls "$RT"/wayland-* 2>/dev/null | head -1 | xargs -r basename)"
     [ -n "$SIG" ] && [ -n "$QS" ] && [ -n "$WD" ] && break
     sleep 0.3

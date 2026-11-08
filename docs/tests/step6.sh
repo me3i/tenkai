@@ -13,7 +13,7 @@ set -uo pipefail
 TENKAI=$HOME/projects/tenkai
 RUN="$TENKAI/.run"
 RT="$TENKAI/.r"
-SHELL_DIR="$TENKAI/src/ryoku/shell/quickshell/shell"
+SHELL_DIR="$TENKAI/src/tenkai_core/shell/quickshell/shell"
 HOST_XDG="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 HOST_WL="${WAYLAND_DISPLAY:-wayland-1}"
 LIVE_BUS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$HOST_XDG/bus}"

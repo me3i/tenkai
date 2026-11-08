@@ -26,7 +26,7 @@ start(){
   SIG=""; QS=""
   for _ in $(seq 1 250); do
     SIG="$(ls -d "$RT/hypr/"*/ 2>/dev/null | head -1 | xargs -r basename)"
-    QS="$(pgrep -f "^qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)"
+    QS="$(pgrep -f "^qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)"
     [ -n "$SIG" ] && [ -n "$QS" ] && break
     sleep 0.3
   done
@@ -66,7 +66,7 @@ if "$RUN/bin/tenkai-screenshot" bogus >/dev/null 2>&1; then
 else
   ok "the helper refuses an unknown mode"
 fi
-if grep -qE "^[^#]*(curl|wget|http://|https://)" src/ryoku/shell/scripts/tenkai-screenshot 2>/dev/null; then
+if grep -qE "^[^#]*(curl|wget|http://|https://)" src/tenkai_core/shell/scripts/tenkai-screenshot 2>/dev/null; then
   bad "the helper runs a network command"
 else
   ok "the helper runs no network command (no curl/wget/http outside comments)"

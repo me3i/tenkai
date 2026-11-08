@@ -31,10 +31,10 @@ trap restore_bl EXIT
 note "brightness before: get=${BL_GET:-?} max=${BL_MAX:-?}"
 
 for _ in $(seq 1 60); do
-  pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" >/dev/null && break
+  pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" >/dev/null && break
   sleep 0.4
 done
-QS=$(pgrep -f "qs -p $TENKAI/src/ryoku/shell/quickshell/shell" | head -1)
+QS=$(pgrep -f "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell" | head -1)
 [ -n "$QS" ] && ok "shell process present (pid $QS)" || { bad "no shell process"; exit 1; }
 
 for _ in $(seq 1 60); do
@@ -121,7 +121,7 @@ else
 fi
 
 # ---- process / network hygiene -----------------------------------------------
-c=$(pgrep -fc "qs -p $TENKAI/src/ryoku/shell/quickshell/shell")
+c=$(pgrep -fc "qs -p $TENKAI/src/tenkai_core/shell/quickshell/shell")
 [ "$c" = "1" ] && ok "exactly one shell instance" || bad "qs instance count: $c"
 
 for helper in ryoku-cmd-google-lens ryoku-cmd-ocr ryoku-cmd-qr-scan ryoku-cmd-color-picker; do

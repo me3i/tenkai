@@ -27,8 +27,8 @@ Shipped defaults are `true` for every module, `theme: "Default"` (the built-in
 orange accents), `matugen.mode: "Dark"`, `motion: {1, false}`. They live in two
 places that must agree:
 
-- `src/ryoku/shell/quickshell/shell/services/Config.qml:208` (QML reader defaults)
-- `src/ryoku/shell/ipc/settings.go:276` (`defaultSettings`, the daemon/Hub schema)
+- `src/tenkai_core/shell/quickshell/shell/services/Config.qml:208` (QML reader defaults)
+- `src/tenkai_core/shell/ipc/settings.go:276` (`defaultSettings`, the daemon/Hub schema)
 
 ## Where each flag is read
 
@@ -116,7 +116,7 @@ stop. Evidence lands in `.run/logs/phase8-*.log` and `.run/shots/phase8-*.png`.
 1. Set `theme.theme` in shell.json:
    - `"Default"` — Tenkai's built-in dynamic default (orange accents, shipped look)
    - `"Wallpaper"` — derive every colour from the current wallpaper
-   - a static name from `src/ryoku/shell/ipc/themes_gen.go`: `Catppuccin Mocha`,
+   - a static name from `src/tenkai_core/shell/ipc/themes_gen.go`: `Catppuccin Mocha`,
      `Dracula`, `Everforest Dark Medium`, `Gruvbox Dark Medium`, `Kanagawa Wave`,
      `Nord Dark`, `One Dark`, `Rose Pine`, `Solarized Dark`, `Tokyo Night`
 2. Save; the daemon's settings store notices the theme signature change and
@@ -129,7 +129,7 @@ stop. Evidence lands in `.run/logs/phase8-*.log` and `.run/shots/phase8-*.png`.
 A simple clock-style widget in the right group. No daemon, no D-Bus, no new
 process; it is a QML Item inside the existing bar window.
 
-**1. The widget** — `src/ryoku/shell/quickshell/shell/modules/bar/barstyles/qsbar/modules/TenkaiClock.qml`:
+**1. The widget** — `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/modules/TenkaiClock.qml`:
 
 ```qml
 import QtQuick
