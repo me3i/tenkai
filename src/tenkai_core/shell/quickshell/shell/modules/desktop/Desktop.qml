@@ -5,12 +5,12 @@ import Quickshell.Io
 import Quickshell.Widgets
 import "Singletons"
 import "clock"
-import "calendar"
-import "music"
-import "aio"
-import "stats"
-import "weather"
-import "notes"
+
+
+
+
+
+
 import Tenkai.PluginKit
 import shell.services as Services
 
@@ -75,7 +75,7 @@ Scope {
 
     // Human titles for the built-in widgets, for the frame labels.
     function widgetTitle(w) {
-        const n = { clock: "Clock", calendar: "Calendar", music: "Music", aio: "All-in-one", stats: "System stats", weather: "Weather", notes: "Notes" };
+        const n = { clock: "Clock" };
         return n[w] || w;
     }
 
@@ -89,12 +89,12 @@ Scope {
     readonly property var addItems: {
         const bi = [
             { id: "clock", label: "Clock", icon: "schedule", enabled: Config.clockEnabled, group: "" },
-            { id: "calendar", label: "Calendar", icon: "calendar_month", enabled: Config.calendarEnabled, group: "" },
-            { id: "music", label: "Music", icon: "music_note", enabled: Config.musicEnabled, group: "" },
-            { id: "aio", label: "All-in-one", icon: "dashboard", enabled: Config.aioEnabled, group: "" },
-            { id: "stats", label: "System stats", icon: "monitor_heart", enabled: Config.statsEnabled, group: "" },
-            { id: "weather", label: "Weather", icon: "partly_cloudy_day", enabled: Config.weatherEnabled, group: "" },
-            { id: "notes", label: "Notes", icon: "sticky_note_2", enabled: Config.notesEnabled, group: "" },
+
+
+
+
+
+
 
         ];
         // Fallback group name for a plugin whose manifest names no set. Plain
@@ -154,28 +154,28 @@ Scope {
     function _builtinSlot(id) {
         switch (id) {
         case "clock": return clockLoader.item;
-        case "calendar": return calendarLoader.item;
-        case "music": return musicLoader.item;
-        case "aio": return aioLoader.item;
-        case "stats": return statsLoader.item;
-        case "weather": return weatherLoader.item;
-        case "notes": return notesLoader.item;
+
+
+
+
+
+
         }
         return null;
     }
     // Arm-and-open for the right-click menus: the first open builds the menu
     // synchronously, and the pending request lands the moment it is ready.
-    property var pendingWidgetMenu: null
+
     property var pendingPluginMenu: null
-    function openWidgetMenu(widget, x, y) {
-        if (widgetMenuLoader.item) {
-            if (widget === "desktop") widgetMenuLoader.item.openDesktop(x, y);
-            else widgetMenuLoader.item.openFor(widget, x, y);
-            return;
-        }
-        root.pendingWidgetMenu = [widget, x, y];
-        widgetMenuLoader.active = true;
-    }
+
+
+
+
+
+
+
+
+
     function openPluginMenu(id, locked, x, y, manifest, placement) {
         if (pluginMenuLoader.item) {
             pluginMenuLoader.item.openFor(id, locked, x, y, manifest, placement);
@@ -202,12 +202,12 @@ Scope {
     // and written back on resetRequested.
     readonly property var _widgetKeys: [
         "clockEnabled", "clockDesign", "clock24h", "clockSeconds", "clockAccent", "clockScale", "clockAnchor", "clockX", "clockY", "clockLocked", "clockOpacity", "clockBg", "clockRadius", "clockColor", "clockColor2", "clockGradient", "dateShow", "dateDesign", "widgetFont",
-        "calendarEnabled", "calendarStyle", "calendarWeeks", "calendarWeekNumbers", "calendarHolidayRegion", "calendarScale", "calendarAnchor", "calendarX", "calendarY", "calendarLocked", "calendarOpacity", "calendarColor", "calendarColor2", "calendarGradient",
-        "musicEnabled", "musicStyle", "musicLyrics", "musicViz", "musicScale", "musicAnchor", "musicX", "musicY", "musicLocked", "musicOpacity", "musicApp", "musicShape", "musicVideo", "musicVideoFile", "musicColor", "musicColor2", "musicGradient",
-        "aioEnabled", "aioStyle", "aioScale", "aioAnchor", "aioX", "aioY", "aioLocked", "aioOpacity", "aioColor", "aioColor2", "aioGradient",
-        "statsEnabled", "statsScale", "statsAnchor", "statsX", "statsY", "statsLocked", "statsOpacity", "statsColor", "statsColor2", "statsGradient",
-        "weatherEnabled", "weatherDesign", "weatherScale", "weatherAnchor", "weatherX", "weatherY", "weatherLocked", "weatherOpacity", "weatherColor", "weatherColor2", "weatherGradient",
-        "notesEnabled", "notesScale", "notesAnchor", "notesX", "notesY", "notesLocked", "notesOpacity", "notesWidth", "notesHeight", "notesColor", "notesColor2", "notesGradient"
+
+
+
+
+
+
     ]
     property var _snapConfig: null
     property var _snapPlugins: null
@@ -400,12 +400,12 @@ Scope {
         // the built-in slot currently being dragged (a single pointer, so at most
         // one), for the drag guides: their grid step and centre-snap lighting.
         readonly property var dragSlot: (clockLoader.item && clockLoader.item.dragging) ? clockLoader.item
-            : (calendarLoader.item && calendarLoader.item.dragging) ? calendarLoader.item
-            : (musicLoader.item && musicLoader.item.dragging) ? musicLoader.item
-            : (aioLoader.item && aioLoader.item.dragging) ? aioLoader.item
-            : (statsLoader.item && statsLoader.item.dragging) ? statsLoader.item
-            : (weatherLoader.item && weatherLoader.item.dragging) ? weatherLoader.item
-            : (notesLoader.item && notesLoader.item.dragging) ? notesLoader.item : null
+
+
+
+
+
+
 
         // on release, flash the slot's four edges plus the centre line it snapped
         // to (centre within half a grid step, the window the guides light up).
@@ -478,8 +478,8 @@ Scope {
         // source after taking its crop. Hidden while a video plays: the glass
         // samples the still, and a live clip would freeze the capture.
         readonly property bool glassWanted: root.widgetsEnabled && root.videoUrl === ""
-            && ((Config.calendarEnabled && Config.calendarStyle === "glass")
-                || (Config.musicEnabled && Config.musicStyle === "glass"))
+
+
         Image {
             id: glassBackdrop
             anchors.fill: parent
@@ -511,7 +511,7 @@ Scope {
         MouseArea {
             anchors.fill: parent
             acceptedButtons: Qt.RightButton
-            onPressed: (mouse) => root.openWidgetMenu("desktop", mouse.x, mouse.y)
+
         }
         // Left-click on bare wallpaper unwinds one level while composing (an
         // open drop-down, then the selection, then the session), the same order
@@ -532,28 +532,28 @@ Scope {
             }
         }
 
-        // click-off for the notes pad: while it holds the keyboard, a press on
+
         // the bare wallpaper must drop its focus (and the layer's exclusive
         // grab). taking active focus here blurs the pad; it sits above the
         // right-click catcher but below every widget, so a press on a widget
         // still reaches that widget, and it passes the event on (accepted =
         // false) so the right-click desktop menu still opens.
         MouseArea {
-            id: notesBlur
+
             anchors.fill: parent
-            enabled: notesLoader.item ? notesLoader.item.editing : false
+
             acceptedButtons: Qt.LeftButton | Qt.RightButton
-            onPressed: (mouse) => { notesBlur.forceActiveFocus(); mouse.accepted = false; }
+
         }
 
-        DesktopGuides {
-            id: guides
-            anchors.fill: parent
-            active: win.dragSlot !== null
-            gridSize: win.dragSlot ? win.dragSlot.gridSize : 32
-            dragCentreX: win.dragSlot ? win.dragSlot.x + win.dragSlot.width / 2 : 0
-            dragCentreY: win.dragSlot ? win.dragSlot.y + win.dragSlot.height / 2 : 0
-        }
+
+
+
+
+
+
+
+
 
         Loader {
             id: clockLoader
@@ -577,7 +577,7 @@ Scope {
                 radius: Config.clockRadius
                 scaleCfg: Config.clockScale
                 pad: Config.clockBg === "none" ? 0 : Math.round(24 * Config.clockScale)
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
                 onDropped: (box) => win.flashDrop(box)
 
                 Clock {}
@@ -587,38 +587,38 @@ Scope {
         }
 
         Loader {
-            id: calendarLoader
+
             anchors.fill: parent
-            z: root.widgetZ("calendar")
-            active: root.widgetsEnabled && root.reloadReady && Config.calendarEnabled
+
+
             sourceComponent: Component {
             Item {
                 anchors.fill: parent
             WidgetSlot {
-                id: calendarSlot
-                widget: "calendar"
-                z: root.widgetZ("calendar")
+
+
+
                 visible: true
-                anchor: Config.calendarAnchor
-                freeX: Config.calendarX
-                freeY: Config.calendarY
+
+
+
 
 
                 bg: "none"
-                scaleCfg: Config.calendarScale
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
+
                 onDropped: (box) => win.flashDrop(box)
 
-                CalendarWidget {
-                    style: Config.calendarStyle
-                    weeks: Config.calendarWeeks
-                    showWeekNumbers: Config.calendarWeekNumbers
-                    holidayRegion: Config.calendarHolidayRegion
-                    active: calendarSlot.visible
-                    s: Config.calendarScale
+
+
+
+
+
+
+
                     wallpaperSource: glassBackdrop
-                    wallpaperRect: Qt.rect(calendarSlot.x, calendarSlot.y,
-                        calendarSlot.width, calendarSlot.height)
+
+
                 }
             }
             }
@@ -626,41 +626,41 @@ Scope {
         }
 
         Loader {
-            id: musicLoader
+
             anchors.fill: parent
-            z: root.widgetZ("music")
-            active: root.widgetsEnabled && root.reloadReady && Config.musicEnabled
+
+
             sourceComponent: Component {
             Item {
                 anchors.fill: parent
             WidgetSlot {
-                id: musicSlot
-                widget: "music"
-                z: root.widgetZ("music")
+
+
+
                 visible: true
-                anchor: Config.musicAnchor
-                freeX: Config.musicX
-                freeY: Config.musicY
+
+
+
 
 
                 bg: "none"
-                scaleCfg: Config.musicScale
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
+
                 onDropped: (box) => win.flashDrop(box)
 
-                MusicWidget {
-                    style: Config.musicStyle
-                    showLyrics: Config.musicLyrics
-                    viz: Config.musicViz
-                    active: musicSlot.visible
-                    musicApp: Config.musicApp
-                    shape: Config.musicShape
-                    videoMode: Config.musicVideo
-                    videoFile: Config.musicVideoFile
-                    s: Config.musicScale
+
+
+
+
+
+
+
+
+
+
                     wallpaperSource: glassBackdrop
-                    wallpaperRect: Qt.rect(musicSlot.x, musicSlot.y,
-                        musicSlot.width, musicSlot.height)
+
+
                 }
             }
             }
@@ -668,32 +668,32 @@ Scope {
         }
 
         Loader {
-            id: aioLoader
+
             anchors.fill: parent
-            z: root.widgetZ("aio")
-            active: root.widgetsEnabled && root.reloadReady && Config.aioEnabled
+
+
             sourceComponent: Component {
             Item {
                 anchors.fill: parent
             WidgetSlot {
-                id: aioSlot
-                widget: "aio"
-                z: root.widgetZ("aio")
+
+
+
                 visible: true
-                anchor: Config.aioAnchor
-                freeX: Config.aioX
-                freeY: Config.aioY
+
+
+
 
 
                 bg: "none"
-                scaleCfg: Config.aioScale
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
+
                 onDropped: (box) => win.flashDrop(box)
 
-                AioWidget {
-                    style: Config.aioStyle
-                    s: Config.aioScale
-                    active: aioSlot.visible
+
+
+
+
                 }
             }
             }
@@ -701,31 +701,31 @@ Scope {
         }
 
         Loader {
-            id: statsLoader
+
             anchors.fill: parent
-            z: root.widgetZ("stats")
-            active: root.widgetsEnabled && root.reloadReady && Config.statsEnabled
+
+
             sourceComponent: Component {
             Item {
                 anchors.fill: parent
             WidgetSlot {
-                id: statsSlot
-                widget: "stats"
-                z: root.widgetZ("stats")
+
+
+
                 visible: true
-                anchor: Config.statsAnchor
-                freeX: Config.statsX
-                freeY: Config.statsY
+
+
+
 
 
                 bg: "none"
-                scaleCfg: Config.statsScale
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
+
                 onDropped: (box) => win.flashDrop(box)
 
-                StatsWidget {
-                    s: Config.statsScale
-                    active: statsSlot.visible
+
+
+
                 }
             }
             }
@@ -733,32 +733,32 @@ Scope {
         }
 
         Loader {
-            id: weatherLoader
+
             anchors.fill: parent
-            z: root.widgetZ("weather")
-            active: root.widgetsEnabled && root.reloadReady && Config.weatherEnabled
+
+
             sourceComponent: Component {
             Item {
                 anchors.fill: parent
             WidgetSlot {
-                id: weatherSlot
-                widget: "weather"
-                z: root.widgetZ("weather")
+
+
+
                 visible: true
-                anchor: Config.weatherAnchor
-                freeX: Config.weatherX
-                freeY: Config.weatherY
+
+
+
 
 
                 bg: "none"
-                scaleCfg: Config.weatherScale
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
+
                 onDropped: (box) => win.flashDrop(box)
 
-                WeatherWidget {
-                    design: Config.weatherDesign
-                    s: Config.weatherScale
-                    active: weatherSlot.visible
+
+
+
+
                 }
             }
             }
@@ -766,38 +766,38 @@ Scope {
         }
 
         Loader {
-            id: notesLoader
+
             anchors.fill: parent
-            z: root.widgetZ("notes")
-            active: root.widgetsEnabled && root.reloadReady && Config.notesEnabled
+
+
             sourceComponent: Component {
             Item {
                 anchors.fill: parent
             WidgetSlot {
-                id: notesSlot
-                widget: "notes"
-                z: root.widgetZ("notes")
+
+
+
                 visible: true
-                anchor: Config.notesAnchor
-                freeX: Config.notesX
-                freeY: Config.notesY
+
+
+
 
 
                 bg: "none"
-                scaleCfg: Config.notesScale
-                onMenuRequested: (x, y, w) => root.openWidgetMenu(w, x, y)
+
+
                 onDropped: (box) => win.flashDrop(box)
 
-                // notes is the first built-in editable widget: while its pad holds
+
                 // focus the layer must grab the keyboard (bump kbWanted), and drop
                 // the grab the instant it blurs, or the desktop is stranded.
                 onEditingChanged: win.kbWanted += editing ? 1 : -1
                 Component.onDestruction: if (editing) win.kbWanted -= 1
-                NotesWidget {
-                    s: Config.notesScale
-                    active: notesSlot.visible
-                    wLogical: Config.notesWidth
-                    hLogical: Config.notesHeight
+
+
+
+
+
                 }
             }
             }
@@ -865,7 +865,7 @@ Scope {
                     persist.running = true;
 
                 }
-                onMenuRequested: (mx, my, id) => {
+
                     root.openPluginMenu(id, slot.dw.locked === true, mx, my,
                         slot.entry ? slot.entry.manifest : null,
                         slot.entry ? slot.entry.placement : null);
@@ -1007,13 +1007,13 @@ Scope {
             anchors.fill: parent
             z: 90
             active: false
-            onItemChanged: if (item && root.pendingWidgetMenu) {
-                const p = root.pendingWidgetMenu;
-                root.pendingWidgetMenu = null;
-                root.openWidgetMenu(p[0], p[1], p[2]);
+
+
+
+
             }
             sourceComponent: Component {
-                WidgetMenu { desktop: root }
+
             }
         }
 
