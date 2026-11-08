@@ -37,6 +37,11 @@ Assets copied from Ryoku (icons, illustrations, sounds) remain under their
 original licences; see `NOTICE` and the per-file headers. Tenkai does not claim
 authorship of them.
 
+## Asset licences
+
+Per-file licences for every font, icon set, cursor theme, sound and ported
+component are listed in [`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md).
+
 ## Changes
 
 Every modification vs upstream is recorded in `CHANGES.md`.

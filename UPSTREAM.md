@@ -23,3 +23,18 @@ Notes:
   began; an interrupted transfer left `.git/objects/pack/tmp_pack_*` behind. It was verified
   (`git log`, refs, remotes) and the working tree was checked out at the pinned commit.
 - If history is ever needed: `git -C upstream fetch --unshallow` (network required).
+
+## Pre-republish archive tag
+
+The repository was republished to `https://github.com/me3i/tenkai` on
+2026-11-08. The previous `main` tip there was commit `c0d98bf` (a 5-commit
+repack of this tree, made before the `src/ryoku` → `src/tenkai_core` rename,
+and unrelated to this repo's history). It is preserved locally on branch
+`archive/github-before-republish` and tagged `pre-republish-archive`, so it can
+be recovered if the working clone is ever lost.
+
+## Licence provenance
+
+`LICENSE` (GPL-3.0) and the first 152 lines of `NOTICE` are byte-identical to
+upstream at the pinned commit; the hashes to verify that are in
+`docs/ATTRIBUTION.md`.

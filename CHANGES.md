@@ -1,3 +1,23 @@
+## Installer palette: pink frames, purple UI, white mark (2026-11-08)
+
+`install.sh` no longer uses its original deep-blue/cyan/purple sky. The palette
+block now names its roles rather than its colours, and every legacy alias
+(`DEEP_BLUE`, `SOFT_PURPLE`, `TWINKLE_CYAN`, `RYOKU_ORANGE`, `STAR_WHITE`,
+`THIN`, `WH`, `CY`, `BL`) points at one of three constants, so a recolour is a
+one-line change:
+
+- `FRAME_PINK=$'\e[38;5;213m'` — the box-drawing characters only (`╭ ─ ╮ │ ╰ ╯`).
+- `UI_PURPLE=$'\e[38;5;141m'` — step headers, `→` arrows, spin stars, command hints.
+- `BANNER_WHITE=$'\e[1;37m'` — the tagline, the step titles and the closing lines.
+- `CELESTIAL_GOLD=$'\e[38;5;220m'` — unchanged: the one line that closes the install.
+- `RYOKU_ORANGE` now aliases `FRAME_PINK`, so the `TENKAI` block art and the `天界`
+  seal render in the frame colour.
+
+`NO_COLOR` and a non-tty stdout blank every one of them, so piped output stays
+plain text. TESTED: `bash -n install.sh`; `./install.sh --dry-run` under a pty
+emits only 213/141/220 plus 1;37 (68/17/1 + 20 uses) and no other colour code
+(2026-11-08).
+
 ## Wallpaper picker bundled (2026-11-06)
 
 - `ryogami`'s picker is now Tenkai's own: `src/tenkai_core/shell/ryogami/wall-ui/` is a verbatim
