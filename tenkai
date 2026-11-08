@@ -626,8 +626,16 @@ compare_dbus_watched() {  # $1 = baseline NAME<TAB>PID, $2 = current NAME<TAB>PI
   return "$rc"
 }
 
-# Attribution for a CHANGED owner (owner decision 2026-10-31, second call of the
-# day): the live shell's own services restart on their own — ryoku-idle flapped
+# Attribution for a CHANGED owner. Three verdicts, and only two of them are fine:
+#   LAPSED   nothing owns the name now -> live churn, printed, not fatal
+#   EXTERNAL a live systemd user unit's MainPID owns it -> printed, not fatal
+#   TENKAI   a process from this checkout owns it -> FAIL
+# The TENKAI case was accepted until 2026-11-08, which made the check unable to
+# see the one thing it is for: a Tenkai session taking the live names passes as
+# "attributable" and verify-untouched reports PASS while the session was, in
+# fact, taken over. It is fatal now.
+#
+# (owner decision 2026-10-31, second call of the day): the live shell's own services restart on their own — ryoku-idle flapped
 # six times in 1.5 s and retook org.freedesktop.ScreenSaver with a new pid while
 # nothing of Tenkai ran. A change whose NEW pid is provably the MainPID of a live
 # systemd user unit is external churn: printed, attributed, WARN. Every other
@@ -747,8 +755,14 @@ dbus_owner_changes_check() { # $1 baseline NAME<TAB>PID, $2 current NAME<TAB>PID
       continue
     fi
     if tenkai_owned_pid "$cpid"; then
+      # FATAL by design. verify-untouched exists to prove Tenkai did NOT touch the
+      # live session, so a name held by a process from this checkout is the
+      # violation it is looking for -- "attributable" is not "acceptable" here.
+      # A development box whose live session legitimately runs Tenkai will fail
+      # this check, and that is the correct answer for a sandbox guarantee.
       printf '      TENKAI    %-44s %s -> %s  (held by Tenkai itself: %s)\n' \
         "$name" "$bpid" "$cpid" "$(tenkai_pid_label "$cpid")"
+      rc=1
       continue
     fi
     unit="$(live_unit_for_pid "$cpid" || true)"
@@ -1117,6 +1131,19 @@ cmd_verify_prove() {
   else
     note "prove: note — no live unit pid discoverable here (systemd unreachable); owner changes stay fatal"
   fi
+
+  # (9) a changed owner that IS Tenkai itself -> FATAL. Without this the check
+  #     cannot distinguish "the live session is untouched" from "a Tenkai session
+  #     holds the names", which is the exact accidental PASS it must not allow.
+  local saved_pidfile="$PID_FILE"
+  PID_FILE="$d/fake-pids"
+  printf '%s\n' "$$" > "$PID_FILE"
+  printf 'org.freedesktop.Notifications\t4447\n' > "$d/a5"
+  printf 'org.freedesktop.Notifications\t%s\n' "$$" > "$d/a6"
+  if dbus_owner_changes_check "$d/a5" "$d/a6"; then
+    note "prove: FAIL a Tenkai-owned name was accepted as untouched"; f2=1
+  else note "prove: OK  a Tenkai-owned name fails verify-untouched (rc 1)"; fi
+  PID_FILE="$saved_pidfile"
 
   if [ "$f1" = 0 ] && [ "$f2" = 0 ]; then
     note "verify-prove: PASS (every check can fail)"

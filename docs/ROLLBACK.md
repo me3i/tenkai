@@ -35,7 +35,7 @@ answers steps 4 and 7, which are interactive-only by design.
 | 7 | `~/.config/hypr/**/*.lua` (the bundled tree, `src/tenkai-configs/hypr`) | per-file copy (install.sh:816+) | `<file>.tenkai-install.bak` |
 | 7 | `~/.config/hypr/modules/keyboard.lua` | seeded once; never overwritten afterwards (install.sh:820-822) | none (by design: it is user-owned) |
 | 8 | `~/Pictures/Wallpapers/*` | `install -m 0644`, bundled images only (install.sh:946-991) | existing file → `<name>.tenkai-install.bak` |
-| 9 | `~/.local/share/fonts/tenkai/*.ttf` | `install -m 0644`, Space Grotesk + Fraunces (install.sh:1001+) | none, new directory |
+| 9 | `~/.local/share/fonts/tenkai/*.ttf` | `install -m 0644`, Space Grotesk + Fraunces (install.sh:1001+) — **no prompt**, then `fc-cache -f` on that directory | none, new directory |
 
 `MARK='tenkai-install'` (install.sh:51) is the suffix used for every backup:
 `<path>.tenkai-install.bak`.
@@ -47,6 +47,12 @@ Notes that matter for a clean rollback:
   alternative to the autostart hook (install.sh:509-511).
 - `~/.config/kitty` is never *created* by step 5: if there is no `kitty.conf`, it
   only prints the line for you to add (install.sh:657-660).
+- **Step 9 is the one step that writes without asking.** Fonts go to
+  `~/.local/share/fonts/tenkai/` and `fc-cache` runs on that directory whether or
+  not you said yes to anything else. A plain build run therefore does touch the
+  home directory; this audit hit exactly that, and `./tenkai verify-untouched`
+  reported it (FAIL, `.local/share/fonts/tenkai` new since baseline) until the
+  directory was removed. Treat the font install as an opt-out-by-not-running.
 - Nothing is installed with `sudo`, no package is installed, no system-wide file
   is touched, and no process outside the checkout is signalled.
 
@@ -82,10 +88,16 @@ Consequences:
 - On a fresh clone the check has **no baseline** and cannot pass by itself. It
   says so rather than reporting PASS; take the baseline first with
   `./tenkai baseline` (writes `docs/baseline/` locally) if you want the guarantee.
+- A watched name held by a process **from this checkout** is a FAIL, not a note.
+  Until 2026-11-08 it was accepted as "attributable", which meant a live Tenkai
+  session would pass a check whose whole purpose is proving Tenkai is not in the
+  live session. `./tenkai verify-prove` now has a fixture for that case.
 - The PASS this repository's own audit recorded was produced on the machine that
-  had a baseline, and on that machine the live session was running **Ryoku**, whose
-  D-Bus names the check classifies as EXTERNAL. It was not evidence that a Tenkai
-  session had been sandboxed; see `docs/DBUS.md`.
+  had a baseline, with the live session running **Ryoku**: the watched names are
+  owned by `ryoku-shell.service`, so they classify as EXTERNAL, and the only new
+  entry since baseline was the font directory above. It is evidence that Tenkai was
+  not running in the live session, not that a sandbox was proven; see
+  `docs/DBUS.md`.
 
 ## If Tenkai ever touches something outside these paths
 
