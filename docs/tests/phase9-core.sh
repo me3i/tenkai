@@ -121,8 +121,8 @@ qerr="$(grep -E 'TypeError|ReferenceError|is not defined|SyntaxError|is not crea
 
 echo; echo "=== 2. bar renders; workspaces match nested Hyprland ==="
 # cold start: the layer map can trail the IPC by a few seconds
-for _ in $(seq 1 40); do H layers 2>/dev/null | grep -q 'namespace: ryoku-frame' && break; sleep 0.5; done
-H layers | grep -q 'namespace: ryoku-frame' && ok "bar layer present (ryoku-frame)" || bad "no bar layer"
+for _ in $(seq 1 40); do H layers 2>/dev/null | grep -q 'namespace: tenkai-frame' && break; sleep 0.5; done
+H layers | grep -q 'namespace: tenkai-frame' && ok "bar layer present (tenkai-frame)" || bad "no bar layer"
 for _ in $(seq 1 60); do case "$(IPC layout)" in \{*) break;; esac; sleep 0.5; done
 case "$(IPC layout)" in \{*) ok "qsbar IPC live";; *) bad "qsbar IPC never appeared";; esac
 # Owner directive: this pass runs on workspace 1 only. Do not focus or create

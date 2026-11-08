@@ -346,7 +346,7 @@ Scope {
         // Editing lifts the desktop above open windows so the stage is never
         // obscured by whatever was in front; Done drops it back under them.
         WlrLayershell.layer: root.stageComposing ? WlrLayer.Top : WlrLayer.Bottom
-        WlrLayershell.namespace: "ryoku-widgets"
+        WlrLayershell.namespace: "tenkai-widgets"
         // None while nothing on this layer wants the keyboard, so this
         // full-screen Bottom layer never holds focus on an empty workspace
         // (which would otherwise leave the next-opened window unfocused).

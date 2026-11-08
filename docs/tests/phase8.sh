@@ -31,7 +31,7 @@ H() {
   XDG_RUNTIME_DIR="$rt" HYPRLAND_INSTANCE_SIGNATURE="$sig" hyprctl "$@" 2>/dev/null
 }
 D() { H dispatch "hl.dsp.global(\"tenkai:$1\")" >/dev/null 2>&1; }
-bar_up() { H layers | grep -q 'namespace: ryoku-frame'; }
+bar_up() { H layers | grep -q 'namespace: tenkai-frame'; }
 launcher_layers() { H layers | grep -c 'namespace: launcher'; }
 all_layers() { H layers | grep -c 'Layer '; }
 owner() { busctl --address="${BUS:-$(cat "$RUN/bus")}" list --no-legend 2>/dev/null | awk -v n="$1" '$1==n{print $2}' | grep -v '^-$'; }
@@ -164,7 +164,7 @@ echo "=== verify-untouched BEFORE ==="
 echo; echo "=== S0: every module on ==="
 set_mods '{}'
 start || { exit 1; }
-bar_up && ok "S0 bar renders (ryoku-frame layer)" || bad "S0 no bar layer"
+bar_up && ok "S0 bar renders (tenkai-frame layer)" || bad "S0 no bar layer"
 shot s0-a
 D launcher; sleep 1.3
 [ "$(launcher_layers)" = 1 ] && ok "S0 launcher opens on the bound shortcut" || bad "S0 launcher layers=$(launcher_layers)"
@@ -258,7 +258,7 @@ echo; echo "=== S7: bar=false ==="
 set_mods '{"bar":false}'
 start || { exit 1; }
 bar_up && bad "S7 a bar layer still exists" || ok "S7 no bar layer created"
-[ "$(H layers | grep -c 'namespace: ryoku-frame-edge')" = 0 ] && ok "S7 no frame edge layers" || bad "S7 frame edge layers remain"
+[ "$(H layers | grep -c 'namespace: tenkai-frame-edge')" = 0 ] && ok "S7 no frame edge layers" || bad "S7 frame edge layers remain"
 shot s7-a
 D launcher; sleep 1.3
 [ "$(launcher_layers)" = 1 ] && ok "S7 launcher still opens without the bar" || bad "S7 launcher layers=$(launcher_layers)"

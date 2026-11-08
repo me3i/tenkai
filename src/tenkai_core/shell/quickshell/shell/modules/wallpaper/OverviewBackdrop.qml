@@ -12,7 +12,7 @@ import "Singletons"
 // backdrop region, so the surface is composited there.
 //
 // It sits BELOW the desktop's own opaque wallpaper (modules/desktop, the
-// ryoku-widgets Bottom-layer surface), so with the overview closed it is
+// tenkai-widgets Bottom-layer surface), so with the overview closed it is
 // completely covered and the desktop reads exactly as before; only the overview,
 // which exposes the backdrop, reveals it.
 //

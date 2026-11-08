@@ -2031,7 +2031,7 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
     printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
     printf 'layer-namespace\tryoku-osd\tOSD, only on a brightness/volume change\n'
-    printf 'layer-namespace\tryoku-widgets\tthe transparent desktop-widget layer (always mapped)\n'
+    printf 'layer-namespace\ttenkai-widgets\tthe transparent desktop-widget layer (always mapped)\n'
     printf 'socket\t%s\ttenkai-shell control socket\n' "$rt/tenkai-shell.sock"
     ;;
   full)
@@ -2043,7 +2043,7 @@ live_claims() { # $1 = profile -> "kind<TAB>name<TAB>note"
     printf 'layer-namespace\tlauncher\tlauncher surface, only while it is open\n'
     printf 'layer-namespace\tryoku-control\tquick settings surface, only while it is open\n'
     printf 'layer-namespace\tryoku-osd\tOSD surface\n'
-    printf 'layer-namespace\tryoku-frame\tthe bar (top edge)\n'
+    printf 'layer-namespace\ttenkai-frame\tthe bar (top edge)\n'
     printf 'layer-namespace\tryoku-tray\tthe tray (edge panel)\n'
     printf 'layer-namespace\tryoku-notifications\tnotification column (edge)\n'
     printf 'layer-namespace\twallpaper-bg\tthe wallpaper\n'
@@ -2106,7 +2106,7 @@ live_print_claims() { # $1 = profile, $2 = abort-any | abort-unexpected
       # be stopped first, and the caller checks the two D-Bus names by hand.
       case "$kind:$name" in
       dbus-name:org.freedesktop.Notifications|dbus-name:org.kde.StatusNotifierWatcher) ;;
-      layer-namespace:wallpaper-bg|layer-namespace:ryoku-frame|layer-namespace:ryoku-tray|layer-namespace:ryoku-notifications) ;;
+      layer-namespace:wallpaper-bg|layer-namespace:tenkai-frame|layer-namespace:ryoku-tray|layer-namespace:ryoku-notifications) ;;
       *) collide=1 ;;
       esac
       printf '%-16s %-34s %-26s %s\n' "$kind" "$name" "OWNED BY PID $owner" "$note"
@@ -2308,7 +2308,7 @@ live_all_gone() {
 live_ready() {
   # The bar layer is mapped and the notification name belongs to one of Tenkai's
   # own recorded processes. Both are read-only checks against the live session.
-  hyprctl -j layers 2>/dev/null | grep -q "ryoku-frame" || return 1
+  hyprctl -j layers 2>/dev/null | grep -q "tenkai-frame" || return 1
   local owner p
   owner="$(live_dbus_owner org.freedesktop.Notifications)"
   [ -n "$owner" ] || return 1

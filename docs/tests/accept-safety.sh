@@ -132,7 +132,7 @@ q2) # no dead code, no personal strings, no ryoku names outside the allowed ones
   # a ryoku-named string outside the places where it belongs.
   # Allowed on purpose: the helper binaries keep their real names
   # (ryoku-cmd-brightness, ryoku-cmd-radio, ryoku-eq, ...); `src/tenkai_core` is
-  # this project's own path; `ryoku-frame` is the layer-shell namespace the
+  # this project's own path; `tenkai-frame` is the layer-shell namespace the
   # live Hyprland layer rules point at, so renaming it would need a config
   # change that is out of bounds.
   stray="$(grep -rn 'ryoku' --include='*.qml' --include='*.go' --include='*.sh' \

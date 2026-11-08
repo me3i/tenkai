@@ -31,7 +31,7 @@ BK="$(mktemp -d)"; trap 'rm -rf "$BK"' EXIT
 SIG=""; QS=""
 H(){ XDG_RUNTIME_DIR="$RT" HYPRLAND_INSTANCE_SIGNATURE="$SIG" hyprctl "$@" 2>/dev/null; }
 D(){ H dispatch "hl.dsp.global(\"tenkai:$1\")" >/dev/null 2>&1; }
-bar_up(){ H layers | grep -q 'namespace: ryoku-frame'; }
+bar_up(){ H layers | grep -q 'namespace: tenkai-frame'; }
 cc_layers(){ H -j layers | jq '[to_entries[] | .value.levels | to_entries[] | .value[]? | select(.namespace=="ryoku-control")] | length' 2>/dev/null; }
 # The panel's first build takes a moment (the QML is compiled when the host is
 # built), so the check polls for the surface instead of assuming a fixed wait.
@@ -80,7 +80,7 @@ stop
 echo; echo "=== B: bar ON, control_center OFF ==="
 set_mods '{"control_center":false}'
 start || exit 1
-bar_up && ok "B: the bar still renders (ryoku-frame)" || bad "B: the bar is missing"
+bar_up && ok "B: the bar still renders (tenkai-frame)" || bad "B: the bar is missing"
 D quicksettings; sleep 2.5
 n="$(cc_layers)"; [ "${n:-1}" = "0" ] && ok "B: the control centre stayed shut with its flag off (layers=0)" || bad "B: the control centre opened although its flag is off (layers=$n)"
 bar_up && ok "B: the bar survived the attempt" || bad "B: the bar broke"

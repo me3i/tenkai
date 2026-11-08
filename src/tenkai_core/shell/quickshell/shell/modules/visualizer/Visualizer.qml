@@ -83,7 +83,7 @@ Item {
         // the whole screen and ignores reservations.
         exclusionMode: Config.styleId === "curtain" ? ExclusionMode.Normal : ExclusionMode.Ignore
         WlrLayershell.layer: root.raised ? WlrLayer.Top : WlrLayer.Bottom
-        WlrLayershell.namespace: "ryoku-visualizer"
+        WlrLayershell.namespace: "tenkai-visualizer"
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
 
         // empty input region: every click falls through to windows above, so the

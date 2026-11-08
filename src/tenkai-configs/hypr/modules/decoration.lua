@@ -88,7 +88,7 @@ hl.config({
   },
 })
 
--- Sidebar panels stay mapped at a 1 px floor, like ryoku-frame-edge. Their QML
+-- Sidebar panels stay mapped at a 1 px floor, like tenkai-frame-edge. Their QML
 -- resize and exclusive-zone motion never remaps the layer, so no_anim would only
 -- affect startup. The clear dismiss layer is not matched by any blur rule.
 

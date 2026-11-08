@@ -175,7 +175,7 @@ Scope {
         WlrLayershell.keyboardFocus: frameMenus.keyboardMode === "exclusive" ? WlrKeyboardFocus.Exclusive
             : frameMenus.keyboardMode === "ondemand" ? WlrKeyboardFocus.OnDemand
             : WlrKeyboardFocus.None
-        WlrLayershell.namespace: "ryoku-frame"
+        WlrLayershell.namespace: "tenkai-frame"
         anchors { top: true; left: true; right: true; bottom: true }
 
         // Input catches the drawn rails and their 1px hover strips, plus every
