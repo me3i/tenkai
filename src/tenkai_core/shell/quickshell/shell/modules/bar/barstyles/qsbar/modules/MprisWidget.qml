@@ -67,7 +67,6 @@ Item {
         }
     }
 
-    // ── equalizer bar heights (0.0 - 1.0) ──
     property real barH1: 0.08
     property real barH2: 0.08
     property real barH3: 0.08
@@ -291,7 +290,6 @@ Item {
             }
         }
 
-        // ── equalizer canvas ──
         Canvas {
             id: eqCanvas
             implicitWidth: 16
