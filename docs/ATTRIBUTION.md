@@ -41,7 +41,7 @@ Sound files and their upstream credits (from `NOTICE`):
 `shutter.oga` (freesound user horsthorstensen, CC-BY-SA),
 `volume-change.oga` (Lucas McCallister, CC-BY-SA).
 
-## Font audit (2026-11-08) — blocking for a public repository
+## Font audit (2026-11-08) — eleven faces removed
 
 Every bundled font file was opened with fontTools and its `name` table read
 (IDs 0/1/13/14), plus the OS/2 `fsType` embedding bit. Hashes are of the file as
@@ -70,25 +70,44 @@ None of the eleven flagged files has a readme, licence or purchase receipt besid
 it: `git ls-files` under `shell/assets/fonts/` returns only the font binaries.
 All eleven arrive from upstream Ryoku, so this is inherited, not introduced here.
 
-**STOPPED for the owner.** Removing or replacing these fonts is a copyright
-decision, not an engineering one, so nothing was deleted. Each is referenced by
-one or two QML files (a font picker list); removing them means editing that list
-too. Options: (a) delete the flagged files and their list entries, (b) keep the
-repository private, (c) replace them with OFL faces and keep the names as
-aliases.
+### Removed for licence reasons, 2026-11-08
+
+All eleven were deleted from the tree in commit "fix(legal): remove fonts with
+unverified or non-redistributable licences". The public tree distributes none of
+them now, so no licence question remains for these files; the table above is kept
+as the audit trail (file name, hash, embedded text, verdict) so the decision can
+be reviewed later.
+
+What changed with them:
+
+* `src/tenkai_core/shell/quickshell/shell/assets/fonts/` no longer exists.
+* `shell/modules/desktop/Singletons/Fonts.qml` was deleted and its `qmldir`
+  entry removed. It existed only to `FontLoader` these eleven files into the
+  shell process; nothing referenced `Fonts.` anywhere in QML.
+* `hub/quickshell/pages/WidgetsPage.qml` no longer names them: `fontOptions` is
+  the live `fc-list` result, so the widget-font picker offers installed families.
+
+Effect on a running install: the shell's own type is `Theme.fontPrimary`, which
+is `Config.fontFamily` when set and `"Space Grotesk"` otherwise — Space Grotesk is
+OFL and still shipped, so the bar's default type is unchanged. A user who had
+explicitly picked one of the eleven as their widget font keeps the stored string
+and now renders in Qt's default family; nothing else falls back silently.
+
+No font was required for the bar to render: the eleven were only entries in those
+two picker lists, and `grep -rn "bundledFonts\|Fonts.qml\|Singleton Fonts"` over
+the tree returns nothing after the removal.
 
 ## Fonts
 
-15 font files are distributed in the tree. Two families ship with their licence
-text; the rest are inherited verbatim from upstream Ryoku's asset directory and
-**their licences are not stated in either tree**.
+Four font files are distributed in the tree. `git ls-files | grep -iE '\.(ttf|otf)$'`
+is the check.
 
 | Font | File(s) | Licence | Status |
 | --- | --- | --- | --- |
-| Space Grotesk | `src/tenkai-assets/fonts/space-grotesk/SpaceGrotesk[wght].ttf` | SIL OFL 1.1 — `OFL.txt` ships beside it | TESTED (licence file present) |
-| Fraunces (roman + italic) | `src/tenkai-assets/fonts/fraunces/Fraunces[SOFT,WONK,opsz,wght].ttf`, `Fraunces-Italic[…]` | SIL OFL 1.1 — `OFL.txt` ships beside it | TESTED (licence file present) |
-| Archivo Black | `src/tenkai_core/hub/quickshell/fonts/archivo-black.ttf` | Published by Google Fonts as OFL 1.1, but no licence file ships in either tree | UNVERIFIED — owner decision |
-| Abberancy, Daydream (demo), JF Flat, Overhead, Reckoner (+Bold), Sabana, Unrealised, Vexa Light, VIP Rawy, Xenophobia Nominal | `src/tenkai_core/shell/quickshell/shell/assets/fonts/*` (11 files, the widget display faces offered by the Hub's widget-font picker) | **Not stated anywhere in the repo or upstream** | UNVERIFIED — owner decision needed before this repo stays public |
+| Space Grotesk | `src/tenkai-assets/fonts/space-grotesk/SpaceGrotesk[wght].ttf` | SIL OFL 1.1 — `OFL.txt` ships beside it | TESTED (licence file present, name table states OFL 1.1) |
+| Fraunces (roman + italic) | `src/tenkai-assets/fonts/fraunces/Fraunces[SOFT,WONK,opsz,wght].ttf`, `Fraunces-Italic[…]` | SIL OFL 1.1 — `OFL.txt` ships beside it | TESTED (licence file present, name table states OFL 1.1) |
+| Archivo Black | `src/tenkai_core/hub/quickshell/fonts/archivo-black.ttf` | OFL 1.1: the name table carries "Copyright 2017 The Archivo Black Project Authors" and the OFL URL, and the upstream project is `Omnibus-Type/ArchivoBlack` (OFL-1.1) | TESTED via name table; no separate licence file ships beside the binary |
+| ~~Abberancy, Daydream, JF Flat, Overhead, Reckoner (+Bold), sabana, Unrealised, VEXA Light, VIP Rawy, Xenophobia~~ | removed 2026-11-08 | not stated anywhere | **REMOVED** — see the audit table above |
 
 Not distributed: JetBrains Mono Nerd Font, Inter, Noto Sans and Noto Color Emoji
 are installed as Arch packages and used under their own licences.

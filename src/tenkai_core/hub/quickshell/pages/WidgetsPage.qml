@@ -75,18 +75,13 @@ Item {
     property var committed: ({})
     property bool loaded: false
 
-    // Widget-font picker source. The bundled NibrasShell display faces (mirrors
-    // the shell's Fonts singleton -- these live in the shell process, not
-    // fontconfig, so they are named here as literals) come first, then every
-    // installed family, read live like the Global page's system-font picker.
-    // Injected into the widgetFont row's options so all fonts are reachable.
-    readonly property var bundledFonts: [
-        "Reckoner", "Reckoner Bold", "JF Flat", "Abberancy", "Daydream",
-        "sabana", "Unrealised", "VIP Rawy Regular", "Xenophobia",
-        "VEXA light R", "Overhead BRK"
-    ]
+    // Widget-font picker source: every installed family, read live, like the
+    // Global page's system-font picker. The eleven bundled display faces this
+    // list used to name first were removed in 2026-11-08 because their licences
+    // do not permit redistribution; see docs/ATTRIBUTION.md. A stored widget font
+    // that named one of them now falls back to the shell's default family.
     property var fontList: []
-    readonly property var fontOptions: pg.bundledFonts.concat(pg.fontList)
+    readonly property var fontOptions: pg.fontList
 
     Process {
         id: fonts

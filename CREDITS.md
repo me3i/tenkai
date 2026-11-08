@@ -27,12 +27,23 @@ adapted by Ryoku and carried through into Tenkai. See `NOTICE`.
 
 ## Fonts
 
-- **Space Grotesk** and **Fraunces** — SIL Open Font License 1.1, fetched from
-  the Google Fonts repository (`ofl/spacegrotesk`, `ofl/fraunces`). The OFL
-  texts live next to the files in `.run/data/fonts/OFL-*.txt`; the fonts are
-  fetched by setup rather than committed.
+- **Space Grotesk** and **Fraunces** (roman + italic) — SIL Open Font License
+  1.1, from the Google Fonts repository (`ofl/spacegrotesk`, `ofl/fraunces`).
+  The fonts are committed, not fetched: `src/tenkai-assets/fonts/`, with
+  `OFL.txt` beside each family. `install.sh` step 9 copies them to
+  `~/.local/share/fonts/tenkai/` (user-local, no sudo).
+- **Archivo Black** — OFL 1.1, at `src/tenkai_core/hub/quickshell/fonts/`.
+  The licence is recorded in the font's own name table; the upstream project is
+  `Omnibus-Type/ArchivoBlack`.
 - **JetBrains Mono Nerd Font**, **Inter**, **Noto Sans**, **Noto Color Emoji**
   — installed as Arch packages and used under their own licences.
+
+Eleven bundled display faces that upstream ships in the shell's asset directory
+(Abberancy, Daydream, JF Flat, Overhead, Reckoner + Bold, sabana, Unrealised,
+VEXA Light, VIP Rawy, Xenophobia) were **removed on 2026-11-08**: their licences
+are personal-use, proprietary, or unstated, and this repository is public. Their
+per-file audit — hashes, embedded licence text, verdict — is kept in
+[`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md).
 
 ## Upstream assets
 
