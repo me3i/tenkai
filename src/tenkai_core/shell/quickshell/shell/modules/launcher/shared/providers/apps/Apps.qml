@@ -5,7 +5,6 @@ import Tenkai.Ui.Singletons
 import "../../Singletons"
 import "../../../../../utils/fuzzy.js" as Fuzzy
 import "appactions.js" as AppActions
-import ".."
 
 // Desktop-application provider: ranks XDG entries by fuzzy match + launch
 // frequency (the same ranker the pill launcher used) and launches the picked one.
