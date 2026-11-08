@@ -159,6 +159,40 @@ your live desktop:
 [`docs/LIVE-CHECKLIST.md`](docs/LIVE-CHECKLIST.md) before running Tenkai on a
 live session and [`docs/ROLLBACK.md`](docs/ROLLBACK.md) for the way back.
 
+## What this README does not claim, and why
+
+Two claims were removed on 2026-11-08 because they could not be tested here. This
+section records the attempts so the next person does not repeat them.
+
+**Idle memory and CPU.** The old figures (482 MB RSS / 231 MB PSS, ~0.3-0.6 s CPU
+per 60 s) come from a live trial on 2026-11-01 that was not re-run. What *was*
+measured on 2026-11-08, inside the project's own sandbox (`.run/home`, a private
+`dbus-run-session`, no compositor), is the Go daemon alone:
+
+```
+tenkai-shell daemon   Rss: 15188 kB   Pss: 13364 kB
+```
+
+The QML shell process could not be started at all:
+`Could not find "shell" config directory in any valid config path.` — Quickshell
+needs a compositor to create its layer surfaces, and no isolated compositor is
+available on this machine:
+
+- `Hyprland` nested inside `weston --backend=headless-backend.so` aborts with
+  `CBackend::create() failed!` (aquamarine 0.16.0, Hyprland 0.57.1), both with
+  `AQ_BACKENDS=wayland` and with `AQ_BACKENDS=headless`;
+- the only DRM devices (`/dev/dri/card1`, `card2`) belong to the running session,
+  and taking them is exactly what a second shell must not do;
+- no `Xvfb`, `cage` or `sway` is installed, and installing is out of scope.
+
+Measuring the real number needs one of: a second machine or VM, a free VT with an
+unused GPU, or a compositor aquamarine accepts. Until then, treat "lighter" as a
+statement about the components that were removed, not about idle memory.
+
+**Screenshot parity.** A Tenkai bar screenshot and a Ryoku bar screenshot could not
+be captured, because the Tenkai bar cannot be rendered here for the reason above.
+There is no `docs/screenshots/` pair, and none is claimed.
+
 ## Attribution and license
 
 Tenkai is a **modified derivative of
