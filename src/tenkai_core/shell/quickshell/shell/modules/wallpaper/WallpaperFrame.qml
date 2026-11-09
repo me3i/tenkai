@@ -16,12 +16,15 @@ QtObject {
     property bool mute: true
     property int volume: 100
 
+    // The daemon's pause rules freeze the clip in place rather than dropping back to the still.
+    property bool paused: false
     function apply(line: string): bool {
         try {
             const state = JSON.parse(line);
             const entry = (state.outputs && state.outputs[screenName]) || state.default;
             if (!entry)
                 return false;
+            paused = entry.paused === true;
             ready = true;
             fit = entry.fit || "Cover";
             transition = entry.transition || null;

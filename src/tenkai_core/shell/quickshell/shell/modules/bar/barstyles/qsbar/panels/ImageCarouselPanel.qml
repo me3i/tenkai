@@ -210,7 +210,7 @@ PanelWindow {
         var path = filtered[selFilt].filePath; if (!path) return
         if (isThemeMode) {
             var name = Model.nameForPath(path)
-            applyThemeProc.command = ["env", "TENKAI_PATH=" + root.omarchyInstallRoot, "true", name]
+            applyThemeProc.command = ["env", "TENKAI_PATH=" + root.omarchyInstallRoot, "bash", "-c", "[[ -x \"$TENKAI_PATH/theme-apply.sh\" ]] && \"$TENKAI_PATH/theme-apply.sh\" \"$1\"", "_", name]
             applyThemeProc.running = false; applyThemeProc.running = true
         } else {
             applyBgProc.command = ["ryogami", "wallpaper", "set", path]
