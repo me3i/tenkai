@@ -130,3 +130,5 @@ Reboot then lands on TTY1's standard `login:` prompt; login on TTY1 execs
 Hyprland, and Tenkai's session launcher takes the desktop. No SDDM autologin
 is required for any of this (a login prompt is the requested UX) — SDDM
 itself is unnecessary for TTY1 booting since systemd's getty provides it.
+
+Masked all ryoku systemd user units (`ryoku-session.target`, etc.) to prevent autostart. Purged ryoku .wants symlinks. SDDM disabled. Boot chain: TTY1 -> fish -> Hyprland -> Tenkai.
