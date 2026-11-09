@@ -19,6 +19,7 @@ import "modules/bar"
 import "modules/controlcenter"
 import "modules/dock"
 import "modules/launcher"
+import "modules/overview"
 import "modules/clipboard"
 import QtQuick
 import Quickshell.Io
@@ -202,8 +203,19 @@ ShellRoot {
             // itself must stay visible -- step 5 found that `active: false` left
             // the screen showing Hyprland's built-in wallpaper. Widgets stay
             // off: `widgetsEnabled: false` gates every tile, the glass backdrop
-            // Overview backdrop removed (cut in F3 overview commit).
-                        // Stage now renders entirely inside the desktop surface (one stack:
+            // and the plugin repeater below.
+            LazyLoader {
+                id: backdropLoader
+                activeAsync: Wm.caps.overviewBackdrop === true && WallCfg.OverviewBackdropConfig.enabled
+                OverviewBackdrop {
+                    screen: perScreen.modelData
+                    available: Wm.caps.overviewBackdrop === true
+                    overviewOpen: Wm.overviewOpen
+                    wallpaperUrl: wallpaper.wallpaperUrl
+                }
+            }
+
+            // Stage now renders entirely inside the desktop surface (one stack:
             // backdrop, layers, widgets), so there is no separate Background
             // surface here (docs/stage.md).
                         // The frame bar (Phase 2): reads its own reveal from this slice.
@@ -275,6 +287,27 @@ ShellRoot {
                 }
             }
             Timer { id: launcherHold; interval: 15000 }
+            LazyLoader {
+                id: overviewLoader
+                property bool open: perScreen.st ? perScreen.st.overviewOpen : false
+                property bool showNow: false
+                activeAsync: open || overviewHold.running
+                onItemChanged: if (overviewLoader.item) Qt.callLater(function() { overviewLoader.showNow = overviewLoader.open; })
+                onOpenChanged: {
+                    if (overviewLoader.open) {
+                        if (overviewLoader.item) overviewLoader.showNow = true;
+                        return;
+                    }
+                    overviewLoader.showNow = false;
+                    if (overviewLoader.active) overviewHold.restart();
+                }
+                OverviewSurface {
+                    screen: perScreen.modelData
+                    active: overviewLoader.showNow
+                    onRequestClose: if (perScreen.st) perScreen.st.overviewOpen = false
+                }
+            }
+            Timer { id: overviewHold; interval: 15000 }
 
             LazyLoader {
                 id: clipboardLoader
@@ -440,7 +473,13 @@ ShellRoot {
         case "overview":
             if (Wm.caps.nativeOverview)
                 Wm.toggleOverview();
-            else if (Wm.caps.windowGeometry && st)
+            // No native overview on this compositor, and the Hyprland
+            // provider caps have never arrived in a live session (the
+            // `wm` topic publishes caps only on output events), so the
+            // windowGeometry leg of the old gate silently no-op'd the
+            // entire feature. Surface availability keeps its own gate
+            // below; drop the caps predicate here.
+            else if (st)
                 st.overviewOpen = !st.overviewOpen;
             break;
         case "quicksettings":
