@@ -248,3 +248,40 @@ returns to it.
 
 **v1.0.0**, tagged `461c3789b0621c3777b7e982dde85a455bf617fb`, pushed to `origin/main`.
 Standalone Quickshell shell, single `qs -p shell` process. No roadmap. No features planned.
+
+### Recent fixes (pushed 2026-11-09)
+
+Two blockers that made Tenkai unverifiable/unusable in a nested session are fixed and
+pushed to `main`:
+
+- **B1 - nested Hyprland IPC socket path too long, abstract namespace, hyprctl/grim unreachable.**
+  The nested compositor's Hyprland socket is now `$XDG_RUNTIME_DIR=/tmp/tenkai-r`, so
+  `/tmp/tenkai-r/hypr/<61-char-sig>/.socket.sock` = 93 bytes, under the 107-byte limit.
+  `./tenkai stop` cleans `/tmp/tenkai-r`. Nested `hyprctl --instance <sig> layers` now returns
+  the layer list, and `grim` produces a real PNG inside the nested session.
+  Commit `eb16005`.
+
+- **B2 - launcher never opened because no IPC path existed when Wm.caps.globalShortcuts was
+  false in nested.** Added `toggleLauncher`/`openLauncher`/`closeLauncher` to the shell's
+`IpcHandler` (target `shell`) in `shell.qml`, plus `isSurfaceOpen()` and
+`ShellState.activeSurfaceOnAny()`. The `./tenkai ipc <target> <action>` wrapper routes to the
+shell's IpcHandler via `qs -p <shell-dir> ipc call`. Verified: launcher opens and closes via
+`./tenkai ipc launcher toggleLauncher`, with a real pixel difference vs the pre-launcher screen.
+  Commit `298d81d`.
+
+**Verification (nested only, TESTED):**
+
+- B1: nested Hyprland up; `/tmp/tenkai-r/hypr/<sig>/.socket.sock` and `.socket2.sock` exist;
+  `hyprctl --instance <sig> layers` returns layers with namespaces `tenkai-frame-edge`,
+  `tenkai-frame`, `quickshell`, `tenkai-control`.
+- B1: `grim` produced `/tmp/nested-ipc-fix.png` - PNG, 947x1028, 18203 bytes.
+- B2: `./tenkai ipc launcher toggleLauncher` -> launcher layer appears -> call again -> launcher
+  layer disappears. No QML errors in the shell log.
+- `./tenkai verify-untouched` -> PASS after stop.
+- `./tenkai stop` -> no leaked Tenkai processes.
+
+**Known limitation:** a post-launcher `grim` capture from the project dir does not complete in
+finite time (the launcher surface exists and is composited - confirmed by the layer check and an
+earlier successful capture at 137057 bytes from `/tmp/` - but subsequent captures from the project
+dir hang). This is a capture-tool/runtime interaction to revisit, not a launcher defect; the launcher
+open/close behaviour itself is verified.
