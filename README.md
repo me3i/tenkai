@@ -23,9 +23,13 @@ screen and the D-Bus service behind it, the network reach of the background
 services, and every component that failed a necessity test.
 
 The result is the same desktop with less in it. Tenkai is a derivative work,
-not a competing vision. "Less in it" is a statement about what is missing, not a
-benchmark: the only idle-memory figure on record predates this audit and was not
-re-measured here (see *Lighter by removal* below).
+not a competing vision. "Less in it" is a statement about what is missing.
+Tenkai's idle memory has been measured once, in a nested test session:
+**578 MB RSS** for the shell process plus daemon, versus **767 MB** for the
+comparable Ryoku session processes (ryoku-shell + qs + ryogami) on the same
+machine. That is a 25% reduction by component removal; the measurement is a
+single snapshot, not a benchmark, and is recorded in
+[docs/PROJECT-CLOSEOUT.md](docs/PROJECT-CLOSEOUT.md).
 
 ## Features
 
@@ -121,8 +125,17 @@ first.
 Then start it in the current session:
 
 ```bash
-./tenkai status    # nothing running yet
-./tenkai start     # join this Hyprland session
+./tenkai status          # show the running Tenkai session, if any
+./tenkai start           # join this Hyprland session (non-interactive, for autostart)
+./tenkai live --profile overlay   # try Tenkai over your live desktop (asks before each change)
+```
+
+For development and testing without touching your live desktop, use the nested
+session — a private Hyprland instance with a confined fake home:
+
+```bash
+./tenkai test            # nested-session test suite
+./tenkai verify-untouched   # prove your live config hashes are unchanged after the test
 ```
 
 Log out and back in after enabling autostart, and your desktop is Tenkai.
@@ -130,18 +143,18 @@ Log out and back in after enabling autostart, and your desktop is Tenkai.
 ## Repository layout
 
 ```
-├── install.sh         the installer (see above)
-├── tenkai             the control script: run / test / status / verify-untouched
+├── install.sh              the installer (see above)
+├── tenkai                  the control script: run / test / status / verify-untouched
 ├── src/
-│   ├── ryoku/         the Ryoku shell tree, adapted by Tenkai
-│   ├── tenkai-configs/  bundled Hyprland Lua config + terminal dotfiles
-│   └── tenkai-assets/   wallpapers and OFL fonts
-├── docs/              checklists, runbooks and the test suite
-├── CHANGES.md         every modification vs upstream
-├── CREDITS.md         attribution
-├── UPSTREAM.md        the pinned upstream commit
-├── NOTICE             upstream copyright and licence notices
-└── LICENSE            GNU GPL v3
+│   ├── tenkai_core/        the Ryoku shell tree, adapted by Tenkai
+│   ├── tenkai-configs/     bundled Hyprland Lua config + terminal dotfiles
+│   └── tenkai-assets/      wallpapers and OFL fonts
+├── docs/                   checklists, runbooks and the test suite
+├── CHANGES.md              every modification vs upstream
+├── CREDITS.md              attribution
+├── UPSTREAM.md             the pinned upstream commit
+├── NOTICE                  upstream copyright and licence notices
+└── LICENSE                 GNU GPL v3
 ```
 
 ## Development
