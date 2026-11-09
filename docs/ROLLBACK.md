@@ -103,3 +103,30 @@ Consequences:
 
 That is a bug, not a rollback situation: stop using it, keep the checkout as
 evidence, and report what changed.
+
+## Boot policy (why Tenkai becomes the default desktop)
+
+Fixed Ryoku boot auto-launch is driven by the systemd **user** target
+`ryoku-session.target`, **not** by `/usr/bin/start-hyprland`. Read directly,
+`/usr/bin/start-hyprland` is an ELF launcher that only resolves the exec path
+given in `/usr/share/wayland-sessions/hyprland.desktop`
+(`Exec=/usr/bin/start-hyprland`); it does not fire any Ryoku commands.
+
+Making Tenkai the login default therefore requires:
+
+1. Mask the Ryoku target so nothing can start it at user-session boot:
+   `systemctl --user mask ryoku-session.target`
+2. Point the TTY1 login shell at the Hyprland compositor via fish
+   (`~/.config/fish/config.fish`, end of file):
+
+   ```fish
+   # Automatically launch Hyprland on TTY1
+   if test -z "$DISPLAY"; and test -z "$WAYLAND_DISPLAY"; and test "$XDG_VTNR" = 1
+       exec start-hyprland
+   end
+   ```
+
+Reboot then lands on TTY1's standard `login:` prompt; login on TTY1 execs
+Hyprland, and Tenkai's session launcher takes the desktop. No SDDM autologin
+is required for any of this (a login prompt is the requested UX) — SDDM
+itself is unnecessary for TTY1 booting since systemd's getty provides it.
