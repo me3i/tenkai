@@ -1,6 +1,16 @@
-# Tenkai
+<p align="center">
+  <img src="docs/assets/tenkai_banner.png" alt="Tenkai Banner" width="100%">
+</p>
 
-A standalone Quickshell shell forked from Ryoku.
+<h1 align="center">Tenkai · 天界</h1>
+
+<p align="center"><strong>The Celestial Lite version of Ryoku Quickshell.</strong></p>
+
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-GPL--3.0-blue.svg" alt="GPL-3.0"></a>
+  <a href="https://archlinux.org"><img src="https://img.shields.io/badge/Arch_Linux-1793D1?logo=arch-linux&logoColor=white" alt="Arch Linux"></a>
+  <a href="https://hyprland.org"><img src="https://img.shields.io/badge/Hyprland-58E1FF?logo=hyprland&logoColor=black" alt="Hyprland"></a>
+</p>
 
 ## What Tenkai is
 
