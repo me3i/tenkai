@@ -204,6 +204,24 @@ ShellRoot {
             // the screen showing Hyprland's built-in wallpaper. Widgets stay
             // off: `widgetsEnabled: false` gates every tile, the glass backdrop
             // and the plugin repeater below.
+            //
+            // The repaint leg lives in a dedicated surface rather than the
+            // (cut) desktop-widgets layer: when the ryogami topic moves, the
+            // Backdrop gets a new url/revision and reveals over the old frame.
+            // A build atop `Desktop` would also drag the whole stage/widgets
+            // stack back; this is the wallpaper painter, no widgets.
+            WallpaperView {
+                id: wallpaperView
+                screen: perScreen.modelData
+                wallpaperUrl: wallpaper.wallpaperUrl
+                wallpaperFit: wallpaper.fit
+                wallpaperTransition: wallpaper.transition
+                videoUrl: wallpaper.videoUrl
+                wallpaperLive: wallpaper.live
+                videoMuted: wallpaper.videoMuted
+                videoVolume: wallpaper.videoVolume
+            }
+
             LazyLoader {
                 id: backdropLoader
                 activeAsync: Wm.caps.overviewBackdrop === true && WallCfg.OverviewBackdropConfig.enabled
