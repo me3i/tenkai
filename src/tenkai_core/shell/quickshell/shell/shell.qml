@@ -702,6 +702,7 @@ ShellRoot {
         function toggleOverview(): void { root.toggleSurface("overview") }
         function toggleScreenshot(): void { root.toggleSurface("screenshot") }
         function toggleStash(): void { root.toggleSurface("stash") }
+        function toggleWallpaper(): void { root.toggleSurface("wallpaper-menu") }
         function openLauncher(): void {
             if (!root.isSurfaceOpen("launcher"))
                 root.toggleSurface("launcher")

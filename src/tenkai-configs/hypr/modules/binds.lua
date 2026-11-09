@@ -62,7 +62,7 @@ hl.bind(K(mod .. " + J"),         hl.dsp.exec_cmd("ryotunes"))                  
 hl.bind(K(mod .. " + D"), hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleLauncher")) -- open the app launcher
 hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/dev/null || flock -n -o /tmp/tenkai-keys.lock qs -c keys")) -- keybind cheatsheet: toggle (press to open, press again to close)
 hl.bind(K(mod .. " + Escape"),    hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleQuickSettings")) -- quick settings: power, logout, restart, shutdown, wifi
-hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("ryogami wallpaper ui"))     -- ryogami wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo
+hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleWallpaper"))     -- wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo
 hl.bind(K(mod .. " + SHIFT + W"), hl.dsp.exec_cmd("ryogami wallpaper random")) -- random wallpaper, random transition
 hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("tenkai-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
 hl.bind(K(mod .. " + V"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleClipboard")) -- clipboard (sidebar deep link)
