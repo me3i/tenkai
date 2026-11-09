@@ -12,7 +12,7 @@ hl.bind(K(mod .. " + T"),         hl.dsp.group.toggle())                        
 -- hl.bind(K(mod .. " + SHIFT + D"), hl.dsp.window.fullscreen({ mode = "maximized" })) -- Maximise
 hl.bind(K(mod .. " + C"),         hl.dsp.window.center())                           -- Centre
 hl.bind(K("ALT + Tab"),           hl.dsp.focus({ last = true }))                    -- Last window
-hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("tenkai-monitor toggle"))         -- mirror or extend displays (monitor layout)
+hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-monitor toggle"))         -- mirror or extend displays (monitor layout)
 
 -- Focus and move windows
 hl.bind(K(mod .. " + Left"),          hl.dsp.focus({ direction = "left" }))        -- focus left
@@ -46,11 +46,11 @@ hl.bind(K(mod .. " + CTRL + ALT + Up"),     hl.dsp.workspace.move({ monitor = "u
 hl.bind(K(mod .. " + CTRL + ALT + Down"),   hl.dsp.workspace.move({ monitor = "d" })) -- Send workspace to screen down
 
 -- Apps
-hl.bind(K(mod .. " + Return"),    hl.dsp.exec_cmd("tenkai-app terminal"))           -- terminal
-hl.bind(K(mod .. " + E"),         hl.dsp.exec_cmd("tenkai-app files"))              -- file manager
-hl.bind(K(mod .. " + B"),         hl.dsp.exec_cmd("tenkai-app browser"))            -- browser
-hl.bind(K(mod .. " + N"),         hl.dsp.exec_cmd("tenkai-app editor"))             -- editor
-hl.bind(K(mod .. " + O"),         hl.dsp.exec_cmd("tenkai-app notes"))              -- notes
+hl.bind(K(mod .. " + Return"),    hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-app terminal"))           -- terminal
+hl.bind(K(mod .. " + E"),         hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-app files"))              -- file manager
+hl.bind(K(mod .. " + B"),         hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-app browser"))            -- browser
+hl.bind(K(mod .. " + N"),         hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-app editor"))             -- editor
+hl.bind(K(mod .. " + O"),         hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-app notes"))              -- notes
 hl.bind(K(mod .. " + ALT + E"),   hl.dsp.exec_cmd("kitty -e yazi"))               -- yazi file manager
 hl.bind(K(mod .. " + J"),         hl.dsp.exec_cmd("ryotunes"))                     -- open Ryotunes (single-instance: a second press focuses it)
 
@@ -64,18 +64,18 @@ hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/d
 hl.bind(K(mod .. " + Escape"),    hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleQuickSettings")) -- quick settings: power, logout, restart, shutdown, wifi
 hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleWallpaper"))     -- wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo
 hl.bind(K(mod .. " + SHIFT + W"), hl.dsp.exec_cmd("ryogami wallpaper random")) -- random wallpaper, random transition
-hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("tenkai-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
+hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
 hl.bind(K(mod .. " + V"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleClipboard")) -- clipboard (sidebar deep link)
 hl.bind(K(mod .. " + Tab"),       hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleOverview")) -- workspace overview (expo: live previews, drag windows between workspaces, cycle)
 hl.bind(K(mod .. " + ALT + Tab"), hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleOverview")) -- workspace overview, stepping desktops (Alt+Tab again inside cycles desktops)
 -- Super+M visualizer keybinds removed here (F3 cut the visualizer: no QML,
 -- shortcut or surface backend remains, so they were dead in every mode).
-hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("tenkai-shell voice"))             -- voice typing: speech-to-text with a mic wave (tap again to stop)
-hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("tenkai-shell hub open"))     -- tenkai settings
+hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-shell voice"))             -- voice typing: speech-to-text with a mic wave (tap again to stop)
+hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-shell hub open"))     -- tenkai settings
 hl.bind(K(mod .. " + S"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleStash"))         -- sidebar: screen time and downloads
 hl.bind(K(mod .. " + SHIFT + S"), hl.dsp.exec_cmd("flock -n -o /tmp/ryoshot.lock qs -c ryoshot"))  -- screenshot: capture, annotate and beautify
-hl.bind(K(mod .. " + ALT + Space"), hl.dsp.exec_cmd("tenkai-summon Rashin flock -n -o /tmp/rashin-app.lock rashin-app")) -- Rashin app: the AI companion window (a second press focuses it)
-hl.bind(K(mod .. " + L"),         hl.dsp.exec_cmd("tenkai-shell lock"))             -- lock the screen (qylock) lockscreen
+hl.bind(K(mod .. " + ALT + Space"), hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-summon Rashin flock -n -o /tmp/rashin-app.lock rashin-app")) -- Rashin app: the AI companion window (a second press focuses it)
+hl.bind(K(mod .. " + L"),         hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-shell lock"))             -- lock the screen (qylock) lockscreen
 hl.bind(K(mod .. " + SHIFT + C"), hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick a color
 
 -- Move/resize with the mouse
@@ -120,20 +120,24 @@ end
 
 -- Media and volume keys. tenkai-volume honours the volume panel's BOOST toggle
 -- (Config.qsbar.audioBoost in shell.json): off = safe 100% cap, on = 150%.
-hl.bind(K("XF86AudioRaiseVolume"), hl.dsp.exec_cmd("tenkai-volume up"),   { locked = true, repeating = true }) -- raise the volume
-hl.bind(K("XF86AudioLowerVolume"), hl.dsp.exec_cmd("tenkai-volume down"), { locked = true, repeating = true }) -- lower the volume
+hl.bind(K("XF86AudioRaiseVolume"), hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-volume up"),   { locked = true, repeating = true }) -- raise the volume
+hl.bind(K("XF86AudioLowerVolume"), hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-volume down"), { locked = true, repeating = true }) -- lower the volume
 hl.bind(K("XF86AudioMute"),        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true })
 hl.bind(K("XF86AudioMicMute"),     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true })
 hl.bind(K("XF86AudioPlay"),        hl.dsp.exec_cmd("playerctl play-pause"),                           { locked = true })
 hl.bind(K("XF86AudioNext"),        hl.dsp.exec_cmd("playerctl next"),                                 { locked = true })
 hl.bind(K("XF86AudioPrev"),        hl.dsp.exec_cmd("playerctl previous"),                             { locked = true })
-hl.bind(K(mod .. " + SHIFT + A"), hl.dsp.exec_cmd("tenkai-restart-audio")) -- recover audio when sound stops coming back
+hl.bind(K(mod .. " + SHIFT + A"), hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-restart-audio")) -- recover audio when sound stops coming back
 
 -- Brightness keys (laptop backlight + external DDC monitors)
-hl.bind(K("XF86MonBrightnessUp"),   hl.dsp.exec_cmd("tenkai-cmd-brightness +2"), { locked = true, repeating = true }) -- raise screen brightness
-hl.bind(K("XF86MonBrightnessDown"), hl.dsp.exec_cmd("tenkai-cmd-brightness -2"), { locked = true, repeating = true }) -- lower screen brightness
+hl.bind(K("XF86MonBrightnessUp"),   hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-cmd-brightness +2"), { locked = true, repeating = true }) -- raise screen brightness
+hl.bind(K("XF86MonBrightnessDown"), hl.dsp.exec_cmd("PATH=$HOME/projects/tenkai/.run/bin:$PATH tenkai-cmd-brightness -2"), { locked = true, repeating = true }) -- lower screen brightness
 
--- Touchpad lock (the FN touchpad key), through the window-manager seam
-hl.bind(K("XF86TouchpadToggle"), hl.dsp.exec_cmd("tenkai wm act input.touchpad toggle"), { locked = true }) -- toggle the touchpad
-hl.bind(K("XF86TouchpadOn"),     hl.dsp.exec_cmd("tenkai wm act input.touchpad on"),     { locked = true }) -- enable the touchpad
-hl.bind(K("XF86TouchpadOff"),    hl.dsp.exec_cmd("tenkai wm act input.touchpad off"),    { locked = true }) -- disable the touchpad
+-- Touchpad lock (the FN touchpad key), through the window-manager seam.
+-- Hyprland's exec_cmd inherits the *live session* HOME (real $HOME), but the
+-- provider's homeGuard demands the fake home, so re-export both HOME and
+-- PATH inline: otherwise every invocation exits "wrong HOME" and the bind
+-- never lands.
+hl.bind(K("XF86TouchpadToggle"), hl.dsp.exec_cmd("env HOME=$HOME/projects/tenkai/.run/home PATH=$HOME/projects/tenkai/.run/bin:/usr/bin:/bin tenkai-wm-hyprland act input.touchpad toggle"), { locked = true }) -- toggle the touchpad
+hl.bind(K("XF86TouchpadOn"),     hl.dsp.exec_cmd("env HOME=$HOME/projects/tenkai/.run/home PATH=$HOME/projects/tenkai/.run/bin:/usr/bin:/bin tenkai-wm-hyprland act input.touchpad on"),     { locked = true }) -- enable the touchpad
+hl.bind(K("XF86TouchpadOff"),    hl.dsp.exec_cmd("env HOME=$HOME/projects/tenkai/.run/home PATH=$HOME/projects/tenkai/.run/bin:/usr/bin:/bin tenkai-wm-hyprland act input.touchpad off"),    { locked = true }) -- disable the touchpad
