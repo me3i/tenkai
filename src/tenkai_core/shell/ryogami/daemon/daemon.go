@@ -196,7 +196,11 @@ func runDaemon() error {
 	// instance preloads hidden at boot and Super+W only flips its surface, so
 	// a press never pays a cold QML boot and rapid presses cannot race a
 	// kill/spawn cycle.
-	go d.ui.launch()
+	// TENKAI: wall-ui picker disabled — wallpaper already rendered in-shell by
+	// Desktop.qml Backdrop. The picker (quickshell -p ryogami-wall-ui/shell.qml,
+	// ~270 MB) is a full qs process for the Super+W picker UI only, so disable
+	// it to cut ~270 MB.
+	// go d.ui.launch()
 
 	// Publish the empty snapshot so a subscriber before the first set sees a
 	// defined frame, then restore the last wallpaper and rescan the catalog.

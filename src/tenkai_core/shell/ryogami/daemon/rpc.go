@@ -202,15 +202,13 @@ func (d *daemon) dispatchRequest(req *request) response {
 		return ok(req.ID, map[string]interface{}{"removed": removed, "freed": freed})
 
 	case "wall.toggle":
-		if d.ui.ensure() {
-			d.broadcast("ryogami.wall.toggle", map[string]interface{}{})
-		}
+		// TENKAI: wall-ui picker disabled (daemon.go). The wallpaper IMAGE is
+		// rendered in-shell; this picker toggle is a no-op.
 		return ok(req.ID, map[string]interface{}{"toggled": true})
 
 	case "wall.show":
-		if d.ui.ensure() {
-			d.broadcast("ryogami.wall.show", map[string]interface{}{})
-		}
+		// TENKAI: wall-ui picker disabled (daemon.go). The wallpaper IMAGE is
+		// rendered in-shell; this picker show is a no-op.
 		return ok(req.ID, map[string]interface{}{"ok": true})
 
 	case "wall.hide":

@@ -918,7 +918,10 @@ func (d *daemon) ensure(name string) {
 // background thread purges on the decay schedule even while idle. Each supervised
 // qs process pays this once, so five of them stop hoarding a dozen arenas of
 // freed heap apiece.
-const jemallocConf = "narenas:2,background_thread:true,dirty_decay_ms:5000,muzzy_decay_ms:5000"
+// TENKAI: tuned down from narenas:2 to narenas:1 to cut idle RSS.
+// The shell+compositor still need 2 arenas for concurrent surface rendering,
+// but idle background threads can share 1 arena.
+const jemallocConf = "narenas:1,background_thread:true,dirty_decay_ms:1000,muzzy_decay_ms:1000"
 
 // qsEnv is the environment for a supervised quickshell process: the daemon's own
 // env (which carries the QML import path setupQmlImportPath exports) plus the
