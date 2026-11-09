@@ -1884,6 +1884,14 @@ cmd_run() {
     inner=(env DBUS_SESSION_BUS_ADDRESS="$TENKAI_BUS_ADDRESS" bash "$RUN_DIR/session.sh")
     note "using caller-supplied private bus (TENKAI_BUS_ADDRESS); no dbus-run-session"
   fi
+  # App/terminal launches go through tenkai-app, which switches the child to the
+  # owner's real HOME and XDG dirs (the nested session keeps its own fake HOME for
+  # isolation). Without this seam kitty/starship inside a nested terminal could not
+  # find the owner's configs, so every Tenkai-spawned terminal looked unthemed.
+  # The session script's env scrub passes TENKAI_APP_HOME through by name, so this
+  # reaches tenkai-app without changing the global nested environment.
+  local real_home="$HOME"
+  inner=(env TENKAI_APP_HOME="$real_home" "${inner[@]}")
   local runner=("${inner[@]}")
   if command -v systemd-run >/dev/null 2>&1 && systemd-run --user --scope --quiet true >/dev/null 2>&1; then
     runner=(systemd-run --user --scope --quiet \

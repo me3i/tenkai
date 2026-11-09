@@ -1640,6 +1640,15 @@ func (d *daemon) dispatch(line string) string {
 		}
 		playSound(args[0])
 		return "ok"
+	case "spawn-terminal":
+		// Open the owner's real terminal through tenkai-app, the single launch seam
+		// that switches the child onto the real HOME/XDG dirs (TENKAI_APP_HOME is set
+		// into the nested session by ./tenkai run). A terminal spawned from Tenkai —
+		// launcher or IPC — therefore finds kitty + starship + fish configs exactly like
+		// a terminal started in the live session, instead of inheriting the nested fake
+		// home and showing an unthemed prompt.
+		d.ensure("shell")
+		return shellIpc("spawnTerminal")
 
 	default:
 		return "err unknown command: " + cmd

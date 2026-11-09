@@ -700,6 +700,21 @@ ShellRoot {
             if (root.isSurfaceOpen("launcher"))
                 root.toggleSurface("launcher")
         }
+        function spawnTerminal(): void {
+            // Open the owner's real terminal through tenkai-app, the single launch
+            // seam that switches the child onto the real HOME/XDG dirs (TENKAI_APP_HOME
+            // is set into the nested session by ./tenkai run). So a terminal spawned
+            // from Tenkai — launcher or IPC — finds kitty + starship + fish configs
+            // exactly like a terminal started in the live session, instead of inheriting
+            // the nested fake home and showing an unthemed prompt.
+            //
+            // Uses the bare "terminal" role (no "--"): that resolves the user's chosen
+            // terminal (desktop.json default-apps / kitty fallback) and execs it
+            // directly. The "terminal -- <prog>" form (with a program) is what the
+            // launcher uses for runInTerminal entries; here we just want an empty
+            // terminal, so no "--".
+            Spawn.run(["tenkai-app", "terminal"])
+        }
     }
 
     // The Hub's "Place on the desktop" button lands here: a slider cannot let a
