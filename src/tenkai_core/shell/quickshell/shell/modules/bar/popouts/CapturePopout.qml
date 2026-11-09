@@ -63,7 +63,7 @@ Item {
     // and its duration; a click on any tile opens that group's folder.
     readonly property string recordingsDir: Quickshell.env("TENKAI_SCREENRECORD_DIR")
         || ((Quickshell.env("XDG_VIDEOS_DIR") || (Quickshell.env("HOME") + "/Videos")) + "/Recordings")
-    readonly property string thumbDir: Quickshell.env("HOME") + "/.cache/ryoku-capture-thumbs"
+    readonly property string thumbDir: (Quickshell.env("XDG_CACHE_HOME") || Quickshell.env("HOME") + "/.cache") + "/tenkai/capture-thumbs"
     property var clipDur: ({})                // recording path -> "M:SS"
     property var clipPoster: ({})             // recording path -> poster jpg path
     // FolderListModel's own Time sort proved unreliable here (it fell back to
