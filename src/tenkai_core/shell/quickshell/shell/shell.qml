@@ -692,6 +692,16 @@ ShellRoot {
         function clearSurfaceTrace(): void { root.surfaceTrace = "" }
         function lastSurface(): string { return root.surfaceTrace }
         function toggleLauncher(): void { root.toggleSurface("launcher") }
+        // Direct-IPC toggles for the keybinds that used to ride the global
+        // shortcuts protocol (dead in live Hyprland: `hyprctl globalshortcuts`
+        // returns none). Each runs the same root.toggleSurface transition the
+        // matching CustomShortcut presses, so binds.lua can reach them over
+        // `qs ipc --pid <shell pid> call shell <fn>` instead of hl.dsp.global.
+        function toggleQuickSettings(): void { root.toggleSurface("quicksettings") }
+        function toggleClipboard(): void { root.toggleSurface("clipboard") }
+        function toggleOverview(): void { root.toggleSurface("overview") }
+        function toggleScreenshot(): void { root.toggleSurface("screenshot") }
+        function toggleStash(): void { root.toggleSurface("stash") }
         function openLauncher(): void {
             if (!root.isSurfaceOpen("launcher"))
                 root.toggleSurface("launcher")

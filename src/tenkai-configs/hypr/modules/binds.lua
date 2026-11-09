@@ -54,22 +54,25 @@ hl.bind(K(mod .. " + O"),         hl.dsp.exec_cmd("tenkai-app notes"))          
 hl.bind(K(mod .. " + ALT + E"),   hl.dsp.exec_cmd("kitty -e yazi"))               -- yazi file manager
 hl.bind(K(mod .. " + J"),         hl.dsp.exec_cmd("ryotunes"))                     -- open Ryotunes (single-instance: a second press focuses it)
 
--- Shell surfaces and tools
-hl.bind(K(mod .. " + D"), hl.dsp.global("tenkai:launcher"))                 -- open the app launcher
+-- Shell surfaces and tools. The global-shortcuts protocol is inert in live
+-- Hyprland (`hyprctl globalshortcuts` returns none), so the tenkai surfaces
+-- are driven over the shell's Quickshell IPC handler (target "shell")
+-- instead of hl.dsp.global. The pgrep bracket trick ('qs [-]p') keeps the
+-- lookup from matching the wrapping sh's own command line.
+hl.bind(K(mod .. " + D"), hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleLauncher")) -- open the app launcher
 hl.bind(K(mod .. " + K"),         hl.dsp.exec_cmd("pkill -x -f 'qs -c keys' 2>/dev/null || flock -n -o /tmp/tenkai-keys.lock qs -c keys")) -- keybind cheatsheet: toggle (press to open, press again to close)
-hl.bind(K(mod .. " + Escape"),    hl.dsp.global("tenkai:quicksettings")) -- quick settings: power, logout, restart, shutdown, wifi
+hl.bind(K(mod .. " + Escape"),    hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleQuickSettings")) -- quick settings: power, logout, restart, shutdown, wifi
 hl.bind(K(mod .. " + P"),         hl.dsp.exec_cmd("ryogami wallpaper ui"))     -- ryogami wallpaper picker (full-screen browser: hero cards, colour filters, effects); the frame-blob menu stays on the bar logo
 hl.bind(K(mod .. " + SHIFT + W"), hl.dsp.exec_cmd("ryogami wallpaper random")) -- random wallpaper, random transition
 hl.bind(K(mod .. " + SHIFT + V"), hl.dsp.exec_cmd("tenkai-summon ryovm flock -n -o /tmp/ryovm.lock qs -c ryovm")) -- ryovm: summon to current workspace
-hl.bind(K(mod .. " + V"),         hl.dsp.global("tenkai:clipboard")) -- clipboard (sidebar deep link)
-hl.bind(K(mod .. " + Tab"),       hl.dsp.global("tenkai:overview")) -- workspace overview (expo: live previews, drag windows between workspaces, cycle)
-hl.bind(K(mod .. " + ALT + Tab"), hl.dsp.global("tenkai:overview")) -- workspace overview, stepping desktops (Alt+Tab again inside cycles desktops)
-hl.bind(K(mod .. " + M"),         hl.dsp.global("tenkai:visualizer"))        -- toggle the desktop audio visualiser
-hl.bind(K(mod .. " + SHIFT + M"), hl.dsp.global("tenkai:visualizer-overlay")) -- raise the visualiser over windows (flip back to desktop)
-hl.bind(K(mod .. " + ALT + M"),   hl.dsp.global("tenkai:visualizer-place"))   -- move the audio visualiser: drag the ring or orb into place
+hl.bind(K(mod .. " + V"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleClipboard")) -- clipboard (sidebar deep link)
+hl.bind(K(mod .. " + Tab"),       hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleOverview")) -- workspace overview (expo: live previews, drag windows between workspaces, cycle)
+hl.bind(K(mod .. " + ALT + Tab"), hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleOverview")) -- workspace overview, stepping desktops (Alt+Tab again inside cycles desktops)
+-- Super+M visualizer keybinds removed here (F3 cut the visualizer: no QML,
+-- shortcut or surface backend remains, so they were dead in every mode).
 hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("tenkai-shell voice"))             -- voice typing: speech-to-text with a mic wave (tap again to stop)
 hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("tenkai-shell hub open"))     -- tenkai settings
-hl.bind(K(mod .. " + S"),         hl.dsp.global("tenkai:stash"))         -- sidebar: screen time and downloads
+hl.bind(K(mod .. " + S"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleStash"))         -- sidebar: screen time and downloads
 hl.bind(K(mod .. " + SHIFT + S"), hl.dsp.exec_cmd("flock -n -o /tmp/ryoshot.lock qs -c ryoshot"))  -- screenshot: capture, annotate and beautify
 hl.bind(K(mod .. " + SHIFT + C"), hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick a color
 
