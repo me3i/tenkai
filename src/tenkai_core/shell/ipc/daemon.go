@@ -1543,6 +1543,12 @@ func (d *daemon) dispatch(line string) string {
 			return "ok"
 		}
 		return "err stage: unknown verb " + args[0]
+	case "lock":
+		// `tenkai-shell lock` (and Super+L) route here: the daemon spawns the
+		// qylock locksheet and returns only once the compositor reports the
+		// secure session lock active. Previous builds omitted this case entirely
+		// (the bind died with it), leaving lock unbound and unwired.
+		return lockSession()
 	case "theme":
 		// Apply a colour scheme by writing theme.theme through the settings store
 		// (the sole writer of shell.json), which validates the name, persists,

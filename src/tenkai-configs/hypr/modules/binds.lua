@@ -74,6 +74,8 @@ hl.bind(K(mod .. " + grave"),     hl.dsp.exec_cmd("tenkai-shell voice"))        
 hl.bind(K(mod .. " + comma"),     hl.dsp.exec_cmd("tenkai-shell hub open"))     -- tenkai settings
 hl.bind(K(mod .. " + S"),         hl.dsp.exec_cmd("qs ipc --pid $(pgrep -f 'qs [-]p .*tenkai/src/tenkai_core/shell/quickshell/shell' | head -1) call shell toggleStash"))         -- sidebar: screen time and downloads
 hl.bind(K(mod .. " + SHIFT + S"), hl.dsp.exec_cmd("flock -n -o /tmp/ryoshot.lock qs -c ryoshot"))  -- screenshot: capture, annotate and beautify
+hl.bind(K(mod .. " + ALT + Space"), hl.dsp.exec_cmd("tenkai-summon Rashin flock -n -o /tmp/rashin-app.lock rashin-app")) -- Rashin app: the AI companion window (a second press focuses it)
+hl.bind(K(mod .. " + L"),         hl.dsp.exec_cmd("tenkai-shell lock"))             -- lock the screen (qylock) lockscreen
 hl.bind(K(mod .. " + SHIFT + C"), hl.dsp.exec_cmd("hyprpicker -a"))                 -- pick a color
 
 -- Move/resize with the mouse
@@ -121,6 +123,7 @@ end
 hl.bind(K("XF86AudioRaiseVolume"), hl.dsp.exec_cmd("tenkai-volume up"),   { locked = true, repeating = true }) -- raise the volume
 hl.bind(K("XF86AudioLowerVolume"), hl.dsp.exec_cmd("tenkai-volume down"), { locked = true, repeating = true }) -- lower the volume
 hl.bind(K("XF86AudioMute"),        hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"),     { locked = true })
+hl.bind(K("XF86AudioMicMute"),     hl.dsp.exec_cmd("wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"),   { locked = true })
 hl.bind(K("XF86AudioPlay"),        hl.dsp.exec_cmd("playerctl play-pause"),                           { locked = true })
 hl.bind(K("XF86AudioNext"),        hl.dsp.exec_cmd("playerctl next"),                                 { locked = true })
 hl.bind(K("XF86AudioPrev"),        hl.dsp.exec_cmd("playerctl previous"),                             { locked = true })
