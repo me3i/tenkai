@@ -30,8 +30,44 @@ role="${1:-}"
 [ -n "$role" ] || { echo "usage: tenkai-app <role> [-- <program> [arg...]]" >&2; exit 2; }
 shift
 
+# For the terminal role, parse emulator flags (--class, --hold, --directory,
+# --title, --override, ...) that are passed to the terminal itself, separated
+# from the program by a "--" marker. Callers that hand a program to the wrapper
+# drop the "-e" flag (the wrapper adds -e for non-kitty/foot terminals itself)
+# and always use "--", so a bare "-e" or "-O" before "--" is still treated as
+# the start of the program and reaches the terminal either way.
+tflags=()
 inner=()
-if [ "${1:-}" = "--" ]; then
+if [ "$role" = "terminal" ]; then
+	while [ $# -gt 0 ]; do
+		case "$1" in
+		--)
+			shift
+			inner=("$@")
+			break
+			;;
+		--class|--directory|--title|--override)
+			[ $# -gt 1 ] || { echo "tenkai-app: $1 requires a value" >&2; exit 2; }
+			tflags+=("$1" "$2")
+			shift 2
+			;;
+		--hold)
+			tflags+=("--hold")
+			shift
+			;;
+		-*)
+			# Stray flag-like arg before "--" (e.g. a slipped "-e" or "-O"):
+			# treat the rest as the program so it still reaches the terminal.
+			inner=("$@")
+			break
+			;;
+		*)
+			inner=("$@")
+			break
+			;;
+		esac
+	done
+elif [ "${1:-}" = "--" ]; then
 	shift
 	inner=("$@")
 	[ ${#inner[@]} -gt 0 ] || { echo "tenkai-app: -- needs a program to run" >&2; exit 2; }
@@ -107,15 +143,31 @@ if [ "$role" = "run" ]; then
 	exec "${inner[@]}"
 fi
 
-if [ ${#inner[@]} -eq 0 ]; then
-	exec sh -c "$cmd"
+if [ "$role" != "terminal" ]; then
+	if [ ${#inner[@]} -eq 0 ]; then
+		exec sh -c "$cmd"
+	fi
+	# Non-terminal role reached with a "--" program (edge case). Run the
+	# program directly; the stored cmd (e.g. "kitty -e nvim" for the editor
+	# role) is ignored in this path.
+	exec "${inner[@]}"
 fi
 
-# Handing a program over is per-emulator: kitty and foot take trailing argv.
+# --- terminal role: hand the program (and any emulator flags) to the terminal ---
 read -r -a argv <<<"$cmd"
 case "${argv[0]##*/}" in
 kitty | foot) ;;
 wezterm) argv+=(start --) ;;
 *) argv+=(-e) ;;
 esac
-exec "${argv[@]}" "${inner[@]}"
+if [ ${#inner[@]} -gt 0 ]; then
+	# Program (with optional emulator flags) — hand to the terminal.
+	argv+=("${tflags[@]}" "${inner[@]}")
+elif [ ${#tflags[@]} -gt 0 ]; then
+	# Emulator flags only (no program): open the terminal with those flags.
+	argv+=("${tflags[@]}")
+else
+	# Bare terminal, no flags, no program.
+	exec sh -c "$cmd"
+fi
+exec "${argv[@]}"

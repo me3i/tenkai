@@ -212,7 +212,7 @@ Item {
     function rollback() {
         if (pg.snapshot === "")
             return;
-        Spawn.run(["kitty", "-e", "sh", "-c", "tenkai rollback \"$1\"; printf '\\npress enter to close '; read -r _", "sh", pg.snapshot]);
+        Spawn.run(["tenkai-app", "terminal", "--", "sh", "-c", "tenkai rollback \"$1\"; printf '\\npress enter to close '; read -r _", "sh", pg.snapshot]);
         pg.dismiss();
     }
 
@@ -225,7 +225,7 @@ Item {
     }
 
     function startUpdate() {
-        Spawn.run(["kitty", "-e", "sh", "-c", "exec tenkai update"]);
+        Spawn.run(["tenkai-app", "terminal", "--", "sh", "-c", "exec tenkai update"]);
     }
 
     // idle list: incoming commits when behind, else the recent history the

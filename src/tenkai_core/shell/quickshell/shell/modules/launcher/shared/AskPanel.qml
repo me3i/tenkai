@@ -173,7 +173,7 @@ Item {
             root.finished();
             return;
         case "file":
-            Spawn.run(["kitty", "-e", "nvim", String(chip.value)]);
+            Spawn.run(["tenkai-app", "terminal", "--", "nvim", String(chip.value)]);
             break;
         case "dir":
         case "url":

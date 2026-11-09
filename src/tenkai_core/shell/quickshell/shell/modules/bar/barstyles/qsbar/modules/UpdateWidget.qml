@@ -65,7 +65,7 @@ Item {
         function onUpdateRefreshTickChanged() { Updates.check() }
     }
 
-    Process { id: runProc; command: ["bash", "-c", "kitty tenkai update"] }
+    Process { id: runProc; command: ["tenkai-app", "terminal", "--", "tenkai", "update"] }
 
     IconText {
         anchors.centerIn: parent

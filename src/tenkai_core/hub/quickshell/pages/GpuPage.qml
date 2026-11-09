@@ -214,7 +214,7 @@ Item {
         planProc.running = true;
     }
     function enableInTerminal() {
-        Spawn.run(["kitty", "--class", "ryoku-gpu", "-e", "sh", "-c",
+        Spawn.run(["tenkai-app", "terminal", "--class", "ryoku-gpu", "--", "sh", "-c",
             "tenkai-hub gpu apply enable; echo; read -n1 -rsp 'Done. Press any key to close…'; echo"]);
         pg.planning = false;
         pg.planText = "";

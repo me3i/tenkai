@@ -227,5 +227,5 @@ PanelWindow {
         onTriggered: batPanel.refreshBatteryData()
     }
 
-    Process { id: btopRunner; command: ["bash", "-c", "kitty 'btop'"] }
+    Process { id: btopRunner; command: ["tenkai-app", "terminal", "--", "btop"] }
 }

@@ -165,7 +165,7 @@ Item {
         } catch (e) {}
     }
     function runSetup() {
-        Spawn.run(["kitty", "--class", "ryoku-rashin-setup", "-e", "ryoku-rashin", "setup"]);
+        Spawn.run(["tenkai-app", "terminal", "--class", "ryoku-rashin-setup", "--", "ryoku-rashin", "setup"]);
     }
     // Open the dashboard the daemon actually serves. Two things used to send a
     // user to a browser error they read as a 404: the port was hardcoded here

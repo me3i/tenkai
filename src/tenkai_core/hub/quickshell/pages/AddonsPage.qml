@@ -89,7 +89,7 @@ Item {
     }
     function removeBundle(id, item) {
         const scope = item ? ["item", id, item] : ["bundle", id];
-        Spawn.run(["kitty", "--class", "ryostore", "-e", "ryostore-install", "remove"].concat(scope));
+        Spawn.run(["tenkai-app", "terminal", "--class", "ryostore", "--", "ryostore-install", "remove"].concat(scope));
     }
     function catalogEntry(id) {
         for (var i = 0; i < pg.catalog.length; i++)
