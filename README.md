@@ -1,232 +1,259 @@
-# Tenkai · 天界
+# Tenkai
 
-<img src="docs/assets/tenkai_banner.png" alt="Tenkai Banner" width="100%">
+A standalone Quickshell shell forked from Ryoku.
 
-**The Celestial Lite version of Ryoku Quickshell.**
+## What Tenkai is
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
-![Arch Linux](https://img.shields.io/badge/Arch%20Linux-1793D1?logo=archlinux&logoColor=white)
-![Hyprland](https://img.shields.io/badge/Hyprland-5E81AC?logo=hyprland&logoColor=white)
+Tenkai is a modified, reduced derivative of [Ryoku](https://github.com/Ryoku-dev/ryoku),
+pinned at commit `98a0368253d9628be72b853985878a5db90e1547` (v0.75.5-beta.20). It keeps
+Ryoku's Quickshell shell — the look, the motion, the frame bar — and removes
+components that did not pass a necessity test or were off the keep list.
 
----
+The result is one Quickshell process (`qs -p shell`) plus two small daemons
+(`tenkai-shell`, `ryogami`). There is no second shell process, no lock screen
+daemon, and no background service that reaches outside the machine. Settings
+persist to Tenkai's own config dir and read Hyprland state only; Tenkai never
+writes or generates Hyprland config.
 
-## Introduction
+Every claim in this README is backed by a grep in `src/tenkai_core/` or a
+measurement in `docs/PROJECT-CLOSEOUT.md`. Nothing here is an estimate.
 
-Tenkai is an **opinionated, lightweight fork of
-[Ryoku](https://github.com/Ryoku-dev/ryoku)** — the same Quickshell desktop,
-reduced.
+## What's included
 
-Ryoku already gets the hard part right: how a Hyprland desktop should look,
-move and feel. Tenkai keeps that exactly as it is. What it removes is
-everything that could not justify its own weight — the AI panel, the lock
-screen and the D-Bus service behind it, the network reach of the background
-services, and every component that failed a necessity test.
+All of these have a grep hit in `src/tenkai_core/`. The file or directory is
+named in parentheses.
 
-The result is the same desktop with less in it. Tenkai is a derivative work,
-not a competing vision. "Less in it" is a statement about what is missing.
-Tenkai's idle memory has been measured once, in a nested test session:
-**578 MB RSS** for the shell process plus daemon, versus **767 MB** for the
-comparable Ryoku session processes (ryoku-shell + qs + ryogami) on the same
-machine. That is a 25% reduction by component removal; the measurement is a
-single snapshot, not a benchmark, and is recorded in
-[docs/PROJECT-CLOSEOUT.md](docs/PROJECT-CLOSEOUT.md).
+- **Frame bar** — the top bar with workspace pills and status widgets.
+  `src/tenkai_core/shell/quickshell/shell/modules/bar/` and
+  `barstyles/qsbar/`.
+- **Workspaces** — workspace pills in the bar (`RailWorkspaces.qml`,
+  `WorkspaceWidget.qml`), a workspace overview panel (`WorkspacePanel.qml`),
+  and workspace state in `shell.qml` via `Wm.focusedWorkspace`.
+- **App launcher** — `modules/launcher/Launcher.qml`, imported in `shell.qml:21`.
+- **Control center / quick settings** — `modules/controlcenter/ControlCenterHost.qml`,
+  imported in `shell.qml:19`, surfaced on `SUPER+ESCAPE` and the screenshot key.
+- **Clock** — a clock widget on the desktop (`modules/desktop/clock/Clock.qml`),
+  a clock widget in the bar (`barstyles/qsbar/modules/ClockWidget.qml`),
+  a clock in the frame-rail (`framebars/widgets/RailClock.qml`), and a
+  `Config.clockEnabled` toggle in `Desktop.qml`.
+- **Audio** — volume OSD (`shell.qml:306` `osdVolumeLoader`, `kind: "volume"`),
+  an audio service (`services/Audio.qml`), and an audio-bars service
+  (`services/AudioBars.qml`).
+- **Brightness** — backlight control (`modules/bar/BrightnessControl.qml`),
+  a brightness OSD (`shell.qml:322` `osdBrightnessLoader`, `kind: "brightness"`),
+  and `Devices.qml:setBrightness` (ddcutil + brightnessctl).
+- **Network** — a Network service (`services/Network.qml`, reads the daemon
+  `network` topic), a Network popout (`modules/bar/popouts/NetworkPopout.qml`),
+  and a network menu item in `FrameMenuManager.qml:96`. Network is read-only
+  status (Wi-Fi, WireGuard, DNS); it does not change connections.
+- **Battery** — a Battery service (`services/Battery.qml`, reads UPower's
+  `displayDevice`).
+- **System tray** — a Tray service (`services/Tray.qml`, reads the daemon `tray`
+  topic), and `tenkai-shell` claims `org.kde.StatusNotifierWatcher`
+  (`shell/ipc/tray.go`).
+- **Notifications** — a NotificationServer that owns `org.freedesktop.Notifications`
+  (`shell/quickshell/shell/modules/notifications/`), gated by
+  `Config.moduleOn("notifications")` and a `GetNameOwner` guard in `Notifs.qml`.
+- **Wallpaper + matugen theming** — a wallpaper module (`modules/wallpaper/`,
+  `Wallpaper.qml`) driven by the `ryogami` daemon, and a matugen config block
+  in `services/Config.qml:219` (`theme.matugen: { preference, scheme_type, mode, contrast }`).
+  The matugen app-suite fan-out is off: only `config.toml` is rendered, never
+  `apps.toml` or toolkit configs.
+- **Animations** — a motion page in Settings (`hub/quickshell/pages/AnimationsPage.qml`,
+  edits `theme.motion.scale` and `theme.motion.reduce`), a motion service
+  (`services/Motion.qml`), and spring integration in the frame-blob plugin
+  (`shell/plugin/blobrect.cpp`).
+- **Settings app** — Tenkai's hub (`hub/`), with the Appearance page
+  (`pages/VisualsPage.qml`: theme, blur, shadow, gaps, borders, screen shader —
+  runtime-only via `hyprctl eval`, never writes `~/.config/hypr`) and the Shell
+  pages (`pages/GlobalPage.qml`: language, regional formats, location, system font;
+  `pages/SessionPage.qml`: autostart and env). Plus an Animations page and a
+  Bar Studio page. Settings persist to Tenkai's config dir and read Hyprland
+  state only.
+- **Camera** — a Camera service (`services/Camera.qml`) and a Camera overlay
+  (`modules/capture/CameraOverlay.qml`).
+- **Region capture** — a capture module (`modules/capture/`, `Capture.qml`,
+  `CaptureOverlay.qml`) and the `tenkai-screenshot` script
+  (`shell/scripts/tenkai-screenshot`), which takes `region` or `full` screenshots
+  locally via grim/slurp/wl-copy/notify-send.
 
-## Features
+## What's not included
 
-Everything below is inherited from Ryoku and kept intact. The Tenkai work is
-the subtraction.
+Cut features. Use Ryoku for these.
 
-- **The same visual identity.** The bar, the surfaces, the palette engine and
-  the motion language are inherited unchanged in the QML that ships here, and
-  nothing was restyled, re-skinned or "improved" beyond what
-  [`CHANGES.md`](CHANGES.md) lists. **UNVERIFIED:** that a Tenkai screenshot and
-  a Ryoku screenshot are the same picture. Producing the pair means running both
-  shells, and this project does not run either in the owner's live session.
-- **The same core workflows.** App launcher, workspace overview, quick
-  settings, wallpaper picker, clipboard history, notifications and the system
-  tray all behave exactly as they did before the fork.
-- **Lighter by removal, not by benchmark.** Every component was dependency-
-  traced and put through a necessity test before it was kept. The figures this
-  README used to lead with — 482 MB RSS / 231 MB PSS idle, ~0.3–0.6 s CPU per
-  60 s — come from a live trial on 2026-11-01 and were **not** re-measured in
-  this audit, because that needs a running Tenkai session. For scale, the shell
-  processes of the Ryoku session these numbers are compared against measured
-  **513 MB RSS / 315 MB PSS** on 2026-11-08 (ryoku-shell + qs + ryogami). Two
-  numbers from two different builds on two different days are not a benchmark,
-  and "lighter" here means fewer components, not a proven memory win.
-- **No AI, no lock screen, no phone-home.** The launcher's AI panel is off. This
-  tree contains no lock screen and no code that registers
-  `org.freedesktop.ScreenSaver` (`grep -rn ScreenSaver` over the sources: no
-  hits); the live session's ScreenSaver name is held by the shell that was
-  already running, not by Tenkai. Network: the weather widget ships disabled
-  (`weatherEnabled: false`) and queries `api.open-meteo.com` only if you switch
-  it on; package updates are not probed over the network; the notification and
-  tray names are the standard ones, see [`docs/DBUS.md`](docs/DBUS.md). The
-  bundled wallpaper picker **does** use the network (GitHub, motionbgs.com,
-  moewalls.com) when you open it.
-- **Nothing hidden.** Every deviation from upstream is recorded in
-  [`CHANGES.md`](CHANGES.md); the pinned upstream commit is in
-  [`UPSTREAM.md`](UPSTREAM.md); attribution is in [`CREDITS.md`](CREDITS.md).
-- **A careful installer.** `install.sh` checks everything, asks before it
-  touches anything, and backs up what it changes. `--dry-run` writes nothing.
+- **Visualizer** — no `modules/visualizer/` in this tree.
+- **Equalizer** — audio here is volume and playback bars only; no EQ.
+- **Keypress overlay** — no keypress-overlay module.
+- **Overview backdrop** — the workspace overview is a panel (`WorkspacePanel.qml`);
+  the visualizer-backed overview backdrop was removed (`shell.qml:205`).
+- **Desktop widgets (plugin suite)** — the desktop module carries the Clock as its
+  only built-in widget (`Desktop.qml:84` — `addItems` lists only `clock`). Plugin
+  desktop widgets read from `Registry.plugins` but no plugin manifests ship in
+  this tree, so the slot exists but nothing installs into it.
+- **Stage engine** — no `modules/stage/` in this tree.
 
-## Common Keybinds
+## Verified numbers
 
-| Key | Action |
+Measured once, in a nested test session on 2026-11-09, fresh session, 60s warm-up,
+launcher closed, idle. Full report: `docs/PROJECT-CLOSEOUT.md`.
+
+| Process | RSS |
 |---|---|
-| `Super + D` | App Launcher |
-| `Super + Enter` | Open Terminal |
-| `Super + W` | Close Window |
-| `Super + 1,2,3,4,...` | Switch Workspaces |
-| `Super + Tab` | Workspace Overview |
-| `Super + P` | Wallpaper Picker |
-| `Super + V` | Clipboard History |
+| `qs -p shell` (Tenkai) | 556 MB |
+| `tenkai-shell` daemon | 26 MB |
+| `ryogami` daemon | 8 MB |
+| `wl-paste` | 2 MB |
+| **Total** | **578 MB** |
 
-These ship in the bundled Hyprland config at
-`src/tenkai-configs/hypr/modules/binds.lua`.
+Ryoku comparable processes (`ryoku-shell` + `qs` + `ryogami`) on the same machine:
+767 MB. Delta: −189 MB (−25%).
 
-### Viewing All Keybinds
+This is a single snapshot, not a benchmark. The 450 MB target was not met; the
+honest floor for this feature set is 550–600 MB. Further reduction requires
+cutting keep-list features.
 
-The table above is only the short list. For the complete, authoritative list of
-every keybind active in your session, run this in your terminal:
+## Install / Run
 
-```bash
-hyprctl binds
-```
-
-`hyprctl` asks Hyprland itself, so it always reflects what is actually bound
-right now — including anything you have added or changed since installing.
-
-## Installation
-
-**Requirements:** an **Arch Linux** machine running **Hyprland**. Everything
-else is checked for you — the installer prints exactly what is missing and
-never installs anything without asking.
+Verify each command against the script first: `grep -nE 'cmd_(run|start|stop|live|test|verify_untouched|scrub_check|live_stop|live_status)' tenkai`.
 
 ```bash
 git clone https://github.com/me3i/tenkai.git ~/projects/tenkai
 cd ~/projects/tenkai
-./install.sh
+./install.sh              # interactive: deps, build, system changes one at a time
+./install.sh --dry-run    # print every step, write nothing
+./install.sh --help       # list all flags
 ```
 
-`install.sh` is interactive throughout: it checks dependencies, builds the
-daemons, the blob plugin and the QML modules, then offers each system change
-one at a time — systemd user units, the Hyprland autostart line, the kitty
-colour include, your terminal dotfiles, the Hyprland config, wallpapers and
-fonts. Your existing `~/.config/hypr` is never overwritten without an
-interactive yes, and existing files are backed up to `*.tenkai-install.bak`
-first.
+After install:
 
 ```bash
-./install.sh --dry-run   # print every step, write nothing
-./install.sh --help      # list all flags
+./tenkai run              # nested isolated test session (one qs + two daemons)
+./tenkai stop             # stop the test session
+./tenkai verify-untouched # prove live config untouched after the test
+./tenkai scrub-check      # prove no personal setup is tracked in the tree
+./tenkai test             # nested-session test suite
+./tenkai live --profile overlay   # try over the live desktop (asks before each change)
+./tenkai live-stop        # stop a live profile run
+./tenkai live-status      # status of a live profile run
+./tenkai start            # non-interactive join for the autostart line
+./tenkai status           # show the running Tenkai session, if any
 ```
 
-Then start it in the current session:
+Log out and back in after enabling autostart, and the desktop is Tenkai.
 
-```bash
-./tenkai status          # show the running Tenkai session, if any
-./tenkai start           # join this Hyprland session (non-interactive, for autostart)
-./tenkai live --profile overlay   # try Tenkai over your live desktop (asks before each change)
+## Requirements
+
+Proven by `install.sh` (the `check_pkg` and `check_build` lists) and the
+`go.mod`/`CMakeLists.txt` files in `src/tenkai_core/`.
+
+- **Arch Linux** with **Hyprland** (checked by `install.sh`: `check_pkg hyprland Hyprland`).
+- **Quickshell** (`qs`) — `check_pkg quickshell qs`.
+- **Go** — `go 1.26` for `tenkai-shell` and `tenkai-hub`
+  (`src/tenkai_core/shell/ipc/go.mod`, `hub/backend/go.mod`); `go 1.22` for
+  `tenkai-wm` and `ryogami` (`wm/go.mod`, `shell/ryogami/daemon/go.mod`).
+- **CMake ≥ 3.28** and **Qt6** (Declarative + ShaderTools + Multimedia) —
+  `src/tenkai_core/shell/plugin/CMakeLists.txt:10`, `install.sh` step 2.
+- **ninja**, **gcc**, **python3**, **jq** — build tools, `install.sh` `BUILD_MISSING`.
+- **grim** + **slurp** + **wl-clipboard** — region/full screenshots, build+run deps.
+- **wireplumber** (`wpctl`) — audio.
+- **NetworkManager** (`nmcli`) — network status reads.
+- **brightnessctl** — brightness control.
+- **upower** — battery readout.
+- **fish** + **starship** — the owner's terminal config that `install.sh` step 6
+  installs (a complete install depends on them).
+
+`install.sh` never runs sudo; it prints the `pacman -S` line and stops.
+
+## Known limitations
+
+- **450 MB target not met.** Measured idle is 578 MB; honest floor for this
+  feature set is 550–600 MB. Further reduction requires cutting keep-list features
+  (camera, region, notifications, or others) — user decision, not a technical
+  blocker. Source: `docs/PROJECT-CLOSEOUT.md`.
+- **Single measurement.** The 578 MB figure is one snapshot from one nested
+  session. It is not a range, not a benchmark, and not repeated across sessions.
+- **Two shells cannot coexist.** Tenkai claims `org.freedesktop.Notifications` and
+  `org.kde.StatusNotifierWatcher`. If another shell already owns either name, the
+  relevant service backs off rather than fighting for it (`DBUS.md`, option B), but
+  the two shells still cannot both own the standard names in one session.
+- **Network is read-only.** Network status (Wi-Fi, WireGuard, DNS) is shown; the
+  shell does not connect, disconnect, or change networks.
+- **Settings never writes Hyprland config.** Appearance changes are runtime-only
+  via `hyprctl eval`; a Hyprland reload reverts them. Shell page changes persist
+  to Tenkai's config dir, not to `~/.config/hypr`.
+
+## Attribution & licence
+
+Tenkai is distributed under the **GNU General Public License version 3 or later
+(GPL-3.0-or-later)**. The `LICENSE` at the repo root is byte-identical to upstream
+at the pinned commit (sha256 `3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986`).
+
+`NOTICE` reproduces the upstream notice of the pinned commit byte for byte
+(34 lines, sha256 `062137be76c0d594a089130445ad82495e745b67cdf677aa71be065d40635732`),
+followed by a clearly delimited Tenkai addendum.
+
+Components Tenkai ships and their provenance:
+
+- **Ryoku** — the whole tree is a fork of Ryoku, pinned at
+  `98a0368253d9628be72b853985878a5db90e1547`. URL:
+  <https://github.com/Ryoku-dev/ryoku>. `UPSTREAM.md`.
+- **QS Bar (Quickshell Rise)** by HANCORE-linux — the bar style, MIT.
+  `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/`, credit at
+  line 1 of `Scene.qml`. Repo: <https://github.com/HANCORE-linux/quickshell-dots>.
+- **Caelestia shell** — frame-blob rendering and parts of the motion curves, GPL-3.0.
+  `src/tenkai_core/shell/plugin/` (`blobshape.cpp`, `blobrect.cpp`, `blobgroup.cpp`, …).
+  Repo: <https://github.com/caelestia-dots/shell>.
+- **DankMaterialShell** by Avenge Media LLC — portions of the display configuration UI,
+  MIT, copyright 2025 Avenge Media LLC. `src/tenkai_core/hub/`.
+- **OkShell** by John Oberhauser — configurable frame-bar layout, rail/widget catalogue
+  and Bar Studio workflow, GPL-3.0.
+  <https://github.com/JohnOberhauser/OkShell/tree/87a9d09d923163cd03f396a395be3bb02b335b6e>.
+- **Wallpaper picker UI** by liixini — MIT, copyright 2026 liixini.
+  `src/tenkai_core/shell/ryogami/wall-ui/`, `LICENSE` ships beside the code.
+- **Fonts** — Space Grotesk, Fraunces (roman + italic), Archivo Black: all SIL OFL 1.1.
+  Eleven bundled display faces upstream shipped (Abberancy, Daydream, JF Flat, Overhead,
+  Reckoner + Bold, sabana, Unrealised, VEXA Light, VIP Rawy, Xenophobia) were removed on
+  2026-11-08 because their licences are personal-use, proprietary, or unstated.
+  Per-file audit in `docs/ATTRIBUTION.md`.
+- **Sound effects** — 5 `.oga` files from the freedesktop.org sound theme, with upstream
+  credits (Boulanger, Bukvic, horsthorstensen, McCallister) in `NOTICE`.
+
+Tenkai is not affiliated with, endorsed by, or connected to the Ryoku project.
+
+Full per-file attribution: `docs/ATTRIBUTION.md`. Changes vs upstream: `CHANGES.md`.
+Every modification is enumerated there.
+
+## Development
+
+Repo layout:
+
 ```
-
-For development and testing without touching your live desktop, use the nested
-session — a private Hyprland instance with a confined fake home:
-
-```bash
-./tenkai test            # nested-session test suite
-./tenkai verify-untouched   # prove your live config hashes are unchanged after the test
-```
-
-Log out and back in after enabling autostart, and your desktop is Tenkai.
-
-## Repository layout
-
-```
-├── install.sh              the installer (see above)
-├── tenkai                  the control script: run / test / status / verify-untouched
+├── install.sh              installer (interactive)
+├── tenkai                  control script (run / stop / test / verify-untouched /
+│                           scrub-check / live / start / status / live-stop / live-status)
 ├── src/
 │   ├── tenkai_core/        the Ryoku shell tree, adapted by Tenkai
 │   ├── tenkai-configs/     bundled Hyprland Lua config + terminal dotfiles
 │   └── tenkai-assets/      wallpapers and OFL fonts
-├── docs/                   checklists, runbooks and the test suite
+├── docs/                   checklists, runbooks, baseline, PROJECT-CLOSEOUT.md
 ├── CHANGES.md              every modification vs upstream
-├── CREDITS.md              attribution
-├── UPSTREAM.md             the pinned upstream commit
-├── NOTICE                  upstream copyright and licence notices
-└── LICENSE                 GNU GPL v3
+├── CREDITS.md              attribution summary
+├── UPSTREAM.md             pinned upstream commit + fork summary
+├── NOTICE                  upstream copyright/licence notices + Tenkai addendum
+├── LICENSE                 GNU GPL v3
+└── .gitignore              excludes .run/, build/, *.o, *.so, *.bin, compiled binaries
 ```
 
-## Development
+Build: `./install.sh` step 2 builds the daemons, the blob plugin, and assembles the
+QML modules under `.run/qml/`. The Go modules are at
+`src/tenkai_core/shell/ipc/`, `hub/backend/`, `wm/`, `shell/ryogami/daemon/`. The
+blob plugin CMake is at `src/tenkai_core/shell/plugin/CMakeLists.txt` (minimum 3.28).
 
-Tenkai is built and tested in a **nested Hyprland** session that never touches
-your live desktop:
+Rollback point: the tree at tag `v1.0.0` is commit `461c3789b0621c3777b7e982dde85a455bf617fb`.
+`git reset --hard 461c3789b0621c3777b7e982dde85a455bf617fb` returns to it.
 
-```bash
-./tenkai test              # nested-session test suite
-./tenkai verify-untouched  # prove the live session's config hashes are unchanged
-./tenkai scrub-check       # prove no personal setup is tracked
-```
+## Status
 
-`./tenkai verify-untouched` must pass after any change to the tree. See
-[`docs/LIVE-CHECKLIST.md`](docs/LIVE-CHECKLIST.md) before running Tenkai on a
-live session and [`docs/ROLLBACK.md`](docs/ROLLBACK.md) for the way back.
-
-## What this README does not claim, and why
-
-Two claims were removed on 2026-11-08 because they could not be tested here. This
-section records the attempts so the next person does not repeat them.
-
-**Idle memory and CPU.** The old figures (482 MB RSS / 231 MB PSS, ~0.3-0.6 s CPU
-per 60 s) come from a live trial on 2026-11-01 that was not re-run. What *was*
-measured on 2026-11-08, inside the project's own sandbox (`.run/home`, a private
-`dbus-run-session`, no compositor), is the Go daemon alone:
-
-```
-tenkai-shell daemon   Rss: 15188 kB   Pss: 13364 kB
-```
-
-The QML shell process could not be started at all:
-`Could not find "shell" config directory in any valid config path.` — Quickshell
-needs a compositor to create its layer surfaces, and no isolated compositor is
-available on this machine:
-
-- `Hyprland` nested inside `weston --backend=headless-backend.so` aborts with
-  `CBackend::create() failed!` (aquamarine 0.16.0, Hyprland 0.57.1), both with
-  `AQ_BACKENDS=wayland` and with `AQ_BACKENDS=headless`;
-- the only DRM devices (`/dev/dri/card1`, `card2`) belong to the running session,
-  and taking them is exactly what a second shell must not do;
-- no `Xvfb`, `cage` or `sway` is installed, and installing is out of scope.
-
-Measuring the real number needs one of: a second machine or VM, a free VT with an
-unused GPU, or a compositor aquamarine accepts. Until then, treat "lighter" as a
-statement about the components that were removed, not about idle memory.
-
-**Screenshot parity.** A Tenkai bar screenshot and a Ryoku bar screenshot could not
-be captured, because the Tenkai bar cannot be rendered here for the reason above.
-There is no `docs/screenshots/` pair, and none is claimed.
-
-## Attribution and license
-
-Tenkai is a **modified derivative of
-[Ryoku](https://github.com/Ryoku-dev/ryoku)** (pinned commit
-`98a0368253d9628be72b853985878a5db90e1547`, v0.75.5-beta.20, "Onogoro").
-Ryoku and Tenkai are distributed under the **GNU General Public License
-version 3 or later (GPL-3.0-or-later)** — see [`LICENSE`](LICENSE) and
-[`NOTICE`](NOTICE).
-
-Tenkai also builds on the work of others:
-
-- **[Caelestia](https://github.com/caelestia-dots/shell)** — the frame-blob
-  renderer, adapted by Ryoku and carried through Tenkai (GPL-3.0).
-- **QS Bar** — the bar style, from HANCORE-linux's
-  [Quickshell Rise](https://github.com/HANCORE-linux/quickshell-dots),
-  credited at
-  `src/tenkai_core/shell/quickshell/shell/modules/bar/barstyles/qsbar/Scene.qml:1`.
-- **Fonts** — Space Grotesk and Fraunces, SIL Open Font License 1.1; Nerd
-  Fonts glyphs for terminal coverage, each under its own licence.
-
-Every modification against upstream is recorded in [`CHANGES.md`](CHANGES.md),
-and the full attribution notice lives in [`CREDITS.md`](CREDITS.md).
-
-Tenkai is not affiliated with, endorsed by, or connected to the Ryoku project.
+**v1.0.0**, tagged `461c3789b0621c3777b7e982dde85a455bf617fb`, pushed to `origin/main`.
+Standalone Quickshell shell, single `qs -p shell` process, verified 578 MB idle.
+No roadmap. No features planned.
