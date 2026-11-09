@@ -21,8 +21,17 @@ did not pass a necessity test or were off the keep list.
 
 The result is one Quickshell process (`qs -p shell`) plus two small daemons (`tenkai-shell`,
 `ryogami`). There is no second shell process, no lock screen daemon, and no background service
-that reaches outside the machine. Settings persist to Tenkai's own config dir and read Hyprland
+that reaches outside the machine.Settings persist to Tenkai's own config dir and read Hyprland
 state only; Tenkai never writes or generates Hyprland config.
+
+---
+
+```bash
+# one line — clone, build, and wire it into your Hyprland session:
+./install.sh   # interactive, never overwrites ~/.config/hypr without asking
+```
+
+---
 
 ## Keybindings
 
