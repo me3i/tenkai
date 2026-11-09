@@ -1816,6 +1816,19 @@ SESSION
 # The acceptance gate: every machine-checkable criterion, one table.
 cmd_accept(){ docs/tests/accept.sh "$@"; }
 
+# IPC surface control. Routes to the shell's IpcHandler (target "shell") via the
+# qs client. The shell exposes toggleLauncher/openLauncher/closeLauncher there.
+cmd_ipc() {
+  [ "$#" -ge 2 ] || die "usage: ./tenkai ipc <target> <action> [args...]"
+  local target="$1" action="$2"; shift 2
+  # Find the shell's qs config dir (the -p install the shell runs from).
+  local shell_dir="$RUN_DIR/qml/Tenkai/Ui/Shell"
+  [ -d "$shell_dir" ] || shell_dir="$TENKAI_DIR/src/tenkai_core/shell/quickshell/shell"
+  # The shell's IpcHandler target is "shell"; qs ipc call targets the config by
+  # the dir containing the .quickshell config (the shell dir).
+  exec "$RUN_DIR/bin/qs" -p "$shell_dir" ipc call "$target" "$action" "$@"
+}
+
 cmd_run() {
   [ -x "$RUN_DIR/bin/tenkai-shell" ] || die "tenkai-shell not built — run the Phase 6 build first"
   [ -d "$RUN_DIR/qml/Tenkai/Ui" ] || die "QML modules not assembled under .run/qml"

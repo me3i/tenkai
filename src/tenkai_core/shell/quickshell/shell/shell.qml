@@ -410,6 +410,20 @@ ShellRoot {
         if (id.indexOf("wallpaper") === 0) return "wallpaper";
         return "";
     }
+    function isSurfaceOpen(id) {
+        const mod = surfaceModule(id);
+        if (!mod || !Config.moduleOn(mod)) return false;
+        const st = ShellState.forActive();
+        if (!st) return false;
+        switch (id) {
+        case "launcher": return st.launcherOpen;
+        case "overview": return st.overviewOpen;
+        case "clipboard": return st.clipboardOpen;
+        case "barToggle": return st.barRevealed;
+        }
+        // request-surface surfaces: open if any screen has them active.
+        return ShellState.activeSurfaceOnAny(id);
+    }
     function toggleSurface(id) {
         const mod = surfaceModule(id);
         if (mod && !Config.moduleOn(mod)) return;
@@ -677,6 +691,15 @@ ShellRoot {
         function sessionConfirm(mon: string, action: string): void { ShellState.askSessionAction(action, mon); }
         function clearSurfaceTrace(): void { root.surfaceTrace = "" }
         function lastSurface(): string { return root.surfaceTrace }
+        function toggleLauncher(): void { root.toggleSurface("launcher") }
+        function openLauncher(): void {
+            if (!root.isSurfaceOpen("launcher"))
+                root.toggleSurface("launcher")
+        }
+        function closeLauncher(): void {
+            if (root.isSurfaceOpen("launcher"))
+                root.toggleSurface("launcher")
+        }
     }
 
     // The Hub's "Place on the desktop" button lands here: a slider cannot let a

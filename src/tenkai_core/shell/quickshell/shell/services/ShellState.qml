@@ -56,6 +56,18 @@ Singleton {
     readonly property string sessionMessage: root.sessionAction !== "" ? root.sessionCopy[root.sessionAction].message : ""
     readonly property string sessionPositive: root.sessionAction !== "" ? root.sessionCopy[root.sessionAction].positive : ""
 
+    // "Is any screen currently showing this request-surface?" -- used by the
+    // shell-level isSurfaceOpen() helper for surfaces opened through the
+    // surfaceRequested bus (quick-settings, wallpaper, stash, ...).
+    function activeSurfaceOnAny(id) {
+        for (let i = 0; i < states.instances.length; i++) {
+            const inst = states.instances[i];
+            if (inst && inst.active && inst.surfaceId === id)
+                return true;
+        }
+        return false;
+    }
+
     function askSessionAction(id, mon) {
         root.sessionActionMonitor = (mon && mon !== "") ? mon
             : (root.screens.length > 0 ? root.screens[0].name : "");
