@@ -24,6 +24,30 @@ The result is one Quickshell process (`qs -p shell`) plus two small daemons (`te
 that reaches outside the machine. Settings persist to Tenkai's own config dir and read Hyprland
 state only; Tenkai never writes or generates Hyprland config.
 
+## Keybindings
+
+These ship in the bundled Hyprland config at
+`src/tenkai-configs/hypr/modules/binds.lua` (main modifier is `SUPER`). All of these are in that
+file as of this write.
+
+| Keys | Action |
+|---|---|
+| `Super + D` | Application launcher |
+| `Super + Escape` | Control center / quick settings (power, logout, restart, shutdown, Wi-Fi) |
+| `Super + Tab` | Workspace overview (live previews, drag windows between workspaces) |
+| `Super + V` | Clipboard history |
+| `Super + P` | Wallpaper picker (ryogami) |
+| `Super + Shift + S` | Screenshot (region or full, annotate, copy) |
+| `Super + K` | Keybind cheatsheet toggle |
+| `Super + Return` | Terminal (`tenkai-app terminal`) |
+| `Super + W` | Close active window |
+| `Super + 1 … 0` | Switch to workspace 1–10 on the current desktop |
+| `Super + Shift + 1 … 0` | Move focused window to workspace 1–10 |
+| `Super + Alt + 1 … 0` | Send window to workspace 1–10 |
+
+For the complete, authoritative list of every keybind active in your session, run `hyprctl binds`
+— `hyprctl` asks Hyprland itself, so it always reflects what is actually bound right now, including
+anything you have added or changed since installing.
 ## What's included
 
 All of these have a grep hit in `src/tenkai_core/`. The file or directory is named in
@@ -117,31 +141,6 @@ After install:
 ```
 
 Log out and back in after enabling autostart, and the desktop is Tenkai.
-
-## Keybindings
-
-These ship in the bundled Hyprland config at
-`src/tenkai-configs/hypr/modules/binds.lua` (main modifier is `SUPER`). All of these are in that
-file as of this write.
-
-| Keys | Action |
-|---|---|
-| `Super + D` | Application launcher |
-| `Super + Escape` | Control center / quick settings (power, logout, restart, shutdown, Wi-Fi) |
-| `Super + Tab` | Workspace overview (live previews, drag windows between workspaces) |
-| `Super + V` | Clipboard history |
-| `Super + P` | Wallpaper picker (ryogami) |
-| `Super + Shift + S` | Screenshot (region or full, annotate, copy) |
-| `Super + K` | Keybind cheatsheet toggle |
-| `Super + Return` | Terminal (`tenkai-app terminal`) |
-| `Super + W` | Close active window |
-| `Super + 1 … 0` | Switch to workspace 1–10 on the current desktop |
-| `Super + Shift + 1 … 0` | Move focused window to workspace 1–10 |
-| `Super + Alt + 1 … 0` | Send window to workspace 1–10 |
-
-For the complete, authoritative list of every keybind active in your session, run `hyprctl binds`
-— `hyprctl` asks Hyprland itself, so it always reflects what is actually bound right now, including
-anything you have added or changed since installing.
 
 ## Requirements
 
