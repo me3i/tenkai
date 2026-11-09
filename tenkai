@@ -1053,7 +1053,7 @@ cmd_wallpaper() {
   XDG_CACHE_HOME="$RUN_DIR/home/.cache" \
   XDG_STATE_HOME="$RUN_DIR/state" \
   XDG_DATA_HOME="$RUN_DIR/data" \
-  XDG_RUNTIME_DIR="$TENKAI_DIR/.r" \
+  XDG_RUNTIME_DIR=/tmp/tenkai-r \
   "$RUN_DIR/bin/ryogami" wallpaper "$mode" "$arg"
 }
 
@@ -1451,6 +1451,8 @@ cmd_stop() {
     note "tenkai: stopped; run './tenkai verify-untouched' to confirm the live session is untouched"
   fi
   rm -f "$PID_FILE"
+  # Clean the short runtime dir the nested session used.
+  rm -rf /tmp/tenkai-r
   fi
   # Leak hunt: test/run-spawned processes that were never recorded in
   # .run/pids still hold the project path in their cmdline.
@@ -1555,11 +1557,16 @@ prepare_nested_home() {
   tenkai_seed_matugen "$RUN_DIR/home/.cache"
   # Hyprland names its IPC sockets $XDG_RUNTIME_DIR/hypr/<signature>/.socket2.sock.
   # The signature is 61 chars, so the full path must stay <= 107 bytes or the
-  # *event* socket is silently disabled ("Socket2 path is too long"). The
-  # project path is 22 chars, so .run/r cannot fit. Expose the same directory
-  # through a short symlink for the child's XDG_RUNTIME_DIR; all bytes still
-  # land under .run/r.
-  ln -sfn "$RUN_DIR/r" "$TENKAI_DIR/.r"
+  # socket bind() fails with "path is too long" and Hyprland silently falls back
+  # to the abstract namespace -- leaving no filesystem socket hyprctl can reach.
+  # The project path is 22 chars, so .run/r cannot fit. Use a short runtime dir
+  # so the nested compositor's control socket is reachable from hyprctl for the
+  # first time. /tmp/tenkai-r/hypr/<61-char-sig>/.socket.sock = 93 bytes.
+  # Keep .run/r as a symlink to /tmp/tenkai-r so existing paths still resolve.
+  if [[ ! -d /tmp/tenkai-r ]]; then
+    mkdir -p /tmp/tenkai-r
+  fi
+  ln -sfn /tmp/tenkai-r "$TENKAI_DIR/.r"
   # The nested compositor creates its Wayland socket in the HOST's
   # XDG_RUNTIME_DIR, not in $RUN_DIR/r. The session script inside the
   # dbus-run-session scopes XDG_RUNTIME_DIR to .r, so the socket is
@@ -1632,7 +1639,7 @@ if [ "\${TENKAI_ENV_SCRUBBED:-0}" != "1" ]; then
       "XDG_CACHE_HOME=\$RUN/home/.cache"
       "XDG_STATE_HOME=\$RUN/state"
       "XDG_DATA_HOME=\$RUN/data"
-      "XDG_RUNTIME_DIR=\$TENKAI_DIR/.r"
+      "XDG_RUNTIME_DIR=/tmp/tenkai-r"
       "XDG_DATA_DIRS=$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
       "FONTCONFIG_FILE=\$RUN/home/.config/fontconfig/fonts.conf"
       "TENKAI_HOST_WAYLAND_SOCKET=__HOST_WAYLAND__"
@@ -1673,7 +1680,7 @@ export XDG_DATA_HOME="\$RUN/data"
 export XDG_DATA_DIRS="$HOME/.local/share:$HOME/.local/share/flatpak/exports/share:/usr/local/share:/usr/share"
 # Strict isolation: every nested process resolves its display, sockets and
 # pipewire from this session's own runtime dir. The live one is never used.
-export XDG_RUNTIME_DIR="\$TENKAI_DIR/.r"
+export XDG_RUNTIME_DIR="/tmp/tenkai-r"
 
 export FONTCONFIG_FILE="\$HOME/.config/fontconfig/fonts.conf"
 # R1: .run/bin first, then a fixed system list. The caller's PATH is NOT used:
@@ -1887,7 +1894,7 @@ nested_sig() {  # print the nested instance signature while it is up
 
 nested_hyprctl() {  # $1 = json flag, rest = argv; targeted at the nested instance only
   local sig="$1"; shift
-  HYPRLAND_INSTANCE_SIGNATURE="$sig" XDG_RUNTIME_DIR="$TENKAI_DIR/.r" hyprctl "$@" 2>/dev/null
+  HYPRLAND_INSTANCE_SIGNATURE="$sig" XDG_RUNTIME_DIR=/tmp/tenkai-r hyprctl "$@" 2>/dev/null
 }
 
 cmd_test() {
@@ -1975,7 +1982,7 @@ cmd_test() {
   fi
   if command -v grim >/dev/null 2>&1; then
     mkdir -p "$RUN_DIR/shots"
-    if XDG_RUNTIME_DIR="$TENKAI_DIR/.r" WAYLAND_DISPLAY=wayland-1 grim -o WAYLAND-1 "$RUN_DIR/shots/test-bar.png" 2>/dev/null; then
+    if XDG_RUNTIME_DIR=/tmp/tenkai-r WAYLAND_DISPLAY=wayland-1 grim -o WAYLAND-1 "$RUN_DIR/shots/test-bar.png" 2>/dev/null; then
       note "TESTED      pixel capture: .run/shots/test-bar.png ($(identify -format '%wx%h' "$RUN_DIR/shots/test-bar.png" 2>/dev/null))"
     fi
   fi
