@@ -2769,6 +2769,15 @@ cmd_live_status() {
   note "monitor logs: $(ls -1t "$RUN_DIR"/logs/live-monitor-*.log 2>/dev/null | head -1)"
 }
 
+cmd_ipc() {
+  [ "$#" -ge 1 ] || die "usage: ./tenkai ipc <command> [args...]"
+  [ -f "$PID_FILE" ] || die "no Tenkai session is running — start one with './tenkai run'"
+  [ -S "$TENKAI_DIR/.r/tenkai-shell.sock" ] || die "no tenkai-shell socket — is the session up?"
+  note "ipc: $*"
+  echo "$*" | ncat -U "$TENKAI_DIR/.r/tenkai-shell.sock" 2>&1
+}
+
+
 usage() {
   local last
   last="$(grep -n '^set -euo pipefail$' "${BASH_SOURCE[0]}" | cut -d: -f1)"
@@ -2791,7 +2800,8 @@ case "${1:-help}" in
   wallpaper)        shift; cmd_wallpaper "$@" ;;
   env-check)        shift; cmd_env_check "${1:-}" ;;
   test)             shift; cmd_test ;;
-  accept)           shift; cmd_accept "$@" ;;
+  accept)           shift; cmd_accept "$@";;
+  ipc)             shift; cmd_ipc "$@";;
   help|--help|-h)   usage ;;
   *) die "unknown subcommand '${1}' — see './tenkai help'" ;;
 esac
