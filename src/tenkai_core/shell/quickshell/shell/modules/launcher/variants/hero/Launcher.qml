@@ -266,7 +266,9 @@ Item {
     }
 
     function validateProviderSet() {
-        var requiredProviders = ["actions", "apps", "recent", "web"];
+        // Tenkai ships only the local providers (apps + calc/media/packages reach
+        // the dispatcher via their own ids; "/"/actions is disabled by owner).
+        var requiredProviders = ["apps"];
         for (var index = 0; index < requiredProviders.length; index++) {
             var name = requiredProviders[index];
             if (!providerSet[name])
@@ -901,7 +903,7 @@ Item {
     }
 
     Binding {
-        target: providerSet.actions
+        target: providerSet.actions || null
         property: "activeCategory"
         value: drawer.activeCategory
         when: root.shown && root.actionMode
