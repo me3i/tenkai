@@ -184,6 +184,8 @@ t_autostart() {
 shell_pid() { pgrep -f '^qs -p .*/tenkai_core/shell/quickshell/shell$' | head -1; }
 ipc() { local p; p=$(shell_pid); [ -n "$p" ] || return 1; qs ipc --pid "$p" call shell "$@" 2>/dev/null; }
 need_shell() { [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/tenkai-shell.sock" ] && [ -n "$(shell_pid)" ]; }
+hub_pid() { pgrep -f '^qs -p .*/tenkai_core/hub/quickshell$' | head -1; }
+hubipc() { local p; p=$(hub_pid); [ -n "$p" ] || return 1; qs ipc --pid "$p" call draft "$@" 2>/dev/null; }
 
 t_shell_log() {
   local out="$EV/shell-log-grep.txt" log="$ROOT/.run/state/tenkai/surfaces/shell.log"
@@ -252,6 +254,32 @@ PY
     record runtime/settings-apply-5-keys PASS - 
   else
     record runtime/settings-apply-5-keys FAIL "evidence/$TS/settings.txt ($ok/$total)"
+  fi
+}
+
+t_preview() {
+  local out="$EV/settings-preview.txt" p before after live restore new
+  : >"$out"
+  if ! need_shell || [ -z "$(hub_pid)" ]; then
+    record runtime/settings-preview-live UNVERIFIED "no running shell or hub"; return
+  fi
+  before=$(hubipc get frameThickness)
+  [ -n "$before" ] || before=2
+  if [ "$before" = 4 ]; then new=5; else new=4; fi
+  echo "before draft=$before target=$new" >>"$out"
+  hubipc set frameThickness "$new" >>"$out" 2>&1
+  sleep 1
+  after=$(hubipc get frameThickness)
+  live=$(ipc getSetting frameThickness | tr -d '"')
+  printf 'after draft=%s live=%s\n' "$after" "$live" >>"$out"
+  hubipc set frameThickness "$before" >/dev/null 2>&1
+  sleep 1
+  restore=$(ipc getSetting frameThickness | tr -d '"')
+  echo "restored live=$restore" >>"$out"
+  if [ "$after" = "$new" ] && [ "$live" = "$new" ]; then
+    record runtime/settings-preview-live PASS -
+  else
+    record runtime/settings-preview-live FAIL "evidence/$TS/settings-preview.txt"
   fi
 }
 
@@ -336,12 +364,12 @@ t_icons() {
                  || record runtime/icons-all-resolve FAIL "evidence/$TS/icons.txt"
 }
 
-echo "Tenkai audit-3 — evidence in tests/evidence/$TS"
+echo "Tenkai audit-4 — evidence in tests/evidence/$TS"
 t_shell_parse; t_json_parse; t_go_build; t_qml_lint; t_scrub; t_fish_config
 t_forbidden_strings; t_ryoku_imports; t_ryoku_namespace; t_doc_links
 t_bootstrap; t_autostart
 if [ "$STATIC_ONLY" = 0 ]; then
-  t_shell_log; t_workspace; t_settings; t_gestures; t_scale; t_icons
+  t_shell_log; t_workspace; t_settings; t_preview; t_gestures; t_scale; t_icons
 fi
 
 printf '\n%-48s %-11s %s\n' TEST RESULT EVIDENCE
