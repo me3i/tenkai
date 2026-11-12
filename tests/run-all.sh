@@ -268,6 +268,43 @@ PY
   fi
 }
 
+t_boot_chain() {
+  local out="$EV/boot-chain.txt" bad=0 auto hook="$HOME/.config/hypr/modules/autostart.lua"
+  : >"$out"
+  # User-side chain: Hyprland must start Tenkai. The installer script owns this
+  # block; the live hook is the state a reboot will actually read.
+  if [ -f "$hook" ] && grep -qF '/tenkai start' "$hook"; then
+    echo "live autostart hook: present" >>"$out"
+  else
+    echo "live autostart hook: MISSING" >>"$out"; bad=1
+  fi
+  [ -x scripts/tenkai-autostart ] \
+    && echo "repo installer: present" >>"$out" \
+    || { echo "repo installer: MISSING" >>"$out"; bad=1; }
+  # A second shell autostart would fight Tenkai for D-Bus names.
+  if grep -rIn --exclude='*.bak' --exclude='*.pre-audit*' --exclude='*.tenkai-install.bak' \
+       -E 'exec[^\n]*(ryoku|serpantinum)[^\n]*(start|shell)|ryoku-shell' \
+       "$HOME/.config/hypr" "$HOME/.config/fish" >>"$out" 2>&1; then
+    echo "conflicting shell autostart: FOUND" >>"$out"; bad=1
+  else
+    echo "conflicting shell autostart: none" >>"$out"
+  fi
+  # Available session entry the display manager launches.
+  [ -f /usr/share/wayland-sessions/hyprland.desktop ] \
+    && echo "hyprland session entry: present" >>"$out" \
+    || { echo "hyprland session entry: MISSING" >>"$out"; bad=1; }
+  # Ly autologin is root-owned. Report it without pretending it is configured.
+  auto=$(sed -n 's/^auto_login_user[[:space:]]*=[[:space:]]*//p' /etc/ly/config.ini 2>/dev/null | head -1)
+  echo "ly auto_login_user: ${auto:-unset}" >>"$out"
+  if [ "$bad" = 0 ] && [ "$auto" = "$USER" ]; then
+    record runtime/boot-chain-configured PASS -
+  elif [ "$bad" = 0 ]; then
+    record runtime/boot-chain-configured UNVERIFIED "user autostart OK; ly autologin needs root (evidence/$TS/boot-chain.txt)"
+  else
+    record runtime/boot-chain-configured FAIL "evidence/$TS/boot-chain.txt"
+  fi
+}
+
 t_preview() {
   local out="$EV/settings-preview.txt" p before after live restore new own=0
   : >"$out"
@@ -385,7 +422,7 @@ t_shell_parse; t_json_parse; t_go_build; t_qml_lint; t_scrub; t_fish_config
 t_forbidden_strings; t_ryoku_imports; t_ryoku_namespace; t_doc_links
 t_bootstrap; t_autostart
 if [ "$STATIC_ONLY" = 0 ]; then
-  t_shell_log; t_workspace; t_settings; t_preview; t_gestures; t_scale; t_icons
+  t_shell_log; t_workspace; t_settings; t_preview; t_gestures; t_scale; t_icons; t_boot_chain
 fi
 
 printf '\n%-48s %-11s %s\n' TEST RESULT EVIDENCE
