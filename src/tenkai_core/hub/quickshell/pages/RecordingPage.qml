@@ -329,16 +329,26 @@ Item {
         }
     }
 
+    // `keypress` is absent when the overlay backend is off; an unknown topic is
+    // permanent, so stop instead of a socket warning every 2s.
+    property bool keyTopicMissing: false
     Socket {
         id: keySub
         path: pg.shellSockPath
-        parser: SplitParser { onRead: line => pg.applyKeyFrame(line) }
+        parser: SplitParser { onRead: line => {
+            if (("" + line).indexOf("err unknown topic") === 0) {
+                pg.keyTopicMissing = true;
+                keySub.connected = false;
+                return;
+            }
+            pg.applyKeyFrame(line);
+        } }
         Component.onCompleted: connected = true
         onConnectionStateChanged: {
             if (connected) {
                 write("subscribe keypress\n");
                 flush();
-            } else {
+            } else if (!pg.keyTopicMissing) {
                 keySubRetry.restart();
             }
         }
@@ -347,7 +357,7 @@ Item {
     Timer {
         id: keySubRetry
         interval: 2000
-        onTriggered: if (!keySub.connected) keySub.connected = true
+        onTriggered: if (!keySub.connected && !pg.keyTopicMissing) keySub.connected = true
     }
 
     Socket {
