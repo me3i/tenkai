@@ -17,25 +17,25 @@ file was written against.
 
 Everything below happens only after an interactive `y` at that step's prompt.
 `--dry-run` writes nothing. `--yes` answers the non-Hyprland prompts, but it never
-answers steps 4 and 7, which are interactive-only by design.
+answers steps 6 and 7, which are interactive-only by design.
 
 | Step | Path written | How | Backup |
 | --- | --- | --- | --- |
-| 3 | `~/.config/systemd/user/tenkai-shell.service` | `install -m 0644` (`write_unit`, install.sh:512) | none; rewritten only when content differs |
+| 3 | `~/.config/systemd/user/tenkai-shell.service` | `install -m 0644` (`write_unit`, install.sh:514) | none; rewritten only when content differs |
 | 3 | `~/.config/systemd/user/tenkai-hub.service` | same | none |
-| 3 | — | `systemctl --user daemon-reload` only (install.sh:588) | n/a |
-| 4 | `~/.config/hypr/modules/autostart.lua` | one `hl.on("hyprland.start", …)` hook appended (install.sh:603) | none; the whole step is interactive y/N |
-| 5 | `~/.config/kitty/kitty.conf` | one `include` line appended (install.sh:665-673) | `kitty.conf.tenkai-install.bak` |
-| 5 | `~/.cache/tenkai/kitty-colors.conf` | written at runtime by the palette pass, not by the installer | none |
-| 6 | `~/.config/kitty/{kitty.conf,current-font.conf,current-theme.conf,user.conf}` | `copy_config`, whole-file copy (install.sh:722-725) | `<file>.tenkai-install.bak` |
-| 6 | `~/.config/fish/config.fish` | `copy_config` (install.sh:746) | `<file>.tenkai-install.bak` |
-| 6 | `~/.config/fish/conf.d/*` | `copy_config` per file (install.sh:747-751) | `<file>.tenkai-install.bak` |
-| 6 | `~/.config/starship.toml` | `copy_config` (install.sh:755) | `<file>.tenkai-install.bak` |
-| 6 | `~/.config/fastfetch/*` | `install -m 0644` per file (install.sh:763-791) | `<file>.tenkai-install.bak` |
-| 7 | `~/.config/hypr/**/*.lua` (the bundled tree, `src/tenkai-configs/hypr`) | per-file copy (install.sh:816+) | `<file>.tenkai-install.bak` |
-| 7 | `~/.config/hypr/modules/keyboard.lua` | seeded once; never overwritten afterwards (install.sh:820-822) | none (by design: it is user-owned) |
-| 8 | `~/Pictures/Wallpapers/*` | `install -m 0644`, bundled images only (install.sh:946-991) | existing file → `<name>.tenkai-install.bak` |
-| 9 | `~/.local/share/fonts/tenkai/*.ttf` | `install -m 0644`, Space Grotesk + Fraunces (install.sh:1001+) — **no prompt**, then `fc-cache -f` on that directory | none, new directory |
+| 3 | — | `systemctl --user daemon-reload` only (install.sh:590) | n/a |
+| 4 | `~/.config/kitty/kitty.conf` | one `include` line appended (install.sh:612) | `kitty.conf.tenkai-install.bak` |
+| 4 | `~/.cache/tenkai/kitty-colors.conf` | written at runtime by the palette pass, not by the installer | none |
+| 5 | `~/.config/kitty/{kitty.conf,current-font.conf,current-theme.conf,user.conf}` | `copy_config`, whole-file copy (install.sh:669-672) | `<file>.tenkai-install.bak` |
+| 5 | `~/.config/fish/config.fish` | `copy_config` (install.sh:695) | `<file>.tenkai-install.bak` |
+| 5 | `~/.config/fish/conf.d/*` | `copy_config` per file (install.sh:696-700) | `<file>.tenkai-install.bak` |
+| 5 | `~/.config/starship.toml` | `copy_config` (install.sh:701) | `<file>.tenkai-install.bak` |
+| 5 | `~/.config/fastfetch/*` | `install -m 0644` per file (install.sh:708-720) | `<file>.tenkai-install.bak` |
+| 6 | `~/.config/hypr/**/*.lua` (the bundled tree, `src/tenkai-configs/hypr`) | per-file copy (install.sh:824) | `<file>.tenkai-install.bak` |
+| 6 | `~/.config/hypr/modules/keyboard.lua` | seeded once; never overwritten afterwards (install.sh:820-822) | none (by design: it is user-owned) |
+| 7 | `~/.config/hypr/tenkai_autostart.lua` | one `hl.on("hyprland.start", …)` hook written as its own drop-in, loaded by the shipped `hyprland.lua` (install.sh:906) | none: the file is not overwritten if a hook is already present, and the whole step is interactive y/N |
+| 8 | `~/Pictures/Wallpapers/*` | `install -m 0644`, bundled images only (install.sh:961) | existing file → `<name>.tenkai-install.bak` |
+| 9 | `~/.local/share/fonts/tenkai/*.ttf` | `install -m 0644`, Space Grotesk + Fraunces (install.sh:1012) — **no prompt**, then `fc-cache -f` on that directory | none, new directory |
 
 `MARK='tenkai-install'` (install.sh:51) is the suffix used for every backup:
 `<path>.tenkai-install.bak`.
@@ -45,7 +45,7 @@ Notes that matter for a clean rollback:
 - The units are **written, not enabled**. `install.sh` never runs `systemctl --user
   enable`; enabling is left to the user, and the units are documented as an
   alternative to the autostart hook (install.sh:509-511).
-- `~/.config/kitty` is never *created* by step 5: if there is no `kitty.conf`, it
+- `~/.config/kitty` is never *created* by step 4: if there is no `kitty.conf`, it
   only prints the line for you to add (install.sh:657-660).
 - **Step 9 is the one step that writes without asking.** Fonts go to
   `~/.local/share/fonts/tenkai/` and `fc-cache` runs on that directory whether or

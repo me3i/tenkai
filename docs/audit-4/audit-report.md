@@ -58,7 +58,7 @@ is root-owned and `sudo -n` is unavailable), so it remains the one manual step.
 
 ### 2.1 Chosen mechanism + why
 Ly autologin → `hyprland.desktop` (`start-hyprland`) → Hyprland
-`hyprland.start` → `/home/mei/tenkai/tenkai start`, which brings up the daemon
+`hyprland.start` → `~/tenkai/tenkai start`, which brings up the daemon
 and bar. Ly is already the only DM; this is the smallest complete chain.
 
 ### 2.2 Rejected mechanisms
@@ -69,7 +69,8 @@ C: SDDM absent. B: greetd absent. D: no rootless way to get a graphical session.
 - `tests/run-all.sh`: new `runtime/boot-chain-configured` check (commit
   `44306c9`, hardened in `9a42f88`). No shipped Hyprland file hardcodes this
   machine's checkout path; the existing `scripts/tenkai-autostart` remains the
-  installer mechanism.
+  standalone helper. (`install.sh`'s own mechanism changed later in this pass,
+  after the fresh-install transcript — see E12/§15.)
 
 ### 2.4 Files created/modified (live, with backup paths)
 - `~/.config/hypr/modules/autostart.lua`: appended Tenkai's start block.
@@ -104,7 +105,7 @@ complete without root.
 ```
 -- tenkai-autostart: start the Tenkai shell at session start
 hl.on("hyprland.start", function()
-    hl.exec_cmd("/home/mei/tenkai/tenkai start")
+    hl.exec_cmd("~/tenkai/tenkai start")   -- expanded at session start
 end)
 ```
 
@@ -236,6 +237,18 @@ ryovm/rashin exited 127. Fixed `5d76767`; live binds also point at
 **E6 — gesture/zoom were runtime-eval only.** A reload dropped them. Fixed live
 by installing the repo modules with backups; verified six knobs `set: true`
 after reload.
+**E13 — a failed cmake configure wedged every later run.** `install.sh` run 2
+configured without `-G Ninja` (ninja absent), leaving a Unix-Makefiles cache;
+after installing ninja/gcc every later run died with "generator ... does not
+match the generator used previously" and only a manual `rm -rf
+.run/build/blobs` recovered. The error text blamed Qt6 alone, which sent the
+user through four wrong `pacman` lines. Fixed: a failed configure now clears its
+build dir before dying and names the real prerequisites. See §15.
+**E12 — a fresh install did not boot into Tenkai.** The autostart step appended
+the start hook to `~/.config/hypr/hyprland.lua`; the config-deploy step then
+reinstalled that file from the checkout, so the hook survived only in a backup.
+Fixed by a separate drop-in and by running the autostart step after the config
+deploy (now steps 7 and 6; were 4 and 7). See §15.
 **E7 — empty `screen_shader` produced a screen-wide red Hyprland error bar.**
 `decoration.lua` passed `""` as a path. Fixed `a23b1c2` by omitting the key;
 live file patched with backup; screenshots before/after and `configerrors`
@@ -324,9 +337,10 @@ is unset because it needs root.
 | E3 | `2567a5a` | stop retrying `updates` |
 | E4 | `4857c27` | stop retrying `keypress` |
 | E5 | `712d77e` | correct audit-3 errata |
-| E7 | `a23b1c2` | omit empty screen_shader |
+| E7 | `a23b1c2`, `ccf188c` | omit empty screen_shader; reload on clear |
 | E8 | `10fa4cd` | preview test launches its own Hub |
 | E10/E11 | `44306c9`, `9a42f88` | boot-chain test + scrub fix |
+| E12/E13 | this commit | fresh-install hook drop-in + cmake cache reset |
 
 ## 12. Deferred
 
@@ -380,7 +394,66 @@ sudo systemctl restart ly@tty1
 4. Optional physical checks: three-finger swipe, Super+N, and Super+, (Settings
    preview).
 
-## 15. Summary table
+## 15. Fresh-install transcript (`tenkaifinal.txt`, `tenkairun.txt`)
+
+The user supplied a full fresh-Arch install transcript. Both files stay
+untracked and were not modified; `tenkairun.txt` is the same session with lines
+636–1270 pasted twice. The transcript exposed two defects the live machine
+cannot show, because the live machine had been hand-patched.
+
+**E12 — a fresh install does not boot into Tenkai.** The old autostart step
+appended `hl.exec_cmd("<checkout>/tenkai start")` to
+`~/.config/hypr/hyprland.lua`; the old config-deploy step then reinstalled that
+file wholesale from `src/tenkai-configs/hypr/` (transcript: `overwrite
+hyprland.lua (backup: hyprland.lua.tenkai-install.bak)`).
+The hook survived only in the backup, so Hyprland started with no bar. The
+"already exists" guard greps all of `~/.config/hypr`, so it happily matched that
+backup and would never re-add the hook on a later run.
+
+Fix: one drop-in, `~/.config/hypr/tenkai_autostart.lua`, loaded by
+`optional("tenkai_autostart")` in the shipped `hyprland.lua`. The autostart step
+now runs after the config deploy (step 7 after step 6; they were 4 and 7) and its
+existence check reads live files only, never `*.bak`. An upgrade that overwrites
+`modules/autostart.lua` therefore re-adds the drop-in instead of losing the
+hook; the live machine's existing hook in `modules/autostart.lua` keeps working
+unchanged. `runtime/boot-chain-configured` accepts either live location and now
+fails if the shipped `hyprland.lua` stops loading the drop-in.
+
+**E13 — a failed cmake configure wedges every later run.** Transcript: run 2
+configured without `-G Ninja` (ninja not installed yet) and left a
+Unix-Makefiles cache; after installing ninja/gcc, runs 3–4 died with
+`generator : Ninja does not match the generator used previously: Unix
+Makefiles`, and only `rm -rf .run/build/blobs` recovered. The die message blamed
+Qt6 alone, which is why the user tried `gt6-shadertools`, `qt-t`, `qt-6multimedia`.
+Fix: a failed configure removes its build dir first, and the message names the
+real prerequisites (ninja, gcc, Qt6 Quick/ShaderTools/Multimedia).
+
+Not a defect: `./tenkai start` printing `REFUSING: PID 863 still owns
+org.freedesktop.Notifications` is the documented single-owner guard; the shell
+had already been started by the new autostart hook, and the start completed once
+that shell exited.
+
+Test correction found on the way: `runtime/boot-chain-configured` read `$HOME`,
+which this harness points at `.run/home` for the shell it starts, so on the last
+run it reported the hook MISSING while the live hook sat in the login user's
+home. It now
+prefers the login user's passwd home when that has a `~/.config/hypr`.
+
+Verification: `bash -n install.sh`, `bash -n tests/run-all.sh`, then
+`bash tests/run-all.sh` → **15 PASS, 5 UNVERIFIED, 0 FAIL, exit 0**
+(evidence `tests/evidence/20261112-083102/`). Four of the UNVERIFIED are the
+live-shell checks: no shell was running for this run (the auditing session had
+ended), so they say "no running shell" rather than PASS — this run does not
+re-confirm the §3 preview result. The fifth is Ly autologin (D1).
+
+`install.sh --dry-run --skip-build` against a throwaway `HOME` holding a
+hook-less `hyprland.lua` confirmed the new order prints 1–9 in sequence and
+step 7 offers to write `~/.config/hypr/tenkai_autostart.lua` with the absolute
+checkout path. The fresh install itself was not replayed end to end: that needs
+a throwaway machine, since a real run rewrites `~/.config/hypr` and
+`~/.config/kitty`.
+
+## 16. Summary table
 
 | Item | Result |
 |---|---|
@@ -388,8 +461,8 @@ sudo systemctl restart ly@tty1
 | Boot chain status | needs manual step (D1) + reboot proof |
 | Settings preview | fixed, tested, visually verified |
 | Crosscheck | 41 TRUE / 6 FALSE / 4 DRIFTED / 5 UNVERIFIABLE (56) |
-| New errors | 11: BLOCKER 1, BUG 4, WARN 5, DOC 1 |
-| Fixes | 10 commits |
+| New errors | 13: BLOCKER 2, BUG 5, WARN 5, DOC 1 |
+| Fixes | 12 commits |
 | Deferred | 4 (D1–D4) |
-| Suite | 19 PASS, 1 UNVERIFIED, 0 FAIL |
+| Suite | 15 PASS, 5 UNVERIFIED, 0 FAIL (no live shell this run; was 19/1) |
 | Single file | this report |

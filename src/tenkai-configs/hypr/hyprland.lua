@@ -46,6 +46,10 @@ require("modules.ryoshot")
 require("modules.lid")
 require("modules.window_rules")
 require("modules.autostart")
+-- install.sh step 7: the `tenkai start` session hook. Its own file so a
+-- reinstall of this config or modules/autostart.lua cannot drop it; optional so
+-- a box that declined that step still loads a clean config.
+optional("tenkai_autostart")
 
 -- machine-state written by the hub (tenkai-hub), never shipped. after the base
 -- modules so the GUI's tweaks override the defaults, before user.lua so a

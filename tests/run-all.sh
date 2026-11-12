@@ -269,15 +269,30 @@ PY
 }
 
 t_boot_chain() {
-  local out="$EV/boot-chain.txt" bad=0 auto hook="$HOME/.config/hypr/modules/autostart.lua"
+  local out="$EV/boot-chain.txt" bad=0 auto home hook
+  # The suite may run with HOME pointed at .run/home for the shell it starts;
+  # a reboot reads the login user's home, so prefer that one when it has a
+  # Hyprland config.
+  home=$HOME
+  auto=$(getent passwd "$(id -un)" | cut -d: -f6)
+  [ -n "$auto" ] && [ -d "$auto/.config/hypr" ] && home=$auto
+  hook="$home/.config/hypr/tenkai_autostart.lua"
   : >"$out"
-  # User-side chain: Hyprland must start Tenkai. The installer script owns this
-  # block; the live hook is the state a reboot will actually read.
-  if [ -f "$hook" ] && grep -qF '/tenkai start' "$hook"; then
+  # User-side chain: Hyprland must start Tenkai. install.sh owns the drop-in;
+  # an older install put the hook inside modules/autostart.lua, so accept both.
+  # The live hook is the state a reboot will actually read.
+  if { [ -f "$hook" ] && grep -qF '/tenkai start' "$hook"; } \
+     || { [ -f "$home/.config/hypr/modules/autostart.lua" ] \
+          && grep -qF '/tenkai start' "$home/.config/hypr/modules/autostart.lua"; }; then
     echo "live autostart hook: present" >>"$out"
   else
     echo "live autostart hook: MISSING" >>"$out"; bad=1
   fi
+  # And the shipped config must load that drop-in, or a fresh install boots
+  # into a desktop with no bar however correct the live machine is.
+  grep -qF 'optional("tenkai_autostart")' src/tenkai-configs/hypr/hyprland.lua \
+    && echo "repo drop-in wiring: present" >>"$out" \
+    || { echo "repo drop-in wiring: MISSING" >>"$out"; bad=1; }
   [ -x scripts/tenkai-autostart ] \
     && echo "repo installer: present" >>"$out" \
     || { echo "repo installer: MISSING" >>"$out"; bad=1; }
@@ -286,7 +301,7 @@ t_boot_chain() {
   local old_shell='ryo''ku|serpa''ntinum'
   if grep -rIn --exclude='*.bak' --exclude='*.pre-audit*' --exclude='*.tenkai-install.bak' \
        -E "(^|[^a-z])(exec-once|exec_cmd|exec )[^\n]*($old_shell)[^\n]*(start|shell)" \
-       "$HOME/.config/hypr" "$HOME/.config/fish" >>"$out" 2>&1; then
+       "$home/.config/hypr" "$home/.config/fish" >>"$out" 2>&1; then
     echo "conflicting shell autostart: FOUND" >>"$out"; bad=1
   else
     echo "conflicting shell autostart: none" >>"$out"

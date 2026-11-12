@@ -12,18 +12,20 @@
 #   2. build: the three Go daemons, the Tenkai.Blobs C++/QML plugin, and the
 #      QML module tree under .run/qml
 #   3. systemd user units (tenkai-shell.service, tenkai-hub.service) + daemon-reload
-#   4. Hyprland autostart: `tenkai start` — INTERACTIVE y/N ONLY, never --yes
-#   5. kitty: include the generated colour file (prompted)
-#   6. terminal: this repo's Fish + Starship prompt files (prompted)
-#   7. Hyprland configs: deploy the bundled Lua config to ~/.config/hypr
+#   4. kitty: include the generated colour file (prompted)
+#   5. terminal: this repo's Fish + Starship prompt files (prompted)
+#   6. Hyprland configs: deploy the bundled Lua config to ~/.config/hypr
 #      (interactive y/N only, *.tenkai-install.bak backups; keyboard.lua is
 #      seeded once and never overwritten)
+#   7. Hyprland autostart: `tenkai start` as a drop-in the deployed
+#      hyprland.lua loads — INTERACTIVE y/N ONLY, never --yes. Runs after 6:
+#      an appended hook is lost when the bundled config is reinstalled.
 #   8. wallpapers: copy any bundled images into ~/Pictures/Wallpapers/
 #   9. fonts: install the bundled OFL Space Grotesk / Fraunces user-locally,
 #      and print the pacman line for the Nerd/Material Symbols fonts
 #
 # Everything it writes outside this checkout is named and prompted for. It never
-# installs packages and never runs sudo; the one Hyprland-config deploy (step 7)
+# installs packages and never runs sudo; the one Hyprland-config deploy (step 6)
 # is interactive y/N only and always writes *.tenkai-install.bak backups first.
 #
 # Idempotent: a second run rebuilds nothing that is up to date, rewrites no
@@ -300,12 +302,12 @@ install.sh — set Tenkai up on a fresh Arch Linux + Hyprland machine.
   ./install.sh --skip-build    only do the system steps (binaries already built)
   ./install.sh --help          this text
 
-In order: dependencies, build, systemd user units, Hyprland autostart, kitty
-colour include, the Fish + Starship terminal files, the bundled Hyprland Lua
-config, wallpapers, and the bundled fonts. Nothing is installed and no sudo is
-run; every write outside this checkout is named and prompted for. The Hyprland
-autostart and the Hyprland-config deploy are INTERACTIVE y/N only — --yes does
-not answer them. Second runs are safe.
+In order: dependencies, build, systemd user units, the kitty colour include, the
+Fish + Starship terminal files, the bundled Hyprland Lua config, Hyprland
+autostart, wallpapers, and the bundled fonts. Nothing is installed and no sudo
+is run; every write outside this checkout is named and prompted for. The
+Hyprland-config deploy and the Hyprland autostart are INTERACTIVE y/N only —
+--yes does not answer them. Second runs are safe.
 USAGE
 }
 
@@ -453,7 +455,7 @@ else
     "cmake -S src/tenkai_core/shell/plugin -B .run/build/blobs ${CMAKE_GEN[*]} -DCMAKE_BUILD_TYPE=Release" \
     cmake -S "$TENKAI_DIR/src/tenkai_core/shell/plugin" -B "$BLOBS_BUILD" \
       "${CMAKE_GEN[@]}" -DCMAKE_BUILD_TYPE=Release \
-    || die "cmake configure failed (Qt6 6.5+ with Quick/ShaderTools/Multimedia is required)"
+    || { rm -rf "$BLOBS_BUILD"; die "cmake configure failed — a build dir left by a failed run is cleared here; install ninja, gcc and Qt6 Quick/ShaderTools/Multimedia, then run this again"; }
   # The long one: a comet crosses the sky while the SDF plugin compiles.
   celestial_spin "building Tenkai.Blobs" star "nice -n 10 cmake --build .run/build/blobs -j2" \
     nice -n 10 cmake --build "$BLOBS_BUILD" -j2 \
@@ -593,65 +595,9 @@ say ""
 say "  ${GY}Not enabled on purpose. To use the units instead of the autostart line:${R}"
 say "    ${BL}systemctl --user enable --now tenkai-shell.service tenkai-hub.service${R}"
 
-# ── 4. Hyprland autostart ────────────────────────────────────────────────────
+# ── 4. kitty colours ────────────────────────────────────────────────────────
 
-step 4 "Hyprland autostart"
-
-# The one Hyprland file this script could ever change — and only after an
-# interactive y/N. --yes does not answer this one, and a non-tty run only prints
-# the line to paste.
-AUTOSTART_LUA="$HYPR_DIR/modules/autostart.lua"
-LUA_CONF="$HYPR_DIR/hyprland.lua"
-CLASSIC_CONF="$HYPR_DIR/hyprland.conf"
-
-if grep -rqsF -- "$TENKAI_DIR/tenkai start" "$HYPR_DIR" 2>/dev/null; then
-  ok "an autostart line for this checkout already exists under $HYPR_DIR"
-elif [ -f "$CLASSIC_CONF" ]; then
-  say "  Hyprland config: $CLASSIC_CONF (hyprlang)"
-  say "  add:  exec-once = $TENKAI_DIR/tenkai start"
-  if confirm "append that line to $CLASSIC_CONF (a backup is written first)?"; then
-    cp -a "$CLASSIC_CONF" "$CLASSIC_CONF.$MARK.bak"
-    {
-      printf '\n# %s: start the Tenkai shell at session start\n' "$MARK"
-      printf 'exec-once = %s\n' "$TENKAI_DIR/tenkai start"
-    } >> "$CLASSIC_CONF"
-    ok "appended to $CLASSIC_CONF (backup: $CLASSIC_CONF.$MARK.bak)"
-  else
-    warn "not modified — add the line above yourself if you want Tenkai to autostart"
-  fi
-elif [ -f "$LUA_CONF" ]; then
-  # Hyprland's Lua config: startup commands live in an
-  # hl.on("hyprland.start", function() ... end) hook (modules/autostart.lua is
-  # where the keyring and the like are started). Appending a hook of our own is
-  # independent of what that file already contains, and runs once per session.
-  TARGET="$LUA_CONF"
-  [ -f "$AUTOSTART_LUA" ] && TARGET="$AUTOSTART_LUA"
-  say "  Hyprland config: $LUA_CONF (Lua)"
-  say "  add, at the end of $TARGET:"
-  say "    hl.on(\"hyprland.start\", function()"
-  say "        hl.exec_cmd(\"$TENKAI_DIR/tenkai start\")"
-  say "    end)"
-  if confirm "append that hook to $TARGET (a backup is written first)?"; then
-    cp -a "$TARGET" "$TARGET.$MARK.bak"
-    {
-      printf '\n-- %s: start the Tenkai shell at session start\n' "$MARK"
-      printf 'hl.on("hyprland.start", function()\n'
-      printf '    hl.exec_cmd("%s")\n' "$TENKAI_DIR/tenkai start"
-      printf 'end)\n'
-    } >> "$TARGET"
-    ok "appended to $TARGET (backup: $TARGET.$MARK.bak)"
-  else
-    warn "not modified — add the hook above yourself if you want Tenkai to autostart"
-  fi
-else
-  warn "no $CLASSIC_CONF and no $LUA_CONF: is Hyprland configured for this user?"
-  say "  add this to your Hyprland config by hand, once:"
-  say "    exec-once = $TENKAI_DIR/tenkai start"
-fi
-
-# ── 5. kitty colours ────────────────────────────────────────────────────────
-
-step 5 "kitty colours"
+step 4 "kitty colours"
 
 # Tenkai's palette pass writes ~/.cache/tenkai/kitty-colors.conf; kitty only reads it
 # if its own config includes it. Tenkai never writes ~/.config/kitty itself.
@@ -679,9 +625,9 @@ say ""
 info "The file itself appears the first time Tenkai runs a palette pass."
 info "Kitty re-reads its config on SIGUSR1: ${BL}pkill -USR1 -x kitty${R}"
 
-# ── 6. terminal: full environment (kitty + fish + starship + fastfetch) ─────
+# ── 5. terminal: full environment (kitty + fish + starship + fastfetch) ─────
 
-step 6 "terminal (kitty, fish, starship, fastfetch)"
+step 5 "terminal (kitty, fish, starship, fastfetch)"
 
 # Tenkai ships the owner's exact terminal environment: kitty style/conf (opacity,
 # padding, fonts), Fish behaviour (config + conf.d + functions), the Starship
@@ -807,9 +753,9 @@ if [ "$(getent passwd "$(id -un)" | cut -d: -f7)" != "$(command -v fish 2>/dev/n
   say "    ${BL}chsh -s $(command -v fish)${R}"
 fi
 
-# ── 7. Hyprland configs ─────────────────────────────────────────────────────
+# ── 6. Hyprland configs ─────────────────────────────────────────────────────
 
-step 7 "Hyprland configs (Lua)"
+step 6 "Hyprland configs (Lua)"
 
 # Tenkai ships the owner's Hyprland Lua config so a fresh install is not stuck
 # with Hyprland defaults. Files are copied whole, never merged; existing
@@ -940,6 +886,65 @@ deploy_helper_links() {
 }
 
 deploy_helper_links
+
+# ── 7. Hyprland autostart ────────────────────────────────────────────────────
+
+step 7 "Hyprland autostart"
+
+# The one Hyprland write this script can make, and only after an interactive
+# y/N. --yes does not answer it; a non-tty run only prints the hook.
+#
+# The hook lives in its own drop-in, not appended to hyprland.lua or
+# modules/autostart.lua: step 6 reinstalls those from the checkout on every run,
+# so an appended block is gone on the next install (fresh install observed:
+# hook appended at the old step 4, file overwritten at the old step 7, desktop
+# boots with no bar). The shipped hyprland.lua optional()s this file, so a fresh
+# install and an upgrade both pick it up and a re-run never duplicates it.
+AUTOSTART_LUA="$HYPR_DIR/modules/autostart.lua"
+LUA_CONF="$HYPR_DIR/hyprland.lua"
+CLASSIC_CONF="$HYPR_DIR/hyprland.conf"
+HOOK_FILE="$HYPR_DIR/tenkai_autostart.lua"
+HOOK_CMD="$TENKAI_DIR/tenkai start"
+
+# The live files only: a *.bak still carries a hook this script later removed.
+if grep -qsF -- "$HOOK_CMD" "$HOOK_FILE" "$AUTOSTART_LUA" "$LUA_CONF" "$CLASSIC_CONF" 2>/dev/null; then
+  ok "an autostart line for this checkout already exists under $HYPR_DIR"
+elif [ -f "$CLASSIC_CONF" ]; then
+  say "  Hyprland config: $CLASSIC_CONF (hyprlang)"
+  say "  add:  exec-once = $HOOK_CMD"
+  if confirm "append that line to $CLASSIC_CONF (a backup is written first)?"; then
+    cp -a "$CLASSIC_CONF" "$CLASSIC_CONF.$MARK.bak"
+    {
+      printf '\n# %s: start the Tenkai shell at session start\n' "$MARK"
+      printf 'exec-once = %s\n' "$HOOK_CMD"
+    } >> "$CLASSIC_CONF"
+    ok "appended to $CLASSIC_CONF (backup: $CLASSIC_CONF.$MARK.bak)"
+  else
+    warn "not modified — add the line above yourself if you want Tenkai to autostart"
+  fi
+elif [ -f "$LUA_CONF" ]; then
+  say "  Hyprland config: $LUA_CONF (Lua)"
+  say "  write, in $HOOK_FILE:"
+  say "    hl.on(\"hyprland.start\", function()"
+  say "        hl.exec_cmd(\"$HOOK_CMD\")"
+  say "    end)"
+  if confirm "write $HOOK_FILE (loaded by hyprland.lua)?"; then
+    mkdir -p "$(dirname "$HOOK_FILE")"
+    {
+      printf '-- %s: start the Tenkai shell at session start\n' "$MARK"
+      printf 'hl.on("hyprland.start", function()\n'
+      printf '    hl.exec_cmd("%s")\n' "$HOOK_CMD"
+      printf 'end)\n'
+    } > "$HOOK_FILE"
+    ok "wrote $HOOK_FILE"
+  else
+    warn "not modified — add the hook above yourself if you want Tenkai to autostart"
+  fi
+else
+  warn "no $CLASSIC_CONF and no $LUA_CONF: is Hyprland configured for this user?"
+  say "  add this to your Hyprland config by hand, once:"
+  say "    exec-once = $HOOK_CMD"
+fi
 
 # ── 8. wallpapers ───────────────────────────────────────────────────────────
 
