@@ -1,0 +1,138 @@
+audit-3 preflight — answers to Q1–Q6
+
+Q1  Baseline HEAD: 0ec23c9 "test: add the audit-2 runtime suite and its findings"
+    (branch audit-2/fix-workspaces-settings-icons). Reachable and clean.
+Q2  Suite before changes: PASS, 15/15, exit 0; scrub PASS.
+Q3  Shell: this session $SHELL=/usr/bin/bash; passwd login shell=/usr/bin/fish;
+    /etc/shells already contains /usr/bin/fish. Fish is already the default,
+    so no chsh was run. $SHELL flips only on the next login.
+Q4  Gestures: `gestures:workspace_swipe` and `..._fingers` do NOT exist on
+    Hyprland 0.57.2 ("no such option"). Only the tuning knobs exist and all
+    report set:false. See gestures.md — the brief's block cannot work.
+Q5  Scale: eDP-1 scale 1.5; cursor:zoom_factor 1.0 set:false;
+    QT_SCALE_FACTOR/GDK_SCALE/GDK_DPI_SCALE empty.
+Q6  Live config requires modules.env, displays, input, touchpad, misc,
+    decoration, animations, binds, resize, record, ryoshot, lid,
+    window_rules, autostart. No gestures module, no monitors.lua present.
+
+Raw capture follows.
+
+audit-3 preflight — 2026-11-12T04:14:19+00:00
+
+== git ==
+On branch audit-2/fix-workspaces-settings-icons
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	docs/audit-3/
+	tenkaifinal.txt
+	tenkairun.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+--- log ---
+0ec23c9 test: add the audit-2 runtime suite and its findings
+76250bf docs: remove the personal literals that failed scrub-check
+d80b0f6 fix(run): provision sandbox fonts and keep scrub self-clean
+a50bcd6 fix(shell): stop retrying daemon topics that do not exist
+f7e1d25 feat(shell): add setting and workspace IPC handlers
+dd008a2 fix(workspaces): make the keybind helper dispatch without the wm seam
+dce9d59 fix(wm): look up the tenkai-wm provider, not the old mei-wm name
+ae7bf15 docs: record the Ryoku gap analysis and the fix report
+--- branch ---
+audit-2/fix-workspaces-settings-icons
+
+== scrub ==
+SCRUB CHECK: PASS (the tracked tree carries nothing personal)
+scrub-exit=0
+
+== suite ==
+Tenkai audit-2 — evidence in tests/evidence/20261112-041428
+  [PASS] static/shell-scripts-parse
+  [PASS] static/json-parse
+  [PASS] static/go-build
+  [PASS] static/qml-lint
+  [PASS] static/scrub-check
+  [PASS] static/no-personal-strings
+  [PASS] static/no-ryoku-imports
+  [PASS] static/no-ryoku-namespaces
+  [PASS] static/referenced-docs-exist
+  [PASS] bootstrap/idempotent
+  [PASS] autostart/idempotent
+  [PASS] runtime/shell-starts-clean
+  [PASS] runtime/workspace-switch-via-bar-pill
+  [PASS] runtime/settings-apply-5-keys
+  [PASS] runtime/icons-all-resolve
+
+TEST                                             RESULT      EVIDENCE
+------------------------------------------------ ----------- --------
+static/shell-scripts-parse                       PASS        -
+static/json-parse                                PASS        -
+static/go-build                                  PASS        -
+static/qml-lint                                  PASS        -
+static/scrub-check                               PASS        -
+static/no-personal-strings                       PASS        -
+static/no-ryoku-imports                          PASS        -
+static/no-ryoku-namespaces                       PASS        -
+static/referenced-docs-exist                     PASS        -
+bootstrap/idempotent                             PASS        -
+autostart/idempotent                             PASS        -
+runtime/shell-starts-clean                       PASS        -
+runtime/workspace-switch-via-bar-pill            PASS        -
+runtime/settings-apply-5-keys                    PASS        -
+runtime/icons-all-resolve                        PASS        -
+
+FAILURES: 0
+suite-exit=0
+
+== Q3 shell ==
+SHELL=/usr/bin/bash
+passwd-shell=/usr/bin/fish
+USER=<redacted>
+
+== Q4 gestures ==
+--- gestures:workspace_swipe ---
+no such option
+--- gestures:workspace_swipe_fingers ---
+no such option
+--- gestures:workspace_swipe_distance ---
+int: 300
+set: false
+--- gestures:workspace_swipe_cancel_ratio ---
+float: 0.500000
+set: false
+--- gestures:workspace_swipe_min_speed_to_force ---
+int: 30
+set: false
+--- gestures:workspace_swipe_direction_lock ---
+bool: true
+set: false
+
+== Q5 scale ==
+float: 1.000000
+set: false
+{
+  "name": "eDP-1",
+  "scale": 1.5,
+  "width": 1920,
+  "height": 1080,
+  "modes": null
+}
+QT_SCALE_FACTOR= GDK_SCALE= GDK_DPI_SCALE=
+
+== Q6 includes ==
+3:-- even a pcall'd require() of a missing module in the config-error overlay,
+9:        local ok, err = pcall(require, mod)
+19:require("modules.env")
+21:-- hard require made a torn one fail the whole config: emergency mode, black
+35:require("modules.displays")
+36:require("modules.input")
+37:require("modules.touchpad")
+38:require("modules.misc")
+39:require("modules.decoration")
+40:require("modules.animations")
+41:require("modules.binds")
+42:require("modules.resize")
+43:require("modules.record")
+44:require("modules.ryoshot")
+45:require("modules.lid")
+46:require("modules.window_rules")
+47:require("modules.autostart")
