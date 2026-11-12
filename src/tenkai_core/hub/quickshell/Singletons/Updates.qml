@@ -76,16 +76,27 @@ Singleton {
             ctl.connected = true;
     }
 
+    // The daemon may not register `updates` at all (this build does not).
+    // Reconnecting forever logged a socket warning every 2s, so stop on the
+    // daemon's permanent "unknown topic" reply.
+    property bool topicMissing: false
     Socket {
         id: sub
         path: root.sockPath
-        parser: SplitParser { onRead: line => root.apply(line) }
+        parser: SplitParser { onRead: line => {
+            if (("" + line).indexOf("err unknown topic") === 0) {
+                root.topicMissing = true;
+                sub.connected = false;
+                return;
+            }
+            root.apply(line);
+        } }
         Component.onCompleted: connected = true
         onConnectionStateChanged: {
             if (connected) {
                 write("subscribe updates\n");
                 flush();
-            } else {
+            } else if (!root.topicMissing) {
                 retry.restart();
             }
         }
@@ -94,7 +105,7 @@ Singleton {
     Timer {
         id: retry
         interval: 2000
-        onTriggered: if (!sub.connected) sub.connected = true
+        onTriggered: if (!sub.connected && !root.topicMissing) sub.connected = true
     }
 
     Socket {
