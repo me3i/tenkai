@@ -62,9 +62,12 @@ This is exactly why the gesture module must be installed for persistence; see
 | runtime/gestures-enabled (new) | PASS |
 | runtime/scale-is-1 (new) | PASS |
 
-`runtime/gestures-enabled` checks the live knobs (`set: true`), the absence of
-config errors, and that the constructed `hl.gesture` call succeeds. It cannot
-introspect gesture registration; the physical swipe stays UNVERIFIED.
+`runtime/gestures-enabled` checks the live knobs (`set: true`) and the absence
+of config errors. It cannot construct `hl.gesture`, introspect gesture
+registration, or press a key; the physical swipe stays UNVERIFIED.
+
+> Errata (audit-4): this paragraph originally claimed the test also proved the
+> constructed `hl.gesture` call succeeds. The test never made that call.
 `runtime/scale-is-1` fails on any monitor scale ≠ 1.0 or cursor zoom ≠ 1.0.
 
 ## Live repairs (with backups)

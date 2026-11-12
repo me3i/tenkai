@@ -17,16 +17,16 @@ Every service that subscribes to a daemon topic:
 | service | topic | daemon implements it | `topicMissing` stop |
 |---|---|---|---|
 | Clipboard | clipboard | yes | no (not needed) |
-| Holidays | calendar | **no** | yes |
+| Holidays | calendar | code only (not built at runtime) | yes |
 | Music | music | yes | no |
 | Network | network | yes | no |
 | Nightlight | nightlight | yes | no |
 | OsdFeed | osd | yes | no |
 | Polkit | polkit | yes | no |
-| PowerProfiles | powerprofiles | **no** | yes |
+| PowerProfiles | powerprofiles | code only (not built at runtime) | yes |
 | Tray | tray | yes | no |
-| Updates | updates | **no** | yes |
-| Weather | weather | **no** | yes |
+| Updates | updates | code only (not built at runtime) | yes |
+| Weather | weather | code only (not built at runtime) | yes |
 | Wm | wm | yes | no |
 
 The seven without `topicMissing` subscribe to topics the daemon registers, so
@@ -35,8 +35,11 @@ They would exhibit the old warning storm if their topic were later removed;
 they are left as-is rather than adding unused error handling to working paths.
 
 Also checked: `settings` and `wallpaper` subscribers exist outside
-`services/*.qml` and target implemented topics. No other socket retry loop was
-found.
+`services/*.qml` and target implemented topics.
+
+> Errata (audit-4): "no other socket retry loop" was wrong. `Singletons/Updates.qml`
+> and `pages/RecordingPage.qml` retried unknown `updates` / `keypress` topics every
+> 2 seconds; fixed in audit-4 (E3, E4).
 
 ## Follow-up candidates (not bugs blocking this pass)
 
