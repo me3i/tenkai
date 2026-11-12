@@ -87,5 +87,5 @@ fish_add_path ~/.opencode/bin
 
 
 # Qwen Code PATH block begin
-set -gx PATH '~/.local/bin' $PATH
+set -gx PATH ~/.local/bin $PATH
 # Qwen Code PATH block end
