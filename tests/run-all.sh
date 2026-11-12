@@ -186,6 +186,17 @@ ipc() { local p; p=$(shell_pid); [ -n "$p" ] || return 1; qs ipc --pid "$p" call
 need_shell() { [ -S "${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/tenkai-shell.sock" ] && [ -n "$(shell_pid)" ]; }
 hub_pid() { pgrep -f '^qs -p .*/tenkai_core/hub/quickshell$' | head -1; }
 hubipc() { local p; p=$(hub_pid); [ -n "$p" ] || return 1; qs ipc --pid "$p" call draft "$@" 2>/dev/null; }
+# The preview check owns its Hub: start one in the sandbox home when the user
+# has none open, so the check does not silently degrade to UNVERIFIED.
+start_hub() {
+  [ -x "$ROOT/.run/bin/tenkai-shell" ] || return 1
+  env -i HOME="$ROOT/.run/home" PATH="$ROOT/.run/bin:/usr/local/bin:/usr/bin:/bin" \
+    XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}" \
+    WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-1}" \
+    "$ROOT/.run/bin/tenkai-shell" hub open >>"$EV/hub-launch.txt" 2>&1 &
+  for _ in $(seq 20); do sleep 0.5; [ -n "$(hub_pid)" ] && return 0; done
+  return 1
+}
 
 t_shell_log() {
   local out="$EV/shell-log-grep.txt" log="$ROOT/.run/state/tenkai/surfaces/shell.log"
@@ -258,10 +269,14 @@ PY
 }
 
 t_preview() {
-  local out="$EV/settings-preview.txt" p before after live restore new
+  local out="$EV/settings-preview.txt" p before after live restore new own=0
   : >"$out"
-  if ! need_shell || [ -z "$(hub_pid)" ]; then
-    record runtime/settings-preview-live UNVERIFIED "no running shell or hub"; return
+  if ! need_shell; then
+    record runtime/settings-preview-live UNVERIFIED "no running shell"; return
+  fi
+  if [ -z "$(hub_pid)" ]; then
+    start_hub || { record runtime/settings-preview-live UNVERIFIED "hub not running and could not start"; return; }
+    own=1
   fi
   before=$(hubipc get frameThickness)
   [ -n "$before" ] || before=2
@@ -276,6 +291,7 @@ t_preview() {
   sleep 1
   restore=$(ipc getSetting frameThickness | tr -d '"')
   echo "restored live=$restore" >>"$out"
+  [ "$own" = 1 ] && kill "$(hub_pid)" 2>/dev/null
   if [ "$after" = "$new" ] && [ "$live" = "$new" ]; then
     record runtime/settings-preview-live PASS -
   else
