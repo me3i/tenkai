@@ -89,6 +89,21 @@ t_qml_lint() {
   fi
 }
 
+t_fish_config() {
+  local out="$EV/fish-config.txt" f
+  : >"$out"
+  f="$(git ls-files 'src/**/fish/config.fish' | head -1)"
+  if [ -z "$f" ]; then
+    record static/fish-config-valid FAIL "shipped fish config not found"; return
+  fi
+  if fish -n "$f" >>"$out" 2>&1; then
+    echo "fish -n $f: OK" >>"$out"
+    record static/fish-config-valid PASS -
+  else
+    record static/fish-config-valid FAIL "evidence/$TS/fish-config.txt"
+  fi
+}
+
 t_scrub() {
   local out="$EV/scrub.txt"
   if ./tenkai scrub-check >"$out" 2>&1; then
@@ -240,6 +255,62 @@ PY
   fi
 }
 
+t_gestures() {
+  local out="$EV/gestures.txt" bad=0 opt val
+  : >"$out"
+  if ! command -v hyprctl >/dev/null 2>&1; then
+    record runtime/gestures-enabled UNVERIFIED "no hyprctl"; return
+  fi
+  # Hyprland 0.51+ removed gestures:workspace_swipe and ..._fingers; the bound
+  # gesture is declared with hl.gesture and cannot be introspected at runtime.
+  # What is observable is that the session accepted the declaration (no config
+  # errors) and that the tuning knobs are explicitly in effect.
+  if [ -n "$(hyprctl configerrors 2>/dev/null)" ]; then
+    echo "configerrors:" >>"$out"; hyprctl configerrors >>"$out" 2>&1; bad=1
+  fi
+  for pair in 'gestures:workspace_swipe_distance=300' \
+              'gestures:workspace_swipe_cancel_ratio=0.500000' \
+              'gestures:workspace_swipe_min_speed_to_force=30' \
+              'gestures:workspace_swipe_direction_lock=true' \
+              'gestures:workspace_swipe_direction_lock_threshold=10' \
+              'gestures:workspace_swipe_create_new=true'; do
+    opt=${pair%%=*}; val=${pair#*=}
+    line=$(hyprctl getoption "$opt" 2>&1 | tr '\n' ' ')
+    printf '%s: %s\n' "$opt" "$line" >>"$out"
+    case "$line" in
+      *"$val"*) ;;
+      *) echo "MISSING $opt expected $val" >>"$out"; bad=1 ;;
+    esac
+    case "$line" in
+      *"set: true"*) ;;
+      *) echo "NOT SET $opt (live keyword/eval not applied)" >>"$out"; bad=1 ;;
+    esac
+  done
+  if [ "$bad" = 0 ]; then
+    record runtime/gestures-enabled PASS -
+  else
+    record runtime/gestures-enabled FAIL "evidence/$TS/gestures.txt"
+  fi
+}
+
+t_scale() {
+  local out="$EV/scale.txt" bad=0 names zoom
+  : >"$out"
+  names=$(hyprctl monitors -j 2>/dev/null | jq -r '.[] | select(.scale != 1) | .name')
+  hyprctl monitors -j 2>/dev/null | jq '.[] | {name, scale, width, height}' >>"$out"
+  if [ -n "$names" ]; then
+    printf 'NOT 1.0: %s\n' "$names" >>"$out"; bad=1
+  fi
+  zoom=$(hyprctl getoption cursor:zoom_factor 2>&1 | sed -n 's/^float: //p')
+  printf 'cursor:zoom_factor=%s\n' "$zoom" >>"$out"
+  [ "$zoom" = "1.000000" ] || bad=1
+  if [ "$bad" = 0 ]; then
+    record runtime/scale-is-1 PASS -
+  else
+    record runtime/scale-is-1 FAIL "evidence/$TS/scale.txt"
+  fi
+}
+
 t_icons() {
   local out="$EV/icons.txt" bad=0 p h x f
   : >"$out"
@@ -265,12 +336,12 @@ t_icons() {
                  || record runtime/icons-all-resolve FAIL "evidence/$TS/icons.txt"
 }
 
-echo "Tenkai audit-2 — evidence in tests/evidence/$TS"
-t_shell_parse; t_json_parse; t_go_build; t_qml_lint; t_scrub
+echo "Tenkai audit-3 — evidence in tests/evidence/$TS"
+t_shell_parse; t_json_parse; t_go_build; t_qml_lint; t_scrub; t_fish_config
 t_forbidden_strings; t_ryoku_imports; t_ryoku_namespace; t_doc_links
 t_bootstrap; t_autostart
 if [ "$STATIC_ONLY" = 0 ]; then
-  t_shell_log; t_workspace; t_settings; t_icons
+  t_shell_log; t_workspace; t_settings; t_gestures; t_scale; t_icons
 fi
 
 printf '\n%-48s %-11s %s\n' TEST RESULT EVIDENCE
