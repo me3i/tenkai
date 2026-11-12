@@ -207,10 +207,16 @@ func runAct(args []string) error {
 
 	case wm.ActionScreenShader:
 		// A shader NAME, not a path: callers must not know the config layout.
-		// Empty clears.
 		name := ""
 		if len(rest) > 0 {
 			name = strings.TrimSpace(rest[0])
+		}
+		if name == "" {
+			// Hyprland 0.57 parses "" as a path and raises a screen-wide error
+			// bar. Reload drops the key (decoration.lua omits it) and clears
+			// the shader without that warning.
+			_, err := ctl("reload")
+			return err
 		}
 		return evalLua(`hl.config({ decoration = { screen_shader = ` + luaStr(shaderPath(name)) + ` } })`)
 
