@@ -9,7 +9,7 @@ Lsof audit run during idle session (30s after launch, launcher closed):
   - `~/.run/bin/` (binaries)
   - `~/.run/logs/` (log files)
   - `~/.run/state/` (state)
-  - socket files in `/home/mei/projects/tenkai/.r/`
+  - socket files in `$HOME/projects/tenkai/.r/`
 
 ## External churn accepted
 The following directories are read-only for Tenkai:

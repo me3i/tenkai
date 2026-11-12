@@ -66,7 +66,7 @@ This is the final committed state on origin/main.
 
 All 6 verification checks from the closeout audit:
 
-1. **qs -c shell is Ryoku's, not Tenkai's** — PASS. Parent chain: qs(95621) → ryoku-shell(4873) → systemd(823). Tenkai's qs is `qs -p /home/mei/projects/tenkai/...`.
+1. **qs -c shell is Ryoku's, not Tenkai's** — PASS. Parent chain: qs(95621) → ryoku-shell(4873) → systemd(823). Tenkai's qs is `qs -p <checkout>/...`.
 2. **verify-untouched is legitimate** — PASS. Compares current state against pre-session baseline in docs/baseline.txt.
 3. **Wallpaper renders visually** — PASS. Screenshot shows non-black content.
 4. **MALLOC_CONF is on qs process** — PASS. `/proc/<qs_pid>/environ` contains MALLOC_CONF=narenas:1,... The earlier CHECK 4 "failure" was a verification error (wrong qs process checked — the live Ryoku one, not Tenkai's).

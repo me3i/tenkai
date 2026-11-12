@@ -22,7 +22,7 @@ docs/baseline/session-processes.txt
 They are a read-only snapshot of one live desktop session, taken on 2026-10-19 to
 give `./tenkai verify-untouched` something to compare against. They contain:
 
-- the username `mei` and `HOME=/home/mei`, plus other absolute paths under it;
+- the owner's username and `HOME=/home/<user>`, plus other absolute paths under it;
 - `XDG_RUNTIME_DIR=/run/user/1000` and the UID;
 - the Hyprland instance signature;
 - the full process list of that session (program names and PIDs);
@@ -30,8 +30,8 @@ give `./tenkai verify-untouched` something to compare against. They contain:
 - paths belonging to the shell that was running before Tenkai.
 
 They were deleted from the tree by commit `b76cc00`, so `HEAD` is clean
-(`git grep -n '/home/mei'` prints nothing), but the commits before it are public
-and `git log -p` still shows them.
+(`./tenkai scrub-check` passes), but the commits before it are public and
+`git log -p` still shows them.
 
 ## What is not exposed
 

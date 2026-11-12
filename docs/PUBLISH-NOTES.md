@@ -55,7 +55,7 @@ git commit -m "Tenkai: a Hyprland desktop shell built on Tenkai"
 Before you push, check the export yourself:
 
 ```bash
-grep -rIil -e serpantinum -e serpentinum ../tenkai-public   # must print nothing
+grep -rIil -e <old-codename> ../tenkai-public   # must print nothing
 ```
 
 and read the README and `docs/PUBLISH-NOTES.md` once more.
@@ -72,7 +72,7 @@ no one. The private copies in `.local/private/` hold the specifics.
 The procedure above was **not** used for the publish that made this repository
 public. The public repository was created by force-pushing the full working
 history, 213 commits, so every pre-scrub commit is public: the previous shell's
-name, `/home/mei`, and the `docs/baseline/` session snapshot added in `0ba3273`
+name, the owner's home path, and the `docs/baseline/` session snapshot added in `0ba3273`
 (process list, D-Bus names, `XDG_RUNTIME_DIR`, Hyprland instance signature). Those
 files were later deleted from the tree (`b76cc00`), but the commits remain.
 
@@ -84,7 +84,7 @@ repository, not as a description of this one.
 
 - [ ] `./tenkai scrub-check` → PASS
 - [ ] `./tenkai export-clean ../tenkai-public` → succeeds
-- [ ] `grep -rIil -e serpantinum -e serpentinum ../tenkai-public` → prints nothing
+- [ ] `grep -rIil -e <old-codename> ../tenkai-public` → prints nothing
 - [ ] `git status` in this repo is clean, and `.local/` is ignored
       (`git check-ignore -v .local/tenkai.local.env`)
 - [ ] the README, the install instructions and `docs/PUBLISH-NOTES.md` name no
