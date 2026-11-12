@@ -1,0 +1,33 @@
+audit-2 preflight — 2026-11-12T03:38:36+00:00
+
+branch: audit-2/fix-workspaces-settings-icons
+HEAD: ae7bf15 docs: record the Ryoku gap analysis and the fix report
+status: 17 changed paths
+ M docs/CHURN-ACCEPT.md
+ M docs/PRIVACY.md
+ M docs/PROJECT-CLOSEOUT.md
+ M docs/PUBLISH-NOTES.md
+ M src/tenkai-configs/hypr/scripts/tenkai-workspace
+ M src/tenkai_core/shell/ipc/vendor/tenkai-wm/client.go
+ M src/tenkai_core/shell/quickshell/shell/services/Config.qml
+ M src/tenkai_core/shell/quickshell/shell/services/Holidays.qml
+ M src/tenkai_core/shell/quickshell/shell/services/PowerProfiles.qml
+ M src/tenkai_core/shell/quickshell/shell/services/Updates.qml
+ M src/tenkai_core/shell/quickshell/shell/services/Weather.qml
+ M src/tenkai_core/shell/quickshell/shell/shell.qml
+ M tenkai
+?? docs/audit-2/
+?? tenkaifinal.txt
+?? tenkairun.txt
+?? tests/
+
+go: go version go1.27.4-X:nodwarf5 linux/amd64
+qs: Quickshell 0.3.2 (revision , distributed by Arch Linux)
+hyprctl: Hyprland 0.57.2 built from branch v0.57.2 at commit 11cbc6c577b84ffb1edf4df3fc5b6128c3ae6947 clean (VERSION: bump to 0.57.2).
+python: Python 3.14.10
+jq: jq-1.8.2
+shell pid: 296175
+socket: /run/user/1000/tenkai-shell.sock
+
+hyprland dispatch probe:
+ok

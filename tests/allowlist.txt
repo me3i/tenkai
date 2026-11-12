@@ -1,0 +1,16 @@
+# Lines matched here are allowed in shell.log and do not count as errors.
+# Each entry is an extended-regex fragment, one per line.
+#
+# (b) consequence of a nested / sandbox session
+fileview: got operation finished from dropped operation
+QLocalSocket::PeerClosedError
+Socket error for Socket
+#
+# (c) consequence of the sandbox HOME used by ./tenkai run
+Fontconfig error: Cannot load config file
+Fontconfig error: Cannot load config file from
+Could not launch service org.freedesktop.UPower.PowerProfiles
+Could not start PowerProfilesDaemon
+#
+# Quickshell internal notices with no Tenkai action left to take
+Ignoring unresolvable import .*modules/desktop/music
