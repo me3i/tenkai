@@ -64,6 +64,13 @@ Singleton {
     function patch(path, value) { root.send("settings.patch", { path: path, value: value }); }
     function reset(path) { root.send("settings.reset", { path: path }); }
 
+    // One-call apply for a shell setting: settings.patch persists the value to
+    // ~/.config/tenkai/shell.json AND re-pushes the settings frame, which is the
+    // binding every live consumer follows. Persistence and the live update are
+    // therefore the same operation, and no shell restart is needed. Settings UI
+    // code should call this instead of writing shell.json directly.
+    function applySetting(path, value) { root.patch(path, value); }
+
     function send(method, args) {
         ctl.queued += "call " + method + " " + JSON.stringify(args) + "\n";
         if (ctl.connected)

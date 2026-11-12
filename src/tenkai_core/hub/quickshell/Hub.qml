@@ -910,6 +910,10 @@ Rectangle {
         property var extras: []
         property int active: 0
         }
+        // Seed the file on a first open so the visualiser pages read real
+        // defaults instead of failing a Read every launch, and a Save has a
+        // path to write to. Tenkai's shell never creates this file itself.
+        Component.onCompleted: if (!vizFV.text()) vizFV.writeAdapter()
     }
     FileView {
         id: brandFV
@@ -929,6 +933,7 @@ Rectangle {
             property string name: "Tenkai"
             property var reloadCover: ReloadCoverModel.empty()
         }
+        Component.onCompleted: if (!brandFV.text()) brandFV.writeAdapter()
     }
 
     // ── hypr backend (the Lua pages) ─────────────────────────────────────
