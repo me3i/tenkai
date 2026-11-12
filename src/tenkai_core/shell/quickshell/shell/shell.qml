@@ -701,13 +701,6 @@ ShellRoot {
         }
     }
 
-    // Stash steps a running task's own surface aside when it needs the auth
-    // island. (pill 332-335)
-    Connections {
-        target: Stash
-        function onAuthStepAside(mon, id) { ShellState.closeSurface(id, mon); }
-    }
-
     // Daemon-facing surface channel. Target "shell" to avoid the live shell's
     // own target name; each call maps onto the ShellState surface bus. The
     // SocketServer fast path is deliberately omitted so this instance owns no

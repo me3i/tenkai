@@ -400,7 +400,7 @@ PanelWindow {
 
                         UiText {
                             width: parent.width
-                            text: mprisPanel.active
+                            text: (mprisPanel.active && mprisPanel.player)
                                 ? (mprisPanel.player.trackTitle || I18n.tr("Unknown"))
                                 : I18n.tr("No song playing")
                             color: root.ink
@@ -409,7 +409,7 @@ PanelWindow {
                         }
                         UiText {
                             width: parent.width
-                            text: mprisPanel.active
+                            text: (mprisPanel.active && mprisPanel.player)
                                 ? (mprisPanel.player.trackArtist || I18n.tr("Unknown artist"))
                                 : I18n.tr("no active player")
                             color: root.sumiHi
