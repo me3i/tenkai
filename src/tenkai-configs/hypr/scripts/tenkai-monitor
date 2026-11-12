@@ -186,23 +186,17 @@ is_vm_guest() {
 # wanted_scale = DPI bucket (px * 25.4 / physical-mm) snapped to a 1/120 scale
 # whose logical W *and* H land on whole pixels -- Hyprland rejects anything else
 # (1.5 on a 2560 panel = 1706.67px wide -> "Invalid scale" overlay), so the raw
-# bucket can't be applied straight. missing / lying EDID falls back to 1x, and
-# VM guests / Virtual-* outputs are pinned to the 1x bucket (see is_vm_guest).
+# bucket can't be applied straight.
+#
+# Tenkai ships at 1x only: DPI-derived scaling made the internal panel 1.5 and
+# an external 1.0, which the shell's fixed-size surfaces and the user's stated
+# preference do not tolerate. The helper keeps its signature and fixtures, but
+# no longer derives a value from DPI.
 dpi_specs() {
   local vm=false
   if is_vm_guest; then vm=true; fi
   jq -r --argjson vm "$vm" "$jq_scale_lib"'
-    def dpiscale($name; $w; $h; $pw):
-      ( if $vm or ($name | startswith("Virtual-")) or (($pw // 0) <= 0) then 1.0
-        else ($w * 25.4 / $pw) as $d
-        | if   ($d < 40 or $d > 700) then 1.0
-          elif $d <= 120 then 1.0
-          elif $d <= 150 then 1.25
-          elif $d <= 230 then 1.5
-          elif $d <= 290 then 1.75
-          else 2.0 end
-        end ) as $target
-      | snap($w; $h; $target);
+    def dpiscale($name; $w; $h; $pw): 1.0;
     .[] | select(.disabled | not)
     | "\(.name)|\(.width)x\(.height)@\(.refreshRate | round)|\(.x)x\(.y)|\(dpiscale(.name; .width; .height; .physicalWidth))|\(.scale)"
   '

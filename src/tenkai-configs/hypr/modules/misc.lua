@@ -1,4 +1,9 @@
 hl.config({
+    -- Tenkai ships at 1x. Keep magnifier zoom neutral so the session cannot be
+    -- left zoomed by an accidental key/compositor default.
+    cursor = {
+        zoom_factor = 1.0,
+    },
     misc = {
         -- keyboard focus follows an app's activation request, else a window mapping
         -- off the focused monitor comes up un-typeable (Discord, Vivaldi)
