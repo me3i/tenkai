@@ -113,7 +113,7 @@ Item {
         eyebrow: pg.pEyebrow
         blurb: pg.pBlurb
         query: pg.hub ? pg.hub.query : ""
-        onEdited: (k, v) => { if (pg.hub) pg.hub.edit(k, v); }
+        onEdited: (k, v) => { if (pg.hub) pg.hub.preview(k, v); }
         onPickRequested: (r) => { if (pg.hub) pg.hub.openPick(r); }
         // TENKAI: the timezone is display-only (see applyTimezone). Disabled, not deleted:
         // onTimezonePickRequested: (r) => tzMap.open()

@@ -669,7 +669,18 @@ Rectangle {
     // against liveBaseline: the state at open, re-snapshotted on every Save.
     // Quit and Revert walk the desktop back to that baseline through the same
     // channel, so an unsaved close leaves no residue.
-    readonly property var liveKeys: ["frameBars", "frameEnabled", "frameOpacity", "frameThickness", "frameCorner", "fontFamily", "fontSize", "barStyle", "obi", "nacre", "qsbar", "dock", "clipboard.widthPercent", "clipboard.heightPercent", "clipboard.bottomPercent", "clipboard.panelRadius", "clipboard.paneRadius", "clipboard.cardRadius"]
+    // Every shell.json key the pages can edit previews live, not only Bar
+    // Studio's: a schema page used to stage its draft and leave the desktop
+    // untouched until Save, which read as a dead preview. Derived from defs so
+    // a new shell row cannot be previewed-less by omission.
+    readonly property var liveKeys: {
+        var out = [];
+        for (var k in hub.defs) {
+            var src = hub.srcOf[k] || "shell";
+            if (src === "shell") out.push(k);
+        }
+        return out;
+    }
     property var liveBaseline: null
     property var livePending: ({})
     function captureLiveBaseline() {
@@ -688,6 +699,13 @@ Rectangle {
         p[k] = true;
         hub.livePending = p;
         liveFlush.restart();
+    }
+    // The one edit path for a schema page: shell.json keys apply to the running
+    // desktop as they are adjusted; the viz/brand files have no live consumer
+    // in the shell, so their preview is the draft itself and Save writes them.
+    function preview(k, v) {
+        if ((hub.srcOf[k] || "shell") === "shell") hub.stageLive(k, v);
+        else hub.edit(k, v);
     }
     Timer {
         id: liveFlush

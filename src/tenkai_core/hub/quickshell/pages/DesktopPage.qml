@@ -170,7 +170,7 @@ Item {
         blurb: pg.pBlurb
         query: pg.hub ? pg.hub.query : ""
         externalReloadCoverError: pg.hub ? pg.hub.reloadCoverCleanupError : ""
-        onEdited: (k, v) => { if (pg.hub) pg.hub.edit(k, v); }
+        onEdited: (k, v) => { if (pg.hub) pg.hub.preview(k, v); }
         onPickRequested: (r) => { if (pg.hub) pg.hub.openPick(r); }
 
         // A live, self-contained preview of the desktop visualiser. It rides the

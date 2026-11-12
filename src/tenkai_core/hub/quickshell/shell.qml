@@ -71,6 +71,24 @@ ShellRoot {
         function section(): string { return hubItem.section; }
     }
 
+    // The preview seam: `get` reads a page value from the live draft, `set`
+    // takes the same path a control's edit takes, so a test can prove a value
+    // reaches the running desktop before Save. Values are JSON so numbers and
+    // booleans keep their type.
+    IpcHandler {
+        target: "draft"
+        function get(path: string): string {
+            var v = hubItem.val(path);
+            return JSON.stringify(v === undefined ? null : v);
+        }
+        function set(path: string, value: string): string {
+            var v;
+            try { v = JSON.parse(value); } catch (e) { return "err invalid json"; }
+            hubItem.preview(path, v);
+            return "ok";
+        }
+    }
+
     // the daemon's `hub close` verb: same exit as the in-app dismissals (the
     // unsaved-restore then quit), so the flock releases and the next open
     // starts clean.
