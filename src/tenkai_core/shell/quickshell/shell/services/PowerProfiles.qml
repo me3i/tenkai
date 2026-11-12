@@ -54,10 +54,21 @@ Singleton {
             ctl.connected = true;
     }
 
+    // This lite daemon may not implement the topic. Treat "err unknown topic"
+    // as permanent: retrying it every 2 s was 250+ "PeerClosedError" warnings
+    // per shell start with nothing to gain.
+    property bool topicMissing: false
     Socket {
         id: sub
         path: root.sockPath
-        parser: SplitParser { onRead: line => root.apply(line) }
+        parser: SplitParser { onRead: line => {
+            if (("" + line).indexOf("err unknown topic") === 0) {
+                root.topicMissing = true;
+                sub.connected = false;
+                return;
+            }
+            root.apply(line);
+        } }
         Component.onCompleted: connected = true
         onConnectionStateChanged: {
             if (connected) {
@@ -66,7 +77,7 @@ Singleton {
             } else {
                 root.profile = "";
                 root.profiles = [];
-                retry.restart();
+                if (!root.topicMissing) retry.restart();
             }
         }
     }
@@ -74,7 +85,7 @@ Singleton {
     Timer {
         id: retry
         interval: 2000
-        onTriggered: if (!sub.connected) sub.connected = true
+        onTriggered: if (!sub.connected && !root.topicMissing) sub.connected = true
     }
 
     Socket {

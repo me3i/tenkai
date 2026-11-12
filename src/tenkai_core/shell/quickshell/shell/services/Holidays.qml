@@ -56,17 +56,27 @@ Singleton {
             ctl.connected = true;
     }
 
+    // An unimplemented topic is permanent: stop after "err unknown topic"
+    // rather than reconnecting every 2 s and logging a socket warning.
+    property bool topicMissing: false
     Socket {
         id: sub
         path: root.sockPath
-        parser: SplitParser { onRead: line => root.apply(line) }
+        parser: SplitParser { onRead: line => {
+            if (("" + line).indexOf("err unknown topic") === 0) {
+                root.topicMissing = true;
+                sub.connected = false;
+                return;
+            }
+            root.apply(line);
+        } }
         Component.onCompleted: connected = true
         onConnectionStateChanged: {
             if (connected) {
                 write("subscribe calendar\n");
                 flush();
             } else {
-                retry.restart();
+                if (!root.topicMissing) retry.restart();
             }
         }
     }
@@ -74,7 +84,7 @@ Singleton {
     Timer {
         id: retry
         interval: 2000
-        onTriggered: if (!sub.connected) sub.connected = true
+        onTriggered: if (!sub.connected && !root.topicMissing) sub.connected = true
     }
 
     Socket {
