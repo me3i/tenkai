@@ -12,12 +12,12 @@
 # (ryoku/shell/quickshell/overview/Overview.qml). It is the one design constant;
 # the live desktop is computed, never stored, so it can never drift.
 #
-#   ryoku-workspace desktop          print the current desktop index (0-based)
-#   ryoku-workspace focus <1..PER>   focus the Nth workspace of the current desktop
-#   ryoku-workspace move  <1..PER>   move the active window there (and follow it)
-#   ryoku-workspace hide             stash the focused window in the scratchpad,
+#   tenkai-workspace desktop          print the current desktop index (0-based)
+#   tenkai-workspace focus <1..PER>   focus the Nth workspace of the current desktop
+#   tenkai-workspace move  <1..PER>   move the active window there (and follow it)
+#   tenkai-workspace hide             stash the focused window in the scratchpad,
 #                                    or pull it back out if it is already there
-#   ryoku-workspace scratch          show the scratchpad, or hide it and hand
+#   tenkai-workspace scratch          show the scratchpad, or hide it and hand
 #                                    keyboard focus back to what is on screen
 #
 # The desktop grid and the scratchpad are fixed-workspace-model, special-workspace
@@ -28,22 +28,53 @@ set -euo pipefail
 
 PER=10
 
-ryoku_bin="${RYOKU_BIN-$(command -v tenkai || true)}"
+tenkai_bin="${TENKAI_BIN:-${RYOKU_BIN:-$(command -v tenkai || true)}}"
 
-# Capabilities and the workspace model come from the seam's status, which names
-# what the live compositor can do, never which compositor it is.
+# The seam is optional. When a tenkai binary that implements `wm status` is on
+# PATH it names the capabilities and model. Otherwise this script is shipping
+# inside Tenkai's Hyprland config, so ask Hyprland directly: the grid is fixed
+# and the scratchpad exists. Without this fallback the helper stood down with
+# "manages its own workspaces" and every Super+N.workspace bind did nothing.
+seam_status() {
+  [[ -n $tenkai_bin && -x $tenkai_bin ]] || return 1
+  "$tenkai_bin" wm status 2>/dev/null
+}
+
 wm_can() {  # capability -> 0 when the live compositor honours it
-  [[ -n $ryoku_bin && -x $ryoku_bin ]] || return 1
-  case ",$("$ryoku_bin" wm status 2>/dev/null | sed -n 's/^Capabilities: //p' | tr -d '[:space:]')," in
-    *",$1,"*) return 0 ;;
-  esac
-  return 1
+  local st
+  if st=$(seam_status) && [[ -n $st ]]; then
+    case ",$(printf '%s\n' "$st" | sed -n 's/^Capabilities: //p' | tr -d '[:space:]')," in
+      *",$1,"*) return 0 ;;
+    esac
+    return 1
+  fi
+  # No seam: Hyprland, which owns a scratchpad workspace.
+  [[ $1 == specialWorkspace ]]
 }
 
 wm_model() {  # the live compositor's workspace model (fixed | dynamic | empty)
-  [[ -n $ryoku_bin && -x $ryoku_bin ]] || return 0
-  "$ryoku_bin" wm status 2>/dev/null | sed -n 's/^Workspace model: //p' | tr -d '[:space:]'
+  local st m
+  if st=$(seam_status) && [[ -n $st ]]; then
+    m=$(printf '%s\n' "$st" | sed -n 's/^Workspace model: //p' | tr -d '[:space:]')
+    [[ -n $m ]] && { echo "$m"; return; }
+  fi
+  if hyprctl version >/dev/null 2>&1; then echo fixed; else echo empty; fi
 }
+
+# Hyprland's Lua config parses `hyprctl dispatch` arguments as Lua, so the
+# classic `dispatch workspace 2` is rejected there; a classic config rejects
+# the hl.dsp form. Try the form this session needs first, fall back to the
+# other, and never report success when the compositor returned an error.
+dispatch_lua() {  # $1 = lua expression, $2 = classic fallback words...
+  local expr=$1 out; shift
+  out=$(hyprctl dispatch "$expr" 2>&1 || true)
+  case "$out" in
+    *error*|*Error*|*invalid*|*Invalid*) hyprctl dispatch "$@" >/dev/null 2>&1 || true ;;
+  esac
+}
+
+focus_ws() { dispatch_lua "hl.dsp.focus({ workspace = $1 })" workspace "$1"; }
+move_ws()  { dispatch_lua "hl.dsp.window.move({ workspace = $1 })" movetoworkspace "$1"; }
 
 # The grid is numbered slots a user thinks of by position, which needs a fixed
 # workspace model; a dynamic-workspace compositor grows and shrinks its set, so
@@ -52,7 +83,7 @@ require_grid() {
   if [[ "$(wm_model)" == fixed ]]; then
     return 0
   fi
-  echo "ryoku-workspace: this window manager manages its own workspaces; the desktop grid is fixed-model only" >&2
+  echo "tenkai-workspace: this window manager manages its own workspaces; the desktop grid is fixed-model only" >&2
   exit 0
 }
 
@@ -62,7 +93,7 @@ require_scratchpad() {
   if wm_can specialWorkspace; then
     return 0
   fi
-  echo "ryoku-workspace: this window manager has no scratchpad" >&2
+  echo "tenkai-workspace: this window manager has no scratchpad" >&2
   exit 0
 }
 
@@ -101,25 +132,23 @@ case "$cmd" in
     require_grid
     ws=$(target_ws "${2:?slot 1..$PER required}")
     # focusing a workspace already moves focus to the monitor that owns it, so
-    # a workspace on a secondary monitor stays put. This is a lua-config
-    # Hyprland, so dispatch the hl.dsp.* lua form (a plain "dispatch workspace
-    # N" is parsed as invalid Lua and rejected).
-    hyprctl dispatch "hl.dsp.focus({ workspace = $ws })" >/dev/null
+    # a workspace on a secondary monitor stays put.
+    focus_ws "$ws"
     ;;
   move)
     require_grid
     ws=$(target_ws "${2:?slot 1..$PER required}")
-    hyprctl dispatch "hl.dsp.window.move({ workspace = $ws })" >/dev/null
+    move_ws "$ws"
     ;;
   movesilent)
     require_grid
     ws=$(target_ws "${2:?slot 1..$PER required}")
     addr=$(hyprctl activewindow -j | jq -r '.address')
-    hyprctl dispatch "hl.dsp.window.move({
+    dispatch_lua "hl.dsp.window.move({
         workspace = \"$ws\",
         window = \"address:$addr\",
         follow = false
-    })" >/dev/null
+    })" movetoworkspacesilent "$ws,address:$addr"
     ;;
   hide)
     require_scratchpad
@@ -130,16 +159,16 @@ case "$cmd" in
     if [[ $ws == special:* ]]; then
       # activeworkspace reports the normal workspace under an open overlay, which
       # is where the window came from. Not silent: following it restores focus.
-      hyprctl dispatch "hl.dsp.window.move({ workspace = $back })" >/dev/null
+      move_ws "$back"
     else
       # No float/resize/centre: rewriting geometry would return a tiled window as
       # a centred float instead of to its slot.
-      hyprctl dispatch "hl.dsp.window.move({ workspace = \"special:$SCRATCH\", silent = true })" >/dev/null
+      dispatch_lua "hl.dsp.window.move({ workspace = \"special:$SCRATCH\", silent = true })" movetoworkspacesilent "special:$SCRATCH"
       # A silent move still drags focus into the scratchpad, which shows it. Undo
       # both, or the window stays on screen and typing goes somewhere invisible.
       [[ $(special_ws) == "special:$SCRATCH" ]] &&
-        hyprctl dispatch "hl.dsp.workspace.toggle_special(\"$SCRATCH\")" >/dev/null
-      hyprctl dispatch "hl.dsp.focus({ workspace = $back })" >/dev/null
+        dispatch_lua "hl.dsp.workspace.toggle_special(\"$SCRATCH\")" togglespecialworkspace "$SCRATCH"
+      focus_ws "$back"
     fi
     ;;
   scratch)
@@ -147,7 +176,7 @@ case "$cmd" in
     # activeworkspace reports the normal workspace under an open overlay, so this
     # is what is on screen either way.
     back=$(active_ws)
-    hyprctl dispatch "hl.dsp.workspace.toggle_special(\"$SCRATCH\")" >/dev/null
+    dispatch_lua "hl.dsp.workspace.toggle_special(\"$SCRATCH\")" togglespecialworkspace "$SCRATCH"
     # Hyprland leaves keyboard focus on the window it just hid. The next surface
     # that takes and releases a keyboard grab (any bar panel or menu) then hands
     # focus back to it, and focusing a window on a special workspace shows that
@@ -162,11 +191,11 @@ case "$cmd" in
         'map(select(.workspace.id == $ws)) | sort_by(.focusHistoryID) | .[0].address // empty' \
         || true)
       [[ -n $addr ]] &&
-        hyprctl dispatch "hl.dsp.focus({ window = \"address:$addr\" })" >/dev/null
+        dispatch_lua "hl.dsp.focus({ window = \"address:$addr\" })" focuswindow "address:$addr"
     fi
     ;;
   *)
-    echo "usage: ryoku-workspace {desktop|focus <1..$PER>|move <1..$PER>|hide|scratch}" >&2
+    echo "usage: tenkai-workspace {desktop|focus <1..$PER>|move <1..$PER>|hide|scratch}" >&2
     exit 2
     ;;
 esac
