@@ -1,0 +1,7 @@
+{
+  "$comment": "TODO: Tenkai auto-setup manifest. The dependency/asset/step lists are intentionally empty until the owner supplies the real list. Do not invent entries here. Schema: dependencies[] = {id, kind: \"pacman\"|\"command\", names[], check, install[]}; assets[] = {id, url, dest, sha256?}; steps[] = {id, run[], when?}.",
+  "version": 1,
+  "dependencies": [],
+  "assets": [],
+  "steps": []
+}
