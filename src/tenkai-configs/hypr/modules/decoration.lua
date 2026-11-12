@@ -70,7 +70,7 @@ hl.config({
     rounding_power   = 4,
     active_opacity   = 1,
     inactive_opacity = 0.94,
-    screen_shader    = screen_shader,
+    screen_shader    = screen_shader ~= "" and screen_shader or nil,
     shadow           = {
       enabled      = not no_shadow,
       range        = 45,
