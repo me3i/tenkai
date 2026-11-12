@@ -1,0 +1,71 @@
+\$ git status
+On branch audit-4/boot-into-tenkai
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	tenkaifinal.txt
+	tenkairun.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+\$ git branch --show-current
+audit-4/boot-into-tenkai
+\$ git log --oneline -8
+de02ff1 fix(install): keep the boot hook across a config reinstall
+ccf188c fix(wm): clear the shader by reloading, not by an empty path
+27c240b docs: record audit-4 boot chain, preview fix, and cross-check
+9a42f88 test: keep the boot-chain check out of scrub and comments
+44306c9 test: check the boot-to-Tenkai chain
+10fa4cd test: launch a Hub for the preview check instead of requiring one
+712d77e docs(audit-3): correct two claims audit-4 disproved
+a23b1c2 fix(hypr): omit screen_shader when no shader is selected
+$ pgrep -af 'qs -p .*tenkai_core/(shell|hub)/'
+1322860 qs -p /home/mei/tenkai/src/tenkai_core/shell/quickshell/shell
+$ ls /run/user/1000/tenkai-shell.sock
+/run/user/1000/tenkai-shell.sock
+
+$ bash tests/run-all.sh
+Tenkai audit-4 — evidence in tests/evidence/20261112-084416
+  [PASS] static/shell-scripts-parse
+  [PASS] static/json-parse
+  [PASS] static/go-build
+  [PASS] static/qml-lint
+  [PASS] static/scrub-check
+  [PASS] static/fish-config-valid
+  [PASS] static/no-personal-strings
+  [PASS] static/no-ryoku-imports
+  [PASS] static/no-ryoku-namespaces
+  [PASS] static/referenced-docs-exist
+  [PASS] bootstrap/idempotent
+  [PASS] autostart/idempotent
+  [PASS] runtime/shell-starts-clean
+  [PASS] runtime/workspace-switch-via-bar-pill
+  [PASS] runtime/settings-apply-5-keys
+  [PASS] runtime/settings-preview-live
+  [PASS] runtime/gestures-enabled
+  [PASS] runtime/scale-is-1
+  [PASS] runtime/icons-all-resolve
+  [UNVERIFIED] runtime/boot-chain-configured
+
+TEST                                             RESULT      EVIDENCE
+------------------------------------------------ ----------- --------
+static/shell-scripts-parse                       PASS        -
+static/json-parse                                PASS        -
+static/go-build                                  PASS        -
+static/qml-lint                                  PASS        -
+static/scrub-check                               PASS        -
+static/fish-config-valid                         PASS        -
+static/no-personal-strings                       PASS        -
+static/no-ryoku-imports                          PASS        -
+static/no-ryoku-namespaces                       PASS        -
+static/referenced-docs-exist                     PASS        -
+bootstrap/idempotent                             PASS        -
+autostart/idempotent                             PASS        -
+runtime/shell-starts-clean                       PASS        -
+runtime/workspace-switch-via-bar-pill            PASS        -
+runtime/settings-apply-5-keys                    PASS        -
+runtime/settings-preview-live                    PASS        -
+runtime/gestures-enabled                         PASS        -
+runtime/scale-is-1                               PASS        -
+runtime/icons-all-resolve                        PASS        -
+runtime/boot-chain-configured                    UNVERIFIED  user autostart OK; ly autologin needs root (evidence/20261112-084416/boot-chain.txt)
+
+FAILURES: 0

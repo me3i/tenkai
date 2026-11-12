@@ -669,15 +669,22 @@ Rectangle {
     // against liveBaseline: the state at open, re-snapshotted on every Save.
     // Quit and Revert walk the desktop back to that baseline through the same
     // channel, so an unsaved close leaves no residue.
-    // Every shell.json key the pages can edit previews live, not only Bar
-    // Studio's: a schema page used to stage its draft and leave the desktop
-    // untouched until Save, which read as a dead preview. Derived from defs so
-    // a new shell row cannot be previewed-less by omission.
+    // Every key with a live consumer previews, not only Bar Studio's: a schema
+    // page used to stage its draft and leave the desktop untouched until Save,
+    // which read as a dead preview. Two files are watched by the running shell,
+    // shell.json (through the daemon) and brand.json (shell/services/Config.qml
+    // brandFile), so both their keys ride this ledger. Derived from defs so a
+    // new row cannot be preview-less by omission.
+    // visualizer.json has no reader in the shell at all (the desktop spectrum is
+    // not part of this build), so viz rows stay draft-only and preview through
+    // the page's own card; writing that file here would still show nothing.
+    readonly property var brandLiveKeys: ["name", "markText", "markImage", "markTint"]
+    function liveSrc(k) { return hub.srcOf[k] || "shell"; }
     readonly property var liveKeys: {
         var out = [];
         for (var k in hub.defs) {
-            var src = hub.srcOf[k] || "shell";
-            if (src === "shell") out.push(k);
+            if (hub.liveSrc(k) === "shell") out.push(k);
+            else if (hub.brandLiveKeys.indexOf(k) >= 0) out.push(k);
         }
         return out;
     }
@@ -687,7 +694,9 @@ Rectangle {
         var b = {};
         for (var i = 0; i < hub.liveKeys.length; i++) {
             var k = hub.liveKeys[i];
-            var v = hub.val(k);
+            // brand.json can load after the first daemon frame, so read the file
+            // adapter once it is there instead of trusting a possibly empty draft
+            var v = (hub.liveSrc(k) === "brand" && brandFV.loaded) ? brandA[k] : hub.val(k);
             b[k] = JSON.parse(JSON.stringify(v === undefined ? hub.defs[k] : v));
         }
         hub.liveBaseline = b;
@@ -700,19 +709,31 @@ Rectangle {
         hub.livePending = p;
         liveFlush.restart();
     }
-    // The one edit path for a schema page: shell.json keys apply to the running
-    // desktop as they are adjusted; the viz/brand files have no live consumer
-    // in the shell, so their preview is the draft itself and Save writes them.
+    // The one edit path for a schema page: a key with a live consumer applies to
+    // the running desktop as it is adjusted (shell.json through settings.patch,
+    // brand.json through the adapter the shell watches); viz keys have no
+    // consumer, so their preview is the draft itself and Save writes them.
     function preview(k, v) {
-        if ((hub.srcOf[k] || "shell") === "shell") hub.stageLive(k, v);
+        var src = hub.liveSrc(k);
+        if (src === "shell" || hub.brandLiveKeys.indexOf(k) >= 0) hub.stageLive(k, v);
         else hub.edit(k, v);
     }
     Timer {
         id: liveFlush
         interval: 130
         onTriggered: {
-            for (var k in hub.livePending) Settings.patch(k, hub.val(k));
+            var brand = false;
+            for (var k in hub.livePending) {
+                if (hub.liveSrc(k) === "brand") {
+                    brandA[k] = hub.val(k);
+                    brand = true;
+                } else {
+                    Settings.patch(k, hub.val(k));
+                }
+            }
             hub.livePending = ({});
+            // one atomic serialise for the coalesced brand keys
+            if (brand) brandFV.writeAdapter();
         }
     }
     // the live-applied keys that have drifted from the saved baseline
@@ -736,11 +757,19 @@ Rectangle {
         if (!changed.length) return false;
         var d = {};
         for (var x in hub.draft) d[x] = hub.draft[x];
+        var brand = false;
         for (var i = 0; i < changed.length; i++) {
             var k = changed[i];
-            Settings.patch(k, hub.liveBaseline[k]);
-            d[k] = JSON.parse(JSON.stringify(hub.liveBaseline[k]));
+            var back = JSON.parse(JSON.stringify(hub.liveBaseline[k]));
+            if (hub.liveSrc(k) === "brand") {
+                brandA[k] = back;
+                brand = true;
+            } else {
+                Settings.patch(k, hub.liveBaseline[k]);
+            }
+            d[k] = back;
         }
+        if (brand) brandFV.writeAdapter();
         hub.draft = d;
         return true;
     }
@@ -942,6 +971,10 @@ Rectangle {
             brandA.reloadCover = ReloadCoverModel.normalize(brandA.reloadCover);
             hub.rebase();
             hub.requestReloadCoverPrune(brandA.reloadCover);
+            // A load with nothing staged is the saved state, so it anchors the
+            // live ledger (the brand file can arrive after the first daemon
+            // frame). A load caused by a preview write leaves the anchor alone.
+            if (hub.liveChanges.length === 0) hub.captureLiveBaseline();
         }
         JsonAdapter {
             id: brandA

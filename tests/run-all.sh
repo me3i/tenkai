@@ -324,6 +324,7 @@ t_boot_chain() {
 
 t_preview() {
   local out="$EV/settings-preview.txt" p before after live restore new own=0
+  local brandf="$ROOT/.run/config/tenkai/brand.json" bbefore bmid bafter bnew
   : >"$out"
   if ! need_shell; then
     record runtime/settings-preview-live UNVERIFIED "no running shell"; return
@@ -345,8 +346,23 @@ t_preview() {
   sleep 1
   restore=$(ipc getSetting frameThickness | tr -d '"')
   echo "restored live=$restore" >>"$out"
+  # Same preview promise for the brand file: the shell watches brand.json, so a
+  # staged mark edit must reach the file (and the desktop) before Save, and go
+  # back when the draft does. This is the path the user reported as dead.
+  bbefore=$(sed -n 's/.*"markText": *"\([^"]*\)".*/\1/p' "$brandf" 2>/dev/null | head -1)
+  [ -n "$bbefore" ] || bbefore=M
+  if [ "$bbefore" = Z ]; then bnew=Y; else bnew=Z; fi
+  echo "brand before=$bbefore target=$bnew" >>"$out"
+  hubipc set markText "\"$bnew\"" >>"$out" 2>&1
+  sleep 1
+  bmid=$(sed -n 's/.*"markText": *"\([^"]*\)".*/\1/p' "$brandf" 2>/dev/null | head -1)
+  echo "brand staged on disk=$bmid" >>"$out"
+  hubipc set markText "\"$bbefore\"" >/dev/null 2>&1
+  sleep 1
+  bafter=$(sed -n 's/.*"markText": *"\([^"]*\)".*/\1/p' "$brandf" 2>/dev/null | head -1)
+  echo "brand restored on disk=$bafter" >>"$out"
   [ "$own" = 1 ] && kill "$(hub_pid)" 2>/dev/null
-  if [ "$after" = "$new" ] && [ "$live" = "$new" ]; then
+  if [ "$after" = "$new" ] && [ "$live" = "$new" ] && [ "$bmid" = "$bnew" ] && [ "$bafter" = "$bbefore" ]; then
     record runtime/settings-preview-live PASS -
   else
     record runtime/settings-preview-live FAIL "evidence/$TS/settings-preview.txt"

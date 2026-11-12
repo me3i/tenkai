@@ -459,10 +459,141 @@ a throwaway machine, since a real run rewrites `~/.config/hypr` and
 |---|---|
 | Boot mechanism | Ly autologin → Hyprland → `tenkai start` (hook installed; autologin needs root) |
 | Boot chain status | needs manual step (D1) + reboot proof |
-| Settings preview | fixed, tested, visually verified |
+| Settings preview | shell keys fixed §3; brand keys fixed §29 (tested); visualizer has no consumer §31 F3 |
 | Crosscheck | 41 TRUE / 6 FALSE / 4 DRIFTED / 5 UNVERIFIABLE (56) |
 | New errors | 13: BLOCKER 2, BUG 5, WARN 5, DOC 1 |
-| Fixes | 12 commits |
+| Fixes | 12 commits + this pass (§29) |
 | Deferred | 4 (D1–D4) |
-| Suite | 15 PASS, 5 UNVERIFIED, 0 FAIL (no live shell this run; was 19/1) |
+| Suite | 18 PASS, 1 UNVERIFIED, 0 FAIL (§30, three runs) |
 | Single file | this report |
+
+---
+
+# Second pass — "i cant live edit the settings, the preview thing doesnt work"
+
+## 27. Reproduction
+
+Setup: Hub started from source with the daemon's own environment
+(`HOME=.run/home`, `XDG_CONFIG_HOME=.run/config`, `QML2_IMPORT_PATH=.run/qml`,
+`WAYLAND_DISPLAY=wayland-1`, the daemon's `HYPRLAND_INSTANCE_SIGNATURE`).
+
+Method: IPC, because this box has no pointer injection (`wtype`, `wlrctl`,
+`ydotool`, `xdotool` all absent). `draft set` is not a parallel mock: the Hub's
+IPC handler calls the same `hub.preview(k, v)` a control's `onEdited` calls
+(`shell.qml` target `draft`, `pages/DesktopPage.qml:173`,
+`pages/GlobalPage.qml:116` → `SchemaPage.edited`). Clicking with a real pointer
+is therefore *unverified*; the preview code path is verified.
+
+| Case (IPC `draft set`) | draft | daemon / file | desktop | verdict |
+|---|---|---|---|---|
+| `frameThickness 2 → 8` (shell source) | 8 | `shell getSetting` = 8; `.run/config/tenkai/shell.json` = 8, <250 ms | bar frame repaints | preview works (§3) |
+| `markText "M" → "Z"` (brand source) | "Z" | `brand.json` stays `"M"` | nothing changes | **preview dead** |
+| any Visualizer row (`bars`, `style`, …) | changes | `visualizer.json` written only on Save | no consumer exists | **nothing can change** |
+
+In all three the footer switches from "SAVED · LIVE ON YOUR DESKTOP" to
+"1 CHANGE · PREVIEWING · NOT SAVED", i.e. the UI asserts a preview that did not
+happen. Captures: `/tmp/hub-desktop.png` (footer), `/tmp/fix-before.png`,
+`/tmp/fix-after.png`, `/tmp/overview-z.png`.
+
+Prior claim checked: §3 is true for `shell`-source keys and was verified, but it
+covered only `src === "shell"`. The Appearance page's BRAND card (Name, Text
+mark, Logo image, Tint) and the whole Visualizer tab are *not* shell-source, so
+the user's page still had no working preview. That is the gap here.
+
+## 28. Diagnosis
+
+| P | Hypothesis | Verdict | Evidence |
+|---|---|---|---|
+| P1 | edit mutates the shared draft object so the compare can't see it | NO | `edit()` rebuilds the map each call; `draft get` returns per-key values |
+| P2 | page not wired to the hub | NO | `SchemaPage` → `edited` → `onEdited: hub.preview`; IPC reaches the same function |
+| P3 | preview routes only some sources | **YES** | `preview()` had `src === "shell" ? stageLive : edit`; brand/viz fell to draft-only. Its comment claimed "the viz/brand files have no live consumer in the shell" — wrong for brand: `shell/services/Config.qml` `brandFile` watches `brand.json` (`watchChanges`, `atomicWrites`) and feeds `Config.markText/name/markTint` → `BrandMark` in launcher, overview, eyebrow |
+| P4 | applied but unobservable | PARTLY | the Hub window covers the desktop except the bar, so compositor-level previews (Visuals page) can only be seen through the bar; the brand mark is drawn on launcher/overview, not the bar wordmark |
+| P5 | exposed feature was cut | **YES (visualizer)** | `SpectrumField` appears nowhere under `shell/`; no reader of `visualizer.json`; viz rows can neither preview nor take effect on Save |
+
+Root cause of the report: P3 for the brand keys (dead preview, live consumer
+exists but was never written before Save), plus P5 for the Visualizer rows
+(no consumer at all in this build) — with the footer claiming "PREVIEWING" in
+both cases.
+
+## 29. Fix
+
+`src/tenkai_core/hub/quickshell/Hub.qml` only. The live ledger that already
+served `shell.json` now also carries the brand keys that the shell really watches:
+
+- `brandLiveKeys = ["name", "markText", "markImage", "markTint"]` (reloadCover
+  excluded: the shell does not read it and Save owns the prune),
+  `liveSrc(k)` helper, `liveKeys` = shell-source keys + those brand keys.
+- `preview()` sends brand keys down `stageLive()` as well; `liveFlush` writes
+  `brandA[k]` and issues one `brandFV.writeAdapter()` per coalesced batch — the
+  same adapter/file Save uses, so the shell's watched `brandFile` repaints the
+  mark before Save.
+- `captureLiveBaseline()` reads `brandA` once the file is loaded (brand.json can
+  arrive after the first daemon frame); `brandFV.onLoaded` re-anchors the ledger
+  only when nothing is staged, so a preview write never moves the anchor.
+- `restoreLiveUnsaved()` walks brand keys back through the adapter, which keeps
+  Revert and close-on-quit restoring the saved state (the mechanism §3 relied on).
+- No daemon change, no persistence change: Save still writes the same files
+  through the same adapter; preview simply stops waiting for Save.
+- Visualizer rows left untouched on purpose (P5): writing `visualizer.json`
+  earlier would still change nothing, so the fix would be a lie; see §31 F3.
+
+## 30. Verification
+
+- `runtime/settings-preview-live` extended: it now also stages `markText`,
+  reads the value out of `.run/config/tenkai/brand.json`, and asserts the file
+  returns to the original when the draft does (Revert path).
+- Test-the-test: with the old routing the same check logs
+  `brand staged on disk=` / `M` and fails; with the fix it logs `Z` then `M`.
+- Three consecutive full suites: **18 PASS, 1 UNVERIFIED (`runtime/boot-chain-configured`,
+  ly autologin needs root), 0 FAIL** — evidence
+  `tests/evidence/20261112-093922/`, `20261112-094020/`, `20261112-094051/`
+  (`settings-preview.txt`: `before draft=2 target=4 … after draft=4 live=4 …
+  brand before=M target=Z … brand staged on disk=Z … brand restored on disk=M`).
+- Visual: `/tmp/overview-z.png` — overview eyebrow renders **Z TENKAI** while the
+  Hub still shows "1 CHANGE · PREVIEWING · NOT SAVED"; setting the draft back to
+  M restores the mark and the footer returns to SAVED.
+- Limitation: no pointer injection on this machine, so the click path itself is
+  UNVERIFIED; everything below the click (`hub.preview`) is what the test drives.
+
+## 31. New findings (recorded, not fixed here)
+
+- **F1 — Bar page has no editor.** "OPEN QS BAR SETTINGS" runs
+  `tenkai-shell bar settings` → `qs ipc call qsbar settings ""`. The target
+  exists (`qs ipc show` lists `qsbar.settings(route)`), the call returns ok, and
+  no window appears; under the default `barStyle: "qsbar"` the Bar page shows
+  only that dead button (the frame sliders are hidden for qsbar), so bar
+  adjustments cannot be made at all. Separate fix.
+- **F2 — Hub config root depends on the launcher's env.** `cfgDir` comes from
+  `XDG_CONFIG_HOME`; started by the daemon it is `.run/config` (correct), started
+  by hand without it the Hub reads/writes `$HOME/.config/tenkai` — a silent
+  split brand/shell state. (This cost an hour of false repro during this audit.)
+- **F3 — Visualizer rows are dead in this build** (P5). They neither preview nor
+  apply on Save, because the desktop spectrum was cut. Left draft-only because
+  the page has its own `VizPreview` card; decide label/disable/hide at owner level.
+- **F4 — The preview is often invisible.** The Hub is full-screen (bar
+  excepted), so compositor-level previews (gaps, blur, borders on the Visuals
+  page) are hidden behind it. A preview strip or a pinned mini-canvas would make
+  the promise visible.
+
+## 32. Manual steps
+
+1. `Super+,` → Appearance → change **Name / Text mark / Logo image / Tint**: the
+   mark changes in the launcher, overview and eyebrows immediately, before Save.
+   `REVERT` or closing the Hub puts the saved mark back.
+2. The bar wordmark is "TENKAI", not the text mark — test the mark on the
+   overview (`Super+Tab`/overview surface) rather than expecting the bar to change.
+3. Appearance → Visualizer: the card is the only preview that exists for it; the
+   desktop draws no spectrum in this build (F3).
+4. Appearance → Bar: the settings button is still broken (F1).
+
+## 33. Summary
+
+| Item | Result |
+|---|---|
+| Preview reproduced | YES (IPC-driven; pointer UNVERIFIED — no injection tool) |
+| Root cause | P3 for brand keys (`preview()` routed only `shell`), P5 for visualizer rows |
+| Fix | one file, `Hub.qml`: brand keys join the live ledger (baseline, flush, restore) |
+| Test | `runtime/settings-preview-live` extended to brand.json: 3 consecutive PASS |
+| Suite | 18 PASS, 1 UNVERIFIED (root-owned ly autologin), 0 FAIL |
+| Behaviour change | Appearance brand edits reach the running desktop before Save; Revert/quit still restore |
+| Not done | visualizer live preview (no consumer), Bar editor button (F1), desktop preview pane (F4), push |
