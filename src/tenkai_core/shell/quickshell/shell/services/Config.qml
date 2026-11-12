@@ -117,6 +117,19 @@ Singleton {
         Wm.setScreenShader(pick);
     }
 
+    // Generic persisted write through the daemon's single-writer socket, used by
+    // the shell's IPC setSetting() probe. The daemon validates the path, writes
+    // shell.json atomically and re-pushes the frame, so the running shell and the
+    // next start both see the value. Never write shell.json from QML directly.
+    function patch(path, value) {
+        shaderCtl.queued += "call settings.patch "
+            + JSON.stringify({ path: path, value: value }) + "\n";
+        if (shaderCtl.connected)
+            shaderCtl.flushQueued();
+        else
+            shaderCtl.connected = true;
+    }
+
     // Which surface the bar's brand logo opens: "studio" (QS Bar Settings) or
     // "quick" (the Super+Esc quick-settings sidebar). Persisted like the shader,
     // read by the launcher widget and set by the switch in either panel.

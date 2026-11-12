@@ -718,6 +718,36 @@ ShellRoot {
                 ShellState.requestSurfaceActive(id, undefined);
         }
         function closeSurface(mon: string, id: string): void { ShellState.closeSurface(id, mon); }
+
+        // ── automation primitives (tests/run-all.sh) ────────────────────────
+        // These drive the same paths the bar and Settings use, so a test never
+        // needs a synthetic pointer. setSetting persists through the daemon;
+        // getSetting reads the live binding; workspaceSwitch is Wm.focusWorkspace
+        // exactly as a pill click calls it.
+        function setSetting(path: string, value: string): string {
+            let v;
+            try { v = JSON.parse(value); } catch (e) { v = value; }
+            // Keys with a dedicated setter must go through it: those setters do
+            // the live compositor apply (screenShader) or the persisted pick
+            // (launcherTarget) in addition to the write, exactly as their UI
+            // controls do. Everything else is a daemon passthrough patch.
+            if (path === "screenShader") Config.setScreenShader(String(v));
+            else if (path === "launcherTarget") Config.setLauncherTarget(String(v));
+            else Config.patch(path, v);
+            return "ok";
+        }
+        function getSetting(path: string): string {
+            const v = Config[path];
+            return v === undefined ? "" : JSON.stringify(v);
+        }
+        function workspaceSwitch(n: string): string {
+            Wm.focusWorkspace(n);
+            return "ok";
+        }
+        function listSurfaces(): string {
+            return JSON.stringify(["launcher", "quicksettings", "clipboard", "overview",
+                "screenshot", "stash", "wallpaper-menu", "keyring", "voice", "polkit", "session"]);
+        }
         function keyringPrompt(payload: string): void {
             Keyring.apply(payload);
             ShellState.keyringPromptChanged(Keyring.promptId);
