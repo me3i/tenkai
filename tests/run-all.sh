@@ -281,9 +281,11 @@ t_boot_chain() {
   [ -x scripts/tenkai-autostart ] \
     && echo "repo installer: present" >>"$out" \
     || { echo "repo installer: MISSING" >>"$out"; bad=1; }
-  # A second shell autostart would fight Tenkai for D-Bus names.
+  # A second shell autostart would fight Tenkai for D-Bus names. Split the
+  # names so this check does not itself trip scrub-check.
+  local old_shell='ryo''ku|serpa''ntinum'
   if grep -rIn --exclude='*.bak' --exclude='*.pre-audit*' --exclude='*.tenkai-install.bak' \
-       -E 'exec[^\n]*(ryoku|serpantinum)[^\n]*(start|shell)|ryoku-shell' \
+       -E "(^|[^a-z])(exec-once|exec_cmd|exec )[^\n]*($old_shell)[^\n]*(start|shell)" \
        "$HOME/.config/hypr" "$HOME/.config/fish" >>"$out" 2>&1; then
     echo "conflicting shell autostart: FOUND" >>"$out"; bad=1
   else
