@@ -450,12 +450,95 @@ t_icons() {
                  || record runtime/icons-all-resolve FAIL "evidence/$TS/icons.txt"
 }
 
-echo "Tenkai audit-4 — evidence in tests/evidence/$TS"
+# The doc contract and the code contract are two halves of one promise: a
+# read-only §2 is what made the Hub's compositor controls inert for a whole pass.
+t_decisions_live() {
+  local out="$EV/decisions.txt"
+  : >"$out"
+  awk '/^## 2\./,/^## 3\./' docs/DECISIONS.md >"$out" 2>&1
+  # the heading itself must be the new contract: the body may quote the old one
+  if grep -q 'Live apply' "$out" && grep -q 'tenkai_settings.lua' "$out" \
+     && ! grep -q '^## 2\. Settings never writes' "$out"; then
+    record static/decisions-md-says-live-apply PASS -
+  else
+    record static/decisions-md-says-live-apply FAIL "evidence/$TS/decisions.txt"
+  fi
+}
+
+# install.sh must prove the shell→Hyprland seam by default. The dry run prints
+# the step and runs no hyprctl, so this asserts the plan, not the effect.
+t_install_wm_bind() {
+  local out="$EV/install-wm-bind.txt"
+  : >"$out"
+  ./install.sh --dry-run >>"$out" 2>&1
+  if grep -q 'Hyprland binding' "$out" && grep -q 'prove the shell can drive Hyprland' "$out"; then
+    record runtime/install-probes-wm-bind PASS -
+  else
+    record runtime/install-probes-wm-bind FAIL "evidence/$TS/install-wm-bind.txt"
+  fi
+}
+
+# shell setSetting(desktop.*) -> tenkai-hub desktop set -> hyprctl eval -> the
+# live compositor. Reads the real value first so the test never guesses, and
+# restores it through the same path.
+t_hypr_live() {
+  local out="$EV/hyprd-live.txt" key opt cur want got bad=0
+  : >"$out"
+  if [ -z "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] || ! command -v hyprctl >/dev/null 2>&1; then
+    record runtime/hyprland-live-apply UNVERIFIED "no live Hyprland session"; return
+  fi
+  if ! need_shell; then
+    record runtime/hyprland-live-apply UNVERIFIED "no running shell"; return
+  fi
+  # key|hyprctl option|kind
+  local -a cases=(
+    "desktop.appearance.gapsIn|general:gaps_in|int"
+    "desktop.appearance.blurEnabled|decoration:blur:enabled|bool"
+    "desktop.appearance.blurSpecial|decoration:blur:special|bool"
+  )
+  local c
+  for c in "${cases[@]}"; do
+    IFS='|' read -r key opt kind <<<"$c"
+    if [ "$kind" = bool ]; then
+      cur=$(hyprctl getoption "$opt" 2>/dev/null | sed -n 's/^bool: \(true\|false\).*/\1/p' | head -1)
+      [ "$cur" = true ] && want=false || want=true
+    else
+      cur=$(hyprctl getoption "$opt" 2>/dev/null | sed -n 's/^[a-z ]*: *\([0-9][0-9]*\).*/\1/p' | head -1)
+      [ -z "$cur" ] && cur=2
+      if [ "$cur" = 9 ]; then want=8; else want=9; fi
+    fi
+    printf '%s before=%s want=%s\n' "$opt" "${cur:-?}" "$want" >>"$out"
+    if [ -z "$cur" ]; then
+      echo "  cannot read $opt" >>"$out"; bad=1; continue
+    fi
+    # JSON on the wire: numbers and booleans keep their type through the IPC
+    ipc setSetting "$key" "$want" >>"$out" 2>&1
+    sleep 1
+    if [ "$kind" = bool ]; then
+      got=$(hyprctl getoption "$opt" 2>/dev/null | sed -n 's/^bool: \(true\|false\).*/\1/p' | head -1)
+    else
+      got=$(hyprctl getoption "$opt" 2>/dev/null | sed -n 's/^[a-z ]*: *\([0-9][0-9]*\).*/\1/p' | head -1)
+    fi
+    printf '%s live=%s\n' "$opt" "${got:-?}" >>"$out"
+    [ "$got" = "$want" ] || bad=1
+    ipc setSetting "$key" "$cur" >/dev/null 2>&1
+    sleep 1
+    if hyprctl getoption "$opt" 2>/dev/null | grep -q "$cur"; then
+      echo "  restored $opt=$cur" >>"$out"
+    else
+      echo "  RESTORE FAILED $opt (wanted $cur)" >>"$out"; bad=1
+    fi
+  done
+  [ "$bad" = 0 ] && record runtime/hyprland-live-apply PASS - \
+                 || record runtime/hyprland-live-apply FAIL "evidence/$TS/hyprd-live.txt"
+}
+
+echo "Tenkai audit-5 — evidence in tests/evidence/$TS"
 t_shell_parse; t_json_parse; t_go_build; t_qml_lint; t_scrub; t_fish_config
-t_forbidden_strings; t_ryoku_imports; t_ryoku_namespace; t_doc_links
-t_bootstrap; t_autostart
+t_forbidden_strings; t_ryoku_imports; t_ryoku_namespace; t_doc_links; t_decisions_live
+t_bootstrap; t_autostart; t_install_wm_bind
 if [ "$STATIC_ONLY" = 0 ]; then
-  t_shell_log; t_workspace; t_settings; t_preview; t_gestures; t_scale; t_icons; t_boot_chain
+  t_shell_log; t_workspace; t_settings; t_preview; t_hypr_live; t_gestures; t_scale; t_icons; t_boot_chain
 fi
 
 printf '\n%-48s %-11s %s\n' TEST RESULT EVIDENCE

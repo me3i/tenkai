@@ -31,11 +31,37 @@ taken from upstream at the pinned commit, and `ThemeTenkaiApps` /
 `themeAppsEnabled()` must be live again. Until then the settings for them are
 inert, which is intended.
 
-## 2. Settings never writes Hyprland config
+## 2. Settings apply to Hyprland live, and persist only to Tenkai-owned drop-ins
 
-Disabled in the hub backend: the Settings app persists to Tenkai's own config
-dir and reads Hyprland state only. `docs/` and `CHANGES.md` record the same
-choice; it is listed here because it is a boundary, not a bug.
+Replaces the previous "Settings never writes Hyprland config". That contract made
+the Hub's compositor controls inert on a live system: the value moved in the GUI
+and nothing reached the compositor, which read as "Tenkai is not bound to
+Hyprland". The boundary is now drawn by *which files* may be written, not by
+refusing to apply.
+
+- **Live apply.** Every Hub control that affects the compositor dispatches
+  through the wm seam: `hyprctl eval` with the Lua API when the session runs the
+  Lua config manager, `hyprctl keyword` when it does not. The mode is probed once
+  (`install.sh` step 8, `tenkai-wm-hyprland caps`) and cached; on this project's
+  Hyprland `hyprctl keyword` answers "unknown request", so eval is the live path.
+  A live edit writes no `~/.config/hypr` file.
+- **Persist.** Save writes only Tenkai-owned drop-ins:
+  `~/.config/hypr/tenkai_settings.lua` (compositor settings, regenerated on every
+  Save, previous content kept as `.bak`) and `~/.config/hypr/tenkai_autostart.lua`
+  (the session hook). Both are loaded by the shipped `hyprland.lua` through
+  `optional(...)`. The shell's own store (`~/.config/tenkai/hypr-advanced.json`)
+  stays the source it re-applies at boot.
+- **Never touched.** Hand-edited modules (`binds.lua`, `decoration.lua`,
+  `modules/*.lua`), runtime-generated `monitors.lua`, `keyboard.lua` and
+  `user.lua` are read, never rewritten by Settings.
+- **Read.** The shell reads compositor state through `hyprctl getoption` /
+  `hyprctl monitors` and never assumes a default is live.
+
+This section was rewritten because the read-only contract above made the Hub's
+window-manager controls inert on live systems; the code change is in
+`src/tenkai_core/hub/backend/tenkai_runtime.go` (live eval + drop-in) and
+`src/tenkai_core/shell/quickshell/shell/shell.qml` (`setSetting` on a `desktop.*`
+key applies).
 
 ## 3. The two standard D-Bus names are still claimed
 

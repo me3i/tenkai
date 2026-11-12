@@ -118,6 +118,14 @@ func runDesktop(args []string) error {
 			return fmt.Errorf("desktop preview needs a JSON payload")
 		}
 		return applyTenkaiDesktop(args[1], false)
+	// set is the shell's one-key entry point (`setSetting` on a desktop.* path):
+	// it merges the leaf into the saved map and applies the whole map live, so an
+	// IPC call costs the same edit a Hub control does.
+	case "set":
+		if len(args) < 3 {
+			return fmt.Errorf("desktop set needs a dotted key and a JSON value")
+		}
+		return applyTenkaiDesktopKey(args[1], args[2])
 	case "restore":
 		return restoreTenkaiDesktop()
 	case "set-rebind":

@@ -17,7 +17,8 @@ file was written against.
 
 Everything below happens only after an interactive `y` at that step's prompt.
 `--dry-run` writes nothing. `--yes` answers the non-Hyprland prompts, but it never
-answers steps 6 and 7, which are interactive-only by design.
+answers steps 6 and 7, which are interactive-only by design, nor step 8, which
+needs `--yes-wm-bind` (it only dispatches a value the compositor already has).
 
 | Step | Path written | How | Backup |
 | --- | --- | --- | --- |
@@ -34,8 +35,10 @@ answers steps 6 and 7, which are interactive-only by design.
 | 6 | `~/.config/hypr/**/*.lua` (the bundled tree, `src/tenkai-configs/hypr`) | per-file copy (install.sh:824) | `<file>.tenkai-install.bak` |
 | 6 | `~/.config/hypr/modules/keyboard.lua` | seeded once; never overwritten afterwards (install.sh:820-822) | none (by design: it is user-owned) |
 | 7 | `~/.config/hypr/tenkai_autostart.lua` | one `hl.on("hyprland.start", …)` hook written as its own drop-in, loaded by the shipped `hyprland.lua` (install.sh:906) | none: the file is not overwritten if a hook is already present, and the whole step is interactive y/N |
-| 8 | `~/Pictures/Wallpapers/*` | `install -m 0644`, bundled images only (install.sh:961) | existing file → `<name>.tenkai-install.bak` |
-| 9 | `~/.local/share/fonts/tenkai/*.ttf` | `install -m 0644`, Space Grotesk + Fraunces (install.sh:1012) — **no prompt**, then `fc-cache -f` on that directory | none, new directory |
+| 8 | `~/.config/hypr` | probes only: one `hyprctl keyword`/`hyprctl eval` of an unchanged value, plus `tenkai-hub desktop set` with the value it just read — no file is written except the drop-in below | n/a (unchanged value) |
+| 8 | `~/.config/hypr/tenkai_settings.lua` | **runtime write**, not install: `tenkai-hub desktop set`/`desktop save` regenerates it from the Window Manager page (install.sh seeds the empty template at step 6 only when absent) | previous content kept as `tenkai_settings.lua.bak` |
+| 9 | `~/Pictures/Wallpapers/*` | `install -m 0644`, bundled images only (install.sh:961) | existing file → `<name>.tenkai-install.bak` |
+| 10 | `~/.local/share/fonts/tenkai/*.ttf` | `install -m 0644`, Space Grotesk + Fraunces (install.sh:1012) — **no prompt**, then `fc-cache -f` on that directory | none, new directory |
 
 `MARK='tenkai-install'` (install.sh:51) is the suffix used for every backup:
 `<path>.tenkai-install.bak`.

@@ -1,0 +1,85 @@
+$ git status
+On branch audit-4/settings-preview-fix
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	tenkaifinal.txt
+	tenkairun.txt
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+$ git branch --show-current
+audit-4/settings-preview-fix
+
+$ git log --oneline -8
+c454590 fix(hub): preview brand edits on the desktop before Save
+de02ff1 fix(install): keep the boot hook across a config reinstall
+ccf188c fix(wm): clear the shader by reloading, not by an empty path
+27c240b docs: record audit-4 boot chain, preview fix, and cross-check
+9a42f88 test: keep the boot-chain check out of scrub and comments
+44306c9 test: check the boot-to-Tenkai chain
+10fa4cd test: launch a Hub for the preview check instead of requiring one
+712d77e docs(audit-3): correct two claims audit-4 disproved
+
+$ pgrep -af 'tenkai-shell|tenkai-wm-hyprland|ryogami'
+1322750 <home>/tenkai/.run/bin/ryogami daemon
+1322758 <home>/tenkai/.run/bin/tenkai-shell daemon
+1322767 tenkai-wm-hyprland watch outputs
+1322839 wl-paste --watch <home>/tenkai/.run/bin/tenkai-shell __clip-ingest
+1322851 tenkai-wm-hyprland watch
+1554161 bash -c cd <home>/tenkai && { echo "\$ git status"; git status; echo; echo "\$ git branch --show-current"; git branch --show-current; echo; echo "\$ git log --oneline -8"; git log --oneline -8; echo; echo "\$ pgrep -af 'tenkai-shell|tenkai-wm-hyprland|ryogami'"; pgrep -af 'tenkai-shell|tenkai-wm-hyprland|ryogami'; echo; echo "\$ ls -la .run/bin/tenkai-wm-hyprland"; ls -la .run/bin/tenkai-wm-hyprland 2>&1; echo; echo "\$ command -v tenkai-wm-hyprland"; command -v tenkai-wm-hyprland 2>&1; echo "rc=$?"; } 2>&1 | tee /tmp/pf.txt | tail -40
+1554162 bash -c cd <home>/tenkai && { echo "\$ git status"; git status; echo; echo "\$ git branch --show-current"; git branch --show-current; echo; echo "\$ git log --oneline -8"; git log --oneline -8; echo; echo "\$ pgrep -af 'tenkai-shell|tenkai-wm-hyprland|ryogami'"; pgrep -af 'tenkai-shell|tenkai-wm-hyprland|ryogami'; echo; echo "\$ ls -la .run/bin/tenkai-wm-hyprland"; ls -la .run/bin/tenkai-wm-hyprland 2>&1; echo; echo "\$ command -v tenkai-wm-hyprland"; command -v tenkai-wm-hyprland 2>&1; echo "rc=$?"; } 2>&1 | tee /tmp/pf.txt | tail -40
+
+$ ls -la .run/bin/tenkai-wm-hyprland
+-rwxr-xr-x 1 mei mei 6681021 Nov 12 01:03 .run/bin/tenkai-wm-hyprland
+
+$ command -v tenkai-wm-hyprland
+rc=1
+
+$ bash tests/run-all.sh
+Tenkai audit-4 — evidence in tests/evidence/20261112-094900
+  [PASS] static/shell-scripts-parse
+  [PASS] static/json-parse
+  [PASS] static/go-build
+  [PASS] static/qml-lint
+  [PASS] static/scrub-check
+  [PASS] static/fish-config-valid
+  [FAIL] static/no-personal-strings
+  [PASS] static/no-ryoku-imports
+  [PASS] static/no-ryoku-namespaces
+  [PASS] static/referenced-docs-exist
+  [PASS] bootstrap/idempotent
+  [PASS] autostart/idempotent
+  [PASS] runtime/shell-starts-clean
+  [PASS] runtime/workspace-switch-via-bar-pill
+  [PASS] runtime/settings-apply-5-keys
+  [PASS] runtime/settings-preview-live
+  [PASS] runtime/gestures-enabled
+  [PASS] runtime/scale-is-1
+  [PASS] runtime/icons-all-resolve
+  [UNVERIFIED] runtime/boot-chain-configured
+
+TEST                                             RESULT      EVIDENCE
+------------------------------------------------ ----------- --------
+static/shell-scripts-parse                       PASS        -
+static/json-parse                                PASS        -
+static/go-build                                  PASS        -
+static/qml-lint                                  PASS        -
+static/scrub-check                               PASS        -
+static/fish-config-valid                         PASS        -
+static/no-personal-strings                       FAIL        evidence/20261112-094900/forbidden.txt
+static/no-ryoku-imports                          PASS        -
+static/no-ryoku-namespaces                       PASS        -
+static/referenced-docs-exist                     PASS        -
+bootstrap/idempotent                             PASS        -
+autostart/idempotent                             PASS        -
+runtime/shell-starts-clean                       PASS        -
+runtime/workspace-switch-via-bar-pill            PASS        -
+runtime/settings-apply-5-keys                    PASS        -
+runtime/settings-preview-live                    PASS        -
+runtime/gestures-enabled                         PASS        -
+runtime/scale-is-1                               PASS        -
+runtime/icons-all-resolve                        PASS        -
+runtime/boot-chain-configured                    UNVERIFIED  user autostart OK; ly autologin needs root (evidence/20261112-094900/boot-chain.txt)
+
+FAILURES: 1
+exit=1

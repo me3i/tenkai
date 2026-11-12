@@ -54,6 +54,11 @@ optional("tenkai_autostart")
 -- machine-state written by the hub (tenkai-hub), never shipped. after the base
 -- modules so the GUI's tweaks override the defaults, before user.lua so a
 -- hand-written user file still wins.
+-- Settings → Window Manager: the compositor keys Tenkai's Save writes, rendered
+-- as hl.config calls by tenkai-hub. Its own drop-in so a Save never has to edit
+-- this file or any hand-written module. See docs/DECISIONS.md §2.
+optional("tenkai_settings")
+
 optional("settings")
 
 -- Power Saver strips compositor blur and shadow (the heaviest present-time GPU

@@ -733,6 +733,11 @@ ShellRoot {
             // controls do. Everything else is a daemon passthrough patch.
             if (path === "screenShader") Config.setScreenShader(String(v));
             else if (path === "launcherTarget") Config.setLauncherTarget(String(v));
+            // A compositor key: apply it live through the same store the Hub's
+            // Window Manager page saves and previews from (tenkai-hub desktop
+            // set), which evals it into Hyprland and rewrites the drop-in.
+            else if (path.indexOf("desktop.") === 0)
+                Quickshell.execDetached(["tenkai-hub", "desktop", "set", path, JSON.stringify(v)]);
             else Config.patch(path, v);
             return "ok";
         }

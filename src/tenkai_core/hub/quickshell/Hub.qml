@@ -573,6 +573,13 @@ Rectangle {
             var r = rows[i];
             if (r.src && r.src !== "none") m[r.key] = r.src;
         }
+        // the Window Manager page's rows carry their own source (desktop.json),
+        // so a key it exposes is never mistaken for a shell.json patch
+        var wrows = WindowSettingsSchema.rows;
+        for (var j = 0; j < wrows.length; j++) {
+            var w = wrows[j];
+            if (w.src) m[w.key] = w.src;
+        }
         m.frameBars = "shell";
         return m;
     }
@@ -716,6 +723,10 @@ Rectangle {
     function preview(k, v) {
         var src = hub.liveSrc(k);
         if (src === "shell" || hub.brandLiveKeys.indexOf(k) >= 0) hub.stageLive(k, v);
+        // A compositor key: the Window Manager page's own ledger
+        // (hyprDraft -> tenkai-hub desktop preview) evals it into Hyprland, and
+        // the draft mirrors it so the rows read back what was staged.
+        else if (src === "desktop.json") { hub.hyprEdit(k, v); hub.edit(k, v); }
         else hub.edit(k, v);
     }
     Timer {

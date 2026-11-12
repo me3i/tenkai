@@ -424,7 +424,44 @@ var advancedOptions = map[string]string{
 	"desktop.appearance.shadowPower":          "decoration:shadow:render_power",
 	"desktop.appearance.shadowSharp":          "decoration:shadow:sharp",
 	"desktop.appearance.shadowScale":          "decoration:shadow:scale",
+	"desktop.appearance.shadowColor":          "decoration:shadow:color",
+	"desktop.appearance.blurSpecial":          "decoration:blur:special",
+	"desktop.appearance.blurPopups":           "decoration:blur:popups",
+	"desktop.appearance.blurVibrancyDarkness": "decoration:blur:vibrancy_darkness",
+	"desktop.appearance.activeBorder":         "general:col.active_border",
+	"desktop.appearance.inactiveBorder":       "general:col.inactive_border",
+	"desktop.appearance.layout":               "general:layout",
 	"desktop.appearance.animations":           "animations:enabled",
+}
+
+// advancedColors are the keys whose value is a #rrggbb colour: Hyprland's Lua
+// API wants rgb(rrggbb), not the hex string the pickers store.
+var advancedColors = map[string]bool{
+	"desktop.appearance.activeBorder":   true,
+	"desktop.appearance.inactiveBorder": true,
+	"desktop.appearance.shadowColor":    true,
+}
+
+// advancedPaletteBorders are the two keys the provider leaves alone while the
+// wallpaper palette owns the border: writing a fixed colour would pin the
+// border the user asked to follow the theme.
+var advancedPaletteBorders = map[string]bool{
+	"desktop.appearance.activeBorder":   true,
+	"desktop.appearance.inactiveBorder": true,
+}
+
+// luaRGB turns a stored #rrggbb (or #aarrggbb) colour into Hyprland's Lua
+// colour form; anything already in rgb()/rgba() form is passed through.
+func luaRGB(hex string) string {
+	h := strings.TrimSpace(hex)
+	if strings.HasPrefix(h, "rgb") {
+		return h
+	}
+	h = strings.TrimPrefix(h, "#")
+	if h == "" {
+		return "rgb(00000000)"
+	}
+	return "rgb(" + h + ")"
 }
 
 // flatten walks a nested store map into dotted paths. Arrays are leaves (the
@@ -471,12 +508,28 @@ func luaValue(v any) (string, bool) {
 func advancedLua(store map[string]any) ([]string, int) {
 	flat := map[string]any{}
 	flatten("", store, flat)
-	groups := map[string][]string{} // section -> "sub = { ... }" or "key = value"
+	paletteWins := false
+	if v, ok := flat["desktop.appearance.borderFollowsPalette"].(bool); ok {
+		paletteWins = v
+	}
+	// One tree per section, rendered once. A flat "sub = {...}" per key would
+	// repeat the same nested table (blur, shadow, snap) and Lua keeps only the
+	// last one -- which silently dropped every neighbour option, e.g. all blur
+	// keys but one.
+	trees := map[string]*luaTree{} // section -> tree
 	applied := 0
 	for key, raw := range flat {
 		opt, ok := advancedOptions[key]
 		if !ok {
 			continue
+		}
+		if paletteWins && advancedPaletteBorders[key] {
+			continue
+		}
+		if advancedColors[key] {
+			if hex, ok := raw.(string); ok {
+				raw = luaRGB(hex)
+			}
 		}
 		val, ok := luaValue(raw)
 		if !ok {
@@ -486,26 +539,68 @@ func advancedLua(store map[string]any) ([]string, int) {
 		if len(parts) < 2 {
 			continue
 		}
-		// nest everything after the section
-		expr := parts[len(parts)-1] + " = " + val
-		for i := len(parts) - 2; i >= 1; i-- {
-			expr = parts[i] + " = { " + expr + " }"
+		t, ok := trees[parts[0]]
+		if !ok {
+			t = newLuaTree()
+			trees[parts[0]] = t
 		}
-		groups[parts[0]] = append(groups[parts[0]], expr)
+		t.set(parts[1:], val)
 		applied++
 	}
-	secs := make([]string, 0, len(groups))
-	for s := range groups {
+	secs := make([]string, 0, len(trees))
+	for s := range trees {
 		secs = append(secs, s)
 	}
 	sort.Strings(secs)
 	out := make([]string, 0, len(secs))
 	for _, s := range secs {
-		entries := groups[s]
-		sort.Strings(entries)
-		out = append(out, "hl.config({ "+s+" = { "+strings.Join(entries, ", ")+" } })")
+		out = append(out, "hl.config({ "+s+" = "+trees[s].render()+" })")
 	}
 	return out, applied
+}
+
+// luaTree is the nested-table builder behind advancedLua: one leaf per option,
+// siblings merged under a single key instead of repeated table constructors.
+type luaTree struct {
+	leaves map[string]string
+	kids   map[string]*luaTree
+}
+
+func newLuaTree() *luaTree {
+	return &luaTree{leaves: map[string]string{}, kids: map[string]*luaTree{}}
+}
+
+func (t *luaTree) set(path []string, expr string) {
+	if len(path) == 1 {
+		t.leaves[path[0]] = expr
+		return
+	}
+	kid, ok := t.kids[path[0]]
+	if !ok {
+		kid = newLuaTree()
+		t.kids[path[0]] = kid
+	}
+	kid.set(path[1:], expr)
+}
+
+func (t *luaTree) render() string {
+	keys := make([]string, 0, len(t.leaves)+len(t.kids))
+	for k := range t.leaves {
+		keys = append(keys, k)
+	}
+	for k := range t.kids {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		if kid, ok := t.kids[k]; ok {
+			parts = append(parts, k+" = "+kid.render())
+			continue
+		}
+		parts = append(parts, k+" = "+t.leaves[k])
+	}
+	return "{ " + strings.Join(parts, ", ") + " }"
 }
 
 func applyAdvanced(store map[string]any, persist bool) error {
@@ -515,6 +610,11 @@ func applyAdvanced(store map[string]any, persist bool) error {
 		}
 	}
 	scripts, n := advancedLua(store)
+	if persist {
+		if err := writeTenkaiSettingsDropIn(scripts); err != nil {
+			fmt.Fprintf(os.Stderr, "advanced: drop-in: %v\n", err)
+		}
+	}
 	var failed []string
 	for _, s := range scripts {
 		if err := hyprEval(s); err != nil {
@@ -525,6 +625,56 @@ func applyAdvanced(store map[string]any, persist bool) error {
 		fmt.Fprintf(os.Stderr, "advanced: %d section(s) rejected: %s\n", len(failed), strings.Join(failed, "; "))
 	}
 	return printJSON(map[string]any{"ok": len(failed) == 0, "applied": n, "errors": failed})
+}
+
+// writeTenkaiSettingsDropIn renders the same live scripts into the drop-in the
+// shipped hyprland.lua optional()s, so a saved setting is loaded by the
+// compositor at boot even before the daemon re-applies the store. Only this
+// Tenkai-owned file is written: the user's hand-edited modules (binds.lua,
+// decoration.lua, monitors.lua, user.lua) are never touched. The previous
+// content is kept as tenkai_settings.lua.bak before an overwrite.
+func writeTenkaiSettingsDropIn(scripts []string) error {
+	if len(scripts) == 0 {
+		return nil
+	}
+	path := filepath.Join(hyprConfigDir(), "tenkai_settings.lua")
+	body := "-- Written by Tenkai's Settings (tenkai-hub) on every Save. Loaded by\n" +
+		"-- hyprland.lua through optional(\"tenkai_settings\"). Do not edit: put your\n" +
+		"-- own changes in ~/.config/hypr/user.lua, which loads last and wins.\n\n" +
+		strings.Join(scripts, "\n") + "\n"
+	if old, err := os.ReadFile(path); err == nil && string(old) != body {
+		if err := os.WriteFile(path+".bak", old, 0o644); err != nil {
+			return err
+		}
+	}
+	return atomicWrite(path, []byte(body), 0o644)
+}
+
+// applyTenkaiDesktopKey is the shell's `setSetting` for one compositor key: it
+// merges a single dotted store leaf into the saved map, re-applies the whole map
+// live (so the compositor is authoritative on every key it holds) and rewrites
+// the drop-in. A key this compositor has no option for is stored and reported.
+func applyTenkaiDesktopKey(path, rawValue string) error {
+	var v any
+	if err := json.Unmarshal([]byte(rawValue), &v); err != nil {
+		return fmt.Errorf("value must be JSON: %w", err)
+	}
+	if _, ok := advancedOptions[path]; !ok {
+		return fmt.Errorf("%s has no compositor option", path)
+	}
+	store := readJSONMap(tenkaiAdvancedPath())
+	segs := strings.Split(path, ".")
+	cur := store
+	for i := 0; i < len(segs)-1; i++ {
+		next, ok := cur[segs[i]].(map[string]any)
+		if !ok {
+			next = map[string]any{}
+			cur[segs[i]] = next
+		}
+		cur = next
+	}
+	cur[segs[len(segs)-1]] = v
+	return applyAdvanced(store, true)
 }
 
 // ── the desktop store path ─────────────────────────────────────────────────

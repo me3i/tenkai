@@ -18,7 +18,7 @@ ccf188c fix(wm): clear the shader by reloading, not by an empty path
 712d77e docs(audit-3): correct two claims audit-4 disproved
 a23b1c2 fix(hypr): omit screen_shader when no shader is selected
 $ pgrep -af 'qs -p .*tenkai_core/(shell|hub)/'
-1322860 qs -p /home/mei/tenkai/src/tenkai_core/shell/quickshell/shell
+1322860 qs -p <home>/tenkai/src/tenkai_core/shell/quickshell/shell
 $ ls /run/user/1000/tenkai-shell.sock
 /run/user/1000/tenkai-shell.sock
 

@@ -357,6 +357,13 @@ injectable from this session.
 **D4 — audit-3 historical before-states.** Scale 1.5 and absence of
 `monitors.lua` cannot be reproduced; no action.
 
+**D5 — the read-only compositor contract is superseded.** audit-5 changed
+`docs/DECISIONS.md` §2: Hub controls now apply to Hyprland live (`hyprctl eval`)
+and persist to `~/.config/hypr/tenkai_settings.lua`. The old wording
+("Settings never writes Hyprland config", and the `errWMWriteDisabled` comment
+in `src/tenkai_core/hub/backend/desktop.go`) is stale; see `docs/audit-5/report.md`
+§5. Kept here so anything that cited the old contract lands on the new one.
+
 ## 13. Live system changes
 
 | Path / action | Backup | Rollback |
