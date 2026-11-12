@@ -1,0 +1,128 @@
+#!/usr/bin/env bash
+# tenkai-autostart — print or install Tenkai's session autostart.
+#
+# Tenkai never writes a Hyprland config on its own. This script only prints the
+# block by default; writing requires BOTH --apply AND --yes-hyprland, and it
+# always backs the target up and refuses to add a second copy.
+#
+#   scripts/tenkai-autostart                     show the detected mechanism + block
+#   scripts/tenkai-autostart --apply --yes-hyprland
+#                                               append the block (Lua or classic)
+#   scripts/tenkai-autostart --systemd --apply  enable the systemd user units instead
+#   scripts/tenkai-autostart --dry-run          same as default (prints only)
+#
+# Detection, in order:
+#   * UWSM_SETUP_* / `uwsm` present  -> exec-once = uwsm app -- <checkout>/tenkai start
+#   * else plain Hyprland            -> exec-once = <checkout>/tenkai start
+#   * --systemd                      -> systemctl --user enable --now tenkai-shell.service
+#
+# The autostart line and the systemd units are alternatives. Use one.
+set -uo pipefail
+
+TENKAI_DIR="${TENKAI_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
+HYPR_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/hypr"
+MARK="tenkai-autostart"
+APPLY=0
+YES_HYPR=0
+SYSTEMD=0
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --apply) APPLY=1 ;;
+    --yes-hyprland) YES_HYPR=1 ;;
+    --systemd) SYSTEMD=1 ;;
+    --dry-run) APPLY=0 ;;
+    -h|--help) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    *) printf 'tenkai-autostart: unknown argument: %s\n' "$1" >&2; exit 2 ;;
+  esac
+  shift
+done
+
+say() { printf '%s\n' "$*"; }
+die() { printf '\ntenkai-autostart: %s\n' "$*" >&2; exit 1; }
+
+[ -x "$TENKAI_DIR/tenkai" ] || die "no executable tenkai at $TENKAI_DIR/tenkai"
+
+# The command every mechanism runs.
+if [ "$SYSTEMD" = 0 ] && [ -n "${UWSM_SETUP_VERSION:-}" -o -n "${UWSM_SESSION_ID:-}" ] && command -v uwsm >/dev/null 2>&1; then
+  LAUNCH="uwsm app -- $TENKAI_DIR/tenkai start"
+  MECH="uwsm"
+else
+  LAUNCH="$TENKAI_DIR/tenkai start"
+  MECH="plain Hyprland"
+fi
+command -v uwsm >/dev/null 2>&1 || true
+
+say "Tenkai autostart"
+say "  checkout:  $TENKAI_DIR"
+say "  hypr dir:  $HYPR_DIR"
+say "  mechanism: $([ "$SYSTEMD" = 1 ] && echo "systemd user units" || echo "$MECH")"
+
+# ── systemd ─────────────────────────────────────────────────────────────────
+if [ "$SYSTEMD" = 1 ]; then
+  UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+  for u in tenkai-shell.service tenkai-hub.service; do
+    [ -f "$UNIT_DIR/$u" ] || die "$UNIT_DIR/$u is missing; run ./install.sh step 3 first"
+  done
+  if [ "$APPLY" = 1 ]; then
+    systemctl --user enable --now tenkai-shell.service tenkai-hub.service \
+      || die "systemctl --user enable failed"
+    say "  enabled tenkai-shell.service tenkai-hub.service"
+  else
+    say "  would run: systemctl --user enable --now tenkai-shell.service tenkai-hub.service"
+  fi
+  exit 0
+fi
+
+# ── Hyprland: pick Lua or classic ───────────────────────────────────────────
+LUA_CONF="$HYPR_DIR/hyprland.lua"
+LUA_AUTOSTART="$HYPR_DIR/modules/autostart.lua"
+CLASSIC_CONF="$HYPR_DIR/hyprland.conf"
+
+if [ -f "$LUA_CONF" ]; then
+  TARGET="$LUA_CONF"
+  [ -f "$LUA_AUTOSTART" ] && TARGET="$LUA_AUTOSTART"
+  BLOCK="
+-- $MARK: start the Tenkai shell at session start
+hl.on(\"hyprland.start\", function()
+    hl.exec_cmd(\"$LAUNCH\")
+end)"
+  KIND="lua"
+elif [ -f "$CLASSIC_CONF" ]; then
+  TARGET="$CLASSIC_CONF"
+  BLOCK="
+# $MARK: start the Tenkai shell at session start
+exec-once = $LAUNCH"
+  KIND="classic"
+else
+  say ""
+  say "  No $LUA_CONF and no $CLASSIC_CONF: is Hyprland configured for this user?"
+  say "  Add this to your Hyprland config by hand, once:"
+  say "    exec-once = $LAUNCH"
+  exit 0
+fi
+
+say "  target:    $TARGET ($KIND)"
+if grep -qsF "$TENKAI_DIR/tenkai start" "$TARGET"; then
+  say "  already present — nothing to do (idempotent)"
+  exit 0
+fi
+
+say ""
+say "  Block to add:"
+printf '%s\n' "$BLOCK" | sed 's/^/    /'
+
+if [ "$APPLY" = 1 ] && [ "$YES_HYPR" != 1 ]; then
+  die "--apply edits $TARGET, which needs --yes-hyprland as well"
+fi
+if [ "$APPLY" != 1 ]; then
+  say ""
+  say "  Nothing written. Re-run with --apply --yes-hyprland to add it."
+  exit 0
+fi
+
+cp -a "$TARGET" "$TARGET.$MARK.bak" || die "could not back up $TARGET"
+printf '%s\n' "$BLOCK" >>"$TARGET" || die "could not append to $TARGET"
+say ""
+say "  appended to $TARGET (backup: $TARGET.$MARK.bak)"
+say "  will start on the next Hyprland login."
